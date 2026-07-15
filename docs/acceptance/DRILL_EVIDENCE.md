@@ -1,6 +1,6 @@
 # ADWS Pipeline — Live E2E Drill Evidence (WBS 6.1–6.4)
 
-**Date:** 2026-07-15 · **Skill under test:** `~/Dev/adws-pipeline-skill` (branch `fix/f1-planner-description-and-6x-acceptance`, based on main 4e8e00a)
+**Date:** 2026-07-15 · **Skill under test:** `~/adws-pipeline-skill` (branch `fix/f1-planner-description-and-6x-acceptance`, based on main 4e8e00a)
 **Scratch target repo:** https://github.com/AJ-EthereaLogic-ai/adws-e2e-scratch (private)
 **Evidence trees:** `<scratch>/artifacts/job_20260715_000{1..8}/` — were gitignored/local-only and **were deleted at teardown**, so the live drills are no longer independently reproducible from retained files. Retained evidence: this doc, `acceptance-workflow-journal.jsonl` (the 10-agent acceptance verification), the still-existing remote PRs #1/#2, and the deterministic fixture suite. *(Lesson: copy execution reports into the skill repo before teardown.)*
 
@@ -73,7 +73,7 @@ artifacts + the SKILL.md rules.
   block from the consensus evidence (Advocate dissent / Critic fail → gate fail → QUARANTINE
   on a completed job). Regression fixtures `quarantine_advocate_dissent` + `quarantine_critic_fail`
   (both `completed`, no `failure_reason`) now QUARANTINE via the gate. Report tests 10/10;
-  parity unchanged (no validator touched). See `acceptance/ACCEPTANCE.md` "Post-sign-off audit".
+  parity unchanged (no validator touched). See `ACCEPTANCE.md` "Post-sign-off audit".
 - **F-1 (fixed):** `adws-planner` emitted `file_change_proposal[].reason` but `repo-context-scan.js:60` checks `p.description`, so every well-formed plan tripped a spurious build `warn` → every real job landed PROMOTE-with-warnings (exit 10), making clean PROMOTE unreachable live. **Fix (PR #3):** planner + `artifact-layout.md` now specify `description`; `repo-context-scan.js` header documents it (no logic change → parity 79/79 preserved). Verified live: job_0007 build gate = pass → clean PROMOTE.
 - **F-2 (minor, parity-frozen, not fixed):** `criteria-to-checks.js` verifiable-verb regex covers `return(?:s|ed)?` and other verbs but omits the `-ing` participle (e.g. "returning") and the bare verb "pass", despite its comment claiming `-ing` coverage. Effect: some reasonably-phrased criteria are flagged vague → test-gate `warn`. Non-blocking. Changing the regex would break the frozen parity baseline, so the fix (if desired) needs a parity re-baseline; intake should prefer verifiable phrasing meanwhile.
 - **Cosmetic:** skill traces were stamped `version: "1.0.0"` while some validators report `2.1.0` in their manifest (e.g. `task-normalize`); the numeric verdict/metrics are unaffected. Job_0007's traces use the correct versions.
