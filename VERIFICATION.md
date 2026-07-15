@@ -61,6 +61,16 @@ job_0007. A minor parity-frozen finding (F-2, `criteria-to-checks` verb-regex ga
 documented but not fixed. Honest evidence-scope caveats (no per-phase LLM telemetry;
 placeholder timestamps) are recorded in `acceptance/DRILL_EVIDENCE.md`.
 
+**P1 found post-sign-off by an independent audit (fixed):** `execution-report.js` collected
+Critic/Advocate consensus but never gated on it — a `completed` job with a recorded Advocate
+dissent still reported clean PROMOTE (exit 0), so AC-4.2 was not actually enforced by the
+report (the live drills missed it — all live consensus rounds passed). Fixed on branch
+`fix/consensus-gate-and-acceptance-corrections`: added a `consensus` gate (Advocate dissent /
+Critic fail → gate fail → QUARANTINE on a completed job), deriving the block from evidence not
+`failure_reason`. Regression fixtures `quarantine_advocate_dissent` + `quarantine_critic_fail`
+(report tests now 10/10); parity unchanged (no validator touched). Full detail in
+`acceptance/ACCEPTANCE.md` "Post-sign-off audit".
+
 To install: copy `adws-pipeline/` into `.claude/skills/` (or register per your setup) and
 `.claude/agents/*.md` into the target project's `.claude/agents/`.
 

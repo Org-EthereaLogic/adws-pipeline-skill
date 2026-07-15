@@ -79,6 +79,28 @@ const CASES = [
     expectGate: { key: 'drift_verdict', result: 'fail' },
   },
   {
+    name: 'quarantine_advocate_dissent',
+    jobId: 'job-3f2b8c',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression (AC-4.2): a `completed` job with a recorded Advocate dissent in
+    // consensus evidence must QUARANTINE — the report DERIVES the block from the
+    // consensus evidence, NOT from run_manifest.failure_reason (which here is null).
+    // Pre-fix this returned clean PROMOTE / exit 0 (consensus collected but never gated).
+    expectGate: { key: 'consensus', result: 'fail' },
+  },
+  {
+    name: 'quarantine_critic_fail',
+    jobId: 'job-6d4a1e',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression: a `completed` job whose latest test-gate Critic verdict is `fail`
+    // must QUARANTINE via the consensus gate (the gate should never have passed).
+    expectGate: { key: 'consensus', result: 'fail' },
+  },
+  {
     name: 'promote_retry_recovered',
     jobId: 'job-2a6d9f',
     decision: 'PROMOTE',
