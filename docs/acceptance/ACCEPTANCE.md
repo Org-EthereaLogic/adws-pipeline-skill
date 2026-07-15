@@ -1,8 +1,14 @@
 # ADWS Pipeline Skill — Acceptance Sign-off (WBS 6.4)
 
+> **Post-acceptance update (SC-1, 2026-07-15):** after this sign-off, scope change SC-1
+> **fixed F-2** and **shipped X-2**, and the parity count moved from 79/79 to **84/84**
+> (`criteria-to-checks` is now deliberately diverged-by-design vs a frozen baseline). The
+> `79/79` and “F-2 not undertaken” statements below are the point-in-time sign-off record;
+> see `DPPD.md` §9 for the current state.
+
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
-**Evidence:** `DRILL_EVIDENCE.md` + live scratch repo `AJ-EthereaLogic-ai/adws-e2e-scratch` + committed `parity/execution-report-fixtures/`
+**Evidence:** `DRILL_EVIDENCE.md` + a throwaway scratch repo (created for the drills, since deleted) + committed `parity/execution-report-fixtures/`
 **Method:** Live E2E drills (jobs 0001–0008) orchestrated per `SKILL.md`, followed by an
 independent per-user-story verification workflow (6 verifiers + 3 adversarial refuters +
 1 completeness critic), then remediation of the one blocking finding (F-1) and a live
@@ -18,7 +24,7 @@ re-drill. See `DRILL_EVIDENCE.md` for the honest scope of "live".
 | AC-2.1 failing test gate → rewind to build | ✅ satisfied | live job_0005 (real tester FAIL → rewind → fix → PASS) |
 | AC-2.2 budget exhaustion → non-PROMOTE | ✅ satisfied | live job_0006 (BUILD_GATE_FAILURE → RETRY) |
 | AC-2.3 phase-order violations impossible by procedure | ✅ satisfied | SKILL.md hard rules + phase-gates.md |
-| AC-3.1 9 validators identical to originals | ✅ satisfied | `run-parity.js` 79/79 (live re-run) |
+| AC-3.1 9 validators identical to originals | ✅ satisfied | `run-parity.js` 79/79 at sign-off _(SC-1: now 84/84; `criteria-to-checks` diverged-by-design)_ |
 | AC-3.2 each validator writes a trace file | ✅ satisfied | `skills/<id>/skill_trace.json` present per attempt |
 | AC-3.3 validators deterministic | ✅ satisfied | double-run identical (live) |
 | AC-4.1 Critic & Advocate separate fresh-context subagents | ✅ satisfied | live job_0001/0007 consensus dirs (both roles, parallel dispatch) |
@@ -66,15 +72,16 @@ no validator touched). `phase-gates.md` §Consensus rule 4 documents the termina
    rounds happened to pass); the negative path is proven deterministically, not live.
 2. **F-2** (minor, parity-frozen): `criteria-to-checks` verifiable-verb regex omits some
    participle/verb forms; reasonably-phrased criteria can draw a non-blocking test-gate
-   `warn`. Fix needs a parity re-baseline; not undertaken.
+   `warn`. Fix needs a parity re-baseline; not undertaken at sign-off.
+   **Fixed post-acceptance under SC-1** (v1.1.0, diverged-by-design — see `DPPD.md` §9).
 3. **Live-drill evidence was deleted at teardown** (per the operator's "delete both"
    choice). The job_0001–0008 artifact trees and per-job execution reports were local-only
    and are gone; the live drills are no longer independently reproducible from retained
    files. What remains as retained evidence: this narrative, the acceptance-verification
-   **workflow journal** (`acceptance-workflow-journal.jsonl`, 10 agent results),
-   the still-existing remote PRs #1/#2 + branches, and the deterministic fixture suite that
-   covers the same verdict machinery. *(Lesson: preserve execution reports into the skill
-   repo BEFORE tearing down the scratch environment.)*
+   **workflow journal** (`acceptance-workflow-journal.jsonl`, 10 agent results), and the
+   deterministic fixture suite that covers the same verdict machinery. (The scratch repo,
+   its PRs, and its branches were deleted at teardown.) *(Lesson: preserve execution reports
+   into the skill repo BEFORE tearing down the scratch environment.)*
 4. **PR internal review gates are self-attested** — the reviewer/critic/advocate ran as
    subagents in the orchestration session, not as GitHub App reviewers; GitHub shows only
    author summary comments, not formal review artifacts.

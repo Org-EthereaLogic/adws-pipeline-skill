@@ -1,8 +1,8 @@
 # ADWS Pipeline — Live E2E Drill Evidence (WBS 6.1–6.4)
 
 **Date:** 2026-07-15 · **Skill under test:** `~/adws-pipeline-skill` (branch `fix/f1-planner-description-and-6x-acceptance`, based on main 4e8e00a)
-**Scratch target repo:** https://github.com/AJ-EthereaLogic-ai/adws-e2e-scratch (private)
-**Evidence trees:** `<scratch>/artifacts/job_20260715_000{1..8}/` — were gitignored/local-only and **were deleted at teardown**, so the live drills are no longer independently reproducible from retained files. Retained evidence: this doc, `acceptance-workflow-journal.jsonl` (the 10-agent acceptance verification), the still-existing remote PRs #1/#2, and the deterministic fixture suite. *(Lesson: copy execution reports into the skill repo before teardown.)*
+**Scratch target repo:** a private throwaway GitHub repo created for the drills (since deleted).
+**Evidence trees:** `<scratch>/artifacts/job_20260715_000{1..8}/` — were gitignored/local-only and **were deleted at teardown**, so the live drills are no longer independently reproducible from retained files. Retained evidence: this doc, `acceptance-workflow-journal.jsonl` (the 10-agent acceptance verification), and the deterministic fixture suite. The scratch repo and its PRs were deleted at teardown. *(Lesson: copy execution reports into the skill repo before teardown.)*
 
 ## What "live" means here (honest scope — read first)
 
@@ -41,7 +41,7 @@ artifacts + the SKILL.md rules.
 - All 7 phases ran with real agents; every gate passed (plan1 build1 test1 review1 document1 ship1 verify1).
 - Consensus (fresh-context Critic + Advocate, haiku) ran at **test** and **review**; unanimous pass, no dissent.
 - Grader (opus) graded the PR diff: 3/3 criteria satisfied.
-- **Live PR #1:** https://github.com/AJ-EthereaLogic-ai/adws-e2e-scratch/pull/1 (OPEN, `adws/job_20260715_0001/multiply` → `main`).
+- **PR #1:** opened during the drill on the throwaway scratch repo (since deleted) — `adws/job_20260715_0001/multiply` → `main`.
 - Commit `94c5986` is **SSH-signed** (`git log %G? = G`) — hooks/signing honored (NFR-5). Worktree isolation held (primary checkout clean; `origin/main` never got `multiply`, FR-8).
 - **Verdict: PROMOTE (with warnings), exit 10.** The lone warn is finding F-1 (below).
 
