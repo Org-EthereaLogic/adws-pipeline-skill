@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
-**Evidence:** `acceptance/DRILL_EVIDENCE.md` + live scratch repo `AJ-EthereaLogic-ai/adws-e2e-scratch` + committed `parity/execution-report-fixtures/`
+**Evidence:** `DRILL_EVIDENCE.md` + live scratch repo `AJ-EthereaLogic-ai/adws-e2e-scratch` + committed `parity/execution-report-fixtures/`
 **Method:** Live E2E drills (jobs 0001–0008) orchestrated per `SKILL.md`, followed by an
 independent per-user-story verification workflow (6 verifiers + 3 adversarial refuters +
 1 completeness critic), then remediation of the one blocking finding (F-1) and a live
@@ -71,7 +71,7 @@ no validator touched). `phase-gates.md` §Consensus rule 4 documents the termina
    choice). The job_0001–0008 artifact trees and per-job execution reports were local-only
    and are gone; the live drills are no longer independently reproducible from retained
    files. What remains as retained evidence: this narrative, the acceptance-verification
-   **workflow journal** (`acceptance/acceptance-workflow-journal.jsonl`, 10 agent results),
+   **workflow journal** (`acceptance-workflow-journal.jsonl`, 10 agent results),
    the still-existing remote PRs #1/#2 + branches, and the deterministic fixture suite that
    covers the same verdict machinery. *(Lesson: preserve execution reports into the skill
    repo BEFORE tearing down the scratch environment.)*
@@ -90,10 +90,8 @@ no validator touched). `phase-gates.md` §Consensus rule 4 documents the termina
 - **F-1 fixed** (PR #3): planner emits `description` per proposal → clean PROMOTE reachable, demonstrated live (job_0007). Parity preserved.
 - **Consensus gate added** (this branch): AC-4.2 now genuinely enforced by the report. Parity preserved.
 
-## Open (operator's environment / decisions, not code blockers)
+## Teardown
 
-- **The remote scratch repo `AJ-EthereaLogic-ai/adws-e2e-scratch` still exists** (verified
-  via `gh repo view`) — the earlier deletion did not take effect (the `gh` token lacks
-  `delete_repo`). Delete via GitHub web UI (Settings → Danger Zone) or
-  `gh auth refresh -h github.com -s delete_repo && gh repo delete AJ-EthereaLogic-ai/adws-e2e-scratch --yes`.
-  (Local worktrees + local scratch dir were already removed.)
+The throwaway scratch repo and all local worktrees/directories used for the live drills
+were removed after acceptance. The drill artifact trees were local-only and are not
+retained; the retained evidence is this record plus `acceptance-workflow-journal.jsonl`.
