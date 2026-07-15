@@ -12,3 +12,10 @@ npm-debug.log*
 # Stray temp/scratch files
 *.tmp
 *.tmp.json
+
+# Derived output of execution-report.js — regenerated on every fixture run
+# (generated_at/evidence_root are machine- and time-specific, so tracking
+# these caused perpetual noise diffs). run-tests.js regenerates and asserts
+# on these directly; nothing depends on them being committed.
+parity/execution-report-fixtures/*/artifacts/*/execution_report.json
+parity/execution-report-fixtures/*/artifacts/*/execution_report.md

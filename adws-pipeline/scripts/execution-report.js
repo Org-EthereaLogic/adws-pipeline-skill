@@ -124,9 +124,15 @@ function normalizeSkillVerdict(raw) {
   return 'unverified';
 }
 
-function collectSkillVerdicts(jobDir, allAttempts) {
+// NOTE: callers must pass the LATEST attempt of each phase only (not every
+// historical attempt). A failed attempt_1 that was superseded by a passing
+// attempt_2 must not permanently fail the terminal gate — the report
+// certifies the job's final recorded state, not its full retry history
+// (which remains in the evidence tree, and is surfaced separately via
+// buildWarnings' "required N attempts" note).
+function collectSkillVerdicts(jobDir, latestAttempts) {
   const rows = [];
-  for (const entry of allAttempts) {
+  for (const entry of latestAttempts) {
     const skillsDir = path.join(entry.dir, 'skills');
     let skillDirs;
     try {
@@ -153,9 +159,10 @@ function collectSkillVerdicts(jobDir, allAttempts) {
   return rows;
 }
 
-function collectConsensus(jobDir, allAttempts) {
+// Same latest-attempt-only contract as collectSkillVerdicts above.
+function collectConsensus(jobDir, latestAttempts) {
   const rows = [];
-  for (const entry of allAttempts) {
+  for (const entry of latestAttempts) {
     const consensusDir = path.join(entry.dir, 'consensus');
     const critic = safeReadJson(path.join(consensusDir, 'critic.json'));
     const advocate = safeReadJson(path.join(consensusDir, 'advocate.json'));
@@ -248,6 +255,93 @@ function evalVerifyStructural(phaseData) {
     value: `${passed}/${total}`,
     threshold: '100%',
     reason: status === GATE_STATUSES.FAIL ? `${total - passed} structural check(s) failed` : null,
+  };
+}
+
+// SKILL.md §4 step 3: adws-grader grades the shipped diff per acceptance
+// criterion; a grader fail is a drift BLOCK that must never be masked by a
+// narrative "completed" status (hard rule 8 — the report decides from
+// evidence, not narrative).
+function evalGraderVerdict(phaseData) {
+  const verifyEntry = phaseData.verify;
+  if (!verifyEntry) {
+    return {
+      key: 'grader_verdict',
+      label: 'AC-coverage grader verdict (verify phase)',
+      status: GATE_STATUSES.UNVERIFIED,
+      value: null,
+      threshold: 'pass',
+      reason: 'No verify-phase attempt recorded for this run',
+    };
+  }
+  const grader = safeReadJson(path.join(verifyEntry.dir, 'grader', 'grader_verdict.json'));
+  const raw = grader && typeof grader.rubric_result === 'string' ? grader.rubric_result.toLowerCase() : null;
+  if (raw !== 'pass' && raw !== 'warn' && raw !== 'fail') {
+    return {
+      key: 'grader_verdict',
+      label: 'AC-coverage grader verdict (verify phase)',
+      status: GATE_STATUSES.UNVERIFIED,
+      value: null,
+      threshold: 'pass',
+      reason: 'No grader_verdict.json recorded for the latest verify attempt',
+    };
+  }
+  const status = raw === 'pass' ? GATE_STATUSES.PASS : raw === 'warn' ? GATE_STATUSES.WARN : GATE_STATUSES.FAIL;
+  return {
+    key: 'grader_verdict',
+    label: 'AC-coverage grader verdict (verify phase)',
+    status,
+    value: raw,
+    threshold: 'pass',
+    reason:
+      status === GATE_STATUSES.FAIL
+        ? 'Grader verdict recorded fail — AC-coverage drift BLOCK (PR_DRIFT_SENTINEL_BLOCK)'
+        : status === GATE_STATUSES.WARN
+          ? 'Grader verdict recorded warn'
+          : null,
+  };
+}
+
+// SKILL.md §4 step 3: verify's drift-sentinel result. BLOCK is the same
+// drift-BLOCK condition the grader gate above guards — evaluated
+// independently since either evidence file can exist without the other.
+function evalDriftVerdict(phaseData) {
+  const verifyEntry = phaseData.verify;
+  if (!verifyEntry || !verifyEntry.output) {
+    return {
+      key: 'drift_verdict',
+      label: 'Verify-phase drift verdict',
+      status: GATE_STATUSES.UNVERIFIED,
+      value: null,
+      threshold: 'PASS',
+      reason: 'No verify-phase output recorded for this run',
+    };
+  }
+  const raw =
+    typeof verifyEntry.output.drift_verdict === 'string' ? verifyEntry.output.drift_verdict.toUpperCase() : null;
+  if (raw !== 'PASS' && raw !== 'WARN' && raw !== 'BLOCK') {
+    return {
+      key: 'drift_verdict',
+      label: 'Verify-phase drift verdict',
+      status: GATE_STATUSES.UNVERIFIED,
+      value: null,
+      threshold: 'PASS',
+      reason: 'verify phase_output.json has no recognized drift_verdict',
+    };
+  }
+  const status = raw === 'PASS' ? GATE_STATUSES.PASS : raw === 'WARN' ? GATE_STATUSES.WARN : GATE_STATUSES.FAIL;
+  return {
+    key: 'drift_verdict',
+    label: 'Verify-phase drift verdict',
+    status,
+    value: raw,
+    threshold: 'PASS',
+    reason:
+      status === GATE_STATUSES.FAIL
+        ? 'drift_verdict recorded BLOCK (PR_DRIFT_SENTINEL_BLOCK)'
+        : status === GATE_STATUSES.WARN
+          ? 'drift_verdict recorded WARN'
+          : null,
   };
 }
 
@@ -573,14 +667,12 @@ function buildReport(jobDir, options = {}) {
 
   // Collect every attempt of every phase (PHASE_NAMES order, attempts ascending).
   const phaseData = {}; // latest attempt per phase, as in normalize.js
-  const allAttempts = [];
   const phaseSummaries = [];
   const phaseAttemptRows = [];
   for (const phaseName of PHASE_NAMES) {
     const attempts = listAttempts(jobDir, phaseName);
     if (attempts.length === 0) continue;
     const entries = attempts.map((n) => readAttempt(jobDir, phaseName, n));
-    allAttempts.push(...entries);
     const latest = entries[entries.length - 1];
     phaseData[phaseName] = latest;
     phaseSummaries.push({
@@ -620,12 +712,19 @@ function buildReport(jobDir, options = {}) {
     }
   }
 
-  const skillVerdicts = collectSkillVerdicts(jobDir, allAttempts);
-  const consensus = collectConsensus(jobDir, allAttempts);
+  // Gates certify the job's FINAL recorded state: latest attempt per phase
+  // only. A superseded failed attempt stays in the evidence tree (and in
+  // phaseAttemptRows above) for audit, but must not re-fail a job that a
+  // later attempt already fixed.
+  const latestAttempts = PHASE_NAMES.filter((p) => phaseData[p]).map((p) => phaseData[p]);
+  const skillVerdicts = collectSkillVerdicts(jobDir, latestAttempts);
+  const consensus = collectConsensus(jobDir, latestAttempts);
 
   const gates = [
     evalPipelineCompletion(phaseData, finalStatus),
     evalVerifyStructural(phaseData),
+    evalGraderVerdict(phaseData),
+    evalDriftVerdict(phaseData),
     evalSkillsClean(skillVerdicts),
   ];
 

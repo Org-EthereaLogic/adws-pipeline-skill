@@ -1,0 +1,12 @@
+{
+  "phase": "build",
+  "attempt": 2,
+  "job_id": "job-2a6d9f",
+  "started_at": "2026-07-10T15:15:00Z",
+  "completed_at": "2026-07-10T15:27:00Z",
+  "agent": "builder",
+  "model_tier": "sonnet",
+  "tier_input": { "source": "retry-escalation", "value": "sonnet" },
+  "gate_result": "pass",
+  "failure_reason": null
+}

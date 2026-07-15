@@ -1,0 +1,11 @@
+{
+  "phase": "plan",
+  "attempt": 1,
+  "job_id": "job-5c9a2d",
+  "started_at": "2026-07-10T14:00:00Z",
+  "completed_at": "2026-07-10T14:12:00Z",
+  "agent": "planner",
+  "model_tier": "opus",
+  "gate_result": "pass",
+  "failure_reason": null
+}

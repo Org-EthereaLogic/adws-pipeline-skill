@@ -102,18 +102,24 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
 ### 3 — Ship (FR-9, dispatched to adws-shipper)
 
 Before any git action, run `ship-mode-select` and `patch-compose` validators; a `fail`
-blocks shipping. Then, from the worktree (all modes: stage explicit file paths from
-`build.files_changed` only; commit message references `task_id` and criteria):
+blocks shipping.
 
-- **pr**: push the job branch, `gh pr create --base {target_branch}` with title/body
-  from the contract; record the live PR URL in ship evidence (AC-5.1).
-- **direct_branch**: refuse if `target_branch` is protected (`main`, `master`,
-  `production`, `prod`, `release`, or `repo.default_branch`) — record `block_reason`,
-  leave no orphan commit (AC-5.2), and terminate `failed` /
-  `PROTECTED_BRANCH_BLOCKED` immediately (no retry — retrying cannot change the
-  contract; this reason maps to a RETRY verdict so the operator fixes and resubmits).
-  Otherwise push the branch.
-- **patch**: `git format-patch {target_branch}..HEAD` to
+- **direct_branch**: check `target_branch` FIRST, before any staging or commit — if it
+  is protected (`main`, `master`, `production`, `prod`, `release`, or
+  `repo.default_branch`), record `block_reason`, stage/commit/push nothing, and
+  terminate `failed` / `PROTECTED_BRANCH_BLOCKED` immediately (no retry — retrying
+  cannot change the contract; this reason maps to a RETRY verdict so the operator
+  fixes and resubmits). AC-5.2 requires no orphan commit, which a commit-then-check
+  order cannot satisfy. Otherwise, from the worktree: stage explicit file paths from
+  `build.files_changed` only, commit (message references `task_id` and criteria), then
+  push the branch.
+- **pr**: from the worktree, stage explicit file paths from `build.files_changed`
+  only, commit (message references `task_id` and criteria), push the job branch, then
+  `gh pr create --base {target_branch}` with title/body from the contract; record the
+  live PR URL in ship evidence (AC-5.1). `pr` mode routinely targets protected
+  branches — that's the point of a PR — so no protected-branch check applies here.
+- **patch**: from the worktree, stage explicit file paths from `build.files_changed`
+  only, commit, then `git format-patch {target_branch}..HEAD` to
   `artifacts/{jobId}/ship/attempt_{n}/`; NO push (AC-5.3).
 
 If `risk.requires_human_approval_before_ship` is true, show the user the diff summary
