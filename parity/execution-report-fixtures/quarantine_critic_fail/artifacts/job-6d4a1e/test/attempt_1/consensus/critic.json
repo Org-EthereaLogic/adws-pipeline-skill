@@ -1,0 +1,7 @@
+{
+  "role": "critic",
+  "verdict": "fail",
+  "dissent": null,
+  "model_tier": "opus",
+  "findings": "Test asserts multiply(2,2)==4 which passes for both a*b and a+b; coverage is vacuous and does not exercise the criterion."
+}

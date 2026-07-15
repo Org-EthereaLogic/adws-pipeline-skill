@@ -1,0 +1,9 @@
+{
+  "skill_id": "coverage-rubric",
+  "version": "1.2.0",
+  "started_at": "2026-07-10T16:02:00Z",
+  "completed_at": "2026-07-10T16:03:00Z",
+  "rubric_result": "pass",
+  "latency_ms": 4180,
+  "error": null
+}

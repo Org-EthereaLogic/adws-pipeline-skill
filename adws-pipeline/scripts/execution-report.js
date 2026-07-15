@@ -345,6 +345,62 @@ function evalDriftVerdict(phaseData) {
   };
 }
 
+// FR-7 / AC-4.2: the Critic/Advocate consensus recorded at the test and review
+// gates must gate the terminal verdict — an Advocate dissent (or Advocate fail,
+// which must carry a dissent) BLOCKS promotion, and a Critic fail means the gate
+// should never have passed. Deriving this from the consensus evidence (not from
+// run_manifest.failure_reason) is what makes hard rule 8 / FR-10 hold: a job whose
+// evidence records a dissent must not PROMOTE even if final_status says "completed".
+const CONSENSUS_LABEL = 'Critic/Advocate consensus — no dissent, no critic fail';
+function evalConsensus(consensusRows) {
+  const rows = consensusRows || [];
+  if (rows.length === 0) {
+    return {
+      key: 'consensus',
+      label: CONSENSUS_LABEL,
+      status: GATE_STATUSES.UNVERIFIED,
+      value: null,
+      threshold: '0 dissent, 0 critic fail',
+      reason: 'No consensus rounds recorded (the test and review gates require a Critic+Advocate round)',
+    };
+  }
+  const dissents = rows.filter((r) => typeof r.dissent === 'string' && r.dissent.trim().length > 0);
+  const advocateFails = rows.filter((r) => r.advocate === 'fail');
+  const criticFails = rows.filter((r) => r.critic === 'fail');
+  if (dissents.length > 0 || advocateFails.length > 0) {
+    const d = dissents[0] || advocateFails[0];
+    const where = `${d.phase}/attempt_${d.attempt}`;
+    const text = d.dissent ? `: ${d.dissent}` : ' (advocate returned fail)';
+    return {
+      key: 'consensus',
+      label: CONSENSUS_LABEL,
+      status: GATE_STATUSES.FAIL,
+      value: `${dissents.length} dissent(s), ${criticFails.length} critic fail(s)`,
+      threshold: '0 dissent, 0 critic fail',
+      reason: `Advocate dissent recorded in ${where} — blocks promotion (ADVOCATE_DISSENT / AC-4.2)${text}`,
+    };
+  }
+  if (criticFails.length > 0) {
+    const c = criticFails[0];
+    return {
+      key: 'consensus',
+      label: CONSENSUS_LABEL,
+      status: GATE_STATUSES.FAIL,
+      value: `${criticFails.length} critic fail(s)`,
+      threshold: '0 dissent, 0 critic fail',
+      reason: `Critic returned fail in ${c.phase}/attempt_${c.attempt} — consensus gate was not satisfied`,
+    };
+  }
+  return {
+    key: 'consensus',
+    label: CONSENSUS_LABEL,
+    status: GATE_STATUSES.PASS,
+    value: `${rows.length} round(s) clean`,
+    threshold: '0 dissent, 0 critic fail',
+    reason: null,
+  };
+}
+
 function evalSkillsClean(skillVerdicts) {
   const rows = skillVerdicts || [];
   if (rows.length === 0) {
@@ -725,6 +781,7 @@ function buildReport(jobDir, options = {}) {
     evalVerifyStructural(phaseData),
     evalGraderVerdict(phaseData),
     evalDriftVerdict(phaseData),
+    evalConsensus(consensus),
     evalSkillsClean(skillVerdicts),
   ];
 

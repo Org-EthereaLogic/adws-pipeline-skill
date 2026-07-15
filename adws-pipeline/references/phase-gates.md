@@ -69,6 +69,13 @@ At the test and review gates, after the phase agent (Architect) produces its out
    text. A `fail` with null `dissent` is malformed evidence: re-dispatch the Advocate
    once; if still malformed, treat the findings text as the dissent and proceed per
    rule 2.
+4. **Terminal enforcement (defense in depth):** `execution-report.js` includes a
+   `consensus` gate that reads the recorded `consensus/{critic,advocate}.json` of the
+   latest attempt of each phase and evaluates to `fail` on any Advocate dissent (or
+   Advocate `fail`) or Critic `fail`. Because a failed gate on a `completed` job maps to
+   QUARANTINE, a job whose evidence records a dissent CANNOT promote even if
+   `run_manifest.final_status` was (incorrectly) set to `completed` — the verdict is
+   derived from the consensus evidence, not the narrative status (hard rule 8 / FR-10).
 
 ## Failure-reason classes (port of `phases.js` reason sets)
 
