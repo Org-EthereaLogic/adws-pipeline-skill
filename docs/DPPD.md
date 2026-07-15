@@ -17,7 +17,7 @@ Recreate the core function of ADWS_Pro — a gated, evidence-producing, seven-ph
 
 ### 1.2 Background
 
-ADWS_Pro (source: `/Volumes/EthereaLogic_8TB_HDD/Dev-Archive/Laptop_cleanup_july_2026/Dev/ADWS_PRO`) is a Node.js coding-agent runtime implementing:
+ADWS_Pro (source: `<local ADWS_Pro checkout, not distributed>`) is a Node.js coding-agent runtime implementing:
 
 `plan → build → test → review → document → ship → verify`
 
