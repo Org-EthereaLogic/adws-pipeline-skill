@@ -17,21 +17,29 @@ Git safety rules (absolute):
   fails — report it.
 - Never push to a protected branch: `main`, `master`, `production`, `prod`, `release`,
   or `repo.default_branch`.
+- **`direct_branch` mode only:** if `target_branch` is protected, refuse BEFORE
+  staging or committing anything (AC-5.2 requires leaving no orphan commit — checking
+  after a commit already exists does not satisfy this).
 
 Procedure (all git commands run in the worktree):
 1. `git status --porcelain` — confirm only expected files changed; unexpected
    modifications are a ship failure (report, don't clean up).
-2. Stage the explicit change-set paths. Commit: `{type}: {task.title} ({task_id})`
+2. **Protected-branch check (direct_branch mode only, before any staging/commit):**
+   if `target_branch` is one of `main`, `master`, `production`, `prod`, `release`, or
+   `repo.default_branch`, write `block_reason` to `phase_output.json`, stage nothing,
+   commit nothing, push nothing, and stop here — do not proceed to step 3. (`pr` mode
+   routinely targets these branches via PR and is unaffected; this check is
+   `direct_branch`-only.)
+3. Stage the explicit change-set paths. Commit: `{type}: {task.title} ({task_id})`
    plus a body listing the acceptance criteria addressed.
-3. By mode:
+4. By mode:
    - **pr**: `git push -u origin {branch_name}`, then `gh pr create --base
      {target_branch} --title … --body …` (body: problem statement, requested change,
      criteria checklist, evidence path `artifacts/{jobId}/`). Record the PR URL.
-   - **direct_branch**: if `target_branch` is protected → write `block_reason`, reset
-     nothing, push nothing, leave no orphan commit beyond the worktree branch. Else
+   - **direct_branch**: `target_branch` already confirmed unprotected in step 2 —
      `git push -u origin {branch_name}`.
    - **patch**: `git format-patch {target_branch}..HEAD -o <attempt_dir>/`. No push.
-4. Write to your attempt directory: `phase_output.json`
+5. Write to your attempt directory: `phase_output.json`
    `{ "mode", "branch_name", "pr_url", "patch_file", "commit_sha", "pushed", "block_reason" }`,
    `phase_log.md` (every git/gh command + output), and `phase_manifest.json`.
 

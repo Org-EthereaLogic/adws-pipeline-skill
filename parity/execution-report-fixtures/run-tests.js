@@ -56,6 +56,40 @@ const CASES = [
     // never get silently folded into "N pass".
     expectGate: { key: 'skills_clean', result: 'unverified' },
   },
+  {
+    name: 'quarantine_grader_fail',
+    jobId: 'job-5c9a2d',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression: a `completed` job whose grader_verdict.json recorded
+    // rubric_result=fail must never report clean PROMOTE — the report
+    // decides from evidence, not the narrative final_status (SKILL.md hard
+    // rule 8, FR-6, FR-10).
+    expectGate: { key: 'grader_verdict', result: 'fail' },
+  },
+  {
+    name: 'quarantine_drift_block',
+    jobId: 'job-8e1f4a',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression: a `completed` job whose verify phase_output.json recorded
+    // drift_verdict=BLOCK must never report clean PROMOTE.
+    expectGate: { key: 'drift_verdict', result: 'fail' },
+  },
+  {
+    name: 'promote_retry_recovered',
+    jobId: 'job-2a6d9f',
+    decision: 'PROMOTE',
+    warn_flag: false,
+    exit_code: 0,
+    // Regression: build attempt_1's skill trace failed, attempt_2 (the one
+    // that actually shipped) passed. The terminal report must certify the
+    // job's final recorded state, not permanently fail on a superseded
+    // attempt — a successful retry must be able to reach clean PROMOTE.
+    expectGate: { key: 'skills_clean', result: 'pass' },
+  },
 ];
 
 function runCli(jobDir) {
