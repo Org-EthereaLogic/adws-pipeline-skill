@@ -1,0 +1,24 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The endpoint keeps returning cached JSON after a failover"
+    ]
+  },
+  "note": "SC-1/F-2 — 'returning' (-ing participle) is now verifiable; vague under v1.0.0",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 1,
+    "verifiable_count": 1,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The endpoint keeps returning cached JSON after a failover",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

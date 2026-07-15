@@ -18,6 +18,7 @@ Reference files (read when needed, not all upfront):
 Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/validators/*.js` — 9 deterministic validators; CLI: `node <script> <input.json|->` → JSON verdict on stdout
 - `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2
+- `scripts/entropy-gate.js` — X-2 stability gate; CLI: `node scripts/entropy-gate.js artifacts/{jobId}/entropy_history.jsonl` → `{action: proceed|escalate|halt}`
 
 ## Hard rules (never violate)
 
@@ -67,6 +68,16 @@ pipeline's code changes in the primary checkout.
 
 For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
 
+0. **Stability gate** (X-2 regulator): if `artifacts/{jobId}/entropy_history.jsonl`
+   exists, run `node scripts/entropy-gate.js` on it BEFORE dispatching.
+   `proceed` → continue (record `watch: true` in the attempt manifest if set).
+   `escalate` → raise this phase agent's model one tier for this attempt
+   (`tier_input: entropy-gate`). `halt` → terminate `failed` /
+   `STABILITY_BUDGET_EXCEEDED` (RETRY verdict class). Exit 3 (unreadable or corrupt
+   history) → evidence-integrity problem: do not proceed; surface to the operator
+   once; unresolved → terminate `failed` / `MISSING_UPSTREAM_ARTIFACT` (quarantine
+   class). Record the gate output in the attempt's `phase_manifest.json` as
+   `stability_gate`.
 1. **Dispatch** the phase agent (`adws-planner` … `adws-verifier`) via the Agent tool
    at its current model tier. Give it: the contract path, the worktree path, its
    attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
@@ -98,6 +109,14 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    - Retry budgets: plan 1, build 1, test 2, review 1, document 1, ship 1, verify 1.
 5. After review gate passes: recompute tiers from the `review-risk-assess` output's
    `risk_level` for remaining phases; record in `run_manifest.model_tiers`.
+6. **Parse-failure accounting** (X-2): count malformed structured outputs during the
+   attempt (unparseable `phase_output.json`/consensus files, validator CLI exit 3 on
+   agent-produced input, re-prompts for broken JSON). Append one line
+   `{ "phase", "attempt", "parse_failures", "recorded_at" }` to
+   `artifacts/{jobId}/entropy_history.jsonl` — starting from the FIRST attempt with
+   ≥ 1 failure, and for every attempt thereafter (zeros included, so recovery decays
+   the signal). Never record a leading zero-only prefix, and never rewrite prior
+   lines (append-only).
 
 ### 3 — Ship (FR-9, dispatched to adws-shipper)
 
@@ -158,9 +177,10 @@ from the original reason set; no gate in this skill currently emits it),
 Quarantine-class: `CREDENTIAL_FAILURE`, `MISSING_UPSTREAM_ARTIFACT`,
 `ADVOCATE_DISSENT`, `PLAN_COHERENCE_BELOW_THRESHOLD`, `OPERATOR_CANCEL`, second
 `PR_DRIFT_SENTINEL_BLOCK`. `PROTECTED_BRANCH_BLOCKED` is no-retry but NOT
-quarantine-class — it maps to a RETRY verdict. Everything else terminating the job
-(budget exhaustion → `{PHASE}_GATE_FAILURE`, or a second test rewind →
-`TEST_GATE_FAILURE`) → RETRY verdict.
+quarantine-class — it maps to a RETRY verdict. `STABILITY_BUDGET_EXCEEDED` (entropy
+gate `halt`) likewise terminates immediately but maps to RETRY. Everything else
+terminating the job (budget exhaustion → `{PHASE}_GATE_FAILURE`, or a second test
+rewind → `TEST_GATE_FAILURE`) → RETRY verdict.
 
 ## Validator → phase map
 

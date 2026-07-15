@@ -1,0 +1,30 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "All unit tests pass",
+      "CI passes on every push to the branch"
+    ]
+  },
+  "note": "SC-1/F-2 — bare 'pass' and third-person 'passes' are now verifiable; the verb was missing entirely in v1.0.0",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 2,
+    "verifiable_count": 2,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "All unit tests pass",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "CI passes on every push to the branch",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

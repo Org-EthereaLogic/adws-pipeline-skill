@@ -15,7 +15,7 @@ Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
 | 2.1 | `adws-pipeline/SKILL.md` — 172 lines (NFR-3 < 500 ✅) | ✅ |
 | 2.2–2.3 | `references/task-contract.md`, `phase-gates.md`, `artifact-layout.md` | ✅ |
 | 3.1–3.2 | 9 validator ports in `adws-pipeline/scripts/validators/` — standalone Node ≥ 20, zero external deps (NFR-4 ✅), CLI wrappers, input-shape headers. drift-sentinel inlines UMIF math (both canonical + legacy modes) | ✅ |
-| 3.3 | Parity suite `parity/run-parity.js` — **79/79 fixtures identical** to originals, 79/79 deterministic (AC-3.1, AC-3.3 ✅). Run it to regenerate `parity/PARITY_REPORT.md` (gitignored, not committed — see "Review gate — independent audit" below) | ✅ |
+| 3.3 | Parity suite `parity/run-parity.js` — 79/79 fixtures identical to originals at acceptance; **now 84/84 under SC-1** (8 packs original-parity, `criteria-to-checks` diverged-by-design v1.1.0 against its own frozen baseline — AC-3.1 narrowed per DPPD §9). AC-3.3 determinism holds for all 9. Run it to regenerate `parity/PARITY_REPORT.md` (gitignored, not committed) | ✅ |
 | 4.1–4.3 | 10 agents in `.claude/agents/`: 7 phase agents + critic + advocate + grader (pr.drift_sentinel.spec recreation) | ✅ |
 | 5.1 | Ship procedure (SKILL.md §3 + adws-shipper): explicit-path staging, no hook bypass (NFR-5), 3 output modes, protected-branch refusal | ✅ (drill pending, see gaps) |
 | 5.2 | `scripts/execution-report.js` — verdict matrix + exit codes (0/10/1/2/3) ported from `execution-report/decide.js`; 4 verdict fixtures + CLI-error path all pass, deterministic | ✅ |
@@ -170,3 +170,31 @@ A parallel independent agent audited the merged PR #1 state and disputed the "cl
 All three fixes verified by direct reproduction against the fixed code (not just
 fixture re-runs): grader-fail and drift-BLOCK synthetic jobs now report `QUARANTINE`/
 exit 2; the retry-recovery synthetic job now reports `PROMOTE`/exit 0.
+
+## SC-1 scope change (2026-07-15, post-acceptance) — F-2 fixed, X-2 ported, X-3 still deferred
+
+Per DPPD §9 (v1.1). Branch `feat/sc1-f2-verb-regex-x2-entropy-regulator`.
+
+- **SC-1.a / F-2:** `criteria-to-checks` verb regex extended (-ing participles for all
+  covered verbs + "pass"), version 1.0.0 → 1.1.0. Pack marked **diverged-by-design** in
+  the parity suite (`DIVERGED_PACKS`): verified against its own frozen v1.1.0 baseline,
+  never the original; the other 8 packs remain original-parity. Old 9 fixtures re-froze
+  byte-identically (strict-superset change, no verdict flips); 5 new fixtures cover the
+  fixed forms and warn boundaries. Suite: 84/84 in both live-original and
+  frozen-fallback modes.
+- **SC-1.b / X-2:** entropy regulator ported as `scripts/entropy-gate.js` (reuses the
+  ported drift-sentinel canonical band math, mode pinned to canonical). Signal =
+  parse-failure counts per attempt in append-only `entropy_history.jsonl`, recording
+  starting at the first failing attempt (zero-anchored histories degenerate to COLLAPSE
+  under max-normalization — verified numerically). Bands: SAFE/WATCH proceed, WARN
+  escalate one tier, COLLAPSE halt → `STABILITY_BUDGET_EXCEEDED` (RETRY class; no
+  execution-report change needed — verified by synthetic job). Fixtures 7/7 incl. a
+  recording-rule-compliant COLLAPSE case.
+- **SC-1.c / X-3:** remains deferred — no cross-provider API keys; R-3 stays open.
+- **Review gate (dogfooded):** reviewer approved (low risk), critic PASS, advocate PASS
+  (no dissent). Substantive findings fixed pre-commit: canonical-mode pinning in
+  entropy-gate.js, exit-3 orchestrator rule in SKILL.md, `stability_gate`/`entropy-gate`
+  added to the phase_manifest shape, compliant COLLAPSE fixture, bundled-scripts
+  inventory, DPPD §9 cross-references, this file's stale 79/79 wording.
+- **Known limitation (accepted):** `run-parity.js --freeze` still requires
+  `ADWS_PRO_source/` even when re-freezing only the diverged pack.
