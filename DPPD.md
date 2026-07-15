@@ -1,7 +1,7 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.0
+**Version:** 1.1 (SC-1 scope change §9, 2026-07-15)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Draft — pending approval
@@ -208,3 +208,43 @@ Single developer (Anthony) + Claude agent execution. Sequencing follows the WBS 
 - **Phase level:** each phase agent dry-run against a fixture contract; gate behavior per AC-2.x.
 - **System level:** one end-to-end job on a sample repository per output mode (`pr`, `direct_branch`, `patch`); success criteria in §1.3.
 - **Acceptance:** all user-story ACs pass; DPPD §1.3 criteria demonstrated; sign-off recorded in the project folder.
+
+---
+
+## 9. Scope Change SC-1 (2026-07-15, post-acceptance)
+
+Approved per R-6 ("anything else requires a scope change to this document"). Amends
+§2 (scope) and §4/AC-3.1 (parity guarantee). Version: DPPD 1.1. The §1.3 criterion
+"All 10 ported validators produce verdicts identical to the originals" is likewise
+narrowed per SC-1.a below.
+
+### SC-1.a — F-2 fix: `criteria.to_checks` verb-regex gaps (validator divergence)
+
+Acceptance finding F-2 (acceptance/DRILL_EVIDENCE.md): the verifiable-verb regex
+omitted `-ing` participles for most verbs and the verb "pass", flagging
+reasonably-phrased criteria as vague. **Decision:** fix and deliberately diverge from
+the ADWS_Pro original for this one pack. The ported validator is version-bumped
+(1.0.0 → 1.1.0), and the parity suite marks the pack **diverged-by-design**: it is
+verified against its own frozen v1.1.0 baseline, never against the original. AC-3.1
+("verdicts identical to the originals") is hereby narrowed to the 8 remaining
+original-parity packs. NFR-1 (determinism) still applies to all 9.
+
+### SC-1.b — X-2 (entropy regulator): moved IN scope, skill-native form
+
+§2.2/X-2 deferral lifted for the regulator's portable core. The operational signal is
+JSON parse-failure counts (per §2.2 note), recorded per phase attempt in an
+append-only `entropy_history.jsonl`; band math reuses the already-ported
+`drift-sentinel` canonical gate via a new `scripts/entropy-gate.js`. Band → action:
+SAFE/WATCH → proceed (WATCH recorded), WARN → escalate the phase agent one model tier
+(extends FR-12), COLLAPSE → halt the job with `STABILITY_BUDGET_EXCEEDED` (RETRY
+verdict class). Recording starts at the first attempt with ≥ 1 parse failure and
+appends every subsequent attempt (zeros included) — the canonical normalization makes
+a zero-anchored rising history degenerate to COLLAPSE, so a leading zero-only prefix
+is never recorded. The original multi-call mid-response abort (Trinity loop) remains
+out of scope.
+
+### SC-1.c — X-3 (cross-provider Trinity): remains DEFERRED
+
+Considered and not adopted: no OpenAI/Gemini API keys are available in the operating
+environment. Risk R-3 (single-provider consensus) remains open and accepted. Revisit
+when cross-provider credentials exist.

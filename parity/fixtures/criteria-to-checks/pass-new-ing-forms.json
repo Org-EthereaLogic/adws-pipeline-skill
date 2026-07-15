@@ -1,0 +1,30 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The generator is producing one JSON artifact per module",
+      "Sorting the table by name happens without a page refresh"
+    ]
+  },
+  "note": "SC-1/F-2 — 'producing' and 'sorting' (-ing participles) are now verifiable; vague under v1.0.0",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 2,
+    "verifiable_count": 2,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The generator is producing one JSON artifact per module",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "Sorting the table by name happens without a page refresh",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

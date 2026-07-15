@@ -1,10 +1,13 @@
 // INPUT: { acceptance_criteria: [string] }
 // USAGE: node criteria-to-checks.js <input.json | ->   → JSON verdict on stdout (rubric_result: pass|warn|fail)
+// NOTE: v1.1.0 deliberately diverges from the ADWS_Pro original per scope change SC-1
+//       (finding F-2: verifiable-verb regex now covers -ing participles and "pass");
+//       v1.0.0 = exact original parity, v1.1.0 = F-2 regex fix.
 'use strict';
 
 const manifest = {
   skill_id: 'criteria.to_checks',
-  version: '1.0.0',
+  version: '1.1.0',
   phase_affinity: ['test'],
   rubric: {
     pass: 'All acceptance criteria are present, countable, and specific enough to map to test checks',
@@ -19,9 +22,10 @@ function isVerifiable(criterion) {
   const s = criterion.trim();
   if (s.length < 10) return false;
   // Criteria are verifiable if they contain outcome or observable-action language.
-  // The pattern covers base verbs, third-person (-s/-es), past participles (-ed),
-  // and present participles (-ing) for the most common acceptance-criteria verbs.
-  const outcomeWords = /\b(must|should|shall|does not|no longer|correctly|successfully|return(?:s|ed)?|produce[sd]?|output[sd]?|read(?:s)?|render(?:s|ed)?|display(?:s|ed)?|show(?:s|n|ed)?|open(?:s|ed)?|contain(?:s|ed|ing)?|include[sd]?|load(?:s|ed)?|defin(?:es?|ed|ing)|link(?:s|ed)?|ha(?:s|ve|d)|fire[sd]?|emit(?:s|ted)?|send(?:s)?|receive[sd]?|creat(?:es?|ed|ing)|delet(?:es?|ed|ing)|updat(?:es?|ed|ing)|validat(?:es?|ed|ing)|reject(?:s|ed)?|accept(?:s|ed)?|trigger(?:s|ed)?|navigat(?:es?|ed|ing)|redirect(?:s|ed)?|click(?:s|ed|ing)|hover(?:s|ed|ing)|switch(?:es|ed)?|sort(?:s|ed)?|highlight(?:s|ed)?|print(?:s|ed)?|exit(?:s|ed)?|remain(?:s|ed)?|visible|respond(?:s|ed)?|match(?:es|ed)?|equal(?:s|ed)?|throw(?:s|n)?|appear(?:s|ed)?|start(?:s|ed)?|run(?:s)?|execut(?:es?|ed|ing)|complet(?:es?|ed)|set(?:s)?|prevent(?:s|ed)?|support(?:s|ed)?|enabl(?:es?|ed)|disabl(?:es?|ed)|reference[sd]?|provid(?:es?|ed|ing)|handle[sd]?|store[sd]?|comput(?:es?|ed|ing)|repeat(?:s|ed)?|decrement(?:s|ed)?|increment(?:s|ed)?)\b/i;
+  // For every verb the pattern covers the base form plus its third-person (-s/-es),
+  // past/past-participle (-ed/-n), and present-participle (-ing) forms (SC-1/F-2:
+  // v1.0.0 omitted the -ing form for most verbs and omitted "pass" entirely).
+  const outcomeWords = /\b(must|should|shall|does not|no longer|correctly|successfully|return(?:s|ed|ing)?|produc(?:es?|ed|ing)|outputt?(?:s|ed|ing)?|read(?:s|ing)?|render(?:s|ed|ing)?|display(?:s|ed|ing)?|show(?:s|n|ed|ing)?|open(?:s|ed|ing)?|contain(?:s|ed|ing)?|includ(?:es?|ed|ing)|load(?:s|ed|ing)?|defin(?:es?|ed|ing)|link(?:s|ed|ing)?|ha(?:s|ve|d)|fir(?:es?|ed|ing)|emit(?:s|ted|ting)?|send(?:s|ing)?|receiv(?:es?|ed|ing)|creat(?:es?|ed|ing)|delet(?:es?|ed|ing)|updat(?:es?|ed|ing)|validat(?:es?|ed|ing)|reject(?:s|ed|ing)?|accept(?:s|ed|ing)?|trigger(?:s|ed|ing)?|navigat(?:es?|ed|ing)|redirect(?:s|ed|ing)?|click(?:s|ed|ing)|hover(?:s|ed|ing)|switch(?:es|ed|ing)?|sort(?:s|ed|ing)?|highlight(?:s|ed|ing)?|print(?:s|ed|ing)?|exit(?:s|ed|ing)?|remain(?:s|ed|ing)?|visible|respond(?:s|ed|ing)?|match(?:es|ed|ing)?|equal(?:s|ed|ing)?|pass(?:es|ed|ing)?|throw(?:s|n|ing)?|appear(?:s|ed|ing)?|start(?:s|ed|ing)?|runn?(?:s|ing)?|execut(?:es?|ed|ing)|complet(?:es?|ed|ing)|sett?(?:s|ing)?|prevent(?:s|ed|ing)?|support(?:s|ed|ing)?|enabl(?:es?|ed|ing)|disabl(?:es?|ed|ing)|referenc(?:es?|ed|ing)|provid(?:es?|ed|ing)|handl(?:es?|ed|ing)|stor(?:es?|ed|ing)|comput(?:es?|ed|ing)|repeat(?:s|ed|ing)?|decrement(?:s|ed|ing)?|increment(?:s|ed|ing)?)\b/i;
   return outcomeWords.test(s);
 }
 

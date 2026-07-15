@@ -1,7 +1,9 @@
 'use strict';
 // Parity harness: proves the ported validator scripts in
 // adws-pipeline/scripts/validators/ produce results identical to the original
-// ADWS_Pro skill packs in ADWS_PRO_source/src/skills/.
+// ADWS_Pro skill packs in ADWS_PRO_source/src/skills/ — except for packs
+// listed in DIVERGED_PACKS below, which deliberately diverge under an approved
+// scope change and are verified against their frozen `expected` baselines only.
 //
 // For every fixture in parity/fixtures/<pack>/*.json:
 //   1. run the ORIGINAL pack's execute(input) in a fresh child process
@@ -50,6 +52,16 @@ const EXEC_ONE = path.join(PARITY_DIR, 'exec-one.js');
 const ORIGINAL_DIR = path.join(ROOT, 'ADWS_PRO_source', 'src', 'skills');
 const PORTED_DIR = path.join(ROOT, 'adws-pipeline', 'scripts', 'validators');
 const REPORT_PATH = path.join(PARITY_DIR, 'PARITY_REPORT.md');
+
+// Packs that DELIBERATELY diverge from the ADWS_Pro original (approved scope
+// changes). For these packs the ported script is the reference implementation:
+// verification compares the port ONLY against each fixture's frozen `expected`
+// baseline (never against the live original, even when ADWS_PRO_source/ is
+// present), and --freeze captures the PORT's output instead of the original's.
+// Map value = 'scope-change id, ported version' shown in the report.
+const DIVERGED_PACKS = {
+  'criteria-to-checks': 'SC-1, v1.1.0',
+};
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.
@@ -164,6 +176,7 @@ function main() {
   const nfr4 = [];
 
   for (const pack of packs) {
+    const diverged = Object.prototype.hasOwnProperty.call(DIVERGED_PACKS, pack);
     const originalPath = path.join(ORIGINAL_DIR, pack, pack + '.js');
     const portedPath = path.join(PORTED_DIR, pack + '.js');
     const fixtureFiles = fs
@@ -177,26 +190,29 @@ function main() {
       const caseName = file.replace(/\.json$/, '');
       total += 1;
 
-      const orig = hasOriginal ? runOne(originalPath, fixturePath, fixture.env) : null;
+      const orig = hasOriginal && !diverged ? runOne(originalPath, fixturePath, fixture.env) : null;
 
       if (freeze) {
-        if (orig.error) {
+        // Diverged packs freeze from the PORT (the reference implementation
+        // for the approved scope change); everything else from the original.
+        const ref = diverged ? runOne(portedPath, fixturePath, fixture.env) : orig;
+        if (ref.error) {
           mismatches += 1;
-          console.log('FAIL ' + pack + '/' + caseName + '  freeze: original errored: ' + orig.error);
+          console.log('FAIL ' + pack + '/' + caseName + '  freeze: ' + (diverged ? 'port' : 'original') + ' errored: ' + ref.error);
           continue;
         }
-        fixture.expected = orig.result;
+        fixture.expected = ref.result;
         fs.writeFileSync(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
         frozen += 1;
         matches += 1;
-        console.log('FROZE ' + pack + '/' + caseName);
+        console.log('FROZE ' + pack + '/' + caseName + (diverged ? '  (from port — diverged-by-design, ' + DIVERGED_PACKS[pack] + ')' : ''));
         continue;
       }
 
       const port1 = runOne(portedPath, fixturePath, fixture.env);
       const port2 = runOne(portedPath, fixturePath, fixture.env);
 
-      const baseline = hasOriginal
+      const baseline = hasOriginal && !diverged
         ? { result: orig.result, error: orig.error }
         : {
             result: Object.prototype.hasOwnProperty.call(fixture, 'expected') ? fixture.expected : null,
@@ -207,6 +223,7 @@ function main() {
 
       const row = {
         pack,
+        diverged,
         caseName,
         env: fixture.env ? Object.entries(fixture.env).map(([k, v]) => k + '=' + v).join(' ') : '',
         origVerdict: baseline.result ? baseline.result.rubric_result : 'ERROR',
@@ -230,7 +247,7 @@ function main() {
       rows.push(row);
       const flag = row.match && row.deterministic ? 'OK  ' : 'FAIL';
       console.log(
-        flag + ' ' + pack + '/' + caseName + '  orig=' + row.origVerdict + ' port=' + row.portVerdict +
+        flag + ' ' + pack + '/' + caseName + '  ' + (diverged ? 'frozen=' : 'orig=') + row.origVerdict + ' port=' + row.portVerdict +
           (row.diff ? '  diff: ' + row.diff : '')
       );
     }
@@ -267,11 +284,25 @@ function main() {
       ? '**Baseline: live original.** `ADWS_PRO_source/` was present on this machine, so every fixture ran against the actual original `execute()` in a fresh child process.'
       : '**Baseline: frozen `expected`.** `ADWS_PRO_source/` (gitignored, not distributed in this repo) was not present, so every fixture compared the ported script against the `expected` field frozen into the fixture JSON via `node parity/run-parity.js --freeze` — this is what a fresh clone or CI reproduces without the original source.'
   );
+  const divergedPacks = packs.filter((p) => Object.prototype.hasOwnProperty.call(DIVERGED_PACKS, p));
+  if (divergedPacks.length) {
+    lines.push('');
+    lines.push(
+      '**Exception — diverged-by-design packs** (' +
+        divergedPacks.map((p) => '`' + p + '`: ' + DIVERGED_PACKS[p]).join('; ') +
+        '): these implement approved scope changes, so they are NOT original-parity packs. Their fixtures always compare the port against the frozen `expected` baseline (captured from the port via `--freeze`), never against the live original.'
+    );
+  }
   lines.push('');
   for (const pack of packs) {
-    lines.push('## ' + pack);
+    const packDiverged = Object.prototype.hasOwnProperty.call(DIVERGED_PACKS, pack);
+    lines.push('## ' + pack + (packDiverged ? ' — diverged-by-design (' + DIVERGED_PACKS[pack] + ')' : ''));
     lines.push('');
-    lines.push('| Fixture | Env | Original verdict | Ported verdict | Full-object match | Deterministic |');
+    if (packDiverged) {
+      lines.push('Baseline for this pack is the frozen `expected` field (port is the reference), not the ADWS_Pro original.');
+      lines.push('');
+    }
+    lines.push('| Fixture | Env | ' + (packDiverged ? 'Frozen baseline verdict' : 'Original verdict') + ' | Ported verdict | Full-object match | Deterministic |');
     lines.push('|---|---|---|---|---|---|');
     for (const row of rows.filter((r) => r.pack === pack)) {
       lines.push(
@@ -295,13 +326,28 @@ function main() {
   lines.push('## Summary');
   lines.push('');
   lines.push('- Total fixtures: ' + total);
+  lines.push(
+    '- Packs: ' + (packs.length - divergedPacks.length) + ' original-parity, ' + divergedPacks.length +
+      ' diverged-by-design' + (divergedPacks.length ? ' (' + divergedPacks.map((p) => p + ': ' + DIVERGED_PACKS[p]).join('; ') + ')' : '')
+  );
   lines.push('- Full-object matches (and deterministic): ' + matches);
   lines.push('- Mismatches/failures (incl. NFR-4): ' + mismatches);
-  lines.push('- Result: ' + (mismatches === 0 ? 'ALL ' + total + '/' + total + ' FIXTURES IDENTICAL — parity holds.' : 'PARITY FAILED'));
+  lines.push(
+    '- Result: ' +
+      (mismatches === 0
+        ? 'ALL ' + total + '/' + total + ' FIXTURES IDENTICAL — original parity holds' +
+          (divergedPacks.length ? '; diverged-by-design packs match their frozen baselines.' : '.')
+        : 'PARITY FAILED')
+  );
   lines.push('');
   fs.writeFileSync(REPORT_PATH, lines.join('\n'));
 
-  console.log('\nSummary: ' + matches + '/' + total + ' fixtures identical, ' + mismatches + ' failures.');
+  console.log(
+    '\nSummary: ' + matches + '/' + total + ' fixtures identical, ' + mismatches + ' failures.' +
+      (divergedPacks.length
+        ? ' Diverged-by-design: ' + divergedPacks.map((p) => p + ' (' + DIVERGED_PACKS[p] + ')').join(', ') + ' — verified against frozen baseline.'
+        : '')
+  );
   console.log('Report: ' + REPORT_PATH);
   process.exit(mismatches === 0 ? 0 : 1);
 }
