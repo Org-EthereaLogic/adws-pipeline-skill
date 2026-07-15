@@ -21,5 +21,17 @@
       "documentation_summary": ""
     }
   },
-  "note": "tests/skills/document-coverage-map.test.js — \"returns warn when docs exist but no changelog entry was written\" (coverage 0.3)"
+  "note": "tests/skills/document-coverage-map.test.js — \"returns warn when docs exist but no changelog entry was written\" (coverage 0.3)",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed_count": 1,
+    "documented_paths_count": 1,
+    "changelog_present": false,
+    "summary_present": false,
+    "acceptance_criteria_count": 0,
+    "coverage_ratio": 0.3,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

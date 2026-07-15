@@ -1,4 +1,14 @@
 {
   "input": {},
-  "note": "Authored — missing build_output entirely: treated as 0 files, high risk, fail"
+  "note": "Authored — missing build_output entirely: treated as 0 files, high risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

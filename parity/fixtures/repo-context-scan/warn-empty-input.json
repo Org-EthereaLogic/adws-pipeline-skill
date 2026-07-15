@@ -1,4 +1,16 @@
 {
   "input": {},
-  "note": "Authored — missing plan_output/policy: zero proposals, underspecified, warn"
+  "note": "Authored — missing plan_output/policy: zero proposals, underspecified, warn",
+  "expected": {
+    "rubric_result": "warn",
+    "files_proposed": 0,
+    "directories_touched": 0,
+    "grouped_files": {},
+    "policy_violations": [],
+    "underspecified": true,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

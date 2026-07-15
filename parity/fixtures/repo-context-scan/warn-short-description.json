@@ -15,5 +15,24 @@
       ]
     }
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when proposals have short descriptions\""
+  "note": "tests/skill-modules.test.js — \"returns warn when proposals have short descriptions\"",
+  "expected": {
+    "rubric_result": "warn",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

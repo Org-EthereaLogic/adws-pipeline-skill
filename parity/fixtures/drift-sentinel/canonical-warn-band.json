@@ -9,5 +9,24 @@
   "env": {
     "ADWS_UMIF_CANONICAL": "on"
   },
-  "note": "Authored — WARN band (0 <= ctm < 0.15; verified ctm 0.10684 against original): warn, high risk"
+  "note": "Authored — WARN band (0 <= ctm < 0.15; verified ctm 0.10684 against original): warn, high risk",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.10684,
+    "band": "WARN",
+    "zone": "WARN",
+    "risk_level": "high",
+    "xi": 0.89316,
+    "rate": 0.15714,
+    "accel": 0.25816,
+    "d_entropy": 0,
+    "ds_dtx": 0.15714,
+    "gradient_alert": false,
+    "current_entropy": 0.34085,
+    "history_length": 3,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

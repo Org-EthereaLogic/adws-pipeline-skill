@@ -21,5 +21,15 @@
       ]
     }
   },
-  "note": "Authored — 4 deletes (> 3): high risk, fail"
+  "note": "Authored — 4 deletes (> 3): high risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 4,
+    "deletes_count": 4,
+    "security_sensitive_count": 0,
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

@@ -1,4 +1,14 @@
 {
   "input": {},
-  "note": "tests/skill-modules.test.js — \"handles missing build_output gracefully\""
+  "note": "tests/skill-modules.test.js — \"handles missing build_output gracefully\"",
+  "expected": {
+    "rubric_result": "fail",
+    "files_to_ship": 0,
+    "output_mode": null,
+    "has_branch_name": false,
+    "composition_valid": false,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

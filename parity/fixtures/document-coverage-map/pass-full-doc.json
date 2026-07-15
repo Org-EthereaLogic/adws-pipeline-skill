@@ -25,5 +25,17 @@
       "Regression test added"
     ]
   },
-  "note": "tests/skills/document-coverage-map.test.js — \"returns pass when changelog, docs delta, and summary all capture the change\" (coverage 1.0)"
+  "note": "tests/skills/document-coverage-map.test.js — \"returns pass when changelog, docs delta, and summary all capture the change\" (coverage 1.0)",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed_count": 1,
+    "documented_paths_count": 1,
+    "changelog_present": true,
+    "summary_present": true,
+    "acceptance_criteria_count": 2,
+    "coverage_ratio": 1,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

@@ -6,5 +6,31 @@
       "Clicking the CTA opens the signup panel"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when all criteria use verifiable language\""
+  "note": "tests/skill-modules.test.js — \"returns pass when all criteria use verifiable language\"",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 3,
+    "verifiable_count": 3,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "GET /api/items returns the seeded inventory list",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "Hero title reads \"Ship internal tooling\"",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "Clicking the CTA opens the signup panel",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

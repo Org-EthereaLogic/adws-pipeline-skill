@@ -10,5 +10,15 @@
     "output_mode": "unknown",
     "branch_name": "feat/branch"
   },
-  "note": "tests/skill-modules.test.js — \"returns fail when output mode is unknown\""
+  "note": "tests/skill-modules.test.js — \"returns fail when output mode is unknown\"",
+  "expected": {
+    "rubric_result": "fail",
+    "files_to_ship": 1,
+    "output_mode": "unknown",
+    "has_branch_name": true,
+    "composition_valid": false,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

@@ -17,5 +17,16 @@
     "build_output": {},
     "policy": {}
   },
-  "note": "tests/skills/verify-evidence-map.test.js — \"returns pass when all checks pass\""
+  "note": "tests/skills/verify-evidence-map.test.js — \"returns pass when all checks pass\"",
+  "expected": {
+    "rubric_result": "pass",
+    "checks_total": 2,
+    "checks_passed": 2,
+    "checks_failed": 0,
+    "syntax_errors": 0,
+    "evidence_coverage": 1,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

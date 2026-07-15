@@ -27,5 +27,24 @@
       }
     ]
   },
-  "note": "tests/umif-canonical-consumers.test.js P2.6 — \"sustained failure burst degrades the rubric below pass\" (lands in COLLAPSE, fail; env unset: default on)"
+  "note": "tests/umif-canonical-consumers.test.js P2.6 — \"sustained failure burst degrades the rubric below pass\" (lands in COLLAPSE, fail; env unset: default on)",
+  "expected": {
+    "rubric_result": "fail",
+    "ctm": -0.98071,
+    "band": "COLLAPSE",
+    "zone": "COLLAPSE",
+    "risk_level": "critical",
+    "xi": 1.98071,
+    "rate": 0.22288,
+    "accel": 0.66958,
+    "d_entropy": 0,
+    "ds_dtx": 0.22288,
+    "gradient_alert": true,
+    "current_entropy": 0.39971,
+    "history_length": 6,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

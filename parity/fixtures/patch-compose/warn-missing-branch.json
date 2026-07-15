@@ -10,5 +10,15 @@
     "output_mode": "pr",
     "branch_name": ""
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when branch name is missing\""
+  "note": "tests/skill-modules.test.js — \"returns warn when branch name is missing\"",
+  "expected": {
+    "rubric_result": "warn",
+    "files_to_ship": 1,
+    "output_mode": "pr",
+    "has_branch_name": false,
+    "composition_valid": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

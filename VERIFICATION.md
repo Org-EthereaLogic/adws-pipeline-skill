@@ -37,3 +37,37 @@
 Everything verifiable without a live GitHub environment has been verified. To install:
 copy `adws-pipeline/` into `.claude/skills/` (or register per your setup) and
 `.claude/agents/*.md` into the target project's `.claude/agents/`.
+
+## Review gate — PR #1 (`feat/adws-pipeline-skill-v1` → `main`)
+
+Dogfooded the pipeline's own review gate against this PR: `adws-reviewer`, `adws-critic`,
+and `adws-advocate` each ran fresh-context (contract = DPPD.md/WBS.md, change set = the
+diff) per `SKILL.md` §2 step 3. Reviewer PASS, Advocate PASS (no dissent), **Critic FAIL**
+with two concrete, reproducible defects. Per the pipeline's own hard rule ("Critic fail →
+gate fails"), both were fixed before merge:
+
+1. **`execution-report.js` `evalSkillsClean` silently mislabeled crashed/malformed skill
+   traces as passing** (FR-6, FR-10, US-6). A `skill_trace.json` with no `rubric_result`
+   normalized to `'unverified'` but was counted in neither the fail nor warn buckets, so
+   an all-unverified job fell through to the `PASS` branch with `"N pass"` — a validator
+   that never executed reported identically to one that passed cleanly, exit code 0.
+   **Fix:** `evalSkillsClean` now counts `unverified` separately and returns the
+   `UNVERIFIED` gate status (already defined, previously unreachable in this case) when
+   any skill trace has no verifiable verdict, which correctly routes to
+   `PROMOTE (WITH WARNINGS)` / exit 10 via the existing `decideLifecycle` unverified-gate
+   branch. Regression fixture added: `parity/execution-report-fixtures/promote_unverified/`.
+2. **The parity claim (AC-3.1) was unreproducible outside the author's machine.**
+   `parity/run-parity.js` compared ported validators against the live originals in
+   `ADWS_PRO_source/`, which is gitignored (1.5GB, nested `.git`, not distributed in this
+   repo) — a fresh clone or CI run couldn't regenerate or verify `PARITY_REPORT.md`.
+   **Fix:** every fixture in `parity/fixtures/**/*.json` now carries a frozen `expected`
+   field (the original's actual `execute()` output, captured via
+   `node parity/run-parity.js --freeze`, which requires a local `ADWS_PRO_source/`
+   checkout to run). `run-parity.js` falls back to comparing the ported script against
+   `expected` when `ADWS_PRO_source/` is absent — verified by hiding the source directory
+   and confirming 79/79 fixtures still matched. `PARITY_REPORT.md` now states which
+   baseline mode ran.
+
+Both fixes verified: `node parity/run-parity.js` (79/79, both with and without
+`ADWS_PRO_source/` present) and `node parity/execution-report-fixtures/run-tests.js`
+(5/5 verdicts + CLI error path) pass clean.

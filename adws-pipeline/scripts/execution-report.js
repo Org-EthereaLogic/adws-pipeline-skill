@@ -265,6 +265,8 @@ function evalSkillsClean(skillVerdicts) {
   }
   const failures = rows.filter((r) => r.rubric_result === 'fail').length;
   const warnings = rows.filter((r) => r.rubric_result === 'warn').length;
+  const unverified = rows.filter((r) => r.rubric_result === 'unverified').length;
+  const passes = rows.length - failures - warnings - unverified;
   if (failures > 0) {
     return {
       key: 'skills_clean',
@@ -285,11 +287,21 @@ function evalSkillsClean(skillVerdicts) {
       reason: `${warnings} skill invocation(s) warned`,
     };
   }
+  if (unverified > 0) {
+    return {
+      key: 'skills_clean',
+      label: 'No skill failures or warnings',
+      status: GATE_STATUSES.UNVERIFIED,
+      value: `${passes} pass, ${unverified} unverified`,
+      threshold: '0 fail, 0 warn',
+      reason: `${unverified} skill invocation(s) produced no verifiable rubric_result (crashed or malformed trace)`,
+    };
+  }
   return {
     key: 'skills_clean',
     label: 'No skill failures or warnings',
     status: GATE_STATUSES.PASS,
-    value: `${rows.length} pass`,
+    value: `${passes} pass`,
     threshold: '0 fail, 0 warn',
     reason: null,
   };

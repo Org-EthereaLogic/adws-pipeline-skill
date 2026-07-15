@@ -45,6 +45,17 @@ const CASES = [
     warn_flag: false,
     exit_code: 2,
   },
+  {
+    name: 'promote_unverified',
+    jobId: 'job-4b7e1c',
+    decision: 'PROMOTE',
+    warn_flag: true,
+    exit_code: 10,
+    // Regression for the crashed-skill-trace bug: a skill_trace.json with no
+    // rubric_result (execute() threw) must surface as an `unverified` gate,
+    // never get silently folded into "N pass".
+    expectGate: { key: 'skills_clean', result: 'unverified' },
+  },
 ];
 
 function runCli(jobDir) {
@@ -103,6 +114,15 @@ for (const testCase of CASES) {
       out1.json.schema_version,
       '1.0.0'
     );
+    if (testCase.expectGate) {
+      const gate = out1.json.gates.find((g) => g.gate === testCase.expectGate.key);
+      check(
+        `${testCase.name} gate ${testCase.expectGate.key}`,
+        gate && gate.result === testCase.expectGate.result,
+        gate && gate.result,
+        testCase.expectGate.result
+      );
+    }
 
     // Determinism: re-run against the same tree (which now also contains the
     // previously written reports) and compare everything except generated_at.
@@ -134,5 +154,5 @@ if (failures > 0) {
   console.log(`\n${failures} assertion(s) failed.`);
   process.exitCode = 1;
 } else {
-  console.log('\nAll fixtures passed (4/4 verdicts + CLI error path), deterministic across re-runs.');
+  console.log(`\nAll fixtures passed (${CASES.length}/${CASES.length} verdicts + CLI error path), deterministic across re-runs.`);
 }

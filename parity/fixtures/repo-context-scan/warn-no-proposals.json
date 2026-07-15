@@ -10,5 +10,17 @@
       ]
     }
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when plan has no file proposals\""
+  "note": "tests/skill-modules.test.js — \"returns warn when plan has no file proposals\"",
+  "expected": {
+    "rubric_result": "warn",
+    "files_proposed": 0,
+    "directories_touched": 0,
+    "grouped_files": {},
+    "policy_violations": [],
+    "underspecified": true,
+    "plan_summary": "Vague plan",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }
