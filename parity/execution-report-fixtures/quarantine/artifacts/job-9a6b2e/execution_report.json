@@ -1,0 +1,102 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-15T05:58:18.067Z",
+  "job_id": "job-9a6b2e",
+  "task_id": "TASK-104",
+  "decision": "QUARANTINE",
+  "decision_reason": "Job failed with non-retriable reason (ADVOCATE_DISSENT); evidence preserved for review.",
+  "warn_flag": false,
+  "exit_code": 2,
+  "final_status": "failed",
+  "failure_reason": "ADVOCATE_DISSENT",
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "fail",
+      "detail": "4/7 — Missing phase outputs: document, ship, verify"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 1,
+      "last_gate_result": "fail",
+      "failure_reason": "ADVOCATE_DISSENT",
+      "model_tier": "opus"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null
+    },
+    {
+      "phase": "review",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "fail",
+      "dissent": "The proposed change removes the idempotency guard in src/retry_worker.py; under concurrent retries the webhook dispatcher can double-send. I cannot certify correctness without a compensating dedupe key."
+    }
+  ],
+  "warnings": [
+    "Consensus dissent in review/attempt_1: The proposed change removes the idempotency guard in src/retry_worker.py; under concurrent retries the webhook dispatcher can double-send. I cannot certify correctness without a compensating dedupe key.",
+    "Failure reason recorded: ADVOCATE_DISSENT",
+    "Gate \"pipeline_completion\" evaluated to fail: Missing phase outputs: document, ship, verify",
+    "Gate \"verify_structural\" evaluated to unverified: No verify-phase output recorded for this run"
+  ],
+  "evidence_root": "/sessions/beautiful-tender-turing/mnt/adws-pipeline-skill/parity/execution-report-fixtures/quarantine/artifacts/job-9a6b2e"
+}

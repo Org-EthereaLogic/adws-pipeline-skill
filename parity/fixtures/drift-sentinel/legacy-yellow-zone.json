@@ -1,0 +1,19 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.2
+      },
+      {
+        "entropy": 0.25
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"returns warn when entropy puts CTM in yellow zone\""
+}

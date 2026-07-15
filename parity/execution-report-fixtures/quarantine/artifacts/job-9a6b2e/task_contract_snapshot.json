@@ -1,0 +1,17 @@
+{
+  "task_id": "TASK-104",
+  "task": {
+    "title": "Relax retry backoff for webhook dispatcher",
+    "problem_statement": "Relax retry backoff for webhook dispatcher — see task tracker.",
+    "acceptance_criteria": [
+      "AC-1",
+      "AC-2"
+    ]
+  },
+  "execution": {
+    "target_branch": "main",
+    "output_mode": "pr",
+    "isolation_mode": "worktree"
+  },
+  "schema_version": "1.0.0"
+}

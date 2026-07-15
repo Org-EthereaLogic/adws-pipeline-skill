@@ -1,0 +1,11 @@
+{
+  "input": {
+    "title": "Fix null pointer exception in payment handler",
+    "requested_change": "The payment processor throws a null reference on missing billing address.",
+    "acceptance_criteria": [
+      "Banana apples orange fruit salad sunshine rainbow",
+      "XYZ123 totally unrelated text about food recipes"
+    ]
+  },
+  "note": "tests/skills/task-normalize.test.js — \"returns warn when acceptance_criteria are semantically disconnected\" (cosine < 0.10, ΔR > 0.4677)"
+}

@@ -1,0 +1,13 @@
+{
+  "input": {
+    "entropy_history": [
+      0.1,
+      0.2,
+      0.5
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — COLLAPSE band (ctm < 0; verified ctm -0.0813 against original): fail, critical risk"
+}

@@ -1,0 +1,16 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.1
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"output includes all required metric fields\""
+}

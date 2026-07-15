@@ -1,0 +1,10 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "GET /api/items returns the inventory list",
+      "The code is clean",
+      "Looks polished"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"returns warn when a majority of criteria lack verifiable language\""
+}

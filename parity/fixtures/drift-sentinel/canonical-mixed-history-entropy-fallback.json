@@ -1,0 +1,17 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.2,
+        "parseFailureScore": 1
+      },
+      {
+        "entropy": 0.3
+      }
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — quirk: parseFailureScore is only used when EVERY entry has it; a single entry without it makes the whole signal fall back to entropy values"
+}

@@ -1,0 +1,6 @@
+{
+  "input": {
+    "title": "Test"
+  },
+  "note": "tests/skills/task-normalize.test.js — \"returns fail when required fields are missing (v1 compatibility)\""
+}

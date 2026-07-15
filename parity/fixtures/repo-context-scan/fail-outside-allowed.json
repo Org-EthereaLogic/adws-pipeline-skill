@@ -1,0 +1,22 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "infrastructure/secrets/keys.json",
+          "action": "modify",
+          "description": "Update keys"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": [
+        "infrastructure/secrets/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when proposals violate policy\" (both outside_allowed_paths and in_blocked_path)"
+}

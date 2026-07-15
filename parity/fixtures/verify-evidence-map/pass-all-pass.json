@@ -1,0 +1,21 @@
+{
+  "input": {
+    "checks": [
+      {
+        "file": "src/index.js",
+        "check": "js_syntax",
+        "pass": true,
+        "detail": "no syntax errors"
+      },
+      {
+        "file": "src/app.css",
+        "check": "css_non_empty",
+        "pass": true,
+        "detail": "non-empty"
+      }
+    ],
+    "build_output": {},
+    "policy": {}
+  },
+  "note": "tests/skills/verify-evidence-map.test.js — \"returns pass when all checks pass\""
+}

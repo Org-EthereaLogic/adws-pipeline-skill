@@ -1,0 +1,10 @@
+{
+  "input": {
+    "title": "Fix",
+    "requested_change": "Add null check before accessing session",
+    "acceptance_criteria": [
+      "No crash"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"flags short strings as weak\""
+}

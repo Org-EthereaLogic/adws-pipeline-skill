@@ -1,0 +1,31 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 1
+      },
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 2
+      },
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 3
+      },
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 4
+      },
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 5
+      },
+      {
+        "entropy": 0.9,
+        "parseFailureScore": 6
+      }
+    ]
+  },
+  "note": "tests/umif-canonical-consumers.test.js P2.6 — \"sustained failure burst degrades the rubric below pass\" (lands in COLLAPSE, fail; env unset: default on)"
+}

@@ -1,0 +1,9 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "GET /api/items returns the inventory list",
+      "The code is clean"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when only a minority of criteria lack verifiable language\" (1 vague of 2 is not a majority)"
+}

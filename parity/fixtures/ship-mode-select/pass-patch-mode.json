@@ -1,0 +1,10 @@
+{
+  "input": {
+    "output_mode": "patch",
+    "branch_name": "feat/adws/job_001",
+    "policy": {
+      "allow_direct_commit": false
+    }
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns pass for valid mode with branch name and consistent policy\""
+}

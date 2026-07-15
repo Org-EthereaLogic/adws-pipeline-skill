@@ -1,0 +1,19 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Up"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns warn when proposals have short descriptions\""
+}

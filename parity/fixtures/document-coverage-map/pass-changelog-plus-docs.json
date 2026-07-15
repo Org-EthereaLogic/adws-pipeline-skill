@@ -1,0 +1,25 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/settings.js",
+          "action": "modify",
+          "description": "Add null guard"
+        }
+      ]
+    },
+    "doc_output": {
+      "changelog_entry": "Fixed null-pointer crash in settings save by adding a guard clause.",
+      "docs_delta": [
+        {
+          "file_path": "src/docs/changelog.md",
+          "action": "modify",
+          "content": "Updated changelog."
+        }
+      ],
+      "documentation_summary": ""
+    }
+  },
+  "note": "tests/skills/document-coverage-map.test.js — \"returns pass for changelog plus docs delta without a summary\" (coverage 0.8)"
+}

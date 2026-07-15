@@ -1,0 +1,33 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/b.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/c.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/d.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/e.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/f.js",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 6 files (> 5), clean paths, no deletes: medium risk, warn"
+}

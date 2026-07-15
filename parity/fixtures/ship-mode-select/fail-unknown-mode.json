@@ -1,0 +1,8 @@
+{
+  "input": {
+    "output_mode": "rebase",
+    "branch_name": "feat/adws/job_003",
+    "policy": {}
+  },
+  "note": "Authored — unrecognized output_mode value: fail with mode_valid false"
+}

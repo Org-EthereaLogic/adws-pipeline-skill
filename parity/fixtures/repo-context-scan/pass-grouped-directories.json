@@ -1,0 +1,29 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Update auth"
+        },
+        {
+          "file_path": "src/utils.js",
+          "action": "modify",
+          "description": "Update utils"
+        },
+        {
+          "file_path": "src/lib/helpers.js",
+          "action": "create",
+          "description": "New helper"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"groups files by directory\""
+}

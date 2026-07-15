@@ -1,0 +1,19 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.2
+      },
+      {
+        "entropy": 0.25
+      },
+      {
+        "entropy": 0.25
+      }
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "Authored — legacy ctm = 0.08 in (0.05, 0.10]: red zone, high (non-critical) risk, warn"
+}

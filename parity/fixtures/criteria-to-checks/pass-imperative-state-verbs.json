@@ -1,0 +1,10 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "Unknown environments exit with code 1 and print an error",
+      "Summary cards display computed totals from the dataset",
+      "Only one question is visible at a time"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"recognizes imperative and state verbs as verifiable\""
+}

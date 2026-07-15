@@ -1,0 +1,27 @@
+{
+  "input": {
+    "checks": [
+      {
+        "file": "src/a.js",
+        "check": "js_syntax",
+        "pass": false,
+        "detail": "unexpected token"
+      },
+      {
+        "file": "src/b.js",
+        "check": "js_syntax",
+        "pass": false,
+        "detail": "unterminated string"
+      },
+      {
+        "file": "src/app.css",
+        "check": "css_non_empty",
+        "pass": true,
+        "detail": "non-empty"
+      }
+    ],
+    "build_output": {},
+    "policy": {}
+  },
+  "note": "Authored — 2 js_syntax failures of 3 checks: syntax_errors 2, coverage 1/3, warn"
+}
