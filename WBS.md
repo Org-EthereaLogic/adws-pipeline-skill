@@ -5,9 +5,11 @@
 **Date:** 2026-07-14
 **Companion document:** `DPPD.md` (requirement/story IDs referenced below)
 
-**Status (2026-07-14):** 1.0–5.0 done and merged to `main` (PR #1); see `VERIFICATION.md`
-for delivery detail, review-gate findings, and fixes. 6.0 (live E2E on a scratch GitHub
-repo) is the only open work.
+**Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
+complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
+acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;
+evidence: `acceptance/DRILL_EVIDENCE.md`. One defect (F-1) was found by the drills and fixed.
+No open WBS work remains.
 
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
