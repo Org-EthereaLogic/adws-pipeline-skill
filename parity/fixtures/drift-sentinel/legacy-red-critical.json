@@ -1,0 +1,30 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.1
+      },
+      {
+        "entropy": 0.3
+      }
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "Authored — legacy ctm = 0.33 - 0.30 = 0.03 <= CTM_RED (0.05): red zone, critical risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "ctm": 0.03,
+    "zone": "red",
+    "risk_level": "critical",
+    "d_entropy": 0.2,
+    "ds_dtx": 0.4,
+    "gradient_alert": true,
+    "current_entropy": 0.3,
+    "history_length": 2,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

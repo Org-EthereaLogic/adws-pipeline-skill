@@ -1,0 +1,25 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": []
+    },
+    "doc_output": {
+      "changelog_entry": "",
+      "docs_delta": [],
+      "documentation_summary": ""
+    }
+  },
+  "note": "tests/skills/document-coverage-map.test.js — \"returns warn (not fail) when nothing changed and nothing documented\"",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed_count": 0,
+    "documented_paths_count": 0,
+    "changelog_present": false,
+    "summary_present": false,
+    "acceptance_criteria_count": 0,
+    "coverage_ratio": 0,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

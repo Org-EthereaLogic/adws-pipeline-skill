@@ -1,0 +1,54 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The document is a valid HTML5 file containing a head and body",
+      "The item is visually highlighted as urgent",
+      "The list remains sorted by severity descending",
+      "CSS is linked from index.html via a link tag",
+      "The game.js file references requestAnimationFrame",
+      "A toggle button switches between light and dark themes"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"recognizes participial verb forms as verifiable\"",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 6,
+    "verifiable_count": 6,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The document is a valid HTML5 file containing a head and body",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The item is visually highlighted as urgent",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "The list remains sorted by severity descending",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "CSS is linked from index.html via a link tag",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK005",
+        "criterion": "The game.js file references requestAnimationFrame",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK006",
+        "criterion": "A toggle button switches between light and dark themes",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

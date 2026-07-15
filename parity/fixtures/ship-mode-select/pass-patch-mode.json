@@ -1,0 +1,20 @@
+{
+  "input": {
+    "output_mode": "patch",
+    "branch_name": "feat/adws/job_001",
+    "policy": {
+      "allow_direct_commit": false
+    }
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns pass for valid mode with branch name and consistent policy\"",
+  "expected": {
+    "rubric_result": "pass",
+    "output_mode": "patch",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

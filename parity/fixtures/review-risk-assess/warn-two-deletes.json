@@ -1,0 +1,31 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/legacy-a.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/legacy-b.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/replacement.js",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 2 deletes: medium risk, warn",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed": 3,
+    "deletes_count": 2,
+    "security_sensitive_count": 0,
+    "risk_level": "medium",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

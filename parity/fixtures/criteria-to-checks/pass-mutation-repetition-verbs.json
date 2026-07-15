@@ -1,0 +1,36 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "POST /api/reservations decrements stock for a valid request",
+      "The success card repeats the attendee name and ticket label exactly",
+      "Adding a seat increments the total by the per-seat price"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"recognizes mutation and repetition verbs as verifiable\"",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 3,
+    "verifiable_count": 3,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "POST /api/reservations decrements stock for a valid request",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The success card repeats the attendee name and ticket label exactly",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "Adding a seat increments the total by the per-seat price",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

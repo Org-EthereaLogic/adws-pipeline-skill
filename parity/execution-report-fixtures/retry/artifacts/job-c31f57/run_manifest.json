@@ -1,0 +1,20 @@
+{
+  "job_id": "job-c31f57",
+  "task_id": "TASK-103",
+  "started_at": "2026-07-10T14:00:00Z",
+  "completed_at": "2026-07-10T15:30:00Z",
+  "final_status": "failed",
+  "failure_reason": "TEST_GATE_FAILURE",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "haiku"
+  },
+  "schema_version": "1.0.0"
+}

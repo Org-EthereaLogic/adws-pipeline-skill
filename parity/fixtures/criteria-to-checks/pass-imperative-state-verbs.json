@@ -1,0 +1,36 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "Unknown environments exit with code 1 and print an error",
+      "Summary cards display computed totals from the dataset",
+      "Only one question is visible at a time"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"recognizes imperative and state verbs as verifiable\"",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 3,
+    "verifiable_count": 3,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "Unknown environments exit with code 1 and print an error",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "Summary cards display computed totals from the dataset",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "Only one question is visible at a time",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/render.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/render.test.js",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 2 clean files, no deletes, no security paths: low risk, pass",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed": 2,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

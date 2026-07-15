@@ -1,0 +1,47 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/vendor/lib.js",
+          "action": "modify",
+          "description": "Patch vendored library"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": [
+        "src/vendor/"
+      ]
+    }
+  },
+  "note": "Authored — file inside an allowed path but also inside a blocked path: in_blocked_path violation, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src/vendor": [
+        {
+          "file": "src/vendor/lib.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "src/vendor/lib.js",
+        "reason": "in_blocked_path",
+        "blocked_path": "src/vendor/"
+      }
+    ],
+    "underspecified": false,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "input": {
+    "entropy_history": [
+      0.1,
+      0.2,
+      0.35
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — WATCH band (0.15 <= ctm <= 0.40; verified ctm 0.23538 against original): warn, medium risk",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.23538,
+    "band": "WATCH",
+    "zone": "WATCH",
+    "risk_level": "medium",
+    "xi": 0.76462,
+    "rate": 0.14964,
+    "accel": 0.20933,
+    "d_entropy": 0,
+    "ds_dtx": 0.14964,
+    "gradient_alert": false,
+    "current_entropy": 0.33823,
+    "history_length": 3,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

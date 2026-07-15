@@ -1,0 +1,36 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.05
+      },
+      {
+        "entropy": 0.06
+      },
+      {
+        "entropy": 0.05
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"returns pass when entropy is low and stable (green zone)\"",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": 0.28,
+    "zone": "green",
+    "risk_level": "low",
+    "d_entropy": 0.01,
+    "ds_dtx": 0,
+    "gradient_alert": false,
+    "current_entropy": 0.05,
+    "history_length": 3,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

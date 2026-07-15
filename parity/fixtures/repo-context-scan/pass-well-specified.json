@@ -1,0 +1,42 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Add null check",
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Add null guard to session check"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": [
+        "infrastructure/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\"",
+  "expected": {
+    "rubric_result": "pass",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "plan_summary": "Add null check",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

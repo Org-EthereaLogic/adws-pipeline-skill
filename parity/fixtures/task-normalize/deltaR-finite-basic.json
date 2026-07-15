@@ -1,0 +1,52 @@
+{
+  "input": {
+    "title": "Test",
+    "requested_change": "Add feature",
+    "acceptance_criteria": [
+      "Feature must work correctly"
+    ]
+  },
+  "note": "tests/skills/task-normalize.test.js — \"delta_r is a finite number in [0,1] and monotone-inverse to the cosine\"",
+  "expected": {
+    "rubric_result": "warn",
+    "normalized_summary": {
+      "title": "Test",
+      "requested_change": "Add feature",
+      "acceptance_criteria_count": 1,
+      "constraints_count": 0,
+      "file_hints_count": 0,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "requested_change",
+      "acceptance_criteria"
+    ],
+    "fields_missing": [
+      {
+        "field": "problem_statement",
+        "required": false
+      },
+      {
+        "field": "constraints",
+        "required": false
+      },
+      {
+        "field": "file_hints",
+        "required": false
+      }
+    ],
+    "fields_weak": [
+      {
+        "field": "title",
+        "reason": "too short"
+      }
+    ],
+    "delta_r": 0.4068,
+    "coherence_score": 0.2887,
+    "synthetic_risk": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

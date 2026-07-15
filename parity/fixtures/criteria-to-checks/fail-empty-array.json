@@ -1,0 +1,16 @@
+{
+  "input": {
+    "acceptance_criteria": []
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when criteria array is empty\"",
+  "expected": {
+    "rubric_result": "fail",
+    "criteria_count": 0,
+    "verifiable_count": 0,
+    "vague_count": 0,
+    "check_specs": [],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

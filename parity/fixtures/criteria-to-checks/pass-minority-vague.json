@@ -1,0 +1,25 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "GET /api/items returns the inventory list",
+      "The code is clean"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when only a minority of criteria lack verifiable language\" (1 vague of 2 is not a majority)",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 2,
+    "verifiable_count": 1,
+    "vague_count": 1,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "GET /api/items returns the inventory list",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.1
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"output includes all required metric fields\"",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": 0.23,
+    "zone": "green",
+    "risk_level": "low",
+    "d_entropy": 0,
+    "ds_dtx": 0,
+    "gradient_alert": false,
+    "current_entropy": 0.1,
+    "history_length": 1,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

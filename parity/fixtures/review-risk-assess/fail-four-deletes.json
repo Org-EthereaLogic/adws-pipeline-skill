@@ -1,0 +1,35 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/b.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/c.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/d.js",
+          "action": "delete"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 4 deletes (> 3): high risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 4,
+    "deletes_count": 4,
+    "security_sensitive_count": 0,
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

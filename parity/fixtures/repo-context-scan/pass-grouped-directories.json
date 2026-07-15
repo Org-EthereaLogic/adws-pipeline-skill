@@ -1,0 +1,58 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Update auth"
+        },
+        {
+          "file_path": "src/utils.js",
+          "action": "modify",
+          "description": "Update utils"
+        },
+        {
+          "file_path": "src/lib/helpers.js",
+          "action": "create",
+          "description": "New helper"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"groups files by directory\"",
+  "expected": {
+    "rubric_result": "pass",
+    "files_proposed": 3,
+    "directories_touched": 2,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        },
+        {
+          "file": "src/utils.js",
+          "action": "modify"
+        }
+      ],
+      "src/lib": [
+        {
+          "file": "src/lib/helpers.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

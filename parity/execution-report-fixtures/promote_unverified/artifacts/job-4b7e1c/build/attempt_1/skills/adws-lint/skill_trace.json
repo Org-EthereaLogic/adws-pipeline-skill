@@ -1,0 +1,8 @@
+{
+  "skill_id": "adws-lint",
+  "version": "1.2.0",
+  "started_at": "2026-07-10T15:02:00Z",
+  "completed_at": null,
+  "latency_ms": 40,
+  "error": "execute() threw: TypeError: Cannot read properties of undefined (reading 'files')"
+}

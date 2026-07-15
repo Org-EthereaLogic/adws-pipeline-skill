@@ -1,0 +1,39 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/b.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/c.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/d.js",
+          "action": "create"
+        },
+        {
+          "file_path": "src/e.js",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "Authored — boundary: exactly 5 files (not > 5), no deletes: low risk, pass",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed": 5,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

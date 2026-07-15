@@ -1,0 +1,30 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.05
+      },
+      {
+        "entropy": 0.06
+      }
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "shadow"
+  },
+  "note": "Authored — shadow mode: the skill's execute() takes the legacy path for any mode !== 'on'",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": 0.27,
+    "zone": "green",
+    "risk_level": "low",
+    "d_entropy": 0.01,
+    "ds_dtx": 0.02,
+    "gradient_alert": false,
+    "current_entropy": 0.06,
+    "history_length": 2,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

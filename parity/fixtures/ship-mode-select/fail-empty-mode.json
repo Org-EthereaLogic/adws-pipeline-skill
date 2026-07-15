@@ -1,0 +1,18 @@
+{
+  "input": {
+    "output_mode": "",
+    "branch_name": "feat/test",
+    "policy": {}
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns fail when output_mode is missing or unrecognized\"",
+  "expected": {
+    "rubric_result": "fail",
+    "output_mode": null,
+    "mode_valid": false,
+    "policy_consistent": false,
+    "has_branch_name": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

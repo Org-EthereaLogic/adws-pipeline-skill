@@ -1,0 +1,54 @@
+{
+  "input": {
+    "title": "Fix the login crash",
+    "requested_change": "Add null check before accessing session",
+    "problem_statement": "Login crashes when session expires.",
+    "acceptance_criteria": [
+      "No crash on expired session",
+      "Test added"
+    ],
+    "constraints": [
+      "Keep backward compat"
+    ],
+    "file_hints": [
+      "src/auth.js"
+    ],
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    },
+    "risk": {
+      "risk_level": "low"
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when all fields are present and well-formed\"",
+  "expected": {
+    "rubric_result": "pass",
+    "normalized_summary": {
+      "title": "Fix the login crash",
+      "requested_change": "Add null check before accessing session",
+      "acceptance_criteria_count": 2,
+      "constraints_count": 1,
+      "file_hints_count": 1,
+      "has_policy": true,
+      "has_risk": true
+    },
+    "fields_present": [
+      "title",
+      "requested_change",
+      "problem_statement",
+      "acceptance_criteria",
+      "constraints",
+      "file_hints"
+    ],
+    "fields_missing": [],
+    "fields_weak": [],
+    "delta_r": 0.4004,
+    "coherence_score": 0.3078,
+    "synthetic_risk": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

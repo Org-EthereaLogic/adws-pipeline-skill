@@ -1,0 +1,24 @@
+{
+  "input": {
+    "entropy_history": []
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — canonical mode, empty history: pass with null ctm and band/zone SAFE",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": null,
+    "band": "SAFE",
+    "zone": "SAFE",
+    "risk_level": "low",
+    "d_entropy": 0,
+    "ds_dtx": 0,
+    "gradient_alert": false,
+    "current_entropy": 0,
+    "history_length": 0,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

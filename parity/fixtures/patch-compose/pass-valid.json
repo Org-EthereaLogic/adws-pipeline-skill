@@ -1,0 +1,25 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "output_mode": "patch",
+    "branch_name": "feat/adws/job_001"
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when files, output mode, and branch are all valid\"",
+  "expected": {
+    "rubric_result": "pass",
+    "files_to_ship": 1,
+    "output_mode": "patch",
+    "has_branch_name": true,
+    "composition_valid": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}
