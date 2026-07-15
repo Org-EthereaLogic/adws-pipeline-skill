@@ -41,7 +41,7 @@ Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 |-----|--------------|-------------|--------|------------|-----------|
 | 3.1 | Port 5 direct-port validators (`criteria.to_checks`, `review.risk_assess`, `document.coverage_map`, `patch.compose`, `verify.evidence_map`) | 5 standalone scripts (NFR-4) | M | 1.3 | FR-5, US-3 |
 | 3.2 | Port 4 adapted validators (`task.normalize`, `repo.context_scan`, `ship.mode_select`, `drift.sentinel` with UMIF math inlined) per DPPD §5.2 port notes | 4 standalone scripts | L | 1.3 | FR-5, FR-11 |
-| 3.3 | Build fixture parity suite: shared fixtures run against original and the 9 deterministic ported validators, verdicts diffed | Parity report, all-identical | M | 3.1, 3.2 | AC-3.1, AC-3.3, R-2 |
+| 3.3 | Build fixture parity suite: shared fixtures run against original and the 9 deterministic ported validators, verdicts diffed | Parity report, all-identical _(amended by SC-1: 8 packs identical to originals; `criteria-to-checks` diverged-by-design, verified vs a frozen baseline — 84/84 total)_ | M | 3.1, 3.2 | AC-3.1, AC-3.3, R-2 |
 
 **Exit criteria:** Parity report shows identical verdicts on all fixtures; each script runs standalone under Node 20.
 

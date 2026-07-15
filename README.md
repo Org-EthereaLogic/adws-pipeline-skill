@@ -10,8 +10,9 @@ Every phase runs as a fresh subagent, every gate is backed by a standalone valid
 every decision is written to an append-only evidence tree — so job outcomes are decided by
 evidence, not by narrative.
 
-> Ported from the internal **ADWS_Pro** system; the 9 deterministic validators are verified
-> byte-for-byte against the originals (see [Validation](#validation)).
+> Ported from the internal **ADWS_Pro** system; 8 of the 9 deterministic validators are
+> verified byte-for-byte against the originals — `criteria-to-checks` is deliberately
+> diverged (v1.1.0) and verified against a frozen baseline (see [Validation](#validation)).
 
 ---
 

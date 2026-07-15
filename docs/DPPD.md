@@ -26,7 +26,10 @@ A feasibility review (2026-07-14) concluded that the majority of its function po
 ### 1.3 Success Criteria
 
 - A complete pipeline run on a sample repository produces a correct, append-only artifact tree and a PROMOTE/RETRY/QUARANTINE execution report.
-- All 10 ported validators produce verdicts identical to the originals on shared fixtures.
+- The 9 deterministic ported validators produce verdicts identical to the originals on
+  shared fixtures. **(Amended by SC-1, see §9):** 8 remain byte-for-byte identical;
+  `criteria-to-checks` is deliberately diverged (v1.1.0) and verified against a frozen
+  baseline. The 10th validator (the AC-coverage grader) is LLM-graded and has no byte-parity test.
 - A `pr` output-mode run opens a real GitHub PR from an isolated worktree.
 - No server process, database, or persistent daemon is required.
 
@@ -53,7 +56,7 @@ A feasibility review (2026-07-14) concluded that the majority of its function po
 | ID | Item | Rationale |
 |----|------|-----------|
 | X-1 | Dashboard, WebSocket telemetry, REST API, auth, SQLite mirror | Hosting shell; replaced by native Claude Code surfaces |
-| X-2 | Entropy/CTM/UMIF live regulator (CascadeGov) | Deferred by scope decision. Note: the regulator's operational signal is JSON parse-failure counts (`src/entropy-gating.js`), not token logprobs, so it is portable if wanted later — but it is low-value without the original multi-call Trinity loop |
+| X-2 | Entropy/CTM/UMIF live regulator (CascadeGov) | **Shipped under SC-1 (see §9)** as `scripts/entropy-gate.js` — a parse-failure stability gate over the ported drift-sentinel band math, wired into the phase loop. (Originally deferred; the operational signal is JSON parse-failure counts, not token logprobs.) |
 | X-3 | Cross-provider Trinity (OpenAI Critic, Gemini Advocate) | Deferred; single-provider consensus approximation in S-6 |
 | X-4 | VS Code extension | Client of the removed server |
 | X-5 | Benchmark runners, n8n integration, sprint memory | Peripheral to core pipeline function |

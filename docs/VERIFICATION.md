@@ -37,7 +37,7 @@ Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
 
 ## WBS 6.1–6.4 — live E2E drills (COMPLETE, 2026-07-15)
 
-Executed live against a scratch GitHub repo (`AJ-EthereaLogic-ai/adws-e2e-scratch`) with
+Executed live against a scratch GitHub repo (`the throwaway scratch repo (since deleted)`) with
 `gh` authenticated. Full evidence in `acceptance/DRILL_EVIDENCE.md`; sign-off in
 `acceptance/ACCEPTANCE.md`.
 
