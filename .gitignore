@@ -19,3 +19,9 @@ npm-debug.log*
 # on these directly; nothing depends on them being committed.
 parity/execution-report-fixtures/*/artifacts/*/execution_report.json
 parity/execution-report-fixtures/*/artifacts/*/execution_report.md
+
+# Same issue: PARITY_REPORT.md embeds a generated_at timestamp + node version
+# on every run-parity.js run. The actual parity evidence is the frozen
+# `expected` field committed in each parity/fixtures/**/*.json — regenerate
+# this report on demand with `node parity/run-parity.js`.
+parity/PARITY_REPORT.md
