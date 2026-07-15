@@ -1,0 +1,6 @@
+{
+  "role": "advocate",
+  "verdict": "fail",
+  "dissent": "The shipped change silently weakens the auth-token expiry check; the operator asked for a refactor with identical behavior, so this contradicts the stated intent and must not promote.",
+  "model_tier": "sonnet"
+}
