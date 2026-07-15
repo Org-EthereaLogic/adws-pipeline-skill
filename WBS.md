@@ -5,6 +5,10 @@
 **Date:** 2026-07-14
 **Companion document:** `DPPD.md` (requirement/story IDs referenced below)
 
+**Status (2026-07-14):** 1.0–5.0 done and merged to `main` (PR #1); see `VERIFICATION.md`
+for delivery detail, review-gate findings, and fixes. 6.0 (live E2E on a scratch GitHub
+repo) is the only open work.
+
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
 ---
