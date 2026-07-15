@@ -78,10 +78,10 @@ no validator touched). `phase-gates.md` §Consensus rule 4 documents the termina
    choice). The job_0001–0008 artifact trees and per-job execution reports were local-only
    and are gone; the live drills are no longer independently reproducible from retained
    files. What remains as retained evidence: this narrative, the acceptance-verification
-   **workflow journal** (`acceptance-workflow-journal.jsonl`, 10 agent results),
-   the still-existing remote PRs #1/#2 + branches, and the deterministic fixture suite that
-   covers the same verdict machinery. *(Lesson: preserve execution reports into the skill
-   repo BEFORE tearing down the scratch environment.)*
+   **workflow journal** (`acceptance-workflow-journal.jsonl`, 10 agent results), and the
+   deterministic fixture suite that covers the same verdict machinery. (The scratch repo,
+   its PRs, and its branches were deleted at teardown.) *(Lesson: preserve execution reports
+   into the skill repo BEFORE tearing down the scratch environment.)*
 4. **PR internal review gates are self-attested** — the reviewer/critic/advocate ran as
    subagents in the orchestration session, not as GitHub App reviewers; GitHub shows only
    author summary comments, not formal review artifacts.
