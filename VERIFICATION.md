@@ -2,6 +2,11 @@
 
 **Date:** 2026-07-14 · **Builder:** Claude (Cowork session) · **Governing docs:** DPPD.md v1.0, WBS.md v1.0
 
+**Status (2026-07-14):** WBS 1.0-5.0 merged to `main` via
+[PR #1](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/1)
+(commit `c333bb9`; feature branch `feat/adws-pipeline-skill-v1` deleted after merge).
+Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
+
 ## Delivered
 
 | WBS | Deliverable | Status |
