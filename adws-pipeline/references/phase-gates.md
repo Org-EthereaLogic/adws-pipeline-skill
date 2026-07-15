@@ -93,6 +93,26 @@ At the test and review gates, after the phase agent (Architect) produces its out
   `{PHASE}_GATE_FAILURE`, or a second test rewind → `TEST_GATE_FAILURE`) → RETRY
   verdict.
 
+## Stability gate — entropy regulator (SC-1.b / X-2)
+
+Signal: JSON parse-failure counts per phase attempt (malformed phase outputs,
+consensus files, or validator inputs produced by agents), recorded in the append-only
+`artifacts/{jobId}/entropy_history.jsonl`. Recording starts at the first attempt with
+≥ 1 failure and continues for every attempt after it (zeros included — recovery decays
+the signal). The gate (`scripts/entropy-gate.js`, reusing the ported drift-sentinel
+canonical band math) runs at phase entry whenever the history file exists:
+
+| Band | Action |
+|---|---|
+| SAFE | proceed |
+| WATCH | proceed; record `watch: true` in the attempt manifest |
+| WARN | escalate this phase agent one model tier for this attempt (`tier_input: entropy-gate`) |
+| COLLAPSE | halt: terminate `failed` / `STABILITY_BUDGET_EXCEEDED` (RETRY verdict class) |
+
+The gate's JSON output is recorded verbatim as `stability_gate` in the attempt's
+`phase_manifest.json`. The regulator never promotes a phase — it only escalates cost
+or halts; gate pass/fail logic is unchanged.
+
 ## Model-tier selection (FR-12)
 
 Deterministic inputs → tier table. The risk score is the contract's `risk.risk_level`

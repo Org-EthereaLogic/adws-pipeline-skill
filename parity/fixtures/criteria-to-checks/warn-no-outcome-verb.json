@@ -1,0 +1,18 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The code is nice and clean"
+    ]
+  },
+  "note": "SC-1/F-2 regression guard — no outcome verb at all, so the criterion stays vague and warn still fires under v1.1.0",
+  "expected": {
+    "rubric_result": "warn",
+    "criteria_count": 1,
+    "verifiable_count": 0,
+    "vague_count": 1,
+    "check_specs": [],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

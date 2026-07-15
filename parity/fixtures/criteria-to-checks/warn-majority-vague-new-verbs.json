@@ -1,0 +1,33 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "Passing the smoke suite is required before merge",
+      "The exporter is producing a manifest for each build",
+      "The UX feels intuitive",
+      "Performance is good overall",
+      "The layout looks modern and fresh"
+    ]
+  },
+  "note": "SC-1/F-2 boundary check — 2 criteria verifiable only via the new forms ('passing', 'producing'), 3 vague: 3 > 5/2 so the >50%-vague warn boundary still holds under v1.1.0",
+  "expected": {
+    "rubric_result": "warn",
+    "criteria_count": 5,
+    "verifiable_count": 2,
+    "vague_count": 3,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "Passing the smoke suite is required before merge",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The exporter is producing a manifest for each build",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}
