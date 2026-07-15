@@ -16,7 +16,7 @@ Do:
    `policy.allowed_paths`, avoiding `policy.blocked_paths` and respecting
    `task.constraints` and `task.non_goals`.
 3. Write to your attempt directory (and nowhere else):
-   - `phase_output.json`: `{ "plan_summary", "file_change_proposal": [{ "file_path", "action": "create|modify|delete", "reason" }], "criteria_map": [{ "criterion", "planned_changes": [file paths], "check_idea" }] }`
+   - `phase_output.json`: `{ "plan_summary", "file_change_proposal": [{ "file_path", "action": "create|modify|delete", "description" }], "criteria_map": [{ "criterion", "planned_changes": [file paths], "check_idea" }] }`. Each proposal's `description` states what changes in that file and why — it is a required field (the build-gate `repo-context-scan` validator flags proposals whose `description` is missing or shorter than 3 characters).
    - `phase_log.md`: what you inspected and why the plan is shaped this way.
    - `phase_manifest.json` per `references/artifact-layout.md` (gate_result left to the orchestrator).
 
