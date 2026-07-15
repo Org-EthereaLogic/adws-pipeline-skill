@@ -1,0 +1,14 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "f.js"
+        }
+      ]
+    },
+    "output_mode": "unknown",
+    "branch_name": "feat/branch"
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when output mode is unknown\""
+}

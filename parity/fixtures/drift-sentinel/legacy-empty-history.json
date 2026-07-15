@@ -1,0 +1,12 @@
+{
+  "input": {
+    "entropy_history": [],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"returns pass with null ctm when entropy_history is empty\" (zone green)"
+}

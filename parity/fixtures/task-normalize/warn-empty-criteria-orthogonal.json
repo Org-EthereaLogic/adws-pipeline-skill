@@ -1,0 +1,8 @@
+{
+  "input": {
+    "title": "Fix issue",
+    "requested_change": "Fix the bug",
+    "acceptance_criteria": []
+  },
+  "note": "tests/skills/task-normalize.test.js — \"delta_r is 0.5 (orthogonal) when acceptance_criteria is empty\""
+}

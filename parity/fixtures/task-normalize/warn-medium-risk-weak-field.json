@@ -1,0 +1,16 @@
+{
+  "input": {
+    "title": "Refactor billing invoice generator",
+    "requested_change": "Split the monolithic invoice builder into composable formatting helpers",
+    "problem_statement": "The billing module has grown difficult to maintain and extend",
+    "acceptance_criteria": [
+      "Invoice totals remain identical for existing accounts",
+      "New helpers each have dedicated unit coverage"
+    ],
+    "constraints": [],
+    "file_hints": [
+      "src/billing.js"
+    ]
+  },
+  "note": "Authored — medium coherence band plus an empty-array weak field: warn via weak-field branch"
+}

@@ -1,0 +1,10 @@
+{
+  "input": {
+    "output_mode": "direct_branch",
+    "branch_name": "feat/adws/job_002",
+    "policy": {
+      "allow_direct_commit": true
+    }
+  },
+  "note": "Authored — direct_branch with allow_direct_commit true: policy-consistent, pass"
+}

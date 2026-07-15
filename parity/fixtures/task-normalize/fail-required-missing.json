@@ -1,0 +1,6 @@
+{
+  "input": {
+    "problem_statement": "Something is broken."
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when required fields are missing\""
+}

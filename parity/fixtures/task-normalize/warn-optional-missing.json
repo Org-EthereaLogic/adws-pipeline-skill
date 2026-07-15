@@ -1,0 +1,12 @@
+{
+  "input": {
+    "title": "Fix the login crash",
+    "requested_change": "Add null check before accessing session",
+    "acceptance_criteria": [
+      "No crash"
+    ],
+    "constraints": [],
+    "file_hints": []
+  },
+  "note": "tests/skill-modules.test.js — \"returns warn when optional fields are missing\""
+}

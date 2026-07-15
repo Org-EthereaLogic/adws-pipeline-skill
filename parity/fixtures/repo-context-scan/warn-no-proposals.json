@@ -1,0 +1,14 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Vague plan",
+      "file_change_proposal": []
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns warn when plan has no file proposals\""
+}

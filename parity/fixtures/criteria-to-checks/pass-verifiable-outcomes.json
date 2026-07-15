@@ -1,0 +1,10 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "GET /api/items returns the seeded inventory list",
+      "Hero title reads \"Ship internal tooling\"",
+      "Clicking the CTA opens the signup panel"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when all criteria use verifiable language\""
+}

@@ -1,0 +1,18 @@
+{
+  "input": {
+    "title": "Fix null pointer in payment handler",
+    "requested_change": "Payment handler throws null reference on missing billing address.",
+    "problem_statement": "Billing address missing causes null reference in payment processing.",
+    "acceptance_criteria": [
+      "Payment handler must not throw when billing address is null",
+      "Missing billing address should return a validation error response"
+    ],
+    "constraints": [
+      "Must not break session management"
+    ],
+    "file_hints": [
+      "src/payment.js"
+    ]
+  },
+  "note": "tests/skills/task-normalize.test.js — \"returns pass for well-formed coherent task — low canonical ΔR\" (cosine >= 0.20)"
+}

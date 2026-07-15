@@ -1,0 +1,15 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.3,
+        "parseFailureScore": 0
+      },
+      {
+        "entropy": 0.3,
+        "parseFailureScore": 0
+      }
+    ]
+  },
+  "note": "tests/umif-canonical-consumers.test.js P2.6 — \"quiet history passes in SAFE with canonical fields\" (env unset: default mode is on)"
+}

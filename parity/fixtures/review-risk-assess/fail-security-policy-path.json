@@ -1,0 +1,13 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "config/policy.json",
+          "action": "modify"
+        }
+      ]
+    }
+  },
+  "note": "Authored — quirk: /policy/i pattern flags any path containing \"policy\" as security-sensitive: high risk, fail"
+}

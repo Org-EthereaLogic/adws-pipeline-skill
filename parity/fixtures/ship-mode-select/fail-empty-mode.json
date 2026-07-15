@@ -1,0 +1,8 @@
+{
+  "input": {
+    "output_mode": "",
+    "branch_name": "feat/test",
+    "policy": {}
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns fail when output_mode is missing or unrecognized\""
+}

@@ -1,0 +1,9 @@
+{
+  "input": {
+    "entropy_history": []
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — canonical mode, empty history: pass with null ctm and band/zone SAFE"
+}

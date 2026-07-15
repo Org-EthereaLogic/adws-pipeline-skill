@@ -1,0 +1,9 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "GET /api/items returns the list",
+      "Code is good"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"generates check specs only for verifiable criteria\" (CHK001 for the verifiable one)"
+}

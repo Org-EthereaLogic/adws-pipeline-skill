@@ -1,0 +1,10 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": []
+    },
+    "output_mode": "pr",
+    "branch_name": "feat/branch"
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when no files to ship\""
+}

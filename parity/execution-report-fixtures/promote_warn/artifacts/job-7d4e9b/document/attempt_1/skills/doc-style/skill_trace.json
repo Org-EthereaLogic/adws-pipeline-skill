@@ -1,0 +1,9 @@
+{
+  "skill_id": "doc-style",
+  "version": "1.2.0",
+  "started_at": "2026-07-10T18:02:00Z",
+  "completed_at": "2026-07-10T18:03:00Z",
+  "rubric_result": "warn",
+  "latency_ms": 4180,
+  "error": "Heading depth exceeds style guide (h5 used in docs/audit-log.md)"
+}

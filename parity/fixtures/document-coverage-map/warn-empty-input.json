@@ -1,0 +1,4 @@
+{
+  "input": {},
+  "note": "tests/skills/document-coverage-map.test.js — \"handles entirely missing input without throwing\""
+}

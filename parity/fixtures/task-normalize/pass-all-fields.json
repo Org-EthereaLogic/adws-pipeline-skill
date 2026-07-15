@@ -1,0 +1,26 @@
+{
+  "input": {
+    "title": "Fix the login crash",
+    "requested_change": "Add null check before accessing session",
+    "problem_statement": "Login crashes when session expires.",
+    "acceptance_criteria": [
+      "No crash on expired session",
+      "Test added"
+    ],
+    "constraints": [
+      "Keep backward compat"
+    ],
+    "file_hints": [
+      "src/auth.js"
+    ],
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    },
+    "risk": {
+      "risk_level": "low"
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"returns pass when all fields are present and well-formed\""
+}

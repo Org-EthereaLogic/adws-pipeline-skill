@@ -1,0 +1,25 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/b.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/c.js",
+          "action": "delete"
+        },
+        {
+          "file_path": "src/d.js",
+          "action": "delete"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 4 deletes (> 3): high risk, fail"
+}

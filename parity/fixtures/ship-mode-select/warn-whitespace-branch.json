@@ -1,0 +1,8 @@
+{
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "   ",
+    "policy": {}
+  },
+  "note": "Authored — whitespace-only branch name trims to empty: has_branch_name false, warn"
+}

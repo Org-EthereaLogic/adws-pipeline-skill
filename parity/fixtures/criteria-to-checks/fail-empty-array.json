@@ -1,0 +1,6 @@
+{
+  "input": {
+    "acceptance_criteria": []
+  },
+  "note": "tests/skill-modules.test.js — \"returns fail when criteria array is empty\""
+}

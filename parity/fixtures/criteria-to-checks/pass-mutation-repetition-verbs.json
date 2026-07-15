@@ -1,0 +1,10 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "POST /api/reservations decrements stock for a valid request",
+      "The success card repeats the attendee name and ticket label exactly",
+      "Adding a seat increments the total by the per-seat price"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"recognizes mutation and repetition verbs as verifiable\""
+}

@@ -1,0 +1,8 @@
+{
+  "input": {
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "note": "tests/skills/verify-evidence-map.test.js — \"returns fail when checks array is empty\""
+}

@@ -1,0 +1,8 @@
+{
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "",
+    "policy": {}
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns warn when branch_name is absent\""
+}

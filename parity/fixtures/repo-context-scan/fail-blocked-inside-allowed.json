@@ -1,0 +1,22 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/vendor/lib.js",
+          "action": "modify",
+          "description": "Patch vendored library"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": [
+        "src/vendor/"
+      ]
+    }
+  },
+  "note": "Authored — file inside an allowed path but also inside a blocked path: in_blocked_path violation, fail"
+}

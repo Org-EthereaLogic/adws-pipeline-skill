@@ -1,0 +1,13 @@
+{
+  "input": {
+    "entropy_history": [
+      0.1,
+      0.2,
+      0.35
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — WATCH band (0.15 <= ctm <= 0.40; verified ctm 0.23538 against original): warn, medium risk"
+}

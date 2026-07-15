@@ -1,0 +1,14 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "f.js"
+        }
+      ]
+    },
+    "output_mode": "pr",
+    "branch_name": ""
+  },
+  "note": "tests/skill-modules.test.js — \"returns warn when branch name is missing\""
+}
