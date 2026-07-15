@@ -35,17 +35,33 @@ Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
    Fixed to match the original: latest attempt per phase only.
 6. `PLAN_COHERENCE_BELOW_THRESHOLD` retained in the reason sets for report parity but marked reserved (no gate emits it).
 
-## Gaps — require Anthony's environment (cannot be done in this sandbox)
+## WBS 6.1–6.4 — live E2E drills (COMPLETE, 2026-07-15)
 
-| WBS | What | How to run |
+Executed live against a scratch GitHub repo (`AJ-EthereaLogic-ai/adws-e2e-scratch`) with
+`gh` authenticated. Full evidence in `acceptance/DRILL_EVIDENCE.md`; sign-off in
+`acceptance/ACCEPTANCE.md`.
+
+| WBS | What | Result |
 |---|---|---|
-| 6.1 | E2E `pr`-mode run on a sample repo with a live PR (AC-5.1, DPPD §1.3) | Install the skill + agents into a Claude Code project on a scratch GitHub repo with `gh` authenticated; ask Claude to run a small task through the adws pipeline |
-| 6.2 | `direct_branch` (incl. protected-branch refusal drill) and `patch` E2E runs (AC-5.2, AC-5.3) | Same setup; submit contracts with those modes |
-| 6.3 | Gate-failure drills: forced test failure (rewind path) and budget exhaustion (termination) | Same setup; seed a deliberate bug |
-| 6.4 | Acceptance sign-off | After 6.1–6.3 |
+| 6.1 | E2E `pr`-mode, full 7 phases, live PR (AC-5.1, DPPD §1.3) | ✅ job_0001 → **live PR #1**, PROMOTE-with-warn exit 10, signed commit, worktree isolation |
+| 6.2 | `direct_branch` protected refusal + patch modes (AC-5.2, AC-5.3) | ✅ job_0002 refused w/ no orphan commit → RETRY; job_0003 patch applies, no push; job_0004 direct_branch push, no PR — all survived adversarial refutation |
+| 6.3 | Gate-failure drills (AC-2.1 rewind, AC-2.2 budget exhaustion) | ✅ job_0005 real test FAIL → rewind → recover; job_0006 budget exhausted → BUILD_GATE_FAILURE → RETRY |
+| 6.4 | Acceptance sign-off | ✅ 17/17 ACs satisfied (independent verifiers + adversarial refuters + completeness critic); **ACCEPTED** with documented notes |
 
-Everything verifiable without a live GitHub environment has been verified. To install:
-copy `adws-pipeline/` into `.claude/skills/` (or register per your setup) and
+Post-audit additions: **job_0007** live clean PROMOTE (exit 0, PR #2) after the F-1 fix;
+**job_0008** live QUARANTINE (exit 2) via 2× real grader BLOCK. All four verdict-matrix
+cells (0/10/1/2) are now demonstrated live.
+
+**Defect found by the drills — F-1 (fixed):** `adws-planner` emitted `reason` per
+file-change proposal while `repo-context-scan.js` checks `description`, so every real plan
+tripped a spurious build `warn` and clean PROMOTE was unreachable live. Fixed on branch
+`fix/f1-planner-description-and-6x-acceptance` (planner + artifact-layout emit `description`;
+validator header documents it; no logic change → parity 79/79 preserved), verified live via
+job_0007. A minor parity-frozen finding (F-2, `criteria-to-checks` verb-regex gaps) is
+documented but not fixed. Honest evidence-scope caveats (no per-phase LLM telemetry;
+placeholder timestamps) are recorded in `acceptance/DRILL_EVIDENCE.md`.
+
+To install: copy `adws-pipeline/` into `.claude/skills/` (or register per your setup) and
 `.claude/agents/*.md` into the target project's `.claude/agents/`.
 
 ## Review gate — PR #1 (`feat/adws-pipeline-skill-v1` → `main`)

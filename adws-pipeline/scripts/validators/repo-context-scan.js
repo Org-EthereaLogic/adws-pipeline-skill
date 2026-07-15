@@ -1,4 +1,7 @@
-// INPUT: { plan_output: { file_change_proposal: [{file_path, action}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] } }
+// INPUT: { plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] } }
+//   NOTE: each proposal's `description` (what changes and why) is read by the
+//   underspecification check below — a proposal with a missing or <3-char
+//   `description` yields `warn`. The planner (adws-planner) MUST emit this field.
 // USAGE: node repo-context-scan.js <input.json | ->   → JSON verdict on stdout (rubric_result: pass|warn|fail)
 'use strict';
 

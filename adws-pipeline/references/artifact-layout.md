@@ -54,7 +54,7 @@ artifacts/{jobId}/
 
 `phase_output.json` — phase-specific. Required minimums:
 
-- plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "reason": "" }], "criteria_map": [] }`
+- plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [] }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars)
 - build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "" }`
 - test: `{ "checks": [{ "check": "", "pass": true, "output": "" }], "command_log": [] }`
 - review: `{ "findings": [], "risk_level": "", "approved": true }`
