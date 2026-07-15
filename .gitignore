@@ -1,0 +1,14 @@
+# Reference-only copy of ADWS_Pro source used for extraction (WBS 1.0).
+# Has its own nested .git repo and is 1.5GB+ — never commit.
+ADWS_PRO_source/
+
+# OS junk
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Stray temp/scratch files
+*.tmp
+*.tmp.json
