@@ -1,6 +1,11 @@
-# Reference-only copy of ADWS_Pro source used for extraction (WBS 1.0).
-# Has its own nested .git repo and is 1.5GB+ — never commit.
+# Optional local reference copy of the private ADWS_Pro source. Not distributed
+# with this repo; only needed to re-run `node parity/run-parity.js --freeze`
+# against the live originals. Parity otherwise verifies against frozen baselines.
 ADWS_PRO_source/
+
+# Evidence trees produced when the skill runs a job (never committed here —
+# they belong in the target project).
+artifacts/
 
 # OS junk
 .DS_Store
