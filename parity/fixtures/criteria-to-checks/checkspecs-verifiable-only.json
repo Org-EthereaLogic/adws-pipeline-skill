@@ -5,5 +5,21 @@
       "Code is good"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"generates check specs only for verifiable criteria\" (CHK001 for the verifiable one)"
+  "note": "tests/skill-modules.test.js — \"generates check specs only for verifiable criteria\" (CHK001 for the verifiable one)",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 2,
+    "verifiable_count": 1,
+    "vague_count": 1,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "GET /api/items returns the list",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

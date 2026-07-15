@@ -17,5 +17,16 @@
     "build_output": {},
     "policy": {}
   },
-  "note": "tests/skills/verify-evidence-map.test.js — \"returns warn when some checks fail\""
+  "note": "tests/skills/verify-evidence-map.test.js — \"returns warn when some checks fail\"",
+  "expected": {
+    "rubric_result": "warn",
+    "checks_total": 2,
+    "checks_passed": 1,
+    "checks_failed": 1,
+    "syntax_errors": 1,
+    "evidence_coverage": 0.5,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

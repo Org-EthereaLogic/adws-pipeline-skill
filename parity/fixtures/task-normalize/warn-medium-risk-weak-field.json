@@ -12,5 +12,37 @@
       "src/billing.js"
     ]
   },
-  "note": "Authored — medium coherence band plus an empty-array weak field: warn via weak-field branch"
+  "note": "Authored — medium coherence band plus an empty-array weak field: warn via weak-field branch",
+  "expected": {
+    "rubric_result": "warn",
+    "normalized_summary": {
+      "title": "Refactor billing invoice generator",
+      "requested_change": "Split the monolithic invoice builder into composable formatting helpers",
+      "acceptance_criteria_count": 2,
+      "constraints_count": 0,
+      "file_hints_count": 1,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "title",
+      "requested_change",
+      "problem_statement",
+      "acceptance_criteria",
+      "file_hints"
+    ],
+    "fields_missing": [],
+    "fields_weak": [
+      {
+        "field": "constraints",
+        "reason": "empty array"
+      }
+    ],
+    "delta_r": 0.4516,
+    "coherence_score": 0.1515,
+    "synthetic_risk": "medium",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

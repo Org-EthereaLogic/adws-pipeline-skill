@@ -19,5 +19,24 @@
       ]
     }
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\""
+  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\"",
+  "expected": {
+    "rubric_result": "pass",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "plan_summary": "Add null check",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

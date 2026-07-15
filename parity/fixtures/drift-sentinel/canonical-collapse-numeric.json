@@ -9,5 +9,24 @@
   "env": {
     "ADWS_UMIF_CANONICAL": "on"
   },
-  "note": "Authored — COLLAPSE band (ctm < 0; verified ctm -0.0813 against original): fail, critical risk"
+  "note": "Authored — COLLAPSE band (ctm < 0; verified ctm -0.0813 against original): fail, critical risk",
+  "expected": {
+    "rubric_result": "fail",
+    "ctm": -0.0813,
+    "band": "COLLAPSE",
+    "zone": "COLLAPSE",
+    "risk_level": "critical",
+    "xi": 1.0813,
+    "rate": 0.17214,
+    "accel": 0.32653,
+    "d_entropy": 0,
+    "ds_dtx": 0.17214,
+    "gradient_alert": true,
+    "current_entropy": 0.34665,
+    "history_length": 3,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

@@ -4,5 +4,15 @@
     "branch_name": "",
     "policy": {}
   },
-  "note": "tests/skills/ship-mode-select.test.js — \"returns warn when branch_name is absent\""
+  "note": "tests/skills/ship-mode-select.test.js — \"returns warn when branch_name is absent\"",
+  "expected": {
+    "rubric_result": "warn",
+    "output_mode": "pr",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": false,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

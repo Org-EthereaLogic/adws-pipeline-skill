@@ -15,5 +15,15 @@
     "output_mode": "direct_branch",
     "branch_name": "feat/adws/job_009"
   },
-  "note": "Authored — direct_branch mode with files and branch present: pass"
+  "note": "Authored — direct_branch mode with files and branch present: pass",
+  "expected": {
+    "rubric_result": "pass",
+    "files_to_ship": 2,
+    "output_mode": "direct_branch",
+    "has_branch_name": true,
+    "composition_valid": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

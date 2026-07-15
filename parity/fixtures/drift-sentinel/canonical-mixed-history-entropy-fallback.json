@@ -13,5 +13,24 @@
   "env": {
     "ADWS_UMIF_CANONICAL": "on"
   },
-  "note": "Authored — quirk: parseFailureScore is only used when EVERY entry has it; a single entry without it makes the whole signal fall back to entropy values"
+  "note": "Authored — quirk: parseFailureScore is only used when EVERY entry has it; a single entry without it makes the whole signal fall back to entropy values",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": 0.64015,
+    "band": "SAFE",
+    "zone": "SAFE",
+    "risk_level": "low",
+    "xi": 0.35985,
+    "rate": 0.14154,
+    "accel": 0.04357,
+    "d_entropy": 0,
+    "ds_dtx": 0.14154,
+    "gradient_alert": false,
+    "current_entropy": 0.34823,
+    "history_length": 2,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

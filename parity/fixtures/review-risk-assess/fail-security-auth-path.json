@@ -13,5 +13,15 @@
       ]
     }
   },
-  "note": "Authored — path matches /auth/i security-sensitive pattern: high risk, fail"
+  "note": "Authored — path matches /auth/i security-sensitive pattern: high risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 2,
+    "deletes_count": 0,
+    "security_sensitive_count": 1,
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

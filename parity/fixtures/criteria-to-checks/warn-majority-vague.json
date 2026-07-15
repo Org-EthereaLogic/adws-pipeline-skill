@@ -6,5 +6,21 @@
       "Looks polished"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when a majority of criteria lack verifiable language\""
+  "note": "tests/skill-modules.test.js — \"returns warn when a majority of criteria lack verifiable language\"",
+  "expected": {
+    "rubric_result": "warn",
+    "criteria_count": 3,
+    "verifiable_count": 1,
+    "vague_count": 2,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "GET /api/items returns the inventory list",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

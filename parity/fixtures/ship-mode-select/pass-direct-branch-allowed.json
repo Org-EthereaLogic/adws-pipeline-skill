@@ -6,5 +6,15 @@
       "allow_direct_commit": true
     }
   },
-  "note": "Authored — direct_branch with allow_direct_commit true: policy-consistent, pass"
+  "note": "Authored — direct_branch with allow_direct_commit true: policy-consistent, pass",
+  "expected": {
+    "rubric_result": "pass",
+    "output_mode": "direct_branch",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

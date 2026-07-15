@@ -16,7 +16,26 @@
 // Also verifies NFR-4 per ported script: only Node built-in requires, and the
 // CLI wrapper works end-to-end on a sample fixture (exit 0, valid JSON).
 //
-// Usage: node parity/run-parity.js   (plain Node, no jest, no npm install)
+// ADWS_PRO_source/ is a local, gitignored reference copy of the original
+// ADWS_Pro repo (not distributed here — see .gitignore) used to extract and
+// verify the ports. Each fixture also carries a frozen `expected` field
+// (the original's exact execute() result, captured via --freeze) so parity
+// can be verified from a fresh clone WITHOUT ADWS_PRO_source: this script
+// falls back to comparing the ported output against that frozen baseline.
+// Reviewers/CI therefore get real, reproducible evidence either way — this
+// closes the "trust-me" gap where PARITY_REPORT.md could claim parity that
+// nobody but the original author could reproduce.
+//
+// Usage:
+//   node parity/run-parity.js            verify (live originals if
+//                                         ADWS_PRO_source/ present, else
+//                                         frozen `expected` fixtures)
+//   node parity/run-parity.js --freeze   (requires ADWS_PRO_source/) run
+//                                         every fixture against the live
+//                                         original and rewrite its `expected`
+//                                         field — run this after touching
+//                                         fixtures or re-syncing the source
+//
 // Exit 0 when everything matches; exit 1 on any mismatch or NFR-4 failure.
 
 const fs = require('fs');
@@ -124,6 +143,14 @@ function checkCli(portedPath, fixturePath, fixtureEnv) {
 }
 
 function main() {
+  const freeze = process.argv.includes('--freeze');
+  const hasOriginal = fs.existsSync(ORIGINAL_DIR);
+  if (freeze && !hasOriginal) {
+    console.error('--freeze requires a local ADWS_PRO_source/ checkout (not found at ' + ORIGINAL_DIR + ').');
+    process.exit(3);
+  }
+  const baselineSource = hasOriginal ? 'live-original' : 'frozen-expected';
+
   const packs = fs
     .readdirSync(FIXTURES_DIR)
     .filter((d) => fs.statSync(path.join(FIXTURES_DIR, d)).isDirectory())
@@ -133,6 +160,7 @@ function main() {
   let total = 0;
   let matches = 0;
   let mismatches = 0;
+  let frozen = 0;
   const nfr4 = [];
 
   for (const pack of packs) {
@@ -149,27 +177,51 @@ function main() {
       const caseName = file.replace(/\.json$/, '');
       total += 1;
 
-      const orig = runOne(originalPath, fixturePath, fixture.env);
+      const orig = hasOriginal ? runOne(originalPath, fixturePath, fixture.env) : null;
+
+      if (freeze) {
+        if (orig.error) {
+          mismatches += 1;
+          console.log('FAIL ' + pack + '/' + caseName + '  freeze: original errored: ' + orig.error);
+          continue;
+        }
+        fixture.expected = orig.result;
+        fs.writeFileSync(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
+        frozen += 1;
+        matches += 1;
+        console.log('FROZE ' + pack + '/' + caseName);
+        continue;
+      }
+
       const port1 = runOne(portedPath, fixturePath, fixture.env);
       const port2 = runOne(portedPath, fixturePath, fixture.env);
+
+      const baseline = hasOriginal
+        ? { result: orig.result, error: orig.error }
+        : {
+            result: Object.prototype.hasOwnProperty.call(fixture, 'expected') ? fixture.expected : null,
+            error: Object.prototype.hasOwnProperty.call(fixture, 'expected')
+              ? null
+              : 'no frozen `expected` in fixture and ADWS_PRO_source/ not present — run --freeze once with the source checked out',
+          };
 
       const row = {
         pack,
         caseName,
         env: fixture.env ? Object.entries(fixture.env).map(([k, v]) => k + '=' + v).join(' ') : '',
-        origVerdict: orig.result ? orig.result.rubric_result : 'ERROR',
+        origVerdict: baseline.result ? baseline.result.rubric_result : 'ERROR',
         portVerdict: port1.result ? port1.result.rubric_result : 'ERROR',
         match: false,
         deterministic: false,
         diff: null,
       };
 
-      if (orig.error || port1.error || port2.error) {
-        row.diff = orig.error || port1.error || port2.error;
+      if (baseline.error || port1.error || port2.error) {
+        row.diff = baseline.error || port1.error || port2.error;
       } else {
-        row.match = deepEqual(orig.result, port1.result);
+        row.match = deepEqual(baseline.result, port1.result);
         row.deterministic = deepEqual(port1.result, port2.result);
-        if (!row.match) row.diff = firstDiff(orig.result, port1.result);
+        if (!row.match) row.diff = firstDiff(baseline.result, port1.result);
         else if (!row.deterministic) row.diff = 'non-deterministic: ' + firstDiff(port1.result, port2.result);
       }
 
@@ -183,6 +235,8 @@ function main() {
       );
     }
 
+    if (freeze) continue;
+
     // NFR-4 per pack (requires scan + one CLI smoke run on the first fixture)
     const req = checkRequires(portedPath);
     const firstFixture = path.join(FIXTURES_DIR, pack, fixtureFiles[0]);
@@ -190,6 +244,11 @@ function main() {
     const cli = checkCli(portedPath, firstFixture, firstEnv);
     nfr4.push({ pack, requires: req.requires, requiresOk: req.ok, bad: req.bad, cliOk: cli.ok, cliDetail: cli.detail, cliFixture: fixtureFiles[0] });
     if (!req.ok || !cli.ok) mismatches += 1;
+  }
+
+  if (freeze) {
+    console.log('\nFroze ' + frozen + '/' + total + ' fixtures against the live ADWS_PRO_source originals.');
+    process.exit(mismatches === 0 ? 0 : 1);
   }
 
   // ---- report ----
@@ -202,6 +261,12 @@ function main() {
   lines.push('Each fixture runs in a fresh child process per implementation (fresh env + module cache).');
   lines.push('"Full match" deep-compares every key of the execute() result (undefined values preserved via sentinel).');
   lines.push('"Deterministic" deep-compares two independent runs of the ported script on the same input (AC-3.3).');
+  lines.push('');
+  lines.push(
+    baselineSource === 'live-original'
+      ? '**Baseline: live original.** `ADWS_PRO_source/` was present on this machine, so every fixture ran against the actual original `execute()` in a fresh child process.'
+      : '**Baseline: frozen `expected`.** `ADWS_PRO_source/` (gitignored, not distributed in this repo) was not present, so every fixture compared the ported script against the `expected` field frozen into the fixture JSON via `node parity/run-parity.js --freeze` — this is what a fresh clone or CI reproduces without the original source.'
+  );
   lines.push('');
   for (const pack of packs) {
     lines.push('## ' + pack);

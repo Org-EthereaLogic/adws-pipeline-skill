@@ -4,5 +4,47 @@
     "requested_change": "Fix the bug",
     "acceptance_criteria": []
   },
-  "note": "tests/skills/task-normalize.test.js — \"delta_r is 0.5 (orthogonal) when acceptance_criteria is empty\""
+  "note": "tests/skills/task-normalize.test.js — \"delta_r is 0.5 (orthogonal) when acceptance_criteria is empty\"",
+  "expected": {
+    "rubric_result": "warn",
+    "normalized_summary": {
+      "title": "Fix issue",
+      "requested_change": "Fix the bug",
+      "acceptance_criteria_count": 0,
+      "constraints_count": 0,
+      "file_hints_count": 0,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "title",
+      "requested_change"
+    ],
+    "fields_missing": [
+      {
+        "field": "problem_statement",
+        "required": false
+      },
+      {
+        "field": "constraints",
+        "required": false
+      },
+      {
+        "field": "file_hints",
+        "required": false
+      }
+    ],
+    "fields_weak": [
+      {
+        "field": "acceptance_criteria",
+        "reason": "empty array"
+      }
+    ],
+    "delta_r": 0.5,
+    "coherence_score": 0,
+    "synthetic_risk": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }

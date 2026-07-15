@@ -18,5 +18,34 @@
       ]
     }
   },
-  "note": "tests/skill-modules.test.js — \"returns fail when proposals violate policy\" (both outside_allowed_paths and in_blocked_path)"
+  "note": "tests/skill-modules.test.js — \"returns fail when proposals violate policy\" (both outside_allowed_paths and in_blocked_path)",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "infrastructure/secrets": [
+        {
+          "file": "infrastructure/secrets/keys.json",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "infrastructure/secrets/keys.json",
+        "reason": "outside_allowed_paths"
+      },
+      {
+        "file": "infrastructure/secrets/keys.json",
+        "reason": "in_blocked_path",
+        "blocked_path": "infrastructure/secrets/"
+      }
+    ],
+    "underspecified": false,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
 }
