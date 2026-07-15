@@ -35,6 +35,8 @@ mkdir -p "${SKILLS_DIR}" "${AGENTS_DIR}"
 rm -rf "${SKILLS_DIR}/adws-pipeline"
 cp -R "${SRC}/adws-pipeline" "${SKILLS_DIR}/adws-pipeline"
 cp "${SRC}/.claude/agents/"adws-*.md "${AGENTS_DIR}/"
+# strip OS junk that a working copy may carry (never shipped into a project)
+find "${SKILLS_DIR}/adws-pipeline" -name '.DS_Store' -delete 2>/dev/null || true
 
 AGENT_COUNT=$(ls -1 "${SRC}/.claude/agents/"adws-*.md | wc -l | tr -d ' ')
 
