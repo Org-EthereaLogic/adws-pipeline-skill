@@ -1,0 +1,9 @@
+{
+  "skill_id": "adws-grader",
+  "rubric_result": "fail",
+  "criteria_results": [
+    { "criterion": "No crash on expired session", "verdict": "unaddressed" },
+    { "criterion": "Test added", "verdict": "satisfied" }
+  ],
+  "summary": "Shipped diff does not address the null-check criterion — AC-coverage drift BLOCK."
+}

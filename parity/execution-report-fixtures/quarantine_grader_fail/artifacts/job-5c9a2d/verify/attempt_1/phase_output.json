@@ -1,0 +1,40 @@
+{
+  "verify_result": {
+    "passed": 5,
+    "total": 5,
+    "syntax_errors": 0,
+    "checks": [
+      {
+        "check": "syntax",
+        "file": "src/retry_worker.py",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "syntax",
+        "file": "tests/test_retry_worker.py",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "manifest_complete",
+        "file": "",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "contract_paths_touched",
+        "file": "",
+        "pass": true,
+        "detail": null
+      },
+      {
+        "check": "no_orphan_artifacts",
+        "file": "",
+        "pass": true,
+        "detail": null
+      }
+    ]
+  },
+  "drift_verdict": "PASS"
+}
