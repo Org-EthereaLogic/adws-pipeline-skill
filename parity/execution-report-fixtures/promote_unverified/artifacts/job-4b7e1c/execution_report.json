@@ -1,0 +1,120 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-15T06:37:52.381Z",
+  "job_id": "job-2f8c1a",
+  "task_id": "TASK-101",
+  "decision": "PROMOTE",
+  "decision_reason": "Job completed successfully but at least one gate is unverified (missing evidence); promoting with warn flag — per CONSTITUTION/AGENTS governance, unverified evidence must not silently pass as clean.",
+  "warn_flag": true,
+  "exit_code": 10,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "unverified",
+      "detail": "2 pass, 1 unverified — 1 skill invocation(s) produced no verifiable rubric_result (crashed or malformed trace)"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "unverified"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null
+    },
+    {
+      "phase": "review",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null
+    }
+  ],
+  "warnings": [
+    "Gate \"skills_clean\" evaluated to unverified: 1 skill invocation(s) produced no verifiable rubric_result (crashed or malformed trace)"
+  ],
+  "evidence_root": "/Users/etherealogic_2/Dev/adws-pipeline-skill/parity/execution-report-fixtures/promote_unverified/artifacts/job-4b7e1c"
+}

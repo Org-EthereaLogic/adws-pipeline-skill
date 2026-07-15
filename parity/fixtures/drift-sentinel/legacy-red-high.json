@@ -1,0 +1,33 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.2
+      },
+      {
+        "entropy": 0.25
+      },
+      {
+        "entropy": 0.25
+      }
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "Authored — legacy ctm = 0.08 in (0.05, 0.10]: red zone, high (non-critical) risk, warn",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.08,
+    "zone": "red",
+    "risk_level": "high",
+    "d_entropy": 0,
+    "ds_dtx": 0.05303,
+    "gradient_alert": false,
+    "current_entropy": 0.25,
+    "history_length": 3,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

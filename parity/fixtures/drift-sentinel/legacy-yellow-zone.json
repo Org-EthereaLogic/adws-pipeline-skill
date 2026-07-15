@@ -1,0 +1,33 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.2
+      },
+      {
+        "entropy": 0.25
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"returns warn when entropy puts CTM in yellow zone\"",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.08,
+    "zone": "red",
+    "risk_level": "high",
+    "d_entropy": 0.05,
+    "ds_dtx": 0.1,
+    "gradient_alert": true,
+    "current_entropy": 0.25,
+    "history_length": 2,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

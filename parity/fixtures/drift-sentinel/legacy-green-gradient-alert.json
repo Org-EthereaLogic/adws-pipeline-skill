@@ -1,0 +1,26 @@
+{
+  "input": {
+    "entropy_history": [
+      0.01,
+      0.1
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "Authored — numeric history, green zone but |ds_dtx| > 0.08 gradient threshold: warn with medium risk",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.23,
+    "zone": "green",
+    "risk_level": "medium",
+    "d_entropy": 0.09,
+    "ds_dtx": 0.18,
+    "gradient_alert": true,
+    "current_entropy": 0.1,
+    "history_length": 2,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/settings.js",
+          "action": "modify",
+          "description": "Add null guard"
+        }
+      ]
+    },
+    "doc_output": {
+      "changelog_entry": "Fixed null-pointer crash in settings save by adding a guard clause.",
+      "docs_delta": [
+        {
+          "file_path": "src/docs/changelog.md",
+          "action": "modify",
+          "content": "Updated changelog."
+        }
+      ],
+      "documentation_summary": "Changelog updated with fix description."
+    },
+    "acceptance_criteria": [
+      "Crash no longer occurs",
+      "Regression test added"
+    ]
+  },
+  "note": "tests/skills/document-coverage-map.test.js — \"returns pass when changelog, docs delta, and summary all capture the change\" (coverage 1.0)",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed_count": 1,
+    "documented_paths_count": 1,
+    "changelog_present": true,
+    "summary_present": true,
+    "acceptance_criteria_count": 2,
+    "coverage_ratio": 1,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

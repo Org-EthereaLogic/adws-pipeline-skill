@@ -1,0 +1,31 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/settings.js",
+          "action": "modify",
+          "description": "Add null guard"
+        }
+      ]
+    },
+    "doc_output": {
+      "changelog_entry": "Fixed the crash.",
+      "docs_delta": [],
+      "documentation_summary": ""
+    }
+  },
+  "note": "tests/skills/document-coverage-map.test.js — \"returns warn when only a changelog entry is present\" (coverage 0.5)",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed_count": 1,
+    "documented_paths_count": 0,
+    "changelog_present": true,
+    "summary_present": false,
+    "acceptance_criteria_count": 0,
+    "coverage_ratio": 0.5,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

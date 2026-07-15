@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-07-15T05:58:18.028Z",
+  "job_id": "job-c31f57",
+  "task_id": "TASK-103",
+  "decision": "RETRY",
+  "decision_reason": "Job failed with retriable reason (TEST_GATE_FAILURE); retry is permitted by policy.",
+  "warn_flag": false,
+  "exit_code": 1,
+  "final_status": "failed",
+  "failure_reason": "TEST_GATE_FAILURE",
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "fail",
+      "detail": "3/7 — Missing phase outputs: review, document, ship, verify"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "5 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 3,
+      "last_gate_result": "fail",
+      "failure_reason": "TEST_GATE_FAILURE",
+      "model_tier": "sonnet"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 2,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 3,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "fail",
+      "advocate": "pass",
+      "dissent": null
+    },
+    {
+      "phase": "test",
+      "attempt": 2,
+      "critic": "fail",
+      "advocate": "pass",
+      "dissent": null
+    },
+    {
+      "phase": "test",
+      "attempt": 3,
+      "critic": "fail",
+      "advocate": "pass",
+      "dissent": null
+    }
+  ],
+  "warnings": [
+    "Failure reason recorded: TEST_GATE_FAILURE",
+    "Gate \"pipeline_completion\" evaluated to fail: Missing phase outputs: review, document, ship, verify",
+    "Gate \"verify_structural\" evaluated to unverified: No verify-phase output recorded for this run",
+    "Phase \"test\" required 3 attempts before producing output."
+  ],
+  "evidence_root": "/sessions/beautiful-tender-turing/mnt/adws-pipeline-skill/parity/execution-report-fixtures/retry/artifacts/job-c31f57"
+}

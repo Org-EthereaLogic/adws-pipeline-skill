@@ -1,0 +1,27 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/old.js",
+          "action": "delete"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 1 delete (1-2 deletes band): medium risk, warn",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed": 2,
+    "deletes_count": 1,
+    "security_sensitive_count": 0,
+    "risk_level": "medium",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

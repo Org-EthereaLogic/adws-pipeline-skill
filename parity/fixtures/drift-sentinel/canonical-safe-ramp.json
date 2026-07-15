@@ -1,0 +1,32 @@
+{
+  "input": {
+    "entropy_history": [
+      0.1,
+      0.25,
+      0.3
+    ]
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "on"
+  },
+  "note": "Authored — numeric history, gentle ramp: SAFE band, pass (verified ctm 0.68336 against original)",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": 0.68336,
+    "band": "SAFE",
+    "zone": "SAFE",
+    "risk_level": "low",
+    "xi": 0.31664,
+    "rate": 0.14076,
+    "accel": 0.0258,
+    "d_entropy": 0,
+    "ds_dtx": 0.14076,
+    "gradient_alert": false,
+    "current_entropy": 0.33991,
+    "history_length": 3,
+    "scale": "canonical",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

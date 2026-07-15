@@ -1,0 +1,20 @@
+{
+  "input": {
+    "output_mode": "direct_branch",
+    "branch_name": "feat/adws/job_001",
+    "policy": {
+      "allow_direct_commit": false
+    }
+  },
+  "note": "tests/skills/ship-mode-select.test.js — \"returns warn when direct_branch mode conflicts with allow_direct_commit: false\"",
+  "expected": {
+    "rubric_result": "warn",
+    "output_mode": "direct_branch",
+    "mode_valid": true,
+    "policy_consistent": false,
+    "has_branch_name": true,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

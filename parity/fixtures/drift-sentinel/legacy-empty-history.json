@@ -1,0 +1,27 @@
+{
+  "input": {
+    "entropy_history": [],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "tests/skills/drift-sentinel.test.js — \"returns pass with null ctm when entropy_history is empty\" (zone green)",
+  "expected": {
+    "rubric_result": "pass",
+    "ctm": null,
+    "band": "__UNDEFINED__",
+    "zone": "green",
+    "risk_level": "low",
+    "d_entropy": 0,
+    "ds_dtx": 0,
+    "gradient_alert": false,
+    "current_entropy": 0,
+    "history_length": 0,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

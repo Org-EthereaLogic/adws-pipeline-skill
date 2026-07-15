@@ -1,0 +1,6 @@
+{
+  "role": "advocate",
+  "verdict": "fail",
+  "dissent": "The proposed change removes the idempotency guard in src/retry_worker.py; under concurrent retries the webhook dispatcher can double-send. I cannot certify correctness without a compensating dedupe key.",
+  "model_tier": "sonnet"
+}

@@ -1,0 +1,52 @@
+{
+  "input": {
+    "title": "Fix",
+    "requested_change": "Add null check before accessing session",
+    "acceptance_criteria": [
+      "No crash"
+    ]
+  },
+  "note": "tests/skill-modules.test.js — \"flags short strings as weak\"",
+  "expected": {
+    "rubric_result": "warn",
+    "normalized_summary": {
+      "title": "Fix",
+      "requested_change": "Add null check before accessing session",
+      "acceptance_criteria_count": 1,
+      "constraints_count": 0,
+      "file_hints_count": 0,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "requested_change",
+      "acceptance_criteria"
+    ],
+    "fields_missing": [
+      {
+        "field": "problem_statement",
+        "required": false
+      },
+      {
+        "field": "constraints",
+        "required": false
+      },
+      {
+        "field": "file_hints",
+        "required": false
+      }
+    ],
+    "fields_weak": [
+      {
+        "field": "title",
+        "reason": "too short"
+      }
+    ],
+    "delta_r": 0.5,
+    "coherence_score": 0,
+    "synthetic_risk": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

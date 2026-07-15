@@ -1,0 +1,11 @@
+{
+  "phase": "test",
+  "attempt": 1,
+  "job_id": "job-7d4e9b",
+  "started_at": "2026-07-10T16:00:00Z",
+  "completed_at": "2026-07-10T16:12:00Z",
+  "agent": "test-runner",
+  "model_tier": "sonnet",
+  "gate_result": "pass",
+  "failure_reason": null
+}

@@ -1,0 +1,18 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": []
+    }
+  },
+  "note": "Authored — 0 files changed: high risk, fail",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

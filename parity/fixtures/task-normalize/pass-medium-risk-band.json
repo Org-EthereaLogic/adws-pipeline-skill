@@ -1,0 +1,46 @@
+{
+  "input": {
+    "title": "Refactor billing invoice generator",
+    "requested_change": "Split the monolithic invoice builder into composable formatting helpers",
+    "problem_statement": "The billing module has grown difficult to maintain and extend",
+    "acceptance_criteria": [
+      "Invoice totals remain identical for existing accounts",
+      "New helpers each have dedicated unit coverage"
+    ],
+    "constraints": [
+      "No API changes"
+    ],
+    "file_hints": [
+      "src/billing.js"
+    ]
+  },
+  "note": "Authored — cosine in [0.10, 0.20) (medium synthetic_risk) with all fields present: medium risk alone does not demote from pass (verified cosine 0.1515 against original)",
+  "expected": {
+    "rubric_result": "pass",
+    "normalized_summary": {
+      "title": "Refactor billing invoice generator",
+      "requested_change": "Split the monolithic invoice builder into composable formatting helpers",
+      "acceptance_criteria_count": 2,
+      "constraints_count": 1,
+      "file_hints_count": 1,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "title",
+      "requested_change",
+      "problem_statement",
+      "acceptance_criteria",
+      "constraints",
+      "file_hints"
+    ],
+    "fields_missing": [],
+    "fields_weak": [],
+    "delta_r": 0.4516,
+    "coherence_score": 0.1515,
+    "synthetic_risk": "medium",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "job_id": "job-9a6b2e",
+  "task_id": "TASK-104",
+  "started_at": "2026-07-10T14:00:00Z",
+  "completed_at": "2026-07-10T15:30:00Z",
+  "final_status": "failed",
+  "failure_reason": "ADVOCATE_DISSENT",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "haiku"
+  },
+  "schema_version": "1.0.0"
+}

@@ -1,0 +1,43 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/b.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/c.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/d.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/e.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/f.js",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "Authored — 6 files (> 5), clean paths, no deletes: medium risk, warn",
+  "expected": {
+    "rubric_result": "warn",
+    "files_changed": 6,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "risk_level": "medium",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

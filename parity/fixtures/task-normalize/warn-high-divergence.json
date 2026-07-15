@@ -1,0 +1,49 @@
+{
+  "input": {
+    "title": "Fix null pointer exception in payment handler",
+    "requested_change": "The payment processor throws a null reference on missing billing address.",
+    "acceptance_criteria": [
+      "Banana apples orange fruit salad sunshine rainbow",
+      "XYZ123 totally unrelated text about food recipes"
+    ]
+  },
+  "note": "tests/skills/task-normalize.test.js — \"returns warn when acceptance_criteria are semantically disconnected\" (cosine < 0.10, ΔR > 0.4677)",
+  "expected": {
+    "rubric_result": "warn",
+    "normalized_summary": {
+      "title": "Fix null pointer exception in payment handler",
+      "requested_change": "The payment processor throws a null reference on missing billing address.",
+      "acceptance_criteria_count": 2,
+      "constraints_count": 0,
+      "file_hints_count": 0,
+      "has_policy": false,
+      "has_risk": false
+    },
+    "fields_present": [
+      "title",
+      "requested_change",
+      "acceptance_criteria"
+    ],
+    "fields_missing": [
+      {
+        "field": "problem_statement",
+        "required": false
+      },
+      {
+        "field": "constraints",
+        "required": false
+      },
+      {
+        "field": "file_hints",
+        "required": false
+      }
+    ],
+    "fields_weak": [],
+    "delta_r": 0.5,
+    "coherence_score": 0,
+    "synthetic_risk": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}
