@@ -128,7 +128,8 @@ A parallel independent agent audited the merged PR #1 state and disputed the "cl
   the human-readable report on demand with `node parity/run-parity.js`.
 - "Only WBS 6.1-6.4 remains" was incomplete — WBS 5.0's own exit criterion ("AC-5.1-5.3
   pass on a scratch GitHub repository") is itself part of the still-open live-drill
-  gap, and DPPD.md is still formally "Draft — pending approval." Both true; WBS 6.x was
+  gap, and DPPD.md was, at that point, still formally "Draft — pending approval" (flipped
+  to Approved on 2026-07-16). Both true at the time; WBS 6.x was
   always meant to cover exactly this, but the phrasing implied less was outstanding
   than actually was.
 - "Review gate actually ran" was not independently auditable from the repository alone
