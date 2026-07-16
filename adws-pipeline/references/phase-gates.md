@@ -79,10 +79,53 @@ At the test and review gates, after the phase agent (Architect) produces its out
 4. **Terminal enforcement (defense in depth):** `execution-report.js` includes a
    `consensus` gate that reads the recorded `consensus/{critic,advocate}.json` of the
    latest attempt of each phase and evaluates to `fail` on any Advocate dissent (or
-   Advocate `fail`) or Critic `fail`. Because a failed gate on a `completed` job maps to
-   QUARANTINE, a job whose evidence records a dissent CANNOT promote even if
-   `run_manifest.final_status` was (incorrectly) set to `completed` — the verdict is
-   derived from the consensus evidence, not the narrative status (hard rule 8 / FR-10).
+   Advocate `fail`) or Critic `fail` — EXCEPT a dissent the operator overrode (rule 5),
+   which downgrades to `warn` (still not a clean promote). Because a failed gate on a
+   `completed` job maps to QUARANTINE, a job whose evidence records a blocking dissent
+   CANNOT promote even if `run_manifest.final_status` was (incorrectly) set to
+   `completed` — the verdict is derived from the consensus evidence, not the narrative
+   status (hard rule 8 / FR-10).
+
+5. **Operator resolution of a dissent (F-3, in-place — no retry burned):** instead of
+   a fresh re-review (rule 2's operator-resolution path), the operator may resolve a
+   recorded dissent in place. The ORCHESTRATOR writes a `resolution` object onto the
+   dissent's `consensus/advocate.json` (a designated post-hoc field per
+   `references/artifact-layout.md` rule 2 — the Advocate never writes it):
+   - `action: "override"` — operator judges the dissent a false positive. The terminal
+     `consensus` gate no longer FAILS on it but downgrades to `warn`: the job can only
+     PROMOTE-with-warnings, never a clean promote. A resolved dissent is never silent
+     (FR-7).
+   - `action: "uphold"` — operator confirms the dissent. Behaves exactly as an
+     unresolved dissent: `consensus` gate `fail` → QUARANTINE / `ADVOCATE_DISSENT`.
+   Only `override` clears the block; uphold, a malformed action, or an absent
+   resolution all leave the dissent blocking. This path creates no new attempt, so it
+   preserves the phase's retry budget (the F-3 defect: previously a false-positive
+   dissent could only clear by burning a full review retry).
+
+## Delegated push at ship (F-5)
+
+A `pr`-mode ship in a credential-less environment (no `gh`/SSH) cannot push. Rather than
+burning the ship retry budget on an expected, non-error situation:
+
+1. The shipper DETECTS it cannot push — it does not assume (e.g. `gh auth status` fails,
+   or the push errors on credentials) — and records `pushed: false` plus
+   `delegation: { "status": "pending-operator", "detected_reason": "…" }` in
+   `ship/attempt_{n}/phase_output.json`. The attempt's `gate_result` is `deferred`: a
+   third value alongside `pass`/`fail` that does NOT consume the retry budget.
+2. The orchestrator presents the pending push to the operator. On confirmation that the
+   operator pushed and the PR/branch exists, the orchestrator closes the SAME attempt
+   post-hoc — writing `delegation.status: "completed"` and the `pr_url` into that
+   attempt's `phase_output.json` (designated post-hoc fields per
+   `references/artifact-layout.md` rule 2; the shipper never rewrites its own file) — and
+   flips `gate_result` to `pass`. No new attempt is created.
+3. A delegation that times out, or an operator who refuses, → `gate_result: fail`, handled
+   as a normal ship gate failure (retry/terminate as today).
+
+`execution-report.js` treats a deferred-then-pass attempt as ONE attempt (a single
+`attempt_{n}` directory), so a delegated push never trips the multi-attempt warning and
+never looks like a consumed retry. A completed delegated push promotes cleanly, but the
+report always emits an informational warning that the operator completed the push — it is
+never silent.
 
 ## Failure-reason classes (port of `phases.js` reason sets)
 

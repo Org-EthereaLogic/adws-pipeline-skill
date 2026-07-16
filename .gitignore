@@ -7,6 +7,12 @@ ADWS_PRO_source/
 # they belong in the target project).
 artifacts/
 
+# ...EXCEPT the execution-report fixture trees under parity/, which ARE committed —
+# they are the report suite's inputs. Re-include them (the broad artifacts/ rule above
+# would otherwise swallow them); the derived execution_report.{json,md} inside are
+# re-ignored by the rules further down.
+!parity/execution-report-fixtures/*/artifacts/
+
 # OS junk
 .DS_Store
 

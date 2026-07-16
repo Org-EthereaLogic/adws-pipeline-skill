@@ -33,7 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SCHEMA_VERSION = '1.0.0';
+const SCHEMA_VERSION = '1.1.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
 
@@ -159,6 +159,22 @@ function collectSkillVerdicts(jobDir, latestAttempts) {
   return rows;
 }
 
+// B1 (F-3): the operator-resolution object the orchestrator records post-hoc on a
+// dissenting advocate.json. Only a recognized action (override|uphold) counts; any
+// other/malformed value is treated as no resolution (the dissent stays blocking).
+function normalizeResolution(advocate) {
+  const r = advocate && advocate.resolution;
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+  const action = typeof r.action === 'string' ? r.action.toLowerCase() : null;
+  if (action !== 'override' && action !== 'uphold') return null;
+  return {
+    resolved_by: typeof r.resolved_by === 'string' ? r.resolved_by : null,
+    action,
+    rationale: typeof r.rationale === 'string' ? r.rationale : null,
+    resolved_at: typeof r.resolved_at === 'string' ? r.resolved_at : null,
+  };
+}
+
 // Same latest-attempt-only contract as collectSkillVerdicts above.
 function collectConsensus(jobDir, latestAttempts) {
   const rows = [];
@@ -175,6 +191,7 @@ function collectConsensus(jobDir, latestAttempts) {
       critic: critic && typeof critic.verdict === 'string' ? critic.verdict : null,
       advocate: advocate && typeof advocate.verdict === 'string' ? advocate.verdict : null,
       dissent: advocateDissent || criticDissent || null,
+      resolution: normalizeResolution(advocate),
     });
   }
   return rows;
@@ -351,7 +368,12 @@ function evalDriftVerdict(phaseData) {
 // should never have passed. Deriving this from the consensus evidence (not from
 // run_manifest.failure_reason) is what makes hard rule 8 / FR-10 hold: a job whose
 // evidence records a dissent must not PROMOTE even if final_status says "completed".
-const CONSENSUS_LABEL = 'Critic/Advocate consensus — no dissent, no critic fail';
+const CONSENSUS_LABEL = 'Critic/Advocate consensus — no blocking dissent, no critic fail';
+// B1 (F-3): a dissent the operator resolved as a false positive
+// (`resolution.action: "override"`) no longer FAILS this gate, but it can never pass
+// SILENTLY — it downgrades to WARN so the terminal verdict is PROMOTE-with-warnings,
+// never a clean promote (FR-7 / SC2_PLAN invariant #4). An upheld or unresolved
+// dissent, and any Critic fail, still FAIL exactly as before.
 function evalConsensus(consensusRows) {
   const rows = consensusRows || [];
   if (rows.length === 0) {
@@ -360,26 +382,36 @@ function evalConsensus(consensusRows) {
       label: CONSENSUS_LABEL,
       status: GATE_STATUSES.UNVERIFIED,
       value: null,
-      threshold: '0 dissent, 0 critic fail',
+      threshold: '0 blocking dissent, 0 critic fail',
       reason: 'No consensus rounds recorded (the test and review gates require a Critic+Advocate round)',
     };
   }
-  const dissents = rows.filter((r) => typeof r.dissent === 'string' && r.dissent.trim().length > 0);
-  const advocateFails = rows.filter((r) => r.advocate === 'fail');
+  const isDissenting = (r) =>
+    (typeof r.dissent === 'string' && r.dissent.trim().length > 0) || r.advocate === 'fail';
+  const isOverridden = (r) => r.resolution != null && r.resolution.action === 'override';
+  const dissenting = rows.filter(isDissenting);
+  const blocking = dissenting.filter((r) => !isOverridden(r)); // unresolved or upheld
+  const overridden = dissenting.filter(isOverridden);
   const criticFails = rows.filter((r) => r.critic === 'fail');
-  if (dissents.length > 0 || advocateFails.length > 0) {
-    const d = dissents[0] || advocateFails[0];
+
+  // A blocking dissent (unresolved, or explicitly UPHELD by the operator) fails the
+  // gate exactly as before B1 — only an `override` resolution clears it.
+  if (blocking.length > 0) {
+    const d = blocking[0];
     const where = `${d.phase}/attempt_${d.attempt}`;
+    const how = d.resolution != null && d.resolution.action === 'uphold' ? 'operator UPHELD the dissent' : 'unresolved';
     const text = d.dissent ? `: ${d.dissent}` : ' (advocate returned fail)';
     return {
       key: 'consensus',
       label: CONSENSUS_LABEL,
       status: GATE_STATUSES.FAIL,
-      value: `${dissents.length} dissent(s), ${criticFails.length} critic fail(s)`,
-      threshold: '0 dissent, 0 critic fail',
-      reason: `Advocate dissent recorded in ${where} — blocks promotion (ADVOCATE_DISSENT / AC-4.2)${text}`,
+      value: `${blocking.length} blocking dissent(s), ${overridden.length} overridden, ${criticFails.length} critic fail(s)`,
+      threshold: '0 blocking dissent, 0 critic fail',
+      reason: `Advocate dissent in ${where} (${how}) — blocks promotion (ADVOCATE_DISSENT / AC-4.2)${text}`,
     };
   }
+
+  // A Critic fail always fails the gate — the override path covers Advocate dissents only.
   if (criticFails.length > 0) {
     const c = criticFails[0];
     return {
@@ -387,16 +419,33 @@ function evalConsensus(consensusRows) {
       label: CONSENSUS_LABEL,
       status: GATE_STATUSES.FAIL,
       value: `${criticFails.length} critic fail(s)`,
-      threshold: '0 dissent, 0 critic fail',
+      threshold: '0 blocking dissent, 0 critic fail',
       reason: `Critic returned fail in ${c.phase}/attempt_${c.attempt} — consensus gate was not satisfied`,
     };
   }
+
+  // An operator-overridden dissent promotes, but NEVER silently: WARN forces
+  // PROMOTE-with-warnings and a permanent warning line in the report.
+  if (overridden.length > 0) {
+    const d = overridden[0];
+    const where = `${d.phase}/attempt_${d.attempt}`;
+    const rat = d.resolution && d.resolution.rationale ? ` — ${d.resolution.rationale}` : '';
+    return {
+      key: 'consensus',
+      label: CONSENSUS_LABEL,
+      status: GATE_STATUSES.WARN,
+      value: `${overridden.length} operator-overridden dissent(s)`,
+      threshold: '0 blocking dissent, 0 critic fail',
+      reason: `Advocate dissent in ${where} operator-resolved (override) — promotes with a permanent warning${rat}`,
+    };
+  }
+
   return {
     key: 'consensus',
     label: CONSENSUS_LABEL,
     status: GATE_STATUSES.PASS,
     value: `${rows.length} round(s) clean`,
-    threshold: '0 dissent, 0 critic fail',
+    threshold: '0 blocking dissent, 0 critic fail',
     reason: null,
   };
 }
@@ -559,10 +608,26 @@ function exitCodeFor(decision, warnFlag) {
 
 // --- Warnings (modeled on normalize.js buildOutstandingIssues) --------------
 
-function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, consensus }) {
+function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, phaseAttemptRows, consensus, shipDelegation }) {
   const warnings = [];
   if (failureReason) {
     warnings.push(`Failure reason recorded: ${failureReason}`);
+  }
+  // B2 (F-5): surface an operator-delegated ship push — completed is a clean promote
+  // but never a silent one; not-yet-completed on a terminal report is an inconsistency
+  // worth flagging.
+  if (shipDelegation && typeof shipDelegation.status === 'string') {
+    if (shipDelegation.status === 'completed') {
+      warnings.push(
+        'Ship push was operator-delegated in a credential-less environment and completed by the operator (F-5)' +
+          (shipDelegation.detected_reason ? ` — trigger: ${shipDelegation.detected_reason}` : '') +
+          '.'
+      );
+    } else {
+      warnings.push(
+        `Ship push is operator-delegated and NOT completed (delegation.status=${shipDelegation.status}) — the recorded PR/branch may not exist yet.`
+      );
+    }
   }
   for (const gate of gates) {
     if (gate.status === GATE_STATUSES.PASS) continue;
@@ -579,14 +644,45 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, co
       );
     }
   }
+  // B3 (F-8): the old "required N attempts before producing output" wording was wrong
+  // when an early attempt DID produce output but its gate failed. Report gate outcomes
+  // instead: which attempt passed and why the earlier ones gate-failed. A single
+  // deferred-then-pass attempt (B2 delegated push) is one attempt_dir, so it never
+  // trips this warning.
+  const attemptsByPhase = {};
+  for (const r of phaseAttemptRows || []) {
+    (attemptsByPhase[r.phase] = attemptsByPhase[r.phase] || []).push(r);
+  }
   for (const ps of phaseSummaries) {
-    if (ps.attempts > 1) {
-      warnings.push(`Phase "${ps.phase}" required ${ps.attempts} attempts before producing output.`);
+    if (ps.attempts <= 1) continue;
+    const rows = (attemptsByPhase[ps.phase] || []).slice().sort((a, b) => a.attempt - b.attempt);
+    const latest = rows.length ? rows[rows.length - 1] : null;
+    const n = latest ? latest.attempt : ps.attempts;
+    const priors = rows.slice(0, -1);
+    const reasons = priors
+      .map((r) => `attempt ${r.attempt}: ${r.failure_reason || r.gate_result || 'gate-failed'}`)
+      .join('; ');
+    if (latest && latest.gate_result === 'pass') {
+      warnings.push(
+        `Phase "${ps.phase}" passed on attempt ${n}` +
+          (reasons ? ` (attempt(s) 1..${n - 1} gate-failed — ${reasons})` : '') +
+          '.'
+      );
+    } else {
+      const state = latest && latest.gate_result ? latest.gate_result : 'unset';
+      warnings.push(
+        `Phase "${ps.phase}" recorded ${ps.attempts} attempts; latest attempt ${n} gate_result=${state}` +
+          (reasons ? ` (earlier — ${reasons})` : '') +
+          '.'
+      );
     }
   }
   for (const c of consensus) {
     if (c.dissent) {
-      warnings.push(`Consensus dissent in ${c.phase}/attempt_${c.attempt}: ${c.dissent}`);
+      const res = c.resolution
+        ? ` [operator ${c.resolution.action}${c.resolution.rationale ? `: ${c.resolution.rationale}` : ''}]`
+        : '';
+      warnings.push(`Consensus dissent in ${c.phase}/attempt_${c.attempt}: ${c.dissent}${res}`);
     }
   }
   warnings.sort();
@@ -665,21 +761,28 @@ function renderMarkdown(report, phaseAttemptRows) {
   if (report.consensus.length === 0) {
     lines.push('_No consensus rounds recorded._');
   } else {
-    lines.push('| Phase | Attempt | Critic | Advocate | Dissent |');
-    lines.push('| --- | --- | --- | --- | --- |');
+    lines.push('| Phase | Attempt | Critic | Advocate | Dissent | Resolution |');
+    lines.push('| --- | --- | --- | --- | --- | --- |');
     for (const row of report.consensus) {
       lines.push(
         `| ${row.phase} | ${row.attempt} | ${mdEscapeCell(row.critic)} | ${mdEscapeCell(
           row.advocate
-        )} | ${row.dissent ? 'yes' : '—'} |`
+        )} | ${row.dissent ? 'yes' : '—'} | ${mdEscapeCell(row.resolution ? row.resolution.action : null)} |`
       );
     }
     for (const row of report.consensus) {
       if (row.dissent) {
         lines.push('');
-        lines.push(`Dissent recorded in ${row.phase}/attempt_${row.attempt}:`);
+        const res = row.resolution
+          ? ` — operator ${row.resolution.action}${row.resolution.resolved_at ? ` (${row.resolution.resolved_at})` : ''}`
+          : '';
+        lines.push(`Dissent recorded in ${row.phase}/attempt_${row.attempt}${res}:`);
         lines.push('');
         lines.push(`> ${row.dissent}`);
+        if (row.resolution && row.resolution.rationale) {
+          lines.push('');
+          lines.push(`Resolution rationale: ${mdEscapeCell(row.resolution.rationale)}`);
+        }
       }
     }
   }
@@ -776,6 +879,21 @@ function buildReport(jobDir, options = {}) {
   const skillVerdicts = collectSkillVerdicts(jobDir, latestAttempts);
   const consensus = collectConsensus(jobDir, latestAttempts);
 
+  // B2 (F-5): the ship phase's delegated-push sub-state, if any. When a `pr`-mode push
+  // fails on missing credentials the attempt records delegation.status; the orchestrator
+  // later closes the SAME attempt (post-hoc delegation.status + pr_url). Surfaced as an
+  // informational warning — an operator-completed push is a clean promote, but never a
+  // silent one.
+  const shipEntry = phaseData.ship;
+  const shipDelegation =
+    shipEntry &&
+    shipEntry.output &&
+    shipEntry.output.delegation &&
+    typeof shipEntry.output.delegation === 'object' &&
+    !Array.isArray(shipEntry.output.delegation)
+      ? shipEntry.output.delegation
+      : null;
+
   const gates = [
     evalPipelineCompletion(phaseData, finalStatus),
     evalVerifyStructural(phaseData),
@@ -793,7 +911,9 @@ function buildReport(jobDir, options = {}) {
     gates,
     skillVerdicts,
     phaseSummaries,
+    phaseAttemptRows,
     consensus,
+    shipDelegation,
   });
 
   const report = {

@@ -1,0 +1,12 @@
+{
+  "role": "advocate",
+  "verdict": "fail",
+  "dissent": "The build's new helper file is untracked in the worktree at review; the operator asked for a committed change, so this looks unfinished and must not promote.",
+  "model_tier": "haiku",
+  "resolution": {
+    "resolved_by": "operator",
+    "action": "override",
+    "rationale": "False positive: staging happens only at ship, so an untracked change-set file at the review gate is expected pipeline state (F-4). The change is complete.",
+    "resolved_at": "2026-07-16T12:00:00Z"
+  }
+}

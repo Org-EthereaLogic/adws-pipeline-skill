@@ -156,6 +156,16 @@ blocks shipping.
   `gh pr create --base {target_branch}` with title/body from the contract; record the
   live PR URL in ship evidence (AC-5.1). `pr` mode routinely targets protected
   branches — that's the point of a PR — so no protected-branch check applies here.
+  - **Delegated push (F-5):** if the push fails on DETECTED missing credentials (no
+    `gh`/SSH — detected, never assumed), do NOT burn the ship retry: the shipper
+    records `pushed: false` and
+    `delegation: { "status": "pending-operator", "detected_reason": … }` and the ship
+    `gate_result` is `deferred` (does not consume the retry budget). Ask the operator to
+    push. On their confirmation that the PR/branch exists, YOU (orchestrator, never a
+    re-dispatched shipper) close the SAME attempt by writing `delegation.status:
+    "completed"` + `pr_url` into its `phase_output.json` and flip the gate to `pass`.
+    Timeout/refusal → gate `fail`. See `references/phase-gates.md` "Delegated push at
+    ship".
 - **patch**: from the worktree, stage explicit file paths from `build.files_changed`
   only, commit, then `git format-patch {target_branch}..HEAD` to
   `artifacts/{jobId}/ship/attempt_{n}/`; NO push (AC-5.3).

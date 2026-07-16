@@ -50,7 +50,7 @@ artifacts/{jobId}/
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
   "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
-  "gate_result": "pass | fail", "failure_reason": null,
+  "gate_result": "pass | fail | deferred", "failure_reason": null,
   "stability_gate": null }
 ```
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
@@ -61,6 +61,12 @@ clear a dissent they judged a false positive. It escalates one tier on the same 
 `retry-escalation` (haiku → sonnet → opus, capped at opus), and its `value` records the
 resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`. See
 `references/phase-gates.md` "Consensus" for the flow.
+`gate_result` is normally `pass`/`fail`. `deferred` (F-5) is a ship-only intermediate: a
+`pr`-mode push that failed on detected missing credentials awaits an operator-delegated
+push and does NOT consume the retry budget. On operator confirmation the SAME attempt's
+gate flips to `pass` (see ship `phase_output.delegation` below); a timeout/refusal makes
+it `fail`. A terminal report on a `completed` job should not see a `deferred` ship gate —
+the delegation resolves first.
 
 `phase_output.json` — phase-specific. Required minimums:
 
@@ -69,15 +75,26 @@ resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`.
 - test: `{ "checks": [{ "check": "", "pass": true, "output": "" }], "command_log": [] }`
 - review: `{ "findings": [], "risk_level": "", "approved": true }`
 - document: `{ "docs_delta": [], "changelog_entry": "", "documentation_summary": "" }`
-- ship: `{ "mode": "", "branch_name": "", "pr_url": null, "patch_file": null, "commit_sha": "", "pushed": false, "block_reason": null }`
+- ship: `{ "mode": "", "branch_name": "", "pr_url": null, "patch_file": null, "commit_sha": "", "pushed": false, "block_reason": null, "delegation": null }` — `delegation` (optional, F-5) is present only for a delegated `pr`-mode push: `{ "status": "pending-operator | completed", "detected_reason": "NO_PUSH_CREDENTIALS_IN_SANDBOX | …", "completed_by": "operator", "completed_at": "<iso>" }`. The shipper writes `pushed: false` + `delegation.status: "pending-operator"` when it detects it cannot push; the ORCHESTRATOR later writes `delegation.status: "completed"` + `pr_url` post-hoc (never the shipper).
 - verify: `{ "verify_result": { "passed": 0, "total": 0, "syntax_errors": 0, "checks": [{ "check": "", "pass": true }] }, "drift_verdict": "PASS | WARN | BLOCK" }`
 
 `consensus/critic.json` and `consensus/advocate.json`
 ```json
 { "role": "critic | advocate", "verdict": "pass | fail", "dissent": null,
-  "model_tier": "", "assessed_at": "" }
+  "model_tier": "", "assessed_at": "",
+  "resolution": null }
 ```
 An Advocate dissent goes in `dissent` VERBATIM (the full text of the objection).
+`resolution` (advocate only, optional, F-3) is written POST-HOC by the ORCHESTRATOR —
+never by the Advocate agent — when the operator resolves a recorded dissent:
+```json
+{ "resolved_by": "operator", "action": "override | uphold",
+  "rationale": "<why>", "resolved_at": "<iso>" }
+```
+`action: "override"` (operator judged the dissent a false positive) clears the terminal
+consensus block but ALWAYS leaves a permanent warning; `action: "uphold"` (dissent
+confirmed) behaves exactly as an unresolved dissent → QUARANTINE. See
+`references/phase-gates.md` "Consensus" rule 5.
 
 `skills/{skill_id}/skill_trace.json` — wrap the validator CLI's stdout:
 ```json
@@ -114,6 +131,10 @@ in that attempt's `phase_manifest.json`.
      the orchestrator's, not the agent's — agents leave it unset per each agent spec).
    - `verify/attempt_{n}/phase_output.json` → `drift_verdict` (filled from the
      adws-grader result once grading completes).
+   - `{test,review}/attempt_{n}/consensus/advocate.json` → `resolution` (F-3; written
+     only when the operator resolves a recorded dissent — `override` or `uphold`).
+   - `ship/attempt_{n}/phase_output.json` → `delegation.status` and `pr_url` (F-5;
+     written only when closing a delegated `pr`-mode push the operator completed).
 
    Every other field of every other file is immutable once written. This list is
    exhaustive: anything not named here stays write-once for everyone, orchestrator

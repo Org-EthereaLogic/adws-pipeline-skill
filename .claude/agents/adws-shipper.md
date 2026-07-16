@@ -36,11 +36,21 @@ Procedure (all git commands run in the worktree):
    - **pr**: `git push -u origin {branch_name}`, then `gh pr create --base
      {target_branch} --title … --body …` (body: problem statement, requested change,
      criteria checklist, evidence path `artifacts/{jobId}/`). Record the PR URL.
+     **Delegated push (F-5):** if you DETECT you cannot push for lack of credentials
+     (e.g. `gh auth status` fails, or the push errors on auth — detected, never
+     assumed), do not treat it as a hard failure and do not retry: record
+     `"pushed": false` and `"delegation": { "status": "pending-operator",
+     "detected_reason": "<what you detected, e.g. NO_PUSH_CREDENTIALS_IN_SANDBOX>" }`
+     in `phase_output.json`, leave `pr_url` null, and stop. The orchestrator asks the
+     operator to push and then closes this same attempt post-hoc (you never rewrite
+     this file). Any OTHER push failure (rejected, protected, network) is a normal ship
+     failure — report it, do not record a delegation.
    - **direct_branch**: `target_branch` already confirmed unprotected in step 2 —
      `git push -u origin {branch_name}`.
    - **patch**: `git format-patch {target_branch}..HEAD -o <attempt_dir>/`. No push.
 5. Write to your attempt directory: `phase_output.json`
-   `{ "mode", "branch_name", "pr_url", "patch_file", "commit_sha", "pushed", "block_reason" }`,
+   `{ "mode", "branch_name", "pr_url", "patch_file", "commit_sha", "pushed", "block_reason", "delegation" }`
+   (`delegation` is null except for a delegated `pr`-mode push, above),
    `phase_log.md` (every git/gh command + output), and `phase_manifest.json`.
 
 Never write outside your attempt directory in `artifacts/`.
