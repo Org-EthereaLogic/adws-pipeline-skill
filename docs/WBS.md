@@ -9,7 +9,9 @@
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;
 evidence: `acceptance/DRILL_EVIDENCE.md`. One defect (F-1) was found by the drills and fixed.
-No open WBS work remains.
+No open **approved** WBS work remains. A post-production-run enhancement scope (**SC-2**,
+findings F-3…F-10 from the first production run) is **PROPOSED pending operator R-6 approval**
+— see `DPPD.md` §10 and `SC2_PLAN.md`; it adds no work packages here until approved.
 
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
