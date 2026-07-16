@@ -88,8 +88,9 @@ dissent schema, consensus-agent pipeline-mechanics context, delegated-push flow,
 append-only-rule contradiction, and environment/ops-docs gaps — together with a proposed
 three-tranche enhancement scope.
 
-The register and the proposed scope live in **`docs/SC2_PLAN.md`** (status: **PROPOSED**,
-pending operator R-6 approval per `DPPD.md`; see the SC-2 pointer in `DPPD.md` §10). The
-underlying evidence tree resides in the target repo (`etherealogic-website/artifacts/job_20260715_0001/`),
-not this repository, so — like the deleted scratch drills — F-3 … F-10 are documented
-here by reference and are not independently reproducible from files retained in this repo.
+The register and scope live in **`docs/SC2_PLAN.md`** (status: **APPROVED (R-6,
+2026-07-16) & IMPLEMENTED** — SC-2a/b/c merged via PR #9; C2 and the E2E-2 confirmation
+run deferred; governing record `DPPD.md` §10, v1.2). The underlying evidence tree resides
+in the target repo (`etherealogic-website/artifacts/job_20260715_0001/`), not this
+repository, so — like the deleted scratch drills — F-3 … F-10 are documented here by
+reference and are not independently reproducible from files retained in this repo.

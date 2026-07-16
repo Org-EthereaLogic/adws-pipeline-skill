@@ -6,6 +6,14 @@
 > `79/79` and “F-2 not undertaken” statements below are the point-in-time sign-off record;
 > see `DPPD.md` §9 for the current state.
 
+> **Post-acceptance update (SC-2, 2026-07-16):** scope change SC-2 (findings F-3…F-10 from
+> the first production run) was **approved (R-6) and implemented** — merged via PR #9. It
+> extends AC-4.2's dissent handling — an operator-`override` of a false-positive dissent now
+> promotes with a PERMANENT warning instead of blocking, while `uphold`/unresolved still
+> QUARANTINE — grows the report suite to **13/13**, and bumps `execution-report.js` to
+> SCHEMA_VERSION 1.1.0. The `10/10` and "gate fails on any recorded dissent" statements
+> below are the point-in-time record; see `DPPD.md` §10 (v1.2) for the current state.
+
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
 **Evidence:** `DRILL_EVIDENCE.md` + a throwaway scratch repo (created for the drills, since deleted) + committed `parity/execution-report-fixtures/`
@@ -28,7 +36,7 @@ re-drill. See `DRILL_EVIDENCE.md` for the honest scope of "live".
 | AC-3.2 each validator writes a trace file | ✅ satisfied | `skills/<id>/skill_trace.json` present per attempt |
 | AC-3.3 validators deterministic | ✅ satisfied | double-run identical (live) |
 | AC-4.1 Critic & Advocate separate fresh-context subagents | ✅ satisfied | live job_0001/0007 consensus dirs (both roles, parallel dispatch) |
-| AC-4.2 dissent recorded verbatim & blocks | ✅ satisfied (after post-sign-off fix) | **was a defect at initial sign-off** — the report collected consensus but did not gate on it; now the `consensus` gate in `execution-report.js` blocks (QUARANTINE) on any recorded Advocate dissent / Critic fail, proven by fixtures `quarantine_advocate_dissent` + `quarantine_critic_fail` (both `completed` status, no `failure_reason`). See "Post-sign-off audit" below. |
+| AC-4.2 dissent recorded verbatim & blocks | ✅ satisfied (after post-sign-off fix) | **was a defect at initial sign-off** — the report collected consensus but did not gate on it; now the `consensus` gate in `execution-report.js` blocks (QUARANTINE) on any recorded Advocate dissent / Critic fail, proven by fixtures `quarantine_advocate_dissent` + `quarantine_critic_fail` (both `completed` status, no `failure_reason`). See "Post-sign-off audit" below. _(SC-2: an operator-`override` resolution now downgrades a false-positive dissent to a permanent warning rather than blocking — see the top SC-2 note.)_ |
 | AC-5.1 `pr` mode → live PR URL | ✅ satisfied | live PR #1 (and #2) |
 | AC-5.2 protected `direct_branch` refuses, no orphan commit | ✅ satisfied | live job_0002; survived adversarial refutation |
 | AC-5.3 `patch` mode → format-patch, no push | ✅ satisfied | live job_0003; survived adversarial refutation |

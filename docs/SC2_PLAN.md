@@ -1,6 +1,10 @@
 # SC-2 Plan — Enhancement & Optimization from E2E-1 Field Evidence
 
-**Status:** PROPOSED (requires operator approval per DPPD R-6 before any implementation)
+**Status:** APPROVED (operator R-6, 2026-07-16) & IMPLEMENTED — SC-2a/b/c merged to `main`
+via PR #9 (branch `feat/sc2`, four commits). Deferred per this plan: C2 (review-gate
+Advocate tier bump) and the step-6 E2E-2 confirmation run, both pending more run data.
+Governing record and per-tranche detail: `DPPD.md` §10 (v1.2). This document is retained
+as the originating proposal; the sequencing table in §3 is the plan-time record.
 **Evidence source:** job_20260715_0001 — first production run of the skill against a real
 third-party repo (Org-EthereaLogic/etherealogic-website, issue #38 → PR #73, verdict
 PROMOTE-with-warnings, exit 10). Evidence tree: `etherealogic-website/artifacts/job_20260715_0001/`
