@@ -3,7 +3,10 @@
 **Status:** PROPOSED (requires operator approval per DPPD R-6 before any implementation)
 **Evidence source:** job_20260715_0001 — first production run of the skill against a real
 third-party repo (Org-EthereaLogic/etherealogic-website, issue #38 → PR #73, verdict
-PROMOTE-with-warnings, exit 10). Evidence tree: `etherealogic-website/artifacts/job_20260715_0001/`.
+PROMOTE-with-warnings, exit 10). Evidence tree: `etherealogic-website/artifacts/job_20260715_0001/`
+— **external to this repository** (it lives in the target repo, not here), so F-3…F-10 are
+recorded in this plan by reference and are not independently reproducible from files retained
+in this repo.
 **Numbering:** continues the acceptance findings register (F-1 planner description — fixed;
 F-2 verb-regex — fixed under SC-1).
 
@@ -47,7 +50,7 @@ dogfooded review gate over the doc diff.
 
 | Item | Change | Parity impact |
 |---|---|---|
-| B1 (F-3) | Add optional `resolution` object to `consensus/advocate.json`: `{ "resolved_by": "operator", "action": "override|uphold", "rationale", "resolved_at" }`. Consensus gate rule: a dissent with `action: "override"` no longer fails the gate but ALWAYS emits a warning (PROMOTE can only be with-warn — a resolved dissent is never silent). An upheld or unresolved dissent behaves exactly as today. New report fixtures: `promote_resolved_dissent` (exit 10), `quarantine_upheld_dissent` (exit 2). | `execution-report.js` version bump; frozen-baseline fixtures extended; the 9 validator packs untouched (84/84 preserved) |
+| B1 (F-3) | Add optional `resolution` object to `consensus/advocate.json`: `{ "resolved_by": "operator", "action": "override\|uphold", "rationale", "resolved_at" }`. Consensus gate rule: a dissent with `action: "override"` no longer fails the gate but ALWAYS emits a warning (PROMOTE can only be with-warn — a resolved dissent is never silent). An upheld or unresolved dissent behaves exactly as today. New report fixtures: `promote_resolved_dissent` (exit 10), `quarantine_upheld_dissent` (exit 2). | `execution-report.js` version bump; frozen-baseline fixtures extended; the 9 validator packs untouched (84/84 preserved) |
 | B2 (F-5) | Ship-phase **delegated-push sub-state**: when `pr` mode push fails on credentials (detected, not assumed), the attempt records `"pushed": false, "delegation": { "status": "pending-operator" }` and the gate result is `deferred` (a third value alongside pass/fail) — it does not consume the retry budget. On operator confirmation the SAME attempt is closed by the orchestrator writing `delegation.status: "completed"` + `pr_url` into a designated post-hoc field (extending A3's designated-fields list), and the gate flips to pass. Timeout/refusal → gate fail as today. | SKILL.md §3, artifact-layout, phase-gates; `execution-report.js` must treat `deferred`-then-`pass` as one attempt; new fixture `promote_delegated_push` |
 | B3 (F-8) | Reword the multi-attempt warning: "Phase {p} passed on attempt {n} (attempt(s) 1..n−1 gate-failed: {reasons})." | `execution-report.js` + fixture text updates |
 
