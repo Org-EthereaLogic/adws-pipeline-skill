@@ -59,7 +59,11 @@ At the test and review gates, after the phase agent (Architect) produces its out
 
 1. Spawn **adws-critic** and **adws-advocate** as independent subagents with FRESH
    context: each receives only the task contract and the change set (diff + check
-   results). Neither sees the Architect's reasoning nor the other's conclusion.
+   results). Neither sees the Architect's reasoning nor the other's conclusion. Dispatch
+   them in PARALLEL — this is REQUIRED, not merely permitted (C1): the only true
+   dependency at these gates is Architect → (Critic ∥ Advocate); the two consensus
+   agents have no dependency on each other, so running them concurrently is the
+   wall-clock-optimal and mandated form.
 2. Reconciliation: unanimous pass → promote. Critic `fail` → gate fails (retry path,
    rule 4/rewind). Advocate dissent → record the dissent VERBATIM in
    `consensus/advocate.json`, present it to the operator once for resolution; if

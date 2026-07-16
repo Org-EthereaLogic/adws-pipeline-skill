@@ -34,6 +34,7 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
     "output_mode": "pr",
     "target_branch": "main",
     "allow_direct_commit": false,
+    "commit_identity": null,
     "max_runtime_minutes": 60
   },
   "policy": {
@@ -63,6 +64,7 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
 | `execution.output_mode` | yes | `pr`, `direct_branch`, or `patch` |
 | `execution.target_branch` | yes | non-empty |
 | `execution.allow_direct_commit` | yes | boolean |
+| `execution.commit_identity` | no | Author identity for ship commits, `"Name <email>"` (C3). Default `null` = use the operator's git config (`user.name`/`user.email`); if that is also unset, the documented fallback `Claude (ADWS pipeline) <noreply@anthropic.com>` applies. Decided at intake so authorship is never a ship-time improvisation. |
 | `execution.max_runtime_minutes` | no | advisory; > 0 if present |
 | `policy.allowed_paths` | yes | ≥ 1 entry |
 | `policy.blocked_paths` | yes | may be empty array |
