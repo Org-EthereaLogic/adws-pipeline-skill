@@ -75,5 +75,21 @@ artifacts + the SKILL.md rules.
   (both `completed`, no `failure_reason`) now QUARANTINE via the gate. Report tests 10/10;
   parity unchanged (no validator touched). See `ACCEPTANCE.md` "Post-sign-off audit".
 - **F-1 (fixed):** `adws-planner` emitted `file_change_proposal[].reason` but `repo-context-scan.js:60` checks `p.description`, so every well-formed plan tripped a spurious build `warn` → every real job landed PROMOTE-with-warnings (exit 10), making clean PROMOTE unreachable live. **Fix (PR #3):** planner + `artifact-layout.md` now specify `description`; `repo-context-scan.js` header documents it (no logic change → parity 79/79 preserved). Verified live: job_0007 build gate = pass → clean PROMOTE.
-- **F-2 (minor, parity-frozen, not fixed):** `criteria-to-checks.js` verifiable-verb regex covers `return(?:s|ed)?` and other verbs but omits the `-ing` participle (e.g. "returning") and the bare verb "pass", despite its comment claiming `-ing` coverage. Effect: some reasonably-phrased criteria are flagged vague → test-gate `warn`. Non-blocking. Changing the regex would break the frozen parity baseline, so the fix (if desired) needs a parity re-baseline; intake should prefer verifiable phrasing meanwhile.
+- **F-2 (minor, parity-frozen) — FIXED post-acceptance under SC-1:** `criteria-to-checks.js` verifiable-verb regex covered `return(?:s|ed)?` and other verbs but omitted the `-ing` participle (e.g. "returning") and the bare verb "pass", despite its comment claiming `-ing` coverage. Effect: some reasonably-phrased criteria were flagged vague → test-gate `warn`. Non-blocking. The fix required a parity re-baseline, so it was undertaken under scope change **SC-1.a** (`DPPD.md` §9): `criteria-to-checks` version-bumped 1.0.0 → 1.1.0 and marked **diverged-by-design**, verified against its own frozen baseline. Parity moved 79/79 → **84/84**. *(This line originally read "not fixed" as the point-in-time sign-off record; superseded by SC-1.)*
 - **Cosmetic:** skill traces were stamped `version: "1.0.0"` while some validators report `2.1.0` in their manifest (e.g. `task-normalize`); the numeric verdict/metrics are unaffected. Job_0007's traces use the correct versions.
+
+## E2E-1 — first production run (field evidence, findings F-3 … F-10)
+
+Beyond the WBS 6.1–6.4 scratch-repo drills above, the skill has since had its **first
+production run against a real third-party repo** (`job_20260715_0001`: an
+`etherealogic-website` issue → PR, verdict PROMOTE-with-warnings, exit 10). That run's
+field evidence surfaced a new findings register (**F-3 … F-10**) — operator-resolved
+dissent schema, consensus-agent pipeline-mechanics context, delegated-push flow, an
+append-only-rule contradiction, and environment/ops-docs gaps — together with a proposed
+three-tranche enhancement scope.
+
+The register and the proposed scope live in **`docs/SC2_PLAN.md`** (status: **PROPOSED**,
+pending operator R-6 approval per `DPPD.md`; see the SC-2 pointer in `DPPD.md` §10). The
+underlying evidence tree resides in the target repo (`etherealogic-website/artifacts/job_20260715_0001/`),
+not this repository, so — like the deleted scratch drills — F-3 … F-10 are documented
+here by reference and are not independently reproducible from files retained in this repo.

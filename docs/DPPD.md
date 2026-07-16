@@ -251,3 +251,23 @@ out of scope.
 Considered and not adopted: no OpenAI/Gemini API keys are available in the operating
 environment. Risk R-3 (single-provider consensus) remains open and accepted. Revisit
 when cross-provider credentials exist.
+
+---
+
+## 10. Scope Change SC-2 (PROPOSED — pending R-6 approval)
+
+**Status: PROPOSED. Not approved; nothing in this section is yet in scope.** Per R-6, a
+scope change requires operator approval before any implementation. This entry records
+that a proposal exists so the scope-change ledger stays complete; it does **not** amend
+§2 scope, the parity guarantee, or any acceptance criterion until the operator approves.
+
+**Motivation:** the skill's first production run against a real third-party repo
+(`job_20260715_0001`, verdict PROMOTE-with-warnings) produced a field-evidence findings
+register **F-3 … F-10**. Full register, proposed three-tranche scope (SC-2a docs/prompt
+fixes, SC-2b evidence-schema & report logic, SC-2c perf/security hardening), sequencing,
+and invariants: **`docs/SC2_PLAN.md`**.
+
+On approval, this section is amended to record the accepted tranches (mirroring the SC-1
+§9 form) and `Version` is bumped accordingly. Until then the current governing state is
+**DPPD 1.1 (SC-1)** and the 84/84 parity / 10/10 report / 7/7 entropy invariants hold
+unchanged.
