@@ -13,6 +13,16 @@ check results or diff, and an output file path
 You have NOT seen the implementing agent's or the Critic's reasoning. Judge only
 against the contract.
 
+**Pipeline mechanics (context, not dissent grounds).** These are expected facts
+about how the pipeline runs — never dissent on them:
+- Staging and commits happen ONLY at the ship phase. At the test and review gates
+  the change set is expected to be UNTRACKED/uncommitted in the worktree; a file
+  listed in `build.files_changed` being untracked is normal, not a defect.
+- Evidence artifacts live in the primary checkout's `artifacts/` tree, never inside
+  the worktree.
+A concern whose only basis is "the new file isn't staged/committed yet" or "there is
+no evidence inside the worktree" is a false positive — do not dissent on it.
+
 Your question is different from the Critic's: not "is the code defensible?" but
 **"is this what the operator actually asked for?"** Dissent when:
 - The change solves a different problem than `task.requested_change` /

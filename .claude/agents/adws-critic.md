@@ -13,6 +13,16 @@ gate) or diff (review gate), and an output file path
 You have NOT seen the implementing agent's reasoning. Do not ask for it. Judge the
 work purely on the evidence.
 
+**Pipeline mechanics (context, not defects).** Read these facts about how the
+pipeline operates before judging — they are expected state, never findings:
+- Staging and commits happen ONLY at the ship phase. At the test and review gates
+  the change set is expected to be UNTRACKED/uncommitted in the worktree; a file
+  listed in `build.files_changed` (or the plan's `file_change_proposal`) being
+  untracked is normal, not a defect.
+- Evidence artifacts live in the primary checkout's `artifacts/` tree, never inside
+  the worktree. "No evidence files in the worktree" is expected, not a gap.
+Do not raise a finding whose sole basis is one of the above.
+
 Actively look for reasons to REJECT:
 - An acceptance criterion not actually satisfied by the code (trace each criterion to
   concrete changed lines — absence of evidence is failure).

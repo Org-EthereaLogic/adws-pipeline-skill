@@ -32,6 +32,10 @@ to *use* the skill, only to understand or re-verify it.
 - **Node.js ≥ 20** on `PATH` (validators + report are dependency-free Node scripts)
 - **[`gh`](https://cli.github.com/) authenticated** — only for `pr` mode
 - If your repo signs commits, a loaded signing key (e.g. `ssh-add -l` shows your key)
+- **The target repo's own runtimes** (PHP, Python, a package manager, …) for its test
+  and verify phases — the pipeline ships none of these. When one is missing, the tester
+  records the check as `NOT RUN` (never an assumed pass) or uses a documented substitute
+  (e.g. php-wasm under Node); see `SKILL.md` "Environment & runtimes".
 
 ## Install / port into a project
 

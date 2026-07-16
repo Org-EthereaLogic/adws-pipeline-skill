@@ -65,6 +65,13 @@ At the test and review gates, after the phase agent (Architect) produces its out
    `consensus/advocate.json`, present it to the operator once for resolution; if
    unresolved, terminate with `ADVOCATE_DISSENT` (no retry — quarantine class). Never
    silently override a dissent.
+   - **Operator-resolution re-review (F-6):** if the operator judges the dissent a
+     false positive and elects a fresh independent re-review, that re-review is a new
+     attempt that escalates one model tier on the same ladder as a retry (haiku →
+     sonnet → opus, capped at opus), recorded as
+     `tier_input: { "source": "operator-resolution", "value": "<resolved dissent location, e.g. review/attempt_1/consensus/advocate.json>" }`.
+     This is distinct from `retry-escalation` (which follows a gate failure) — here no
+     gate failed; the operator invoked a re-look to clear a suspected false positive.
 3. An Advocate `verdict: "fail"` IS a dissent and must carry a non-null `dissent`
    text. A `fail` with null `dissent` is malformed evidence: re-dispatch the Advocate
    once; if still malformed, treat the findings text as the dissent and proceed per

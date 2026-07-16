@@ -20,6 +20,18 @@ Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2
 - `scripts/entropy-gate.js` — X-2 stability gate; CLI: `node scripts/entropy-gate.js artifacts/{jobId}/entropy_history.jsonl` → `{action: proceed|escalate|halt}`
 
+## Environment & runtimes (F-9)
+
+The bundled scripts need only Node ≥ 20 (and `gh` for `pr` mode). But the TARGET
+repository's test and verify phases usually need repo-specific runtimes the pipeline
+does not ship — a PHP project needs PHP, a Python one needs Python, etc. These are the
+tester's and verifier's concern, not the orchestrator's: when a required runtime is
+absent, a check must degrade HONESTLY — record `"pass": false` with output `NOT RUN`,
+or use a documented substitute (E2E-1 ran PHP checks via php-wasm under Node) — and
+NEVER an assumed pass. A skipped or unrunnable check is evidence of a gap, not a
+green light; plan checks around the runtimes actually available and say so in the
+phase log.
+
 ## Hard rules (never violate)
 
 1. Phase order is `plan → build → test → review → document → ship → verify`. Never
@@ -88,8 +100,15 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    outputs; wrap each stdout JSON in a `skill_trace.json` under the attempt's
    `skills/{skill_id}/` directory.
 3. **Consensus** (test and review only): dispatch `adws-critic` and `adws-advocate`
-   in parallel, each with FRESH context — contract + change set only, no Architect
-   reasoning, not each other's output. Write both verdicts to `consensus/`.
+   in parallel (MANDATORY — they have no data dependency on each other; see
+   `references/phase-gates.md` "Consensus"), each with FRESH context — contract +
+   change set only, no Architect reasoning, not each other's output. Include the
+   standard **pipeline-mechanics preamble** in each briefing so neither flags
+   expected pipeline state as a defect: staging and commits happen ONLY at ship, so
+   at the test and review gates the change set is expected to be UNTRACKED in the
+   worktree — a file listed in `build.files_changed` being uncommitted/untracked is
+   normal, not a finding; evidence lives in the primary checkout's `artifacts/`,
+   never inside the worktree. Write both verdicts to `consensus/`.
    - Both pass → continue to gate decision.
    - Critic fail → gate fails (retry path).
    - Advocate dissent → record verbatim; present it to the user ONCE for resolution;
@@ -196,3 +215,25 @@ rewind → `TEST_GATE_FAILURE`) → RETRY verdict.
 
 Validator inputs are assembled by you (orchestrator) from the contract and phase
 outputs — each script's expected input shape is documented in its header comment.
+
+## Troubleshooting
+
+### Stale worktree / ref `.lock` files (F-10)
+
+On sandbox-mounted or overlay filesystems, `git worktree add` can leave behind
+zero-byte `*.lock` files (e.g. `.git/worktrees/{name}/HEAD.lock`, or a
+`.git/refs/.../{ref}.lock`) that git itself then refuses to remove
+(`unlink: Operation not permitted`). Every subsequent ref update on that target fails
+with `cannot lock ref … Unable to create '….lock': File exists`.
+
+Recovery — run all three checks BEFORE deleting anything:
+1. Confirm the file is a lock AND is **zero bytes** (`ls -l` shows size 0). A non-empty
+   `.lock` may be a real in-progress git transaction — do NOT delete it.
+2. Confirm **no live git process** is touching this repo (`pgrep -fl git`). If one is,
+   wait for it to finish; the lock is legitimate.
+3. Only then remove the specific stale lock file(s) by **explicit path** (never a
+   wildcard sweep), using elevated permission if the mount requires it. Re-run the
+   failed git command.
+
+Prefer the Agent tool's `isolation: "worktree"` where available — it sidesteps this by
+not manipulating the primary checkout's `.git/worktrees` under the sandbox mount.

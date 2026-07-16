@@ -49,12 +49,18 @@ artifacts/{jobId}/
 ```json
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
-  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate", "value": "" },
+  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
   "gate_result": "pass | fail", "failure_reason": null,
   "stability_gate": null }
 ```
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
 this attempt, or null when no entropy history exists yet.
+`tier_input.source` names what selected this attempt's model tier. `operator-resolution`
+is the dissent-resolution re-attempt source (F-6): a re-review the operator triggered to
+clear a dissent they judged a false positive. It escalates one tier on the same ladder as
+`retry-escalation` (haiku → sonnet → opus, capped at opus), and its `value` records the
+resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`. See
+`references/phase-gates.md` "Consensus" for the flow.
 
 `phase_output.json` — phase-specific. Required minimums:
 
@@ -98,9 +104,21 @@ in that attempt's `phase_manifest.json`.
 ## Append-only rules (FR-4)
 
 1. A new attempt ALWAYS gets a new `attempt_{n}` directory (n = max existing + 1).
-2. Never write into, modify, or delete any existing `attempt_*` directory or its
-   contents — including your own earlier files within a completed attempt. Treat every
-   file as write-once.
+2. **Write-once for phase agents (FR-4).** A phase agent (planner … verifier, plus
+   critic, advocate, grader) treats every file it writes in its attempt directory as
+   write-once: it never re-opens, modifies, or deletes a file in any existing
+   `attempt_*` directory — including its own earlier files within a completed attempt.
+   The ORCHESTRATOR is the sole exception, and only for an EXHAUSTIVE, enumerated set
+   of designated post-hoc fields it completes after the agent has written the file:
+   - `{phase}/attempt_{n}/phase_manifest.json` → `gate_result` (the gate decision is
+     the orchestrator's, not the agent's — agents leave it unset per each agent spec).
+   - `verify/attempt_{n}/phase_output.json` → `drift_verdict` (filled from the
+     adws-grader result once grading completes).
+
+   Every other field of every other file is immutable once written. This list is
+   exhaustive: anything not named here stays write-once for everyone, orchestrator
+   included (invariant — F-7 resolved in favor of the designed flow, not by weakening
+   append-only).
 3. `task_contract_snapshot.json` is written once at intake and never touched again.
 4. `run_manifest.json` is the only mutable file: update it at phase transitions and
    terminal state only (current_phase, model_tiers, rewind count, final_status).
