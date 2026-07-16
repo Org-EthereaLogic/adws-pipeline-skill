@@ -198,3 +198,42 @@ Per DPPD §9 (v1.1). Branch `feat/sc1-f2-verb-regex-x2-entropy-regulator`.
   inventory, DPPD §9 cross-references, this file's stale 79/79 wording.
 - **Known limitation (accepted):** `run-parity.js --freeze` still requires
   `ADWS_PRO_source/` even when re-freezing only the diverged pack.
+
+## SC-2 scope change (2026-07-16, post-production-run) — F-3…F-10 from job_20260715_0001
+
+Per DPPD §10 (v1.2), approved R-6. Branch `feat/sc2`, three tranche commits. Full plan:
+`SC2_PLAN.md`.
+
+- **SC-2a (F-4, F-6, F-7, F-9, F-10):** docs/prompt only, zero parity risk. Pipeline-
+  mechanics preamble in the Critic/Advocate dispatch (SKILL.md + both consensus agents);
+  `operator-resolution` tier source; append-only rule 2 amended to write-once-for-phase-
+  agents with an exhaustively-enumerated orchestrator post-hoc field set (strengthens
+  FR-4); SKILL.md runtimes note + worktree `.lock` troubleshooting.
+- **SC-2b (F-3, F-5, F-8):** `execution-report.js` SCHEMA_VERSION 1.0.0 → 1.1.0.
+  Consensus gate now downgrades an operator-`override`n dissent to WARN (permanent
+  warning, never a clean promote) while `uphold`/unresolved still QUARANTINE; ship
+  delegated-push `deferred` sub-state surfaced; multi-attempt warning reworded to gate
+  outcomes. Report suite **10 → 13** (new: `promote_resolved_dissent` exit 10,
+  `quarantine_upheld_dissent` exit 2, `promote_delegated_push` exit 0), regression-first
+  and deterministic across re-runs. `.gitignore` re-includes the fixture trees under
+  `artifacts/` (broad rule would otherwise swallow new fixtures); derived
+  `execution_report.*` stay ignored.
+- **SC-2c (C1, C3, C4, C5; C2 deferred):** mandatory parallel Critic ∥ Advocate dispatch;
+  `execution.commit_identity` contract field; prompt-injection rule and secret-redaction
+  rule on all 10 agents (+ artifact-layout rule 7). C2 (review-gate Advocate tier bump)
+  deferred pending more run data.
+- **Dogfood review gate:** the pipeline's own reviewer/critic/advocate ran fresh-context
+  over the `feat/sc2` diff, followed by an adversarial verification pass on blocker/major
+  findings. Advocate **PASS** (no dissent); Reviewer PASS; the Critic independently
+  **confirmed the report logic correct** (evalConsensus / normalizeResolution /
+  buildWarnings; the 3 new fixtures non-vacuous and deterministic; A3's post-hoc field
+  list matching exactly what the code reads; all 10 agents carrying the C4/C5 rules; C3
+  not touching git config; NFR-5 untouched). The Critic's one confirmed blocker was that
+  the governance reconciliation (this DPPD §10 → v1.2 / WBS / README update) was still an
+  UNCOMMITTED working-tree edit, so `git diff main...feat/sc2` shipped code its own
+  governing doc still called "PROPOSED / out of scope." Resolved by committing that
+  reconciliation as part of the change set (this commit), making the committed diff
+  internally consistent.
+- **Suites at close:** parity **84/84**, report **13/13**, entropy **7/7** — all green,
+  deterministic. `SKILL.md` 249 lines (NFR-3 < 500). Open follow-ups: E2E-2 confirmation
+  run (SC2_PLAN step 6) and the C2 tier decision.

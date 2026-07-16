@@ -1,7 +1,7 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.1 (SC-1 scope change §9, 2026-07-15)
+**Version:** 1.2 (SC-2 scope change §10, 2026-07-16)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Draft — pending approval
@@ -254,20 +254,55 @@ when cross-provider credentials exist.
 
 ---
 
-## 10. Scope Change SC-2 (PROPOSED — pending R-6 approval)
+## 10. Scope Change SC-2 (2026-07-16, post-production-run) — APPROVED
 
-**Status: PROPOSED. Not approved; nothing in this section is yet in scope.** Per R-6, a
-scope change requires operator approval before any implementation. This entry records
-that a proposal exists so the scope-change ledger stays complete; it does **not** amend
-§2 scope, the parity guarantee, or any acceptance criterion until the operator approves.
+Approved per R-6 (operator approval, 2026-07-16). Amends §2 (scope) and extends the
+execution-report generator. Version: DPPD 1.2. Motivated by the skill's first production
+run against a real third-party repo (`job_20260715_0001`, verdict PROMOTE-with-warnings),
+which produced field-evidence findings **F-3 … F-10**. Full register, per-item detail,
+sequencing, and invariants: **`docs/SC2_PLAN.md`**. Implemented on branch `feat/sc2`
+(three tranche commits) with the skill's own review gate dogfooded over the diff.
 
-**Motivation:** the skill's first production run against a real third-party repo
-(`job_20260715_0001`, verdict PROMOTE-with-warnings) produced a field-evidence findings
-register **F-3 … F-10**. Full register, proposed three-tranche scope (SC-2a docs/prompt
-fixes, SC-2b evidence-schema & report logic, SC-2c perf/security hardening), sequencing,
-and invariants: **`docs/SC2_PLAN.md`**.
+### SC-2a — Docs & prompt fixes (F-4, F-6, F-7, F-9, F-10)
 
-On approval, this section is amended to record the accepted tranches (mirroring the SC-1
-§9 form) and `Version` is bumped accordingly. Until then the current governing state is
-**DPPD 1.1 (SC-1)** and the 84/84 parity / 10/10 report / 7/7 entropy invariants hold
-unchanged.
+Zero parity risk (no validator/report logic). A1 pipeline-mechanics preamble in the
+Critic/Advocate dispatch (eliminates the E2E-1 false-positive dissent about
+stage-at-ship mechanics); A2 `operator-resolution` added to the `tier_input.source`
+enum; A3 append-only rule 2 amended to **write-once for phase agents** with an
+exhaustively-enumerated set of orchestrator post-hoc fields (F-7 resolved without
+weakening FR-4); A4 SKILL.md "Environment & runtimes" note (absent repo runtimes degrade
+to `NOT RUN`, never assumed passes); A5 stale-worktree/ref `.lock` troubleshooting.
+
+### SC-2b — Evidence-schema & report logic (F-3, F-5, F-8)
+
+`execution-report.js` SCHEMA_VERSION 1.0.0 → 1.1.0; report suite 10 → 13 fixtures,
+regression-first (fixture before logic, per invariant). B1 optional `resolution` object
+on advocate.json — an operator `override` of a false-positive dissent promotes with a
+PERMANENT warning (never silent, FR-7), `uphold`/unresolved still QUARANTINE (fixtures
+`promote_resolved_dissent` / `quarantine_upheld_dissent`). B2 ship delegated-push
+sub-state — a credential-less `pr`-mode push defers (gate `deferred`, no retry burned)
+and the orchestrator closes the same attempt post-hoc (fixture `promote_delegated_push`);
+deferred-then-pass counts as one attempt. B3 the multi-attempt warning now reports gate
+outcomes, not the false "required N attempts before producing output". The 8
+original-parity packs and the `criteria-to-checks` v1.1.0 baseline are untouched (84/84
+preserved).
+
+### SC-2c — Performance & security hardening (C1, C3, C4, C5; C2 deferred)
+
+C1 mandatory parallel Critic ∥ Advocate dispatch (codified in phase-gates). C3 new
+`execution.commit_identity` contract field (default operator git config; documented
+fallback `Claude (ADWS pipeline) <noreply@anthropic.com>`) — authorship is an intake
+decision, not a ship-time improvisation. C4 prompt-injection rule on all 10 agents (repo
+content, issue text, and diffs are DATA; embedded directives are reported, not
+followed). C5 evidence-redaction rule (secrets in captured command output → `[REDACTED]`
+before evidence, defense in depth on `no-new-secrets`). **C2 (risk-tier the review-gate
+Advocate haiku → sonnet) is DEFERRED** pending 2–3 more production runs, per the plan.
+
+### Invariants held
+
+84/84 validator parity and the `criteria-to-checks` v1.1.0 frozen baseline unchanged;
+the report suite stays deterministic across re-runs (now 13/13); FR-4 append-only was
+STRENGTHENED (A3 exhaustive post-hoc enumeration), never weakened; FR-7 dissent
+semantics preserved (B1's override forces a permanent warning); NFR-5 git safety
+untouched. Governing state is now **DPPD 1.2 (SC-2)**. Open follow-ups: the E2E-2
+confirmation run (SC2_PLAN step 6) and the C2 tier-decision, both pending more run data.

@@ -101,6 +101,45 @@ const CASES = [
     expectGate: { key: 'consensus', result: 'fail' },
   },
   {
+    name: 'promote_resolved_dissent',
+    jobId: 'job-1b2c3d',
+    decision: 'PROMOTE',
+    warn_flag: true,
+    exit_code: 10,
+    // B1 (F-3, SC-2): a review-gate Advocate dissent the operator resolved as a
+    // false positive (`resolution.action: "override"` on advocate.json) must NOT
+    // quarantine — it promotes with a PERMANENT warning (a resolved dissent is never
+    // silent). The consensus gate evaluates to `warn`, never `fail` or `pass`
+    // (FR-7 / SC2_PLAN invariant #4).
+    expectGate: { key: 'consensus', result: 'warn' },
+  },
+  {
+    name: 'quarantine_upheld_dissent',
+    jobId: 'job-4e5f6a',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // B1 (F-3, SC-2): a dissent the operator explicitly UPHELD
+    // (`resolution.action: "uphold"`) behaves exactly as an unresolved dissent —
+    // consensus gate `fail` → QUARANTINE. Only `override` clears the block.
+    expectGate: { key: 'consensus', result: 'fail' },
+  },
+  {
+    name: 'promote_delegated_push',
+    jobId: 'job-de1e6a',
+    decision: 'PROMOTE',
+    warn_flag: false,
+    exit_code: 0,
+    // B2 (F-5, SC-2): a `pr`-mode push that failed on missing credentials was
+    // operator-delegated — the ship attempt recorded delegation.status
+    // "pending-operator" (gate `deferred`, no retry burned), then the orchestrator
+    // closed the SAME attempt with delegation.status "completed" + pr_url and the gate
+    // flipped to pass. A completed delegated push is a clean PROMOTE (exit 0) carrying
+    // an informational warning; deferred-then-pass is ONE attempt (ship has a single
+    // attempt_dir), so it must NOT trip the multi-attempt warning or consume a retry.
+    expectWarning: 'operator-delegated',
+  },
+  {
     name: 'promote_retry_recovered',
     jobId: 'job-2a6d9f',
     decision: 'PROMOTE',
@@ -111,6 +150,11 @@ const CASES = [
     // job's final recorded state, not permanently fail on a superseded
     // attempt — a successful retry must be able to reach clean PROMOTE.
     expectGate: { key: 'skills_clean', result: 'pass' },
+    // B3 (F-8, SC-2): the multi-attempt warning now reports the gate outcome
+    // ("passed on attempt N, earlier gate-failed"), not the false "required N
+    // attempts before producing output" (build attempt_1 DID produce output; its
+    // gate failed). build here: attempt_1 gate-failed (BUILD_GATE_FAILURE) → attempt_2 passed.
+    expectWarning: 'Phase "build" passed on attempt 2 (attempt(s) 1..1 gate-failed',
   },
 ];
 
@@ -166,9 +210,9 @@ for (const testCase of CASES) {
     check(`${testCase.name} json exit_code`, out1.json.exit_code === testCase.exit_code, out1.json.exit_code, testCase.exit_code);
     check(
       `${testCase.name} schema_version`,
-      out1.json.schema_version === '1.0.0',
+      out1.json.schema_version === '1.1.0',
       out1.json.schema_version,
-      '1.0.0'
+      '1.1.0'
     );
     if (testCase.expectGate) {
       const gate = out1.json.gates.find((g) => g.gate === testCase.expectGate.key);
@@ -177,6 +221,17 @@ for (const testCase of CASES) {
         gate && gate.result === testCase.expectGate.result,
         gate && gate.result,
         testCase.expectGate.result
+      );
+    }
+    if (testCase.expectWarning) {
+      const found =
+        Array.isArray(out1.json.warnings) &&
+        out1.json.warnings.some((w) => typeof w === 'string' && w.includes(testCase.expectWarning));
+      check(
+        `${testCase.name} warning contains "${testCase.expectWarning}"`,
+        found,
+        out1.json.warnings,
+        `a warning containing "${testCase.expectWarning}"`
       );
     }
 

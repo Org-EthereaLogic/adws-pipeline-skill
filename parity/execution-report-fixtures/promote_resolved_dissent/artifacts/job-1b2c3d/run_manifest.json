@@ -1,0 +1,20 @@
+{
+  "job_id": "job-1b2c3d",
+  "task_id": "TASK-501",
+  "started_at": "2026-07-16T10:00:00Z",
+  "completed_at": "2026-07-16T12:05:00Z",
+  "final_status": "completed",
+  "failure_reason": null,
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "haiku"
+  },
+  "schema_version": "1.0.0"
+}

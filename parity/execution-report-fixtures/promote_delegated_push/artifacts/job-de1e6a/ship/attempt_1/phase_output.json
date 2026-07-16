@@ -1,0 +1,15 @@
+{
+  "mode": "pr",
+  "branch_name": "adws/delegated-push-demo",
+  "commit_sha": "abc1234",
+  "pushed": false,
+  "pr_url": "https://example.invalid/repo/pull/512",
+  "patch_file": null,
+  "block_reason": null,
+  "delegation": {
+    "status": "completed",
+    "detected_reason": "NO_PUSH_CREDENTIALS_IN_SANDBOX",
+    "completed_by": "operator",
+    "completed_at": "2026-07-16T15:20:00Z"
+  }
+}
