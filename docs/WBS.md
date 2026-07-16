@@ -9,9 +9,13 @@
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;
 evidence: `acceptance/DRILL_EVIDENCE.md`. One defect (F-1) was found by the drills and fixed.
-No open **approved** WBS work remains. A post-production-run enhancement scope (**SC-2**,
-findings F-3…F-10 from the first production run) is **PROPOSED pending operator R-6 approval**
-— see `DPPD.md` §10 and `SC2_PLAN.md`; it adds no work packages here until approved.
+A post-production-run enhancement scope (**SC-2**, findings F-3…F-10 from the first
+production run) was **APPROVED (operator R-6, 2026-07-16)** and implemented on branch
+`feat/sc2` in three tranches: SC-2a docs/prompt fixes (zero parity risk), SC-2b
+evidence-schema & report logic (report suite 10 → 13 fixtures, `execution-report.js`
+SCHEMA_VERSION 1.0.0 → 1.1.0), SC-2c perf/security hardening. **Deferred:** C2
+(review-gate Advocate tier bump) and the E2E-2 confirmation run (SC2_PLAN step 6),
+both pending more production-run data. See `DPPD.md` §10 and `SC2_PLAN.md`.
 
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 

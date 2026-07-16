@@ -124,7 +124,7 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                       # 84/84 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 10/10 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 13/13 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 ```
 
