@@ -4,7 +4,9 @@
 **Version:** 1.2 (SC-2 scope change §10, 2026-07-16)
 **Date:** 2026-07-14
 **Owner:** Anthony
-**Status:** Draft — pending approval
+**Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
+`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9) and SC-2 (§10) approved per R-6.
+Governing version: 1.2.
 **Companion document:** `WBS.md`
 
 ---

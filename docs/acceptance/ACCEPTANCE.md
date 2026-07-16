@@ -95,10 +95,11 @@ no validator touched). `phase-gates.md` §Consensus rule 4 documents the termina
    author summary comments, not formal review artifacts.
 5. **Evidence-quality caveats** (DRILL_EVIDENCE.md "What live means"): phase manifests carry
    no LLM-invocation telemetry and use placeholder timestamps.
-6. **DPPD formal items (operator's call, not mine):** DPPD.md is still headed "Draft —
-   pending approval"; and §1.3 says "10 validators" while parity covers the **9**
-   deterministic ports (the 10th, `adws-grader`, is LLM-graded by design). These are
-   wording/sign-off items for the operator to reconcile.
+6. **DPPD formal items — RESOLVED:** the DPPD header was flipped from "Draft — pending
+   approval" to **Approved** (operator decision, 2026-07-16), recording the WBS 6.4
+   acceptance and the R-6-approved scope changes SC-1/SC-2. The companion §1.3 wording was
+   already corrected under SC-1 to read **9** deterministic validators with the 10th
+   (`adws-grader`) noted as LLM-graded by design. Both sign-off items are reconciled.
 
 ## Remediation performed during acceptance
 
