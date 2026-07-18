@@ -35,7 +35,9 @@ Cowork/cloud runtime, F-11 dispatch fallback, patch ship mode). Verdict **PROMOT
 QUARANTINE exposed a verifier-spec contradiction — resolved spec-side in this branch
 (adws-verifier.md skip semantics; SKILL.md ship-staging union). First live exercise of
 the verify RETRY path with tier escalation. Target repo: PR #118 merged, follow-up
-#119 filed, dashboard #120. Run record:
+#119 filed, dashboard #120. Skill-repo spec/doc sync merged via
+[PR #14](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/14) (parity
+84/84). Run record:
 `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`. **Still deferred:** C2
 and E2E-2 (B1/B2 unexercised).
 

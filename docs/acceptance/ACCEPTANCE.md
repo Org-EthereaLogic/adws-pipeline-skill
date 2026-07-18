@@ -31,8 +31,9 @@
 > clean change set; the spec was corrected (operator-approved, scripts untouched,
 > parity intact) and verify attempt 2 promoted. FR-10's evidence-derived verdict and
 > FR-4 append-only retries behaved exactly as designed. Findings and fixes:
-> `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`. E2E-2 remains
-> deferred (B1/B2 still unexercised).
+> `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`, merged via
+> [PR #14](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/14)
+> (parity 84/84). E2E-2 remains deferred (B1/B2 still unexercised).
 
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
