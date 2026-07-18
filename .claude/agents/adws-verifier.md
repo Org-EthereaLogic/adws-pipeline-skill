@@ -21,8 +21,14 @@ Checks to run (each becomes one `{ "check", "pass" }` entry):
    `git diff --name-only {target_branch}..{branch_name}` / patch file list) is inside
    `policy.allowed_paths` and outside `policy.blocked_paths`.
 3. **Syntax** — for each changed file, run the applicable syntax check
-   (`node --check`, `python -m py_compile`, JSON/YAML parse, etc.); files with no
-   applicable checker are recorded as `"skipped": true`, not passed.
+   (`node --check`, `python -m py_compile`, JSON/YAML parse, etc.; honor the target
+   repo's own checker conventions, e.g. pre-commit hook scope). A file with NO
+   applicable checker is NOT a check: do not emit a boolean `checks` entry for it
+   (the terminal `verify_structural` gate requires every recorded check to pass, and
+   the `verify_result.checks` shape is exactly `{ "check", "pass" }` — no extra
+   keys). Instead list it in `phase_log.md` under "no applicable syntax checker"
+   with one line of reasoning (e.g. repo excludes `.md` from lint scope). Never
+   record an unexecuted or inapplicable check as passed.
 4. **Evidence completeness** — every phase directory plan…ship contains ≥ 1 attempt
    with `phase_manifest.json` and `phase_output.json`.
 
