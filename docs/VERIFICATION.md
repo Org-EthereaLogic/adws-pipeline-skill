@@ -23,8 +23,10 @@ contradicted `artifact-layout.md`'s `{check, pass}` shape and `execution-report.
 spec-side (adws-verifier.md; plus SKILL.md ship-staging union wording) — scripts and
 parity untouched. FR-10 held: the false verdict was evidence-derived and the retry is
 fully recorded (verify attempt_2). Target-repo outcome: PR #118 merged (closes #104),
-follow-up #119 filed for marker-scan.sh, dashboard synced via #120. Run record:
-`docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`.
+follow-up #119 filed for marker-scan.sh, dashboard synced via #120. The skill-repo
+spec/doc changes (adws-verifier.md, SKILL.md, tracking docs) were merged via
+[PR #14](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/14) with parity
+84/84. Run record: `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`.
 
 ## Delivered
 
