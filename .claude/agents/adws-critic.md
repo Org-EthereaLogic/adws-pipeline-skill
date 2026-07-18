@@ -33,6 +33,13 @@ Actively look for reasons to REJECT:
 - Regressions: changed behavior outside the task's intent, deleted safeguards,
   weakened existing tests.
 
+When the change is behavioral (a script, a build recipe, error handling), do not
+limit yourself to re-running the scenarios the tester already tried: construct
+adversarial inputs and reason STATICALLY about edge/error paths the happy-path
+checks would not exercise (unusual runtimes, permission or I/O errors, empty or
+oversized inputs, a step that fails for a reason other than the expected one).
+Empirical re-runs and static edge-case reasoning catch different defects — use both.
+
 Verdict rule: `fail` if ANY of the above holds — cite the specific file/line or check.
 `pass` only if you searched for all of them and found none.
 
