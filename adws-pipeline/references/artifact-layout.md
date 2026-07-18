@@ -128,7 +128,8 @@ in that attempt's `phase_manifest.json`.
    The ORCHESTRATOR is the sole exception, and only for an EXHAUSTIVE, enumerated set
    of designated post-hoc fields it completes after the agent has written the file:
    - `{phase}/attempt_{n}/phase_manifest.json` → `gate_result` (the gate decision is
-     the orchestrator's, not the agent's — agents leave it unset per each agent spec).
+     the orchestrator's, not the agent's — agents write `"gate_result": null` per
+     each agent spec and the orchestrator overwrites it post-hoc).
    - `verify/attempt_{n}/phase_output.json` → `drift_verdict` (filled from the
      adws-grader result once grading completes).
    - `{test,review}/attempt_{n}/consensus/advocate.json` → `resolution` (F-3; written

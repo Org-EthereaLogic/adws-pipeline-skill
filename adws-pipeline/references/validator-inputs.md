@@ -29,7 +29,7 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 | `ship-mode-select` | ship | `{ output_mode, branch_name, policy: { allow_direct_commit } }` | contract `execution.output_mode` + `run_manifest.branch_name` + contract `execution.allow_direct_commit` |
 | `patch-compose` | ship | `{ build_output: { files_changed: [...] }, output_mode, branch_name }` | build `phase_output.json` + contract/manifest as above |
 | `verify-evidence-map` | verify | `{ checks: [{check, pass}] }` | verifier `phase_output.json` → `verify_result.checks` |
-| `drift-sentinel` | verify | `{ entropy_history: [{entropy}\|{parseFailureScore}\|number] }` (env: `ADWS_UMIF_CANONICAL` on\|off\|shadow, default on) | `artifacts/{jobId}/entropy_history.jsonl` lines; **file absent (zero parse failures) → pass `{ "entropy_history": [] }`, which is SAFE/`pass` by design** |
+| `drift-sentinel` | verify | `{ entropy_history: [{entropy}\|{parseFailureScore}\|number] }` (env: `ADWS_UMIF_CANONICAL` on\|off\|shadow, default on) | `artifacts/{jobId}/entropy_history.jsonl` lines, MAPPED: each line's `parse_failures` becomes `parseFailureScore` (or pass the bare numbers) — drift-sentinel does NOT read the `parse_failures` key, and feeding raw lines scores every entry 0 → silent false-SAFE (entropy-gate.js does this mapping internally; at verify YOU assemble it). **File absent (zero parse failures) → pass `{ "entropy_history": [] }`, which is SAFE/`pass` by design** |
 
 ## Non-validator scripts
 
