@@ -50,7 +50,7 @@ artifacts/{jobId}/
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
   "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
-  "gate_result": "pass | fail | deferred", "failure_reason": null,
+  "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null }
 ```
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
@@ -61,7 +61,9 @@ clear a dissent they judged a false positive. It escalates one tier on the same 
 `retry-escalation` (haiku → sonnet → opus, capped at opus), and its `value` records the
 resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`. See
 `references/phase-gates.md` "Consensus" for the flow.
-`gate_result` is normally `pass`/`fail`. `deferred` (F-5) is a ship-only intermediate: a
+`gate_result` is `null` as written by the phase agent (the pre-gate state; the
+orchestrator overwrites it post-hoc per rule 2 below) and normally `pass`/`fail`
+once the gate is decided. `deferred` (F-5) is a ship-only intermediate: a
 `pr`-mode push that failed on detected missing credentials awaits an operator-delegated
 push and does NOT consume the retry budget. On operator confirmation the SAME attempt's
 gate flips to `pass` (see ship `phase_output.delegation` below); a timeout/refusal makes
@@ -128,7 +130,8 @@ in that attempt's `phase_manifest.json`.
    The ORCHESTRATOR is the sole exception, and only for an EXHAUSTIVE, enumerated set
    of designated post-hoc fields it completes after the agent has written the file:
    - `{phase}/attempt_{n}/phase_manifest.json` → `gate_result` (the gate decision is
-     the orchestrator's, not the agent's — agents leave it unset per each agent spec).
+     the orchestrator's, not the agent's — agents write `"gate_result": null` per
+     each agent spec and the orchestrator overwrites it post-hoc).
    - `verify/attempt_{n}/phase_output.json` → `drift_verdict` (filled from the
      adws-grader result once grading completes).
    - `{test,review}/attempt_{n}/consensus/advocate.json` → `resolution` (F-3; written
@@ -152,3 +155,14 @@ in that attempt's `phase_manifest.json`.
    output verbatim — agents MUST redact secrets (tokens, keys, passwords, credentials)
    to `[REDACTED]` before writing them. Defense in depth on top of `secret_policy:
    no-new-secrets`; the evidence tree is an audit artifact, not a secret store.
+8. **Schema discipline — tolerant reader, strict writer.** Consumers of the evidence
+   tree (`execution-report.js`) evaluate only the fields documented in this file and
+   ignore unknown keys. Writers get no inverse latitude: agents write EXACTLY the
+   documented fields for each file shape. An undocumented extra key is schema drift —
+   it will not break the terminal report, but it is flagged at review and nothing may
+   depend on it.
+9. **Timestamp integrity.** Every `*_at` field is a real UTC value captured with
+   `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing — never estimated, copied
+   from another file, or a placeholder. A midnight `T00:00:00Z` stamp reads as
+   fabricated evidence: PASS claims built on low-integrity timestamps do not meet the
+   dual-evidence bar.
