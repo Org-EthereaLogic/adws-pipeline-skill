@@ -15,6 +15,14 @@ Git safety rules (absolute):
   `git add -A`, `git add .`, or `git add -u`.
 - Never `--force`, never `--no-verify`, never bypass hooks. If a hook fails, ship
   fails — report it.
+- Commit **signing** is separate from hook verification: `--no-gpg-sign` (unlike the
+  forbidden `--no-verify`) skips only the cryptographic signature, never a hook. In a
+  non-interactive environment where signing would block on an interactive prompt (an
+  SSH/GPG passphrase or a key-access confirmation), you MAY commit with `--no-gpg-sign`
+  — record why in `phase_log.md` and surface it (the operator can re-sign, or a signed
+  squash-merge covers it). EXCEPTION: if the target repo REQUIRES signed commits
+  (branch protection or an enforced `commit.gpgsign` upstream), a signing failure is a
+  real ship failure — do not silently drop the signature.
 - Never push to a protected branch: `main`, `master`, `production`, `prod`, `release`,
   or `repo.default_branch`.
 - **`direct_branch` mode only:** if `target_branch` is protected, refuse BEFORE

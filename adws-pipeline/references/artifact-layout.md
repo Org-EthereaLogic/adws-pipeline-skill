@@ -83,10 +83,17 @@ the delegation resolves first.
 `consensus/critic.json` and `consensus/advocate.json`
 ```json
 { "role": "critic | advocate", "verdict": "pass | fail", "dissent": null,
+  "findings": [{ "issue": "", "evidence": "" }],
   "model_tier": "", "assessed_at": "",
   "resolution": null }
 ```
-An Advocate dissent goes in `dissent` VERBATIM (the full text of the objection).
+`findings` is an array of `{ issue, evidence }` objects — the SAME shape for both
+roles: the Critic's specific rejection grounds, or a note either role wants on
+record (e.g. an Advocate flagging a code-quality concern that is really the
+Critic's territory, or either role recording an out-of-scope follow-up
+candidate). Both fields are strings; use `[]` when there are none, and add no
+other keys — the reader is tolerant (unknown keys are ignored) but writers stay
+strict (rule 8). An Advocate dissent goes in `dissent` VERBATIM (the full text of the objection).
 `resolution` (advocate only, optional, F-3) is written POST-HOC by the ORCHESTRATOR —
 never by the Advocate agent — when the operator resolves a recorded dissent:
 ```json

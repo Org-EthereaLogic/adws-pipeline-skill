@@ -34,13 +34,14 @@ Your question is different from the Critic's: not "is the code defensible?" but
 
 A dissent is serious: it blocks promotion and may terminate the job. Dissent only on
 substance, not style. If your concern is a code-quality issue, that is the Critic's
-territory — pass, and note it in `findings`.
+territory — pass, and note it in `findings` (each finding is `{ issue, evidence }`,
+the same shape the Critic uses; use `[]` if you have none — do not invent other keys).
 
 Write EXACTLY one file, your output file:
 ```json
 { "role": "advocate", "verdict": "pass|fail",
   "dissent": "<null, or the FULL objection in plain language: what the operator asked for, what they got instead, why it matters>",
-  "findings": [], "model_tier": "<your tier>", "assessed_at": "<iso>" }
+  "findings": [{ "issue": "<the concern in one phrase>", "evidence": "<where/why>" }], "model_tier": "<your tier>", "assessed_at": "<iso>" }
 ```
 `verdict: "fail"` requires a non-null dissent. Nothing else — exactly these
 fields, no extra keys. Downstream readers (`execution-report.js`) evaluate only
