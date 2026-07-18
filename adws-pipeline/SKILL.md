@@ -14,6 +14,7 @@ Reference files (read when needed, not all upfront):
 - `references/task-contract.md` — contract template, intake validation, vague-task rejection
 - `references/phase-gates.md` — per-phase gates, retry budgets, consensus, model tiers
 - `references/artifact-layout.md` — evidence tree, file shapes, append-only rules
+- `references/validator-inputs.md` — validator input assembly table (headers stay canonical)
 
 Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/validators/*.js` — 9 deterministic validators; CLI: `node <script> <input.json|->` → JSON verdict on stdout
@@ -31,6 +32,18 @@ or use a documented substitute (E2E-1 ran PHP checks via php-wasm under Node) �
 NEVER an assumed pass. A skipped or unrunnable check is evidence of a gap, not a
 green light; plan checks around the runtimes actually available and say so in the
 phase log.
+
+### Agent-type fallback (F-11)
+
+The `adws-*` agent definitions in `.claude/agents/` register as subagent types in
+Claude Code, but other runtimes (e.g. Cowork/cloud sessions) may not load them. When a
+phase agent's type is not registered, do NOT skip the phase or run it yourself:
+dispatch a general-purpose subagent with the corresponding `adws-*.md` body inlined
+VERBATIM into its prompt (spec first, then the phase inputs), apply the model tier via
+the dispatch mechanism's model option, and record the usual `agent` name in
+`phase_manifest.json`. The inlined spec must include the agent's Security paragraph
+and evidence-integrity rules — the fallback changes the transport, never the contract.
+Field-validated end to end in `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`.
 
 ## Hard rules (never violate)
 
@@ -91,7 +104,8 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    class). Record the gate output in the attempt's `phase_manifest.json` as
    `stability_gate`.
 1. **Dispatch** the phase agent (`adws-planner` … `adws-verifier`) via the Agent tool
-   at its current model tier. Give it: the contract path, the worktree path, its
+   at its current model tier (agent type not registered in this runtime → F-11
+   fallback in "Environment & runtimes"). Give it: the contract path, the worktree path, its
    attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
    the previous phase's `phase_output.json` path. Phase agents write their own
    evidence files per `references/artifact-layout.md`.
@@ -224,7 +238,15 @@ rewind → `TEST_GATE_FAILURE`) → RETRY verdict.
 | verify | `verify-evidence-map.js`, `drift-sentinel.js`, + `adws-grader` agent |
 
 Validator inputs are assembled by you (orchestrator) from the contract and phase
-outputs — each script's expected input shape is documented in its header comment.
+outputs — each script's expected input shape is documented in its header comment
+(canonical) and summarized with assembly sources in `references/validator-inputs.md`.
+
+Empty-history convention (verify phase): when `artifacts/{jobId}/entropy_history.jsonl`
+does not exist because the job recorded zero parse failures, feed `drift-sentinel`
+`{ "entropy_history": [] }` — an empty history evaluates SAFE/`pass` by design. A
+MISSING history file at verify is the healthy case, distinct from an UNREADABLE or
+corrupt one at the stability gate (entropy-gate exit 3), which stays an
+evidence-integrity failure.
 
 ## Troubleshooting
 

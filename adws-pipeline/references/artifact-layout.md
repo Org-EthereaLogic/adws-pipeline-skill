@@ -152,3 +152,14 @@ in that attempt's `phase_manifest.json`.
    output verbatim — agents MUST redact secrets (tokens, keys, passwords, credentials)
    to `[REDACTED]` before writing them. Defense in depth on top of `secret_policy:
    no-new-secrets`; the evidence tree is an audit artifact, not a secret store.
+8. **Schema discipline — tolerant reader, strict writer.** Consumers of the evidence
+   tree (`execution-report.js`) evaluate only the fields documented in this file and
+   ignore unknown keys. Writers get no inverse latitude: agents write EXACTLY the
+   documented fields for each file shape. An undocumented extra key is schema drift —
+   it will not break the terminal report, but it is flagged at review and nothing may
+   depend on it.
+9. **Timestamp integrity.** Every `*_at` field is a real UTC value captured with
+   `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing — never estimated, copied
+   from another file, or a placeholder. A midnight `T00:00:00Z` stamp reads as
+   fabricated evidence: PASS claims built on low-integrity timestamps do not meet the
+   dual-evidence bar.
