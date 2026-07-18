@@ -173,10 +173,21 @@ re-validated post-edit.
   hang, distinct from `--no-verify`. PR #121's eventual signed squash-merge (or an
   operator re-sign) covers signature provenance.
 
-## Merge record
+## Merge record — 2026-07-18 (same day)
 
-Pending. PR [#121](https://github.com/Org-EthereaLogic/agentic-starter-kit/pull/121)
-is OPEN and MERGEABLE at time of writing (target-repo CI has been billing-locked
-since the #104 run, so merges are gated on local validation — consistent with how
-#113–#120 merged). The evidence tree was kept out of the target repo's version
-control and survives locally under `artifacts/job_20260718_0003/`.
+- **agentic-starter-kit PR [#121](https://github.com/Org-EthereaLogic/agentic-starter-kit/pull/121)**
+  squash-merged to `main` as `032a481`, closing **#105** and **#122**. During
+  review, CodeRabbit independently flagged the `pipefail`/`find`-traversal-error
+  residual (the same one filed as #122); rather than defer it, the recipe was
+  hardened in the PR to a three-way `find` guard — a scan failure fails loud
+  (`ERROR: failed to scan tests/…` + non-zero exit), no matches → WARN + exit 0,
+  matches → `find … -exec node --test {} +` — so #122 closed with the merge.
+- **adws-pipeline-skill PR [#16](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/16)**
+  (this run's four skill enhancements + this field-run doc) merged to `main` as
+  `3da8240`.
+- **agentic-starter-kit PR [#125](https://github.com/Org-EthereaLogic/agentic-starter-kit/pull/125)**
+  squash-merged as `b31e830` — the fifth post-merge `docs/PROJECT_DASHBOARD.md`
+  sync recording #105/#121 and the #122 disposition.
+- All merges were gated on local validation (GitHub Actions remained
+  billing-locked, as for #113–#124). The evidence tree was kept out of the target
+  repo's version control and survives locally under `artifacts/job_20260718_0003/`.
