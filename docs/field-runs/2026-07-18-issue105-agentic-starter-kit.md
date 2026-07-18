@@ -143,6 +143,17 @@ re-validated post-edit.
   while staying errexit-safe) would fully close the class — suggest filing as a
   follow-up issue on the target repo, analogous to how the #104 run spun off #119
   for `marker-scan.sh`.
+  - **Update (PR review, post-run).** Filed as target-repo issue #122, then
+    **independently flagged by CodeRabbit as a Major finding on PR #121** — which
+    validates the residual as review-worthy, not merely theoretical, and vindicates
+    the run's skill enhancement #4 (encourage static edge reasoning: the pipeline's
+    own static reviewer had found it before the empirical Critic or an external
+    reviewer). It was hardened directly in #121 rather than deferred: the recipe now
+    captures `find` inside the `if` condition and branches on find's OWN exit status
+    — a scan failure fails loud (`ERROR: failed to scan tests/…` + non-zero exit),
+    an empty result WARNs and exits 0, and matches run `find … -exec node --test
+    {} +`. Verified across the full matrix plus an unreadable-`tests/`-subdir case
+    (now exit 2, previously WARN + exit 0). #122 closes with #121.
 
 ## Deviations from spec recorded for this run
 
