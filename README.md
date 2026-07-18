@@ -99,6 +99,9 @@ intake ─▶ plan ─▶ build ─▶ test ─▶ review ─▶ document ─▶
   *before* committing — no orphan commit), or `patch` (`git format-patch`, no push).
 - **Stability gate (X-2).** A parse-failure “entropy” signal can escalate a model tier
   (`WARN`) or halt a spiraling job (`COLLAPSE → STABILITY_BUDGET_EXCEEDED`).
+- **Codex tier aliases.** Codex dispatch may express the canonical evidence tiers as
+  `luna` → Haiku, `terra` → Sonnet, and `sol` → Fable when configured (otherwise Opus).
+  Evidence remains normalized to Haiku/Sonnet/Opus for validator compatibility.
 - **One authoritative verdict.** `scripts/execution-report.js` reads the evidence tree and
   emits PROMOTE (exit 0) / PROMOTE-with-warnings (10) / RETRY (1) / QUARANTINE (2).
 
