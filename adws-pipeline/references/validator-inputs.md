@@ -8,7 +8,7 @@ the header wins — and the divergence is a bug to fix here.
 
 All validators share one CLI shape:
 
-```
+```text
 node scripts/validators/<name>.js <input.json | ->   → JSON verdict on stdout
 ```
 

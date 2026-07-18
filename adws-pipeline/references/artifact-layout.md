@@ -50,7 +50,7 @@ artifacts/{jobId}/
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
   "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
-  "gate_result": "pass | fail | deferred", "failure_reason": null,
+  "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null }
 ```
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
@@ -61,7 +61,9 @@ clear a dissent they judged a false positive. It escalates one tier on the same 
 `retry-escalation` (haiku → sonnet → opus, capped at opus), and its `value` records the
 resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`. See
 `references/phase-gates.md` "Consensus" for the flow.
-`gate_result` is normally `pass`/`fail`. `deferred` (F-5) is a ship-only intermediate: a
+`gate_result` is `null` as written by the phase agent (the pre-gate state; the
+orchestrator overwrites it post-hoc per rule 2 below) and normally `pass`/`fail`
+once the gate is decided. `deferred` (F-5) is a ship-only intermediate: a
 `pr`-mode push that failed on detected missing credentials awaits an operator-delegated
 push and does NOT consume the retry budget. On operator confirmation the SAME attempt's
 gate flips to `pass` (see ship `phase_output.delegation` below); a timeout/refusal makes
