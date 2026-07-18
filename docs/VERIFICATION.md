@@ -243,7 +243,9 @@ Per DPPD §10 (v1.2), approved R-6. Branch `feat/sc2`, three tranche commits. Fu
 - **SC-2c (C1, C3, C4, C5; C2 deferred):** mandatory parallel Critic ∥ Advocate dispatch;
   `execution.commit_identity` contract field; prompt-injection rule and secret-redaction
   rule on all 10 agents (+ artifact-layout rule 7). C2 (review-gate Advocate tier bump)
-  deferred pending more run data.
+  deferred pending more run data. Codex dispatch aliases added after the run map `luna`
+  to Haiku, `terra` to Sonnet, and `sol` to Fable when configured (otherwise Opus), while
+  preserving canonical Haiku/Sonnet/Opus evidence and validator inputs.
 - **Dogfood review gate:** the pipeline's own reviewer/critic/advocate ran fresh-context
   over the `feat/sc2` diff, followed by an adversarial verification pass on blocker/major
   findings. Advocate **PASS** (no dissent); Reviewer PASS; the Critic independently

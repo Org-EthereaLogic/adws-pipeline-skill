@@ -83,7 +83,7 @@ A feasibility review (2026-07-14) concluded that the majority of its function po
 | FR-9 | Ship SHALL support three output modes: `pr` (push + open PR), `direct_branch` (push branch; refuse protected targets), `patch` (format-patch, no push). |
 | FR-10 | On terminal completion the skill SHALL generate `execution_report.md` + `.json` with a PROMOTE / RETRY / QUARANTINE verdict derived from recorded evidence only. |
 | FR-11 | Verify SHALL run post-ship with zero LLM judgment calls: structural checks, syntax checks, and the drift-sentinel classifier against the shipped diff. |
-| FR-12 | Model tiers SHALL be selected automatically: the deterministic risk score from `review.risk_assess` maps to a role→tier table (low risk → Haiku/Sonnet, high risk → Opus Architect + Sonnet Critic), and a phase retry SHALL escalate that phase agent's model one tier. The selected tier and its input score SHALL be recorded in the attempt's evidence. |
+| FR-12 | Model tiers SHALL be selected automatically: the deterministic risk score from `review.risk_assess` maps to a role→tier table (low risk → Haiku/Sonnet, high risk → Opus Architect + Sonnet Critic), and a phase retry SHALL escalate that phase agent's model one tier. Codex may dispatch those canonical tiers through the aliases `luna` → Haiku, `terra` → Sonnet, and `sol` → Fable when configured (otherwise Opus); recorded evidence SHALL remain normalized to Haiku/Sonnet/Opus. The selected tier and its input score SHALL be recorded in the attempt's evidence. |
 
 ### 3.2 Non-Functional Requirements
 
