@@ -76,6 +76,9 @@ Field-validated end to end in `docs/field-runs/2026-07-18-issue103-agentic-start
    write `task_contract_snapshot.json` and initial `run_manifest.json`.
 4. Select initial model tiers from `risk.risk_level` per the tier table in
    `references/phase-gates.md`; record in `run_manifest.model_tiers`.
+   In Codex, route those canonical tiers through the aliases `luna`, `terra`, and
+   `sol` defined in that reference. Keep canonical tier names in evidence so existing
+   validators and reports remain compatible.
 
 ### 1 — Worktree
 
@@ -132,7 +135,8 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    attempt's `phase_manifest.json`.
    - Pass → update `run_manifest.current_phase`, proceed to next phase.
    - Fail, retries remain → new attempt; escalate this phase agent's model one tier
-     (haiku → sonnet → opus); record `tier_input: retry-escalation`.
+     (`luna` → `terra` → `sol` in Codex; canonically haiku → sonnet → opus); record
+     `tier_input: retry-escalation`.
    - Test-checks fail because the CODE is wrong → rewind to build (once per job;
      increment `cross_phase_rewinds.test`); second occurrence → terminate `failed` /
      `TEST_GATE_FAILURE`. This rewind budget is separate from the verify-drift one.

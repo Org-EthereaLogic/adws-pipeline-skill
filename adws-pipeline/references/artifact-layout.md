@@ -44,6 +44,9 @@ artifacts/{jobId}/
 ```
 `final_status` is null while running; set once to one of
 `completed | failed | quarantined | canceled` at terminal state.
+`model_tiers` stores canonical tier names (`haiku`, `sonnet`, `opus`). Codex resolves
+the routing aliases `luna`, `terra`, and `sol` only when dispatching; aliases and
+provider-specific model identifiers do not enter the evidence schema.
 
 `phase_manifest.json`
 ```json
