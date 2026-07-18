@@ -163,10 +163,11 @@ blocks shipping.
   cannot change the contract; this reason maps to a RETRY verdict so the operator
   fixes and resubmits). AC-5.2 requires no orphan commit, which a commit-then-check
   order cannot satisfy. Otherwise, from the worktree: stage explicit file paths from
-  `build.files_changed` only, commit (message references `task_id` and criteria), then
+  the change set (union of `build.files_changed` and the document phase's
+  `docs_delta` paths — per adws-shipper.md) only, commit (message references `task_id` and criteria), then
   push the branch.
-- **pr**: from the worktree, stage explicit file paths from `build.files_changed`
-  only, commit (message references `task_id` and criteria), push the job branch, then
+- **pr**: from the worktree, stage explicit file paths from the change set (union
+  of `build.files_changed` and the document phase's `docs_delta` paths) only, commit (message references `task_id` and criteria), push the job branch, then
   `gh pr create --base {target_branch}` with title/body from the contract; record the
   live PR URL in ship evidence (AC-5.1). `pr` mode routinely targets protected
   branches — that's the point of a PR — so no protected-branch check applies here.
@@ -180,8 +181,9 @@ blocks shipping.
     "completed"` + `pr_url` into its `phase_output.json` and flip the gate to `pass`.
     Timeout/refusal → gate `fail`. See `references/phase-gates.md` "Delegated push at
     ship".
-- **patch**: from the worktree, stage explicit file paths from `build.files_changed`
-  only, commit, then `git format-patch {target_branch}..HEAD` to
+- **patch**: from the worktree, stage explicit file paths from the change set
+  (union of `build.files_changed` and the document phase's `docs_delta` paths) only,
+  commit, then `git format-patch {target_branch}..HEAD` to
   `artifacts/{jobId}/ship/attempt_{n}/`; NO push (AC-5.3).
 
 If `risk.requires_human_approval_before_ship` is true, show the user the diff summary

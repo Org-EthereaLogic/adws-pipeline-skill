@@ -16,6 +16,9 @@ artifacts/
 # OS junk
 .DS_Store
 
+# Editor / IDE — personal workspace settings (e.g. Peacock color theming)
+.vscode/
+
 # Node
 node_modules/
 npm-debug.log*

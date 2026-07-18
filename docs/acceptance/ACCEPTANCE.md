@@ -24,6 +24,16 @@
 > `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`. The E2E-2 confirmation
 > run (SC2_PLAN step 6) remains deferred — B1/B2 paths were not exercised by this run.
 
+> **Post-acceptance update (field run 3, 2026-07-18):** second external field run
+> (agentic-starter-kit issue #104, patch ship mode) finished **PROMOTE** — with the
+> pipeline's first live false-negative QUARANTINE and verify-retry recovery: a
+> verifier-spec contradiction (skip semantics vs `verify_structural`) quarantined a
+> clean change set; the spec was corrected (operator-approved, scripts untouched,
+> parity intact) and verify attempt 2 promoted. FR-10's evidence-derived verdict and
+> FR-4 append-only retries behaved exactly as designed. Findings and fixes:
+> `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`. E2E-2 remains
+> deferred (B1/B2 still unexercised).
+
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
 **Evidence:** `DRILL_EVIDENCE.md` + a throwaway scratch repo (created for the drills, since deleted) + committed `parity/execution-report-fixtures/`

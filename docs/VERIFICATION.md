@@ -15,6 +15,17 @@ with parity 84/84 and both fixture suites green pre/post. See
 `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md` for the run record and
 per-finding resolution.
 
+**Status (2026-07-18, run 3):** third production run (agentic-starter-kit issue #104,
+fixing the target repo's own CRIT-002 vacuous-gate bug) finished **PROMOTE** (exit 0)
+after an initial **false-negative QUARANTINE**: adws-verifier.md's skip semantics
+contradicted `artifact-layout.md`'s `{check, pass}` shape and `execution-report.js`'s
+`verify_structural` gate, making any `.md`-touching change set unable to promote. Fixed
+spec-side (adws-verifier.md; plus SKILL.md ship-staging union wording) — scripts and
+parity untouched. FR-10 held: the false verdict was evidence-derived and the retry is
+fully recorded (verify attempt_2). Target-repo outcome: PR #118 merged (closes #104),
+follow-up #119 filed for marker-scan.sh, dashboard synced via #120. Run record:
+`docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`.
+
 ## Delivered
 
 | WBS | Deliverable | Status |
