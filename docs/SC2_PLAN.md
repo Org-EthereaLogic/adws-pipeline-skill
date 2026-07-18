@@ -7,6 +7,13 @@ Advocate tier bump) and the step-6 E2E-2 confirmation run, both pending more run
 #103, clean PROMOTE — see `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`)
 adds a data point but exercised neither B1 (override) nor B2 (delegated push), so
 step 6 and the C2 decision both remain deferred.
+**Run-data update (2026-07-18, run 3):** a third production run (agentic-starter-kit
+issue #104 — see `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`)
+completed PROMOTE after a false-negative QUARANTINE traced to a verifier-spec
+contradiction (fixed spec-side this PR). It exercised the verify RETRY path with tier
+escalation (sonnet → opus), but again neither B1 (dissent override) nor B2 (F-5
+delegated push — the post-verdict push was operator-performed outside pipeline scope),
+so step 6 and the C2 decision remain deferred.
 Governing record and per-tranche detail: `DPPD.md` §10 (v1.2). This document is retained
 as the originating proposal; the sequencing table in §3 is the plan-time record.
 **Evidence source:** job_20260715_0001 — first production run of the skill against a real

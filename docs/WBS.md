@@ -28,6 +28,17 @@ report + per-finding resolution: `docs/field-runs/2026-07-18-issue103-agentic-st
 **Still deferred:** C2 and the step-6 E2E-2 confirmation run — this run exercised
 neither B1 (dissent override) nor B2 (delegated push), so E2E-2 remains open.
 
+**Status (2026-07-18, run 3):** third production run against
+`Org-EthereaLogic/agentic-starter-kit` issue #104 (the CRIT-002 vacuous-gate fix; same
+Cowork/cloud runtime, F-11 dispatch fallback, patch ship mode). Verdict **PROMOTE**
+(exit 0, 7/7 gates, grader 4/4 twice, clean consensus) after a false-negative
+QUARANTINE exposed a verifier-spec contradiction — resolved spec-side in this branch
+(adws-verifier.md skip semantics; SKILL.md ship-staging union). First live exercise of
+the verify RETRY path with tier escalation. Target repo: PR #118 merged, follow-up
+#119 filed, dashboard #120. Run record:
+`docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`. **Still deferred:** C2
+and E2E-2 (B1/B2 unexercised).
+
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
 ---

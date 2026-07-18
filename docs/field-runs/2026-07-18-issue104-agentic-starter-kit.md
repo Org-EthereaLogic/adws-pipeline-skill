@@ -148,3 +148,28 @@ mid-run recompute at review (medium → low) and a retry escalation
 Spec/doc files only (`.claude/agents/adws-verifier.md`, `adws-pipeline/SKILL.md`,
 this document); no bundled script touched — `parity/` fixtures remain frozen and
 authoritative. Front-matter of the edited agent file re-validated post-edit.
+
+## Merge record — 2026-07-18 (same day)
+
+The shipped change reached `main` via the operator's local (on-computer) agent:
+PR [#118](https://github.com/Org-EthereaLogic/agentic-starter-kit/pull/118)
+squash-merged as `30cd59c` (closes #104); Finding 6 filed as follow-up issue
+[#119](https://github.com/Org-EthereaLogic/agentic-starter-kit/issues/119)
+(marker-scan.sh `--list-marker-surfaces` read); PROJECT_DASHBOARD synced via
+PR [#120](https://github.com/Org-EthereaLogic/agentic-starter-kit/pull/120)
+(`main` at `c4efb4a`). Two corrections surfaced in that review, recorded here for
+the ledger:
+
+- **Contract over-claim (intake lesson):** this run's contract non-goal read
+  "marker-scan.sh already uses the safe pattern" — true only of its `markers=`
+  line; the `--list-marker-surfaces` loop was and is exposed (hence #119). The
+  shipped comment/CHANGELOG wording inherited the over-claim and was corrected
+  during PR review. Intake should verify claims about NEIGHBORING code before
+  writing them into the contract, not just claims about the change surface.
+- **Evidence-tree disposition:** the target repo keeps evidence trees out of
+  version control; `artifacts/job_20260718_0002/` was removed from the operator's
+  checkout after merge. The full tree survives as the session artifact
+  (`job_20260718_0002-evidence.tgz`) delivered in-conversation, plus this report.
+  Target-repo CI was billing-locked at merge time (all checks fail instantly);
+  both merges were gated on local validation instead — consistent with how
+  #113–#117 merged.
