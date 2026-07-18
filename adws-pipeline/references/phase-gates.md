@@ -173,14 +173,31 @@ Deterministic inputs → tier table. The risk score is the contract's `risk.risk
 until the review gate; from review onward, use the `risk_level` output of the
 `review-risk-assess` validator (recomputed from the actual change set).
 
+### Codex aliases
+
+When Codex orchestrates this skill, use these routing aliases. The alias selects the
+runtime model; evidence continues to record the canonical tier so existing artifacts,
+fixtures, validators, and reports remain stable.
+
+| Codex alias | Canonical tier | Runtime binding |
+|---|---|---|
+| `luna` | `haiku` | Fast, low-cost model tier |
+| `terra` | `sonnet` | Balanced default model tier |
+| `sol` | `opus` | Highest-capability tier; use `fable` when the Codex runtime exposes or configures it, otherwise use `opus` |
+
+Resolve aliases at dispatch time only. Do not write `luna`, `terra`, `sol`, or a
+provider-specific model identifier into `phase_manifest.model_tier`; write `haiku`,
+`sonnet`, or `opus`. This preserves the evidence schema while letting Codex use a
+stable, provider-neutral routing vocabulary.
+
 | Risk | Architect (phase agents) | Critic | Advocate | Grader |
 |---|---|---|---|---|
 | low | sonnet | haiku | haiku | opus |
 | medium | sonnet | sonnet | haiku | opus |
 | high | opus | sonnet | sonnet | opus |
 
-- **Retry escalation:** each retry of a phase escalates that phase agent's model one
-  tier (haiku → sonnet → opus; capped at opus).
+- **Retry escalation:** each retry escalates one tier (`luna` → `terra` → `sol` in
+  Codex; canonically haiku → sonnet → opus), capped at `sol` / `opus`.
 - **Recording:** every attempt's `phase_manifest.json` records `model_tier` and the
   risk input that selected it (`tier_input`: source + value). The grader always runs at
   the Architect floor (opus) per the original `pr.drift_sentinel.spec` tier policy.
