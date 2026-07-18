@@ -17,6 +17,17 @@ SCHEMA_VERSION 1.0.0 → 1.1.0), SC-2c perf/security hardening. **Deferred:** C2
 (review-gate Advocate tier bump) and the E2E-2 confirmation run (SC2_PLAN step 6),
 both pending more production-run data. See `DPPD.md` §10 and `SC2_PLAN.md`.
 
+**Status (2026-07-18):** second production run — first external field run — executed
+against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime
+(agent types unregistered → validated the inline-spec dispatch fallback, now codified
+as SKILL.md **F-11**). Verdict **PROMOTE** (exit 0, 7/7 gates, 1 attempt/phase, clean
+consensus, zero entropy events). The run's 7 findings were resolved and merged via
+[PR #12](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/12) (agent-spec
+hardening, artifact-layout rules 8–9, new `references/validator-inputs.md`); field-run
+report + per-finding resolution: `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`.
+**Still deferred:** C2 and the step-6 E2E-2 confirmation run — this run exercised
+neither B1 (dissent override) nor B2 (delegated push), so E2E-2 remains open.
+
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
 ---

@@ -7,6 +7,14 @@
 (commit `c333bb9`; feature branch `feat/adws-pipeline-skill-v1` deleted after merge).
 Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
 
+**Status (2026-07-18):** post-acceptance, the skill's second production run (first
+external field run, agentic-starter-kit issue #103) completed with a clean PROMOTE;
+its 7 findings — none touching validator or report logic — were resolved docs/spec-side
+and merged via [PR #12](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/12)
+with parity 84/84 and both fixture suites green pre/post. See
+`docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md` for the run record and
+per-finding resolution.
+
 ## Delivered
 
 | WBS | Deliverable | Status |

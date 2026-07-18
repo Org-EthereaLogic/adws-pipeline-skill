@@ -14,6 +14,16 @@
 > SCHEMA_VERSION 1.1.0. The `10/10` and "gate fails on any recorded dissent" statements
 > below are the point-in-time record; see `DPPD.md` §10 (v1.2) for the current state.
 
+> **Post-acceptance update (field run, 2026-07-18):** the skill's first EXTERNAL field
+> run (agentic-starter-kit issue #103, Cowork/cloud runtime, patch ship mode) completed
+> with a clean **PROMOTE** — 7/7 gates, 1 attempt per phase, unanimous consensus at both
+> gates, zero entropy events, grader 4/4. Its 7 findings (all docs/spec-side; validators
+> and report logic untouched, parity still 84/84) were resolved and merged via
+> [PR #12](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/12), which also
+> codified the Cowork agent-type dispatch fallback as SKILL.md F-11. Run record:
+> `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`. The E2E-2 confirmation
+> run (SC2_PLAN step 6) remains deferred — B1/B2 paths were not exercised by this run.
+
 **Date:** 2026-07-15
 **Governing docs:** `DPPD.md` v1.0 (§4 acceptance criteria), `WBS.md` v1.0
 **Evidence:** `DRILL_EVIDENCE.md` + a throwaway scratch repo (created for the drills, since deleted) + committed `parity/execution-report-fixtures/`
