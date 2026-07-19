@@ -28,6 +28,40 @@ spec/doc changes (adws-verifier.md, SKILL.md, tracking docs) were merged via
 [PR #14](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/14) with parity
 84/84. Run record: `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`.
 
+**Status (2026-07-18, run 4):** fourth production run (agentic-starter-kit issue #105,
+the `test-typescript` swallowed-exit-code bug) — the pipeline's first fully-clean
+end-to-end run on a local machine with real `gh` + push credentials: **PROMOTE**
+(exit 0) first-attempt on all 7 gates, live `pr` mode, shipped as target-repo PR #121
+(merged; the #122 pipefail-residual follow-up was hardened in the same PR after
+CodeRabbit review). Skill-side enhancements and the run record merged via
+[PR #16](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/16) and
+[PR #17](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/17). Run
+record: `docs/field-runs/2026-07-18-issue105-agentic-starter-kit.md`.
+
+**Status (2026-07-18, runs 5–6):** fifth and sixth production runs (agentic-starter-kit
+issue #106, `npm test` on fresh scaffolds ran a vitest whose include glob never matched
+the template's node:test suites) — one issue shipped as TWO gated jobs:
+`job_20260718_0006` (**PROMOTE-with-warnings**, commit basis) and, after an independent
+post-promote audit whose findings fed a follow-up contract, `job_20260718_0007`
+(**PROMOTE**, drift-grader 4/4). Cowork cloud, `patch` mode, cloud→Mac ship path;
+target-repo PR #126 (squash-merged, #106 auto-closed), dashboard synced via #127.
+No same-day skill-repo record was written; recorded retroactively in
+`docs/field-runs/2026-07-18-issue106-agentic-starter-kit.md` (marked retroactive).
+Operational finding from these runs — haiku-tier single-file writers may skip writing
+their output file under F-11 fallback — was carried forward and codified after run 7.
+
+**Status (2026-07-19, run 7):** seventh production run (agentic-starter-kit issue #107,
+devcontainer `post-create.sh` false-success/curl-map/npm-abort robustness bugs) — the
+FIRST run orchestrated from this standalone repository rather than the target repo's
+vendored copy (Cowork cloud, `patch` mode, F-11 fallback for all ten dispatches):
+**PROMOTE** (exit 0, no warnings), 7/7 gates first-attempt, consensus clean at both
+gates with exact schemas, drift-grader 4/4, zero rewinds, zero parse failures. Shipped
+as target-repo PR #128 (squash-merged, #107 auto-closed), dashboard synced via #129.
+Skill change from the run: SKILL.md F-11 now requires dispatch prompts for the
+single-file writers (Critic/Advocate/Grader) to instruct explicit file-write +
+`date -u` timestamps + existence verification (commit `e9eda50`). Run record:
+`docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
+
 ## Delivered
 
 | WBS | Deliverable | Status |
