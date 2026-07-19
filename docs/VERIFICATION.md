@@ -62,6 +62,19 @@ single-file writers (Critic/Advocate/Grader) to instruct explicit file-write +
 `date -u` timestamps + existence verification (commit `e9eda50`). Run record:
 `docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
 
+**Status (2026-07-19, run 8):** eighth production run (agentic-starter-kit issue #109,
+six shell validation-script correctness/portability bugs) — the first run to terminate
+on the retry path: **RETRY / TEST_GATE_FAILURE** (build passed on attempt 2; test gate
+failed at both tiers; no ship). The retained worktree held all six fixes, a Critic-found
+bash 3.2 frontmatter/SIGPIPE fix, and a focused regression suite; the retry was
+operator-completed the same day (two fixture fixes: ruff import order, and a venv-shim
+replacing a `python3` symlink that silently dropped PyYAML), with the remaining 31 red
+template tests confirmed byte-identical to `main` (pre-existing; +8 newly passing, 0 new
+failures). Shipped as target-repo PR #130 (squash-merged, #109 auto-closed), dashboard
+synced via #131. Review bots: Codacy green after repo-convention nosec/nosemgrep
+suppressions; CodeRabbit's two nitpicks applied. Run record:
+`docs/field-runs/2026-07-19-issue109-agentic-starter-kit.md`.
+
 ## Delivered
 
 | WBS | Deliverable | Status |
