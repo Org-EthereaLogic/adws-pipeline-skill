@@ -43,7 +43,15 @@ VERBATIM into its prompt (spec first, then the phase inputs), apply the model ti
 the dispatch mechanism's model option, and record the usual `agent` name in
 `phase_manifest.json`. The inlined spec must include the agent's Security paragraph
 and evidence-integrity rules — the fallback changes the transport, never the contract.
-Field-validated end to end in `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`.
+For the single-file writers (Critic, Advocate, Grader), the dispatch prompt must ALSO
+explicitly instruct: write the output file with the file-writing tool at the exact
+given path, take timestamps from a live `date -u +%Y-%m-%dT%H:%M:%SZ`, and verify the
+file exists (e.g. `ls -l` it) before finishing — at haiku tier the spec text alone has
+not been sufficient (an agent may return its verdict in its final message without
+writing the file); the orchestrator still verifies the file exists and parses before
+deciding the gate.
+Field-validated end to end in `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`;
+the single-file-writer dispatch note in `docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
 
 ## Hard rules (never violate)
 
