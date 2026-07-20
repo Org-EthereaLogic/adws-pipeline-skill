@@ -33,6 +33,20 @@ NEVER an assumed pass. A skipped or unrunnable check is evidence of a gap, not a
 green light; plan checks around the runtimes actually available and say so in the
 phase log.
 
+**Host-runtime blindness (F-13, field-validated issue #111).** The test and verify
+phases run wherever the ORCHESTRATOR runs — often a Linux / bash-5 cloud container —
+which can differ from the TARGET runtime a generated project actually executes on.
+macOS ships bash 3.2, where expanding an empty array `"${arr[@]}"` under `set -u`
+raises `unbound variable` and aborts (a bash bug fixed only in 4.4); a change can
+PROMOTE green in-container yet crash on the target host. Container-green is NECESSARY,
+NOT SUFFICIENT. When a change touches shell — or any runtime whose behavior is
+version/OS-sensitive — the tester MUST exercise it on the target runtime, or the ship
+step MUST re-validate there before merge: render a scaffold and run the affected
+scripts under the target's own interpreter, driving edge inputs (empty lists/arrays,
+embedded tabs/newlines) that trip version-specific behavior, and diff against a
+baseline render. A failure-set parity check alone misses this unless the new tests
+themselves exercise those edges under the target interpreter.
+
 ### Agent-type fallback (F-11)
 
 The `adws-*` agent definitions in `.claude/agents/` register as subagent types in
