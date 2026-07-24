@@ -11,13 +11,13 @@ help:
 	@echo "make install-hooks wire .githooks/pre-push via core.hooksPath (once per clone)"
 
 local-ci:
-	bash scripts/local-ci/gate.sh
+	/usr/bin/env bash scripts/local-ci/gate.sh
 
 ci-orb:
-	bash scripts/local-ci/orb-ci.sh
+	/usr/bin/env bash scripts/local-ci/orb-ci.sh
 
 review:
-	bash scripts/local-ci/review.sh
+	/usr/bin/env bash scripts/local-ci/review.sh
 
 ci: local-ci ci-orb
 

@@ -8,9 +8,9 @@
 set -e
 
 echo "[pre-push] Tier 1 — host gate (parity 84/13/7 + static + lints)..."
-bash scripts/local-ci/gate.sh
+/usr/bin/env bash scripts/local-ci/gate.sh
 
 echo "[pre-push] Tier 2 — OrbStack clean-room (Node 20/24)..."
-bash scripts/local-ci/orb-ci.sh
+/usr/bin/env bash scripts/local-ci/orb-ci.sh
 
 echo "[pre-push] local CI passed."
