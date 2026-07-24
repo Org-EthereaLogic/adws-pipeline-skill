@@ -7,6 +7,10 @@ ADWS_PRO_source/
 # they belong in the target project).
 artifacts/
 
+# Local CI evidence (Tiers 1-3): append-only JSONL sinks + per-run logs, written by
+# scripts/local-ci/*, meant to be pasted into a PR body while cloud CI is billing-locked.
+ci_logs/
+
 # ...EXCEPT the execution-report fixture trees under parity/, which ARE committed —
 # they are the report suite's inputs. Re-include them (the broad artifacts/ rule above
 # would otherwise swallow them); the derived execution_report.{json,md} inside are
