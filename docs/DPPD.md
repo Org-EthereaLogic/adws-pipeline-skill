@@ -1,12 +1,12 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.2 (SC-2 scope change §10, 2026-07-16)
+**Version:** 1.3 (SC-3 scope change §11, 2026-07-24)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
-`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9) and SC-2 (§10) approved per R-6.
-Governing version: 1.2.
+`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), and SC-3 (§11) approved
+per R-6. Governing version: 1.3.
 **Companion document:** `WBS.md`
 
 ---
@@ -308,3 +308,47 @@ STRENGTHENED (A3 exhaustive post-hoc enumeration), never weakened; FR-7 dissent
 semantics preserved (B1's override forces a permanent warning); NFR-5 git safety
 untouched. Governing state is now **DPPD 1.2 (SC-2)**. Open follow-ups: the E2E-2
 confirmation run (SC2_PLAN step 6) and the C2 tier-decision, both pending more run data.
+
+---
+
+## 11. Scope Change SC-3 (2026-07-24, from comparative review) — APPROVED
+
+Approved per R-6 (operator approval, 2026-07-24, **per-item**: A1–A6, B1). Amends §2:
+narrowly reopens a slice of X-1 for **per-phase invocation provenance** (append-only
+manifest fields only — no hosting infra), and adds **falsifiability** as a test-gate
+correctness property. Version: **DPPD 1.3**. Motivated by the `fusion-harness` comparative
+review (findings **F-14 … F-17**, re-grounded by an adversarial multi-lens review: 39 raised,
+38 survived); full register, per-item detail, sequencing, and invariants in
+**`docs/SC3_PLAN.md`**.
+
+### SC-3a — Falsifiability, corrections & check-defect record (docs/spec; zero parity risk)
+
+A1 falsifiability at the test gate, **reusing** `criteria-to-checks`' `check_specs` +
+`adws-tester` (no new DSL/runner) — a criterion whose check does not go RED-for-the-right-
+reason pre-change is `gate_weak` (unverified/warn), never a pass; A2 red-for-the-right-reason
+(extends F-9/F-13 — a `NOT RUN` red is not a valid baseline); A3 structured corrections as one
+**fresh, immutable `corrections.json`** in the new build `attempt_{n}/` tree (explicitly
+OUTSIDE SC-2 A3's post-hoc designated-field list; FR-4-safe); A4 `run_manifest.check_defect_repairs`
+counter capped at one/job, resolving within the existing RETRY/warn vocabulary (**no** new
+state/decision/exit); A5 always-on under `test_policy: required` (or `policy.falsifiability`);
+A6 Apache-2.0/MIT import note — independent reimplementation only, no code copied from
+`fusion-harness` (MIT); this repo stays Apache-2.0.
+
+### SC-3b — Invocation provenance (evidence-schema; advisory-only)
+
+B1 additive, advisory `phase_manifest.provenance` fields (model id / cost / tokens /
+wall-clock / tool-calls; absent ≠ fail; NOT X-1 hosting infra). B2 `execution-report.js`
+left **untouched** (report stays 13/13); any report-surfacing is a later SC, additive +
+regression-first only.
+
+### Invariants held
+
+Verdict taxonomy **FROZEN** — no new DECISION, exit code, or reason-set entry (the review's
+top blocker); **84/84** validator + **13/13** report + **7/7** entropy preserved;
+`criteria-to-checks` stays the single criterion→check source (R-2); FR-4 append-only
+STRENGTHENED (orchestrator-authored `corrections.json` is a fresh rule-1 artifact, never a
+post-hoc edit), never weakened; NFR-2 lean core (no new runtime/DSL); NFR-3 SKILL.md < 500
+lines. **R-3 remains open** — dual-perspective planning (WS-F) was NOT adopted; cross-provider
+Trinity (X-3) stays deferred per SC-1.c. Rejected superset (acceptance-gate DSL, new terminal
+states, dual-perspective planning, broad telemetry, TUI, persistent memory, `/tmp` evidence,
+model-generated gates): see `docs/SC3_PLAN.md` §5. Governing state is now **DPPD 1.3 (SC-3)**.

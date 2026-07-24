@@ -17,6 +17,14 @@ SCHEMA_VERSION 1.0.0 → 1.1.0), SC-2c perf/security hardening. **Deferred:** C2
 (review-gate Advocate tier bump) and the E2E-2 confirmation run (SC2_PLAN step 6),
 both pending more production-run data. See `DPPD.md` §10 and `SC2_PLAN.md`.
 
+**Status (2026-07-24):** scope change **SC-3** (findings F-14–F-17 from the fusion-harness
+comparative review) was **APPROVED (operator R-6, 2026-07-24, per-item: A1–A6, B1)** and
+implemented: SC-3a falsifiability at the test gate (reusing `criteria-to-checks`'
+`check_specs` + `adws-tester`, no new DSL), structured `corrections.json`, and a
+`check_defect_repairs` record; SC-3b advisory per-phase `phase_manifest.provenance`. Verdict
+taxonomy frozen (no new DECISION/exit); 84/84 + 13/13 + 7/7 preserved; `execution-report.js`
+untouched. See `DPPD.md` §11 and `SC3_PLAN.md`.
+
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime
 (agent types unregistered → validated the inline-spec dispatch fallback, now codified

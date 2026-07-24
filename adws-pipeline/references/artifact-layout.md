@@ -23,6 +23,7 @@ artifacts/{jobId}/
     ├── phase_manifest.json
     ├── phase_output.json
     ├── phase_log.md                # narrative log of what the phase agent did
+    ├── corrections.json           # build attempts only, when this attempt follows a rewind-to-build (A3/F-15; orchestrator-authored input)
     ├── consensus/                  # test and review phases only
     │   ├── critic.json
     │   └── advocate.json
@@ -40,10 +41,14 @@ artifacts/{jobId}/
   "completed_at": null, "final_status": null, "failure_reason": null,
   "current_phase": "plan", "output_mode": "pr", "isolation_mode": "worktree",
   "worktree_path": "", "branch_name": "", "model_tiers": {},
-  "cross_phase_rewinds": { "test": 0, "verify": 0 } }
+  "cross_phase_rewinds": { "test": 0, "verify": 0 }, "check_defect_repairs": 0 }
 ```
 `final_status` is null while running; set once to one of
 `completed | failed | quarantined | canceled` at terminal state.
+`check_defect_repairs` (SC-3 A4/F-16) counts gate-defect repairs performed this job —
+a `cross_phase_rewinds`-style counter capped at 1 (a second check defect terminates on
+the ordinary `TEST_GATE_FAILURE`/budget path). Like `cross_phase_rewinds`, it is
+orchestrator bookkeeping and is NOT read by `execution-report.js`.
 `model_tiers` stores canonical tier names (`haiku`, `sonnet`, `opus`). Codex resolves
 the routing aliases `luna`, `terra`, and `sol` only when dispatching; aliases and
 provider-specific model identifiers do not enter the evidence schema.
@@ -54,10 +59,24 @@ provider-specific model identifiers do not enter the evidence schema.
   "agent": "adws-…", "model_tier": "sonnet",
   "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
   "gate_result": "null | pass | fail | deferred", "failure_reason": null,
-  "stability_gate": null }
+  "stability_gate": null, "provenance": null }
 ```
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
 this attempt, or null when no entropy history exists yet.
+`provenance` (SC-3 B1/F-17) is an OPTIONAL, ADVISORY-only object capturing per-phase
+invocation telemetry the runtime exposes — `{ "model_id", "cost_usd", "tokens_in",
+"tokens_out", "elapsed_ms", "tool_call_count", "timeout", "cancel" }`; any subset may be
+present and any field may be null when the runtime does not expose it. It is evidence for
+audit, never a gate input: **absent or partial provenance NEVER implies pass or fail**
+(mirrors F-9). It is not X-1 hosting telemetry — no dashboard, socket, DB, or process.
+`execution-report.js` ignores it (tolerant reader, rule 8), so the report suite is
+unchanged (SC-3 B2 leaves the report generator untouched).
+No fixture harness covers `provenance` — no validator and not the report reads it, so
+there is nothing to assert against; this doc IS its specification. The three shapes it
+takes (SC-3 B1 present / partial / absent):
+- full: `{ "model_id": "opus", "cost_usd": 0.42, "tokens_in": 18000, "tokens_out": 900, "elapsed_ms": 51200, "tool_call_count": 12, "timeout": false, "cancel": false }`
+- partial: `{ "model_id": "sonnet", "elapsed_ms": 8300, "tool_call_count": 4 }` (runtime exposed no cost/token counts — omit or null, never a fabricated zero)
+- absent: `null` (no telemetry available)
 `tier_input.source` names what selected this attempt's model tier. `operator-resolution`
 is the dissent-resolution re-attempt source (F-6): a re-review the operator triggered to
 clear a dissent they judged a false positive. It escalates one tier on the same ladder as
@@ -77,11 +96,24 @@ the delegation resolves first.
 
 - plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [] }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars)
 - build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "" }`
-- test: `{ "checks": [{ "check": "", "pass": true, "output": "" }], "command_log": [] }`
+- test: `{ "checks": [{ "check": "", "criterion": "", "pass": true, "output": "", "baseline_pass": false, "baseline_reason": "assertion-failed-runtime-present | collection-error | not-run", "falsifiable": true, "verdict": "verified | gate_weak | fail", "classification": "null | code | check | environment | prerequisite" }], "command_log": [] }` — the `baseline_*`/`falsifiable`/`verdict` fields carry the SC-3 A1/A2 falsifiability result (present when `test_policy: required` or `policy.falsifiability`); a `gate_weak` verdict is an unverified criterion (warn), never a pass. On a `fail` verdict, `classification` records WHY the tester attributes the failure — the orchestrator routes on it (A3/A4) and copies it into `corrections.json`; `null` otherwise.
 - review: `{ "findings": [], "risk_level": "", "approved": true }`
 - document: `{ "docs_delta": [], "changelog_entry": "", "documentation_summary": "" }`
 - ship: `{ "mode": "", "branch_name": "", "pr_url": null, "patch_file": null, "commit_sha": "", "pushed": false, "block_reason": null, "delegation": null }` — `delegation` (optional, F-5) is present only for a delegated `pr`-mode push: `{ "status": "pending-operator | completed", "detected_reason": "NO_PUSH_CREDENTIALS_IN_SANDBOX | …", "completed_by": "operator", "completed_at": "<iso>" }`. The shipper writes `pushed: false` + `delegation.status: "pending-operator"` when it detects it cannot push; the ORCHESTRATOR later writes `delegation.status: "completed"` + `pr_url` post-hoc (never the shipper).
 - verify: `{ "verify_result": { "passed": 0, "total": 0, "syntax_errors": 0, "checks": [{ "check": "", "pass": true }] }, "drift_verdict": "PASS | WARN | BLOCK" }`
+
+`corrections.json` — build attempts only, present only when this attempt follows a
+rewind-to-build (SC-3 A3/F-15). Written ONCE by the ORCHESTRATOR into the fresh build
+`attempt_{n}/` directory BEFORE it dispatches the builder — the structured, auditable
+form of the rewind feedback, replacing the previous free-text channel:
+```json
+{ "source_attempt": "test/attempt_{n} | verify/attempt_{n}",
+  "corrections": [ { "check_id": "", "criterion": "", "expected": "", "actual": "",
+                     "path": "", "classification": "code | check | environment | prerequisite" } ] }
+```
+The builder treats each `code`-classified entry as an exact instruction; `check` entries
+are the gate-defect signal (A4). This is a rule-1 fresh-attempt artifact (see append-only
+rules), NOT a rule-2 post-hoc field — the orchestrator authors it once and never edits it.
 
 `consensus/critic.json` and `consensus/advocate.json`
 ```json
@@ -142,6 +174,10 @@ in that attempt's `phase_manifest.json`.
    - `{phase}/attempt_{n}/phase_manifest.json` → `gate_result` (the gate decision is
      the orchestrator's, not the agent's — agents write `"gate_result": null` per
      each agent spec and the orchestrator overwrites it post-hoc).
+   - `{phase}/attempt_{n}/phase_manifest.json` → `provenance` (SC-3 B1; advisory
+     invocation telemetry only the orchestrator observes — the agent writes
+     `"provenance": null` and the orchestrator fills it post-hoc, structurally the same
+     pattern as `gate_result`).
    - `verify/attempt_{n}/phase_output.json` → `drift_verdict` (filled from the
      adws-grader result once grading completes).
    - `{test,review}/attempt_{n}/consensus/advocate.json` → `resolution` (F-3; written
@@ -153,9 +189,17 @@ in that attempt's `phase_manifest.json`.
    exhaustive: anything not named here stays write-once for everyone, orchestrator
    included (invariant — F-7 resolved in favor of the designed flow, not by weakening
    append-only).
+
+   **Orchestrator-authored input (SC-3 A3), distinct from the post-hoc fields above.**
+   The orchestrator MAY author exactly one file it owns — `build/attempt_{n}/corrections.json`
+   — into a build attempt directory it just created, BEFORE dispatching the builder. This
+   is a fresh rule-1 artifact (written once at attempt creation, never edited afterward),
+   not a post-hoc amendment of an agent's output: it PRECEDES the agent as its input. It
+   does not weaken append-only — no existing file is touched.
 3. `task_contract_snapshot.json` is written once at intake and never touched again.
 4. `run_manifest.json` is the only mutable file: update it at phase transitions and
-   terminal state only (current_phase, model_tiers, rewind count, final_status).
+   terminal state only (current_phase, model_tiers, rewind count, `check_defect_repairs`,
+   final_status).
    `entropy_history.jsonl` is append-only: new lines at the end only; existing lines
    are never edited or deleted.
 5. `execution_report.{json,md}` are derived files generated by the script; they may be
