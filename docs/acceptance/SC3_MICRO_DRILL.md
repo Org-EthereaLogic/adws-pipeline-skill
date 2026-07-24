@@ -25,6 +25,12 @@ build, and a corrected second build. It verifies:
 The drill is wired into `make local-ci` and is therefore re-run on every local gate. It is
 reproducible and retains no temporary repository after completion.
 
+When invoked by a Git hook, Git exports repository-scoped environment variables such as
+`GIT_DIR`. The drill removes those variables from its scratch Git subprocesses before
+`git init`, so its baseline commit cannot target the source repository. PR #27 verified
+this regression path by injecting the real `GIT_DIR` and confirming unchanged source
+`HEAD` and worktree state after the drill.
+
 ## Limitation and explicit deferral
 
 This is a contract-level executable micro-drill, not a seven-phase autonomous ADWS

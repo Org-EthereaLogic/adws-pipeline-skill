@@ -1,9 +1,11 @@
 # SC-3 Plan — Falsifiability & Provenance from the Fusion-Harness Comparative Review
 
 **Status:** APPROVED (operator R-6, 2026-07-24, per item A1–A6 and B1) & IMPLEMENTED —
-the contract changes merged to `main` via PR #26. `DPPD.md` §11 is the governing record
-(v1.3), and `WBS.md` records the implementation. This document is retained as the
-originating plan and verification ledger (SC2_PLAN.md is the precedent format).
+the contract changes merged to `main` via PR #26; the post-implementation contract,
+fixture, and linked-worktree CI reconciliation merged via PR #27 (`149712c`).
+`DPPD.md` §11 is the governing record (v1.3), and `WBS.md` records the implementation.
+This document is retained as the originating plan and verification ledger
+(SC2_PLAN.md is the precedent format).
 
 **Evidence source:** a comparative review of `disler/fusion-harness` (commit `5852f2e`)
 against `main`, re-grounded by an adversarial multi-lens review (2026-07-23): **39
@@ -90,10 +92,11 @@ the review gate.
 **Branching (plan-time):** `feat/sc3a-falsifiability-and-corrections`, then
 `feat/sc3b-provenance`. Actual delivery used one cohesive cross-file contract branch,
 `feat/sc3-implementation`, merged through PR #26 after the skill's review gate; no direct
-commit to `main`. Restrict the "run it through the pipeline itself" claim to milestones
-that ship executable behavior; the doc/spec implementation used **edit + re-run parity +
-dogfood review gate** (a prose PR's build/test/verify gates are degenerate without a code
-diff).
+commit to `main`. Post-implementation reconciliation used `fix/sc3-reconciliation` and
+merged through PR #27. Restrict the "run it through the pipeline itself" claim to
+milestones that ship executable behavior; the doc/spec implementation used **edit +
+re-run parity + dogfood review gate** (a prose PR's build/test/verify gates are degenerate
+without a code diff).
 
 ---
 

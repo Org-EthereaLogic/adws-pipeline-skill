@@ -357,5 +357,7 @@ model-generated gates): see `docs/SC3_PLAN.md` §5. Governing state is now **DPP
 **Verification reconciliation (2026-07-24):** provenance present/partial/absent shapes are
 now executable fixtures under `parity/provenance-fixtures/`; the A1/A2/A3 contract
 micro-drill is retained at `docs/acceptance/SC3_MICRO_DRILL.md` and runs in local CI.
+The reconciliation and linked-worktree/hook-isolation CI hardening landed through
+PR #27 (`149712c`).
 The larger seven-phase real-task confirmation remains explicitly deferred until a
 suitable post-SC-3 task can produce a PROMOTE evidence tree retained before teardown.

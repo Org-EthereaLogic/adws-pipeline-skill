@@ -312,7 +312,8 @@ Per DPPD §10 (v1.2), approved R-6. Branch `feat/sc2`, three tranche commits. Fu
 ## SC-3 scope change (2026-07-24, fusion-harness comparative review) — F-14…F-17
 
 Per DPPD §11 (v1.3), approved R-6 per item (A1–A6, B1). Contract implementation merged
-through PR #26; full originating plan and reconciliation ledger: `SC3_PLAN.md`.
+through PR #26; post-implementation reconciliation merged through PR #27 (`149712c`).
+Full originating plan and reconciliation ledger: `SC3_PLAN.md`.
 
 - **SC-3a:** pre-change falsifiability baseline reuses `criteria-to-checks.check_specs`;
   only `assertion-failed-runtime-present` is a valid RED. `not-run`/collection errors
@@ -336,3 +337,11 @@ through PR #26; full originating plan and reconciliation ledger: `SC3_PLAN.md`.
 - **Suites after reconciliation:** parity **84/84**, report **13/13**, entropy **7/7**,
   provenance **3/3**, and the SC-3 micro-drill all pass. `SKILL.md` remains under 500
   lines; `execution-report.js` and the verdict taxonomy remain untouched.
+- **Pre-push regression closed:** the first linked-worktree pre-push run exposed inherited
+  `GIT_DIR` contamination in the micro-drill, which briefly created a local scratch
+  `baseline` commit in the source repository. The unpushed commit was removed from the
+  branch; repository-local identity/signing overrides were removed; the drill now strips
+  repository-scoped Git environment variables before initializing its temporary repo.
+  Reproduction with the real `GIT_DIR` injected leaves `HEAD` and the worktree unchanged.
+  Tier 1 and the Node 20/24 Tier 2 matrix then passed at the signed PR head and the merged
+  tree is recorded by PR #27.
