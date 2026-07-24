@@ -33,6 +33,7 @@ NODE_VERSIONS="${NODE_VERSIONS:-20 24}"
 run_id="$(ci_run_id)"
 commit="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 branch="$(git branch --show-current 2>/dev/null || echo unknown)"
+common_git_dir="$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd)"
 log="ci_logs/${run_id}.orb.log"
 : > "$log"
 
@@ -55,7 +56,9 @@ for v in "${versions[@]}"; do
   echo "=== [orb] run  $img ===" >>"$log"
   if [ "$bst" = pass ] && docker run --rm --platform "$platform" \
        --user "$(id -u):$(id -g)" -e HOME=/tmp -e "NODE_LABEL=${v}" \
-       -v "$repo_root:/repo" -w /repo "$img" >>"$log" 2>&1; then
+       -e "CI_COMMIT=$commit" \
+       -v "$repo_root:/repo" -v "$common_git_dir:/repo-git-common:ro" \
+       -w /repo "$img" >>"$log" 2>&1; then
     st=pass
   else
     st=fail; overall=fail

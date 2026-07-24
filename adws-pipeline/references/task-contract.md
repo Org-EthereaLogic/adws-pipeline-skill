@@ -71,7 +71,7 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
 | `policy.blocked_paths` | yes | may be empty array |
 | `policy.test_policy` | yes | `required`, `best-effort`, or `skip` |
 | `policy.secret_policy` | yes | `no-new-secrets` or `allow-listed` |
-| `policy.falsifiability` | no | boolean (SC-3 A5). Default: the falsifiability baseline (A1/A2) runs automatically whenever `test_policy` is `required`. Set `true` to force the pre-change RED baseline under any `test_policy`; `false` to opt out. Orchestrator-consumed — not a `task-normalize` field (unknown to the validator, which inspects only `task.*`). |
+| `policy.falsifiability` | no | boolean (SC-3 A5). The falsifiability baseline (A1/A2) is mandatory whenever `test_policy` is `required`; `false` cannot disable it. Set `true` to force the pre-change RED baseline under `best-effort` or `skip`; `false` or absent leaves those two policies unchanged. Orchestrator-consumed — not a `task-normalize` field (unknown to the validator, which inspects only `task.*`). |
 | `risk.*` | yes | all three; enums as in template |
 
 ## Hard intake failures (reject the contract; do not start plan)
@@ -82,7 +82,10 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
    `target_branch` ∈ {`main`, `master`, `production`, `prod`, `release`} or equals
    `repo.default_branch`.
 3. **Empty acceptance criteria** — zero criteria, or any empty criterion.
-4. **Bad enums / missing required fields** — anything violating the table above.
+4. **Required-test falsifiability opt-out** — `policy.test_policy` is `required` while
+   `policy.falsifiability` is explicitly `false`. Required tests cannot opt out of the
+   SC-3 correctness baseline; fix the contract and resubmit.
+5. **Bad enums / missing required fields** — anything violating the table above.
 
 ## Soft warnings (record in evidence; do not block)
 

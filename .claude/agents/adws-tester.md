@@ -19,7 +19,8 @@ Do:
    `best-effort` = check what is checkable, record the rest as unverified; `skip` =
    still run the repo's existing test suite if trivially available, else record skipped.
 2. **Falsifiability baseline (SC-3 A1/A2/F-14) — run BEFORE the post-change run when
-   `test_policy: required` (always-on) or `policy.falsifiability` is set.** Establish the
+   `test_policy: required` (always-on; `false` cannot opt out) or
+   `policy.falsifiability: true`.** Establish the
    PRE-change state — stash the build's worktree changes including new files
    (`git stash push --include-untracked`), or evaluate against the base commit — and run
    the same checks there, then restore (`git stash pop`). For each check record

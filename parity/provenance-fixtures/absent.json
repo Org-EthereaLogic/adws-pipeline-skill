@@ -1,0 +1,8 @@
+{
+  "phase": "document",
+  "attempt": 1,
+  "job_id": "job-provenance-absent",
+  "agent": "adws-documenter",
+  "model_tier": "haiku",
+  "provenance": null
+}

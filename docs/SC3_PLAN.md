@@ -1,9 +1,9 @@
 # SC-3 Plan — Falsifiability & Provenance from the Fusion-Harness Comparative Review
 
-**Status:** PROPOSED — pending operator R-6 approval. **No repository files are changed
-by this document**; it is the originating proposal (SC2_PLAN.md is the precedent format).
-On approval, the DPPD §11 amendment in §6 below is pasted into `DPPD.md` (→ v1.3) and the
-WBS intro gains an SC-3 line.
+**Status:** APPROVED (operator R-6, 2026-07-24, per item A1–A6 and B1) & IMPLEMENTED —
+the contract changes merged to `main` via PR #26. `DPPD.md` §11 is the governing record
+(v1.3), and `WBS.md` records the implementation. This document is retained as the
+originating plan and verification ledger (SC2_PLAN.md is the precedent format).
 
 **Evidence source:** a comparative review of `disler/fusion-harness` (commit `5852f2e`)
 against `main`, re-grounded by an adversarial multi-lens review (2026-07-23): **39
@@ -54,23 +54,27 @@ the two-column TUI, and the broad telemetry stack.
 | A2 (F-14, F-9, F-13) | **Red-for-the-right-reason rule.** A baseline RED must record *why*: `assertion-failed-runtime-present` (valid falsifiability) vs. `collection-error`/`NOT RUN` (invalid — runtime absent). A NOT-RUN red is **not** a valid falsifiability baseline (extends F-9); the post-change green stays **necessary-not-sufficient** on non-target hosts (F-13). A green baseline whose check cannot be shown capable of failing is `GATE_WEAK` → gap, **never** "already satisfied / ship nothing." | `adws-pipeline/SKILL.md` §"Environment & runtimes", `references/phase-gates.md` |
 | A3 (F-15) | **Structured corrections as ONE fresh, immutable artifact.** On a rewind-to-build, the orchestrator authors a `corrections.json` — `[{check_id, criterion, expected, actual, path, classification: code\|check\|environment\|prerequisite}]` — as a **new file in the new build `attempt_{n}/` tree** (rule-1 append-only: written once, never edited in place; **not** via SC-2 A3's rule-2 post-hoc list, whose members amend files an agent already wrote). It is the single structured representation of the rewind feedback the build agent consumes, replacing the free-text feedback channel so the fix and the failure it addresses are auditable as a pair. | `references/artifact-layout.md` (add `corrections.json` to the attempt-tree schema + file-shapes), `adws-pipeline/SKILL.md`, `references/phase-gates.md` |
 | A4 (F-16) | **"Check-defective" record + cap, grafted onto the existing vocabulary.** Add a `cross_phase_rewinds`-style counter (`run_manifest.check_defect_repairs`), capped at **ONE per job** and used **orchestrator-side for cap enforcement only** — exactly like `cross_phase_rewinds.{test,verify}`, which `execution-report.js` does not read. A check repair lands in a **fresh** `attempt_{n}` (FR-4), consumes **no** build retry, and surfaces in the report only **incidentally**, via the existing multi-attempt warning on the fresh test attempt. **No new terminal state, DECISION, or exit code** — it resolves within the existing RETRY/warn vocabulary; a second occurrence terminates on the existing `TEST_GATE_FAILURE`/budget path. A *check-defect-labelled* report line would be a future **additive, regression-first** report field (per B2), never part of SC-3. | `references/phase-gates.md`, `adws-pipeline/SKILL.md`, `references/artifact-layout.md` (`run_manifest` fields) |
-| A5 (integration) | **Give falsifiability a contract home — or make it always-on.** Recommended: **always-on** whenever `policy.test_policy: required` (falsifiability is a correctness property, not a preference), so no contract field is needed. If made opt-in instead, it enters as `policy.falsifiability` (boolean) with a `task-contract.md` field-rule row and `task-normalize` awareness — **never** a bare top-level `gate_first` key (`task-normalize` ignores unknown keys, so a bare flag would silently carry no intake coverage). | `references/task-contract.md`, `adws-pipeline/SKILL.md` |
+| A5 (integration) | **Give falsifiability a contract home and keep required tests always-on.** `policy.falsifiability` is an optional boolean consumed by the orchestrator: required tests always run the baseline and reject an explicit `false`; `true` forces it for `best-effort`/`skip`. It is deliberately outside `task-normalize`, whose frozen parity surface receives only `task.*`; `task-contract.md` owns the cross-field intake rule. Never use a bare top-level `gate_first` key. | `references/task-contract.md`, `adws-pipeline/SKILL.md` |
 | A6 (housekeeping) | **License-compatibility note.** Independent reimplementation only (no code copied from `fusion-harness`); the repo ships **Apache-2.0**, `fusion-harness` is **MIT**, so any third-party material ever imported must be attributed/relicensed compatibly. (Corrects the review's C4 miscitation — C4 is the prompt-injection rule, not a licensing rule.) | this plan; a note by `LICENSE` only if material is ever imported (none is) |
 
 **Verification (SC-3a):** parity **84/84**, report **13/13**, entropy **7/7** UNCHANGED
 (no validator or report logic touched); dogfood the review gate over the doc/spec diff;
-one live **micro-drill forcing a vacuous / NOT-RUN green** to confirm A1/A2 classify it
-`GATE_WEAK` (unverified), not a pass.
+run the reproducible SC-3 contract micro-drill (`parity/sc3-micro-drill/run-tests.js`) to
+confirm a valid pre-change RED, a vacuous / NOT-RUN baseline classified `gate_weak`
+(unverified, never pass), and a code-failure correction round using a fresh immutable
+`corrections.json`. Retained result: `docs/acceptance/SC3_MICRO_DRILL.md`.
 
-### SC-3b — Invocation provenance (evidence-schema; new fixtures; advisory-only)
+### SC-3b — Invocation provenance (evidence-schema; fixtures; advisory-only)
 
 | Item | Change | Parity / report impact |
 |---|---|---|
 | B1 (F-17) | **Per-phase invocation-provenance fields, advisory-only, additive to `phase_manifest`:** `model_id` (the runtime model behind the canonical tier), `cost_usd`/`tokens_in`/`tokens_out` **where the runtime exposes them**, `elapsed_ms` (real `date -u` deltas), `tool_call_count`, and `timeout`/`cancel` flags. **Absent telemetry NEVER implies pass or fail** (mirrors F-9 honesty). Explicitly **not** X-1 hosting telemetry — no dashboard, WebSocket, DB, or background process (NFR-2). Closes DRILL_EVIDENCE caveats 1-2 and the VERIFICATION "no per-phase LLM telemetry" caveat. | New `phase_manifest` schema doc + fixtures for present / absent / partial telemetry; the 9 validator packs and `criteria-to-checks` v1.1.0 baseline untouched (**84/84** preserved) |
 | B2 (F-17) | **Keep `execution-report.js` UNTOUCHED in SC-3.** Provenance lives in `phase_manifest` and is surfaced by the orchestrator's terminal relay, **not** the report generator, preserving **13/13**. If operators later want it in `execution_report.md`, that is a *separate* future SC, and only as **additive fields, regression-first** (fixture before logic, `SCHEMA_VERSION` bump, the 13 existing verdict fixtures unchanged and still green, **no** new DECISION/exit). | `execution-report.js` **unchanged**; report suite stays **13/13** deterministic |
 
-**Verification (SC-3b):** `phase_manifest` schema doc + provenance fixtures
-(present/absent/partial); **84/84 + 13/13 + 7/7** unchanged; dogfood the review gate.
+**Verification (SC-3b):** `phase_manifest` schema doc +
+`parity/provenance-fixtures/{present,partial,absent}.json`, enforced by
+`parity/provenance-fixtures/run-tests.js`; **84/84 + 13/13 + 7/7** unchanged; dogfood
+the review gate.
 
 ---
 
@@ -78,16 +82,18 @@ one live **micro-drill forcing a vacuous / NOT-RUN green** to confirm A1/A2 clas
 
 | Step | Tranche | Effort | Gate |
 |---|---|---|---|
-| 1 | DPPD §11 amendment recording SC-3 (this plan approved) | XS | operator approval (R-6), **per item** — not the bundle |
-| 2 | SC-3a (A1–A6) | S–M — docs/spec | suites green (84/84, 13/13, 7/7) + dogfood review gate + vacuous-green micro-drill |
-| 3 | SC-3b (B1) | S — schema + provenance fixtures | suites green + new telemetry fixtures deterministic |
-| 4 | Live confirmation run on a real small task exercising A1 (forced RED baseline) + A3 (one correction round) | M | PROMOTE + evidence tree **archived under `docs/acceptance/`** (also closes the DRILL_EVIDENCE "copy reports before teardown" lesson) |
+| 1 | DPPD §11 amendment recording SC-3 (this plan approved) | XS | **DONE** — operator approval (R-6), per item, recorded in DPPD v1.3 |
+| 2 | SC-3a (A1–A6) | S–M — docs/spec | **DONE** — suites green + review gate + reproducible valid-RED / `gate_weak` / correction-round micro-drill |
+| 3 | SC-3b (B1) | S — schema + provenance fixtures | **DONE** — schema + deterministic present/partial/absent fixtures |
+| 4 | Autonomous live confirmation on the first suitable real task, exercising A1 and A3 through all phases | M | **DEFERRED EXPLICITLY** — the deterministic contract drill is retained now; a real-task PROMOTE evidence tree must be archived under `docs/acceptance/` when such a task is run |
 
-**Branching:** `feat/sc3a-falsifiability-and-corrections`, then `feat/sc3b-provenance` —
-two PRs, each through the skill's own review gate, never committing to `main` directly
-(dogfooding). Restrict the "run it through the pipeline itself" claim to milestones that
-ship executable behavior; the doc/spec-only step 2 uses **edit + re-run parity + dogfood
-review gate** (a prose PR's build/test/verify gates are degenerate without a code diff).
+**Branching (plan-time):** `feat/sc3a-falsifiability-and-corrections`, then
+`feat/sc3b-provenance`. Actual delivery used one cohesive cross-file contract branch,
+`feat/sc3-implementation`, merged through PR #26 after the skill's review gate; no direct
+commit to `main`. Restrict the "run it through the pipeline itself" claim to milestones
+that ship executable behavior; the doc/spec implementation used **edit + re-run parity +
+dogfood review gate** (a prose PR's build/test/verify gates are degenerate without a code
+diff).
 
 ---
 
@@ -130,14 +136,14 @@ review gate** (a prose PR's build/test/verify gates are degenerate without a cod
 
 ---
 
-## 6. Ready-to-apply DPPD §11 amendment (paste on approval)
+## 6. Applied DPPD §11 amendment (historical proposal record)
 
-> ## 11. Scope Change SC-3 (2026-07-23, from comparative review) — PROPOSED
+> ## 11. Scope Change SC-3 (2026-07-24, from comparative review) — APPROVED
 >
-> Proposed per R-6 (operator approval pending, **per item**). Amends §2: narrowly
+> Approved per R-6 (operator approval 2026-07-24, **per item**). Amends §2: narrowly
 > reopens a slice of X-1 for **per-phase invocation provenance** (append-only manifest
 > fields only — no hosting infra), and adds **falsifiability** as a test-gate correctness
-> property. Version on approval: **DPPD 1.3**. Motivated by the `fusion-harness`
+> property. Governing version: **DPPD 1.3**. Motivated by the `fusion-harness`
 > comparative review (findings **F-14 … F-17**); full register, per-item detail,
 > sequencing, and invariants in **`docs/SC3_PLAN.md`**.
 >
@@ -149,7 +155,8 @@ review gate** (a prose PR's build/test/verify gates are degenerate without a cod
 > outside SC-2 A3's post-hoc designated-field list, FR-4-safe); A4
 > `run_manifest.check_defect_repairs` counter capped at one/job, resolving within the
 > existing RETRY/warn vocabulary (**no** new state/decision/exit); A5 always-on under
-> `test_policy: required` (or a validated `policy.falsifiability`); A6 Apache-2.0/MIT
+> `test_policy: required` (`false` rejected at intake; `true` opts other policies in);
+> A6 Apache-2.0/MIT
 > import note.
 >
 > **SC-3b — Invocation provenance (evidence-schema; advisory-only).** B1 additive,
@@ -168,7 +175,7 @@ review gate** (a prose PR's build/test/verify gates are degenerate without a cod
 > dual-perspective planning, broad telemetry, TUI, persistent memory, `/tmp` evidence,
 > model-generated gates.
 
-On approval, also add to the `WBS.md` intro (mirroring its SC-2 paragraph): *"A second
+Applied to the `WBS.md` intro (mirroring its SC-2 paragraph): *"A second
 enhancement scope (**SC-3**, findings F-14…F-17 from the fusion-harness comparative
 review) proposes falsifiability at the test gate (reusing existing validators) and
 per-phase invocation provenance; verdict taxonomy frozen. See `docs/SC3_PLAN.md`."*

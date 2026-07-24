@@ -14,8 +14,8 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 84 + report 13 + entropy 7 fixtures; `node --check` (15 files); `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan. Seconds, zero-LLM. |
-| 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (against a clean `git clone` of HEAD). Closes the F-13 host-runtime blind spot. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 84 + report 13 + entropy 7 fixtures; SC-3 provenance fixtures 3 + contract micro-drill; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan. Seconds, zero-LLM. |
+| 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Closes the F-13 host-runtime blind spot. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
 `make ci` runs Tier 1 + Tier 2 (what the pre-push hook runs). `make install-hooks` wires the
