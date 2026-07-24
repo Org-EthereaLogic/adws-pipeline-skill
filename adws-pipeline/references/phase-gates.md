@@ -16,7 +16,7 @@ The only terminal states are `completed`, `failed`, `quarantined`, `canceled`.
 |---|---|---|---|---|
 | plan | adws-planner | `task-normalize` | Plan written with per-criterion file-change proposal; validator not `fail` | 1 |
 | build | adws-builder | `repo-context-scan` | All planned changes applied in worktree; no policy-path violation; validator not `fail` | 1 |
-| test | adws-tester | `criteria-to-checks` | All derived checks executed and passing; Critic `pass`; no Advocate dissent; validator not `fail` | 2 |
+| test | adws-tester | `criteria-to-checks` | All derived checks executed and passing; each criterion falsifiable (a RED-for-the-right-reason pre-change baseline) or recorded `gate_weak` (SC-3 A1/A2); Critic `pass`; no Advocate dissent; validator not `fail` | 2 |
 | review | adws-reviewer | `review-risk-assess` | Critic `pass`; no Advocate dissent; risk recorded; validator not `fail` | 1 |
 | document | adws-documenter | `document-coverage-map` | Docs delta + changelog entry written; validator not `fail` | 1 |
 | ship | adws-shipper | `ship-mode-select`, `patch-compose` | Mode-specific artifact produced (PR URL / pushed branch / patch file); both validators not `fail` | 1 |
@@ -45,13 +45,56 @@ continuation).
 - **Test checks fail because the code is wrong** (not the checks): rewind to `build`
   instead of retrying `test`. At most ONE test rewind per job (tracked as
   `cross_phase_rewinds.test` in `run_manifest.json`); a second such failure terminates
-  with `TEST_GATE_FAILURE` (RETRY verdict class).
+  with `TEST_GATE_FAILURE` (RETRY verdict class). The orchestrator writes the failing
+  checks as a structured `corrections.json` (classification `code`) into the fresh build
+  `attempt_{n}/` before re-dispatching (SC-3 A3/F-15; see `references/artifact-layout.md`),
+  so the fix and the failure it addresses are auditable as a pair.
+- **A check is defective, not the code** (SC-3 A4/F-16): when the tester classifies a
+  criterion's failure as `check` (its check/criterion-mapping is wrong or unsatisfiable
+  relative to the FROZEN contract, not the code), the orchestrator performs at most ONE
+  check-defect repair per job (`run_manifest.check_defect_repairs`, capped at 1): it
+  writes a corrected `corrections.json` (classification `check`) into a FRESH build
+  `attempt_{n}/` and re-runs, WITHOUT consuming a build retry. The repair may fix only the
+  executable check, never the frozen `acceptance_criteria` text or which criterion a check
+  targets — no criterion may be weakened or dropped; the downstream verify grader still
+  grades against the original criteria. A SECOND check defect terminates on the ordinary
+  `TEST_GATE_FAILURE`/budget path. This introduces NO new terminal state, DECISION, or exit
+  code — it resolves within the existing RETRY/warn vocabulary, and `execution-report.js`
+  is untouched.
+- **A check failed on `environment` or `prerequisite`** (a required runtime/tool is absent,
+  or an upstream precondition is unmet — neither the code nor the check is at fault): this
+  is a GAP, not an auto-retry. The criterion is unverified — recorded and surfaced to the
+  operator as a warn (honoring F-9: `NOT RUN` is neither a pass nor a valid red) — and it
+  consumes no rewind or check-defect budget; it never silently passes. These two
+  `classification` values route to the operator, not to a build attempt.
 - **Verify drift BLOCK** (grader finds unaddressed/contradicted criteria in the shipped
   diff): rewind to `build` carrying the grader's findings as feedback. At most ONE
   verify rewind per job (tracked as `cross_phase_rewinds.verify`); a SECOND BLOCK
   terminates with `PR_DRIFT_SENTINEL_BLOCK` → quarantine.
 - The two rewind budgets are INDEPENDENT: spending the test rewind does not consume
-  the verify rewind, and vice versa.
+  the verify rewind, and vice versa. The check-defect repair (SC-3 A4,
+  `check_defect_repairs`) is a THIRD, independent budget, also capped at 1.
+
+## Falsifiability at the test gate (SC-3 A1/A2/F-14)
+
+Always-on when `policy.test_policy: required` (or when `policy.falsifiability` is set):
+before a criterion's check counts as a pass, the tester establishes a PRE-change baseline
+(stash the build changes including untracked files, or evaluate against the base commit)
+and runs the same checks there. A criterion is *verified* only if its check went RED
+pre-change for the right reason (`baseline_reason: assertion-failed-runtime-present` — the
+check ran and failed because the feature was absent) AND passes post-change. A check that
+
+- passes pre-change (no red baseline), or
+- is red only because it could not execute (`collection-error`/`not-run` — the runtime is
+  missing, not the feature)
+
+is NOT falsifiable → the criterion is recorded `gate_weak` (an unverified criterion). A
+`gate_weak` criterion is a WARN, never a pass, and NEVER "already satisfied / ship
+nothing": a green that cannot be shown capable of failing is a gap, not a done task. This
+is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and preserves F-13
+(container-green stays necessary-not-sufficient). Falsifiability reuses `criteria-to-checks`'
+emitted `check_specs` as the criterion→check source of truth and `adws-tester` as the
+execution surface — no new DSL, runner, verdict, or exit code.
 
 ## Consensus at test and review gates (FR-7)
 

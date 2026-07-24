@@ -12,14 +12,31 @@ attempt directory `artifacts/{jobId}/test/attempt_{n}/`.
 Do:
 1. Derive one or more executable checks per acceptance criterion (run existing test
    suite, add targeted tests inside `allowed_paths`, or script direct verifications).
-   Honor `policy.test_policy`: `required` = every criterion needs an executed check;
+   The set of checkable criteria is the `check_specs` array the `criteria-to-checks`
+   validator already emits — treat it as the single source of truth for which criteria
+   map to checks; do not re-classify criteria in a parallel scheme. Honor
+   `policy.test_policy`: `required` = every criterion needs an executed check;
    `best-effort` = check what is checkable, record the rest as unverified; `skip` =
    still run the repo's existing test suite if trivially available, else record skipped.
-2. Execute every check in the worktree. Capture real output — a check you did not run
-   is `"pass": false` with output `"NOT RUN"`, never assumed.
-3. Write to your attempt directory (and nowhere else in `artifacts/`):
-   - `phase_output.json`: `{ "checks": [{ "check", "criterion", "pass", "output" }], "command_log": [commands + exit codes] }`
-   - `phase_log.md`: how each criterion maps to its checks.
+2. **Falsifiability baseline (SC-3 A1/A2/F-14) — run BEFORE the post-change run when
+   `test_policy: required` (always-on) or `policy.falsifiability` is set.** Establish the
+   PRE-change state — stash the build's worktree changes including new files
+   (`git stash push --include-untracked`), or evaluate against the base commit — and run
+   the same checks there, then restore (`git stash pop`). For each check record
+   `baseline_pass` and, when it did NOT pass, WHY: `assertion-failed-runtime-present`
+   (the check ran and the assertion failed because the feature is absent — a VALID red)
+   vs. `collection-error`/`not-run` (the check could not execute — an INVALID red; the
+   runtime is missing, not the feature). A criterion is `falsifiable` only when its
+   baseline is `assertion-failed-runtime-present`. A criterion whose check passes
+   pre-change, or whose only red is `not-run`, is NOT falsifiable — mark it `gate_weak`
+   (an unverified criterion), never a pass, and never "already satisfied / ship nothing."
+   This is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and honors
+   F-13 (a container-green post-change result stays necessary-not-sufficient).
+3. Execute every check against the post-change worktree. Capture real output — a check
+   you did not run is `"pass": false` with output `"NOT RUN"`, never assumed.
+4. Write to your attempt directory (and nowhere else in `artifacts/`):
+   - `phase_output.json`: `{ "checks": [{ "check", "criterion", "pass", "output", "baseline_pass", "baseline_reason", "falsifiable", "verdict", "classification" }], "command_log": [commands + exit codes] }` — `verdict` is `verified` (falsifiable AND post-change pass), `gate_weak` (not falsifiable), or `fail` (post-change fail). On a `fail`, YOU set `classification` to WHY it failed so the orchestrator can route it: `code` (the code is wrong → rewind to build), `check` (the check/criterion-mapping is defective, not the code → check-defect repair, SC-3 A4), `environment` (a required runtime/tool is absent), or `prerequisite` (an upstream precondition is unmet); use `null` when the check passed. Classify honestly — you never decide the gate.
+   - `phase_log.md`: how each criterion maps to its checks, and its baseline result + reason.
    - `phase_manifest.json` per `references/artifact-layout.md` — write `"gate_result": null`; the gate decision is the ORCHESTRATOR'S designated post-hoc field, never yours.
 
 Rules: report failures honestly — the gate logic (retry vs rewind-to-build) belongs to

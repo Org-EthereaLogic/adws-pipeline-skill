@@ -33,6 +33,12 @@ NEVER an assumed pass. A skipped or unrunnable check is evidence of a gap, not a
 green light; plan checks around the runtimes actually available and say so in the
 phase log.
 
+The same honesty governs the SC-3 falsifiability baseline (A2): a pre-change check that is
+red only because it could not execute (`NOT RUN` / collection error) is NOT a valid red —
+the runtime is missing, not the feature — so its criterion is recorded `gate_weak`
+(unverified), never `verified`. See `references/phase-gates.md` "Falsifiability at the
+test gate."
+
 **Host-runtime blindness (F-13, field-validated issue #111).** The test and verify
 phases run wherever the ORCHESTRATOR runs — often a Linux / bash-5 cloud container —
 which can differ from the TARGET runtime a generated project actually executes on.
@@ -133,7 +139,10 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    fallback in "Environment & runtimes"). Give it: the contract path, the worktree path, its
    attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
    the previous phase's `phase_output.json` path. Phase agents write their own
-   evidence files per `references/artifact-layout.md`.
+   evidence files per `references/artifact-layout.md`. Where the runtime exposes per-phase
+   telemetry (model id, cost, tokens, wall-clock, tool-call count, timeout/cancel), record
+   it in the attempt's `phase_manifest.provenance` (SC-3 B1/F-17) — ADVISORY only; absent
+   or partial telemetry never affects the gate, and `execution-report.js` ignores it.
 2. **Validate**: run the phase's validator script(s) (mapping in
    `references/phase-gates.md`) with input assembled from the contract and phase
    outputs; wrap each stdout JSON in a `skill_trace.json` under the attempt's
@@ -161,7 +170,20 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
      `tier_input: retry-escalation`.
    - Test-checks fail because the CODE is wrong → rewind to build (once per job;
      increment `cross_phase_rewinds.test`); second occurrence → terminate `failed` /
-     `TEST_GATE_FAILURE`. This rewind budget is separate from the verify-drift one.
+     `TEST_GATE_FAILURE`. This rewind budget is separate from the verify-drift one. On the
+     rewind, write the failing checks as a structured `corrections.json` (classification
+     `code`) into the fresh build `attempt_{n}/` before re-dispatching (SC-3 A3/F-15).
+   - A CHECK is defective, not the code (the tester classifies the failure `check`) →
+     at most ONE check-defect repair per job (`run_manifest.check_defect_repairs`, capped
+     at 1): write a corrected `corrections.json` (classification `check`) into a FRESH
+     build `attempt_{n}/` and re-run WITHOUT consuming a build retry; the repair fixes only
+     the executable check, never the frozen criteria or their mapping. A second check
+     defect → `TEST_GATE_FAILURE`. No new terminal state, verdict, or exit code (SC-3 A4).
+   - Falsifiability (SC-3 A1/A2, always-on when `policy.test_policy: required`, else opt-in
+     via `policy.falsifiability`): at the test gate the tester first runs a PRE-change
+     baseline; a criterion whose check is not falsifiable (no red-for-the-right-reason
+     baseline) is recorded `gate_weak` — an unverified criterion, surfaced as a warn, never
+     counted as a pass and never treated as "already satisfied."
    - Fail, budget exhausted → terminate `failed` with the recorded failure reason
      (default `{PHASE}_GATE_FAILURE`, e.g. `BUILD_GATE_FAILURE`, unless a more
      specific reason applies).

@@ -41,7 +41,8 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
     "allowed_paths": ["<at least one path prefix required>"],
     "blocked_paths": [],
     "test_policy": "required",
-    "secret_policy": "no-new-secrets"
+    "secret_policy": "no-new-secrets",
+    "falsifiability": true
   },
   "risk": {
     "task_size": "small | medium | large",
@@ -70,6 +71,7 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
 | `policy.blocked_paths` | yes | may be empty array |
 | `policy.test_policy` | yes | `required`, `best-effort`, or `skip` |
 | `policy.secret_policy` | yes | `no-new-secrets` or `allow-listed` |
+| `policy.falsifiability` | no | boolean (SC-3 A5). Default: the falsifiability baseline (A1/A2) runs automatically whenever `test_policy` is `required`. Set `true` to force the pre-change RED baseline under any `test_policy`; `false` to opt out. Orchestrator-consumed — not a `task-normalize` field (unknown to the validator, which inspects only `task.*`). |
 | `risk.*` | yes | all three; enums as in template |
 
 ## Hard intake failures (reject the contract; do not start plan)

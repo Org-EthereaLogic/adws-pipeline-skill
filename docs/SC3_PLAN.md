@@ -145,7 +145,8 @@ review gate** (a prose PR's build/test/verify gates are degenerate without a cod
 > risk).** A1 falsifiability at the test gate, **reusing** `criteria-to-checks`'
 > `check_specs` + `adws-tester` (no new DSL/runner); A2 red-for-the-right-reason
 > (extends F-9/F-13 — a NOT-RUN red is not a valid baseline); A3 structured `corrections`
-> as one enumerated designated field (extends SC-2 A3's post-hoc list, FR-4-safe); A4
+> as one fresh, immutable `corrections.json` in the new build attempt tree (explicitly
+> outside SC-2 A3's post-hoc designated-field list, FR-4-safe); A4
 > `run_manifest.check_defect_repairs` counter capped at one/job, resolving within the
 > existing RETRY/warn vocabulary (**no** new state/decision/exit); A5 always-on under
 > `test_policy: required` (or a validated `policy.falsifiability`); A6 Apache-2.0/MIT
