@@ -77,7 +77,8 @@ continuation).
 
 ## Falsifiability at the test gate (SC-3 A1/A2/F-14)
 
-Always-on when `policy.test_policy: required` (or when `policy.falsifiability` is set):
+Always-on when `policy.test_policy: required` (an explicit `falsifiability: false` with
+required tests is rejected at intake) or when `policy.falsifiability: true`:
 before a criterion's check counts as a pass, the tester establishes a PRE-change baseline
 (stash the build changes including untracked files, or evaluate against the base commit)
 and runs the same checks there. A criterion is *verified* only if its check went RED

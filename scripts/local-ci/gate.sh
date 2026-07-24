@@ -3,9 +3,10 @@
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 84
-# validator-parity fixtures, 13 report-verdict fixtures, 7 stability-gate fixtures — plus
-# a syntax floor, shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix
-# lives in orb-ci.sh (Tier 2); local-LLM review lives in review.sh (Tier 3).
+# validator-parity fixtures, 13 report-verdict fixtures, 7 stability-gate fixtures,
+# 3 provenance-schema fixtures, and the SC-3 contract micro-drill — plus a syntax floor,
+# shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
+# (Tier 2); local-LLM review lives in review.sh (Tier 3).
 #
 # Usage:  make local-ci   (or: bash scripts/local-ci/gate.sh)
 # Evidence: ci_logs/<run_id>.gate.log + a line in ci_logs/local_ci.jsonl.
@@ -47,7 +48,7 @@ run_step() {
   steps+=("{\"step\":\"$name\",\"status\":\"$st\",\"duration_s\":$dur}")
 }
 
-# Steps 4-5 need a little logic, so they are functions (bash-3.2-safe).
+# The static-floor steps need a little logic, so they are functions (bash-3.2-safe).
 node_check() {
   # node --check every *.js under adws-pipeline/ and parity/ (syntax floor).
   # Newline-delimited via heredoc (not `for in $(find)`) so a bad file fails the step
@@ -76,14 +77,16 @@ shell_lint() {
   return $rc
 }
 
-# Step 1-3 — the repo's own deterministic suites (must stay green: 84 / 13 / 7).
+# Deterministic suites (must stay green: 84 / 13 / 7 + provenance 3 + SC-3 drill).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
-# Step 4-5 — static floors.
+run_step "provenance"    node parity/provenance-fixtures/run-tests.js
+run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
+# Static floors.
 run_step "node-check"    node_check
 run_step "shell-lint"    shell_lint
-# Step 6-7 — skill-repo lints.
+# Skill-repo lints.
 run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
 

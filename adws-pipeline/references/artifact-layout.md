@@ -66,14 +66,15 @@ this attempt, or null when no entropy history exists yet.
 `provenance` (SC-3 B1/F-17) is an OPTIONAL, ADVISORY-only object capturing per-phase
 invocation telemetry the runtime exposes — `{ "model_id", "cost_usd", "tokens_in",
 "tokens_out", "elapsed_ms", "tool_call_count", "timeout", "cancel" }`; any subset may be
-present and any field may be null when the runtime does not expose it. It is evidence for
+present and any field may be null when the runtime does not expose it. Non-null values
+are typed: `model_id` string; `cost_usd` finite non-negative number; token, elapsed, and
+tool-call counts non-negative integers; timeout/cancel booleans. It is evidence for
 audit, never a gate input: **absent or partial provenance NEVER implies pass or fail**
 (mirrors F-9). It is not X-1 hosting telemetry — no dashboard, socket, DB, or process.
 `execution-report.js` ignores it (tolerant reader, rule 8), so the report suite is
 unchanged (SC-3 B2 leaves the report generator untouched).
-No fixture harness covers `provenance` — no validator and not the report reads it, so
-there is nothing to assert against; this doc IS its specification. The three shapes it
-takes (SC-3 B1 present / partial / absent):
+The deterministic harness `parity/provenance-fixtures/run-tests.js` validates the three
+schema shapes (SC-3 B1 present / partial / absent) without making provenance a gate input:
 - full: `{ "model_id": "opus", "cost_usd": 0.42, "tokens_in": 18000, "tokens_out": 900, "elapsed_ms": 51200, "tool_call_count": 12, "timeout": false, "cancel": false }`
 - partial: `{ "model_id": "sonnet", "elapsed_ms": 8300, "tool_call_count": 4 }` (runtime exposed no cost/token counts — omit or null, never a fabricated zero)
 - absent: `null` (no telemetry available)
@@ -96,7 +97,7 @@ the delegation resolves first.
 
 - plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [] }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars)
 - build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "" }`
-- test: `{ "checks": [{ "check": "", "criterion": "", "pass": true, "output": "", "baseline_pass": false, "baseline_reason": "assertion-failed-runtime-present | collection-error | not-run", "falsifiable": true, "verdict": "verified | gate_weak | fail", "classification": "null | code | check | environment | prerequisite" }], "command_log": [] }` — the `baseline_*`/`falsifiable`/`verdict` fields carry the SC-3 A1/A2 falsifiability result (present when `test_policy: required` or `policy.falsifiability`); a `gate_weak` verdict is an unverified criterion (warn), never a pass. On a `fail` verdict, `classification` records WHY the tester attributes the failure — the orchestrator routes on it (A3/A4) and copies it into `corrections.json`; `null` otherwise.
+- test: `{ "checks": [{ "check": "", "criterion": "", "pass": true, "output": "", "baseline_pass": false, "baseline_reason": "assertion-failed-runtime-present | collection-error | not-run", "falsifiable": true, "verdict": "verified | gate_weak | fail", "classification": "null | code | check | environment | prerequisite" }], "command_log": [] }` — the `baseline_*`/`falsifiable`/`verdict` fields carry the SC-3 A1/A2 falsifiability result (present when `test_policy: required` or `policy.falsifiability: true`); a `gate_weak` verdict is an unverified criterion (warn), never a pass. On a `fail` verdict, `classification` records WHY the tester attributes the failure — the orchestrator routes on it (A3/A4) and copies it into `corrections.json`; `null` otherwise.
 - review: `{ "findings": [], "risk_level": "", "approved": true }`
 - document: `{ "docs_delta": [], "changelog_entry": "", "documentation_summary": "" }`
 - ship: `{ "mode": "", "branch_name": "", "pr_url": null, "patch_file": null, "commit_sha": "", "pushed": false, "block_reason": null, "delegation": null }` — `delegation` (optional, F-5) is present only for a delegated `pr`-mode push: `{ "status": "pending-operator | completed", "detected_reason": "NO_PUSH_CREDENTIALS_IN_SANDBOX | …", "completed_by": "operator", "completed_at": "<iso>" }`. The shipper writes `pushed: false` + `delegation.status: "pending-operator"` when it detects it cannot push; the ORCHESTRATOR later writes `delegation.status: "completed"` + `pr_url` post-hoc (never the shipper).

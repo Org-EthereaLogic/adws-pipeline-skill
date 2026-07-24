@@ -179,8 +179,9 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
      build `attempt_{n}/` and re-run WITHOUT consuming a build retry; the repair fixes only
      the executable check, never the frozen criteria or their mapping. A second check
      defect → `TEST_GATE_FAILURE`. No new terminal state, verdict, or exit code (SC-3 A4).
-   - Falsifiability (SC-3 A1/A2, always-on when `policy.test_policy: required`, else opt-in
-     via `policy.falsifiability`): at the test gate the tester first runs a PRE-change
+   - Falsifiability (SC-3 A1/A2, always-on when `policy.test_policy: required`;
+     required + `policy.falsifiability: false` is a hard pre-plan intake failure, while
+     `true` opts other test policies in): at the test gate the tester first runs a PRE-change
      baseline; a criterion whose check is not falsifiable (no red-for-the-right-reason
      baseline) is recorded `gate_weak` — an unverified criterion, surfaced as a warn, never
      counted as a pass and never treated as "already satisfied."

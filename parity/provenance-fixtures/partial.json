@@ -1,0 +1,12 @@
+{
+  "phase": "test",
+  "attempt": 2,
+  "job_id": "job-provenance-partial",
+  "agent": "adws-tester",
+  "model_tier": "sonnet",
+  "provenance": {
+    "model_id": "claude-sonnet",
+    "elapsed_ms": 8300,
+    "tool_call_count": 4
+  }
+}

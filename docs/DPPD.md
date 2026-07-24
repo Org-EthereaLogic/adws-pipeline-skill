@@ -330,7 +330,8 @@ reason pre-change is `gate_weak` (unverified/warn), never a pass; A2 red-for-the
 **fresh, immutable `corrections.json`** in the new build `attempt_{n}/` tree (explicitly
 OUTSIDE SC-2 A3's post-hoc designated-field list; FR-4-safe); A4 `run_manifest.check_defect_repairs`
 counter capped at one/job, resolving within the existing RETRY/warn vocabulary (**no** new
-state/decision/exit); A5 always-on under `test_policy: required` (or `policy.falsifiability`);
+state/decision/exit); A5 always-on under `test_policy: required` (`false` is rejected at
+intake), while `policy.falsifiability: true` forces the baseline for other test policies;
 A6 Apache-2.0/MIT import note — independent reimplementation only, no code copied from
 `fusion-harness` (MIT); this repo stays Apache-2.0.
 
@@ -352,3 +353,9 @@ lines. **R-3 remains open** — dual-perspective planning (WS-F) was NOT adopted
 Trinity (X-3) stays deferred per SC-1.c. Rejected superset (acceptance-gate DSL, new terminal
 states, dual-perspective planning, broad telemetry, TUI, persistent memory, `/tmp` evidence,
 model-generated gates): see `docs/SC3_PLAN.md` §5. Governing state is now **DPPD 1.3 (SC-3)**.
+
+**Verification reconciliation (2026-07-24):** provenance present/partial/absent shapes are
+now executable fixtures under `parity/provenance-fixtures/`; the A1/A2/A3 contract
+micro-drill is retained at `docs/acceptance/SC3_MICRO_DRILL.md` and runs in local CI.
+The larger seven-phase real-task confirmation remains explicitly deferred until a
+suitable post-SC-3 task can produce a PROMOTE evidence tree retained before teardown.

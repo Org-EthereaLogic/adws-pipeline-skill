@@ -308,3 +308,31 @@ Per DPPD §10 (v1.2), approved R-6. Branch `feat/sc2`, three tranche commits. Fu
 - **Suites at close:** parity **84/84**, report **13/13**, entropy **7/7** — all green,
   deterministic. `SKILL.md` 249 lines (NFR-3 < 500). Open follow-ups: E2E-2 confirmation
   run (SC2_PLAN step 6) and the C2 tier decision.
+
+## SC-3 scope change (2026-07-24, fusion-harness comparative review) — F-14…F-17
+
+Per DPPD §11 (v1.3), approved R-6 per item (A1–A6, B1). Contract implementation merged
+through PR #26; full originating plan and reconciliation ledger: `SC3_PLAN.md`.
+
+- **SC-3a:** pre-change falsifiability baseline reuses `criteria-to-checks.check_specs`;
+  only `assertion-failed-runtime-present` is a valid RED. `not-run`/collection errors
+  become `gate_weak` warnings, never passes. Build rewinds receive one fresh immutable
+  `corrections.json`; `run_manifest.check_defect_repairs` is independently capped at one.
+- **A5 reconciliation:** required tests always run the baseline. An explicit
+  `policy.falsifiability: false` with `test_policy: required` is a hard intake failure;
+  `true` opts `best-effort`/`skip` into the baseline. The orchestrator enforces this
+  cross-field rule because frozen `task-normalize` accepts only `task.*`.
+- **SC-3b:** advisory `phase_manifest.provenance` remains ignored by
+  `execution-report.js`. Present, partial, and absent shapes are now executable fixtures
+  under `parity/provenance-fixtures/`; invalid types and unknown fields are rejected by
+  the fixture harness without turning provenance into a gate input.
+- **Retained contract drill:** `docs/acceptance/SC3_MICRO_DRILL.md` records the
+  reproducible A1/A2/A3 drill, wired into local CI. It demonstrates valid RED,
+  NOT-RUN → `gate_weak`, a fresh correction round, and immutable correction evidence.
+- **Explicit deferral:** the first autonomous seven-phase real-task confirmation remains
+  pending a suitable post-SC-3 task. Its complete PROMOTE evidence tree must be copied
+  into `docs/acceptance/` before teardown; the contract drill is not represented as that
+  production confirmation.
+- **Suites after reconciliation:** parity **84/84**, report **13/13**, entropy **7/7**,
+  provenance **3/3**, and the SC-3 micro-drill all pass. `SKILL.md` remains under 500
+  lines; `execution-report.js` and the verdict taxonomy remain untouched.

@@ -1,0 +1,17 @@
+{
+  "phase": "review",
+  "attempt": 1,
+  "job_id": "job-provenance-present",
+  "agent": "adws-reviewer",
+  "model_tier": "opus",
+  "provenance": {
+    "model_id": "claude-opus",
+    "cost_usd": 0.42,
+    "tokens_in": 18000,
+    "tokens_out": 900,
+    "elapsed_ms": 51200,
+    "tool_call_count": 12,
+    "timeout": false,
+    "cancel": false
+  }
+}
