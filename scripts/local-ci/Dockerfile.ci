@@ -1,0 +1,19 @@
+# Dockerfile.ci — TIER 2 clean-room image for adws-pipeline-skill local CI.
+#
+# A clean Debian/bash-5 userland with NONE of the macOS host's brew tools, so the repo's
+# suites re-run in the environment generated code actually ships to — closing the F-13
+# host-runtime blind spot (host is macOS bash 3.2). Node version is a build arg so the
+# matrix (20 + 24) validates the repo's own "Node >= 20, stdlib-only" portability claim.
+#
+# No COPY: the repo is bind-mounted at /repo at run time (orb-ci.sh), so the build context
+# stays the tiny scripts/local-ci/ dir and the gitignored artifacts/ tree is never uploaded.
+ARG NODE_VERSION=24
+FROM node:${NODE_VERSION}-bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash git jq shellcheck curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /repo
+CMD ["bash", "scripts/local-ci/ci-in-container.sh"]
