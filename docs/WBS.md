@@ -24,9 +24,10 @@ implemented: SC-3a falsifiability at the test gate (reusing `criteria-to-checks`
 `check_defect_repairs` record; SC-3b advisory per-phase `phase_manifest.provenance`. Verdict
 taxonomy frozen (no new DECISION/exit); 84/84 + 13/13 + 7/7 preserved; `execution-report.js`
 untouched. Deterministic provenance fixtures and the retained SC-3 contract micro-drill
-are wired into local CI. The autonomous seven-phase real-task confirmation is explicitly
-deferred to the first suitable post-SC-3 task. See `DPPD.md` §11, `SC3_PLAN.md`, and
-`acceptance/SC3_MICRO_DRILL.md`.
+are wired into local CI. Contract and fixture reconciliation plus linked-worktree/hook-safe
+CI landed through PR #27 (`149712c`) after the implementation in PR #26. The autonomous
+seven-phase real-task confirmation is explicitly deferred to the first suitable post-SC-3
+task. See `DPPD.md` §11, `SC3_PLAN.md`, and `acceptance/SC3_MICRO_DRILL.md`.
 
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime

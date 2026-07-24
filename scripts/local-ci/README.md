@@ -49,4 +49,7 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
   `mapfile`) — the repo's own F-13 lesson applied to its tooling.
 - Tier 1/2 suites write only gitignored side-effects (`parity/PARITY_REPORT.md`, fixture
   `execution_report.{json,md}`), so the working tree stays clean.
+- The SC-3 micro-drill sanitizes repository-scoped Git environment variables before its
+  scratch `git init`; pre-push hooks therefore cannot redirect the drill's fixture commit
+  into the source repository.
 - `ci_logs/` is gitignored; it never enters a commit.
