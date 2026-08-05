@@ -33,13 +33,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const SCHEMA_VERSION = '1.1.0';
+// 1.2.0 adds the `phase_gates` gate to the gates array (additive; existing gate
+// keys, decision vocabulary, and exit codes are unchanged).
+const SCHEMA_VERSION = '1.2.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
 
 const PHASE_NAMES = ['plan', 'build', 'test', 'review', 'document', 'ship', 'verify'];
-
-const TERMINAL_STATES = new Set(['completed', 'failed', 'canceled', 'quarantined']);
 
 const NO_RETRY_REASONS = new Set([
   'CREDENTIAL_FAILURE',
@@ -130,7 +130,7 @@ function normalizeSkillVerdict(raw) {
 // certifies the job's final recorded state, not its full retry history
 // (which remains in the evidence tree, and is surfaced separately via
 // buildWarnings' "required N attempts" note).
-function collectSkillVerdicts(jobDir, latestAttempts) {
+function collectSkillVerdicts(latestAttempts) {
   const rows = [];
   for (const entry of latestAttempts) {
     const skillsDir = path.join(entry.dir, 'skills');
@@ -176,7 +176,7 @@ function normalizeResolution(advocate) {
 }
 
 // Same latest-attempt-only contract as collectSkillVerdicts above.
-function collectConsensus(jobDir, latestAttempts) {
+function collectConsensus(latestAttempts) {
   const rows = [];
   for (const entry of latestAttempts) {
     const consensusDir = path.join(entry.dir, 'consensus');
@@ -199,39 +199,100 @@ function collectConsensus(jobDir, latestAttempts) {
 
 // --- Gates (ported from ADWS_Pro src/execution-report/gates.js) ------------
 
+// A phase counts as having produced an attempt only when its LATEST attempt
+// actually WROTE evidence. An `attempt_n` directory on its own is not evidence:
+// a dispatch that dies before writing anything leaves exactly that (SKILL.md
+// "Transient subagent API errors", F-12), and certifying an empty directory as a
+// produced attempt is how a phase that never ran reaches a clean PROMOTE.
+function missingPhaseEvidence(phaseData) {
+  const missing = [];
+  for (const phaseName of PHASE_NAMES) {
+    const entry = phaseData[phaseName];
+    if (!entry) {
+      missing.push(`${phaseName} (no attempt recorded)`);
+      continue;
+    }
+    const absent = [];
+    if (!entry.manifest) absent.push('phase_manifest.json');
+    if (!entry.output) absent.push('phase_output.json');
+    if (absent.length > 0) {
+      missing.push(`${phaseName} (attempt_${entry.attempt} wrote no readable ${absent.join(' / ')})`);
+    }
+  }
+  return missing;
+}
+
 function evalPipelineCompletion(phaseData, finalStatus) {
-  const missing = PHASE_NAMES.filter((p) => !phaseData[p]);
-  if (finalStatus !== 'completed') {
-    return {
-      key: 'pipeline_completion',
-      label: 'All seven phases produced an attempt',
-      status: GATE_STATUSES.FAIL,
-      value: `${PHASE_NAMES.length - missing.length}/${PHASE_NAMES.length}`,
-      threshold: `${PHASE_NAMES.length}/${PHASE_NAMES.length}`,
-      reason:
-        missing.length > 0
-          ? `Missing phase outputs: ${missing.join(', ')}`
-          : 'Job did not reach completed status',
-    };
-  }
-  if (missing.length > 0) {
-    return {
-      key: 'pipeline_completion',
-      label: 'All seven phases produced an attempt',
-      status: GATE_STATUSES.FAIL,
-      value: `${PHASE_NAMES.length - missing.length}/${PHASE_NAMES.length}`,
-      threshold: `${PHASE_NAMES.length}/${PHASE_NAMES.length}`,
-      reason: `Missing phase outputs: ${missing.join(', ')}`,
-    };
-  }
-  return {
+  const missing = missingPhaseEvidence(phaseData);
+  const base = {
     key: 'pipeline_completion',
-    label: 'All seven phases produced an attempt',
-    status: GATE_STATUSES.PASS,
-    value: `${PHASE_NAMES.length}/${PHASE_NAMES.length}`,
+    label: 'All seven phases produced an attempt with readable evidence',
+    value: `${PHASE_NAMES.length - missing.length}/${PHASE_NAMES.length}`,
     threshold: `${PHASE_NAMES.length}/${PHASE_NAMES.length}`,
-    reason: null,
   };
+  if (missing.length > 0) {
+    return { ...base, status: GATE_STATUSES.FAIL, reason: `Missing phase evidence: ${missing.join(', ')}` };
+  }
+  if (finalStatus !== 'completed') {
+    return { ...base, status: GATE_STATUSES.FAIL, reason: 'Job did not reach completed status' };
+  }
+  return { ...base, status: GATE_STATUSES.PASS, reason: null };
+}
+
+// Hard rule 8 / FR-10: the orchestrator's gate decision for each phase is recorded
+// in `phase_manifest.gate_result` (references/artifact-layout.md). The terminal
+// report must EVALUATE it, not merely render it in the Phases table — otherwise a
+// job whose own evidence records a failed (or still-deferred) phase gate promotes
+// clean on the strength of `run_manifest.final_status` alone, which is exactly the
+// narrative-over-evidence failure the consensus, grader, and drift gates exist to
+// prevent. Latest attempt per phase only, same contract as the other gates.
+const PHASE_GATES_LABEL = 'Every phase gate decided pass on its latest attempt';
+const PHASE_GATE_RESULTS = new Set(['pass', 'fail', 'deferred']);
+
+function evalPhaseGates(phaseSummaries) {
+  const rows = phaseSummaries || [];
+  const base = { key: 'phase_gates', label: PHASE_GATES_LABEL, threshold: 'all pass' };
+  if (rows.length === 0) {
+    return { ...base, status: GATE_STATUSES.UNVERIFIED, value: null, reason: 'No phase attempts recorded' };
+  }
+  const failed = rows.filter((r) => r.last_gate_result === 'fail');
+  const deferred = rows.filter((r) => r.last_gate_result === 'deferred');
+  const undecided = rows.filter((r) => !PHASE_GATE_RESULTS.has(r.last_gate_result));
+  const value = `${rows.length - failed.length - deferred.length - undecided.length}/${rows.length} pass`;
+
+  if (failed.length > 0) {
+    const f = failed[0];
+    return {
+      ...base,
+      status: GATE_STATUSES.FAIL,
+      value,
+      reason: `Phase "${f.phase}" recorded gate_result=fail on its latest attempt${
+        f.failure_reason ? ` (${f.failure_reason})` : ''
+      } — a job cannot promote past a failed phase gate`,
+    };
+  }
+  // F-5: `deferred` is a ship-only intermediate that the orchestrator closes to
+  // `pass` once the operator completes the delegated push. Still deferred at the
+  // terminal report means that never happened.
+  if (deferred.length > 0) {
+    const d = deferred[0];
+    return {
+      ...base,
+      status: GATE_STATUSES.WARN,
+      value,
+      reason: `Phase "${d.phase}" is still deferred on its latest attempt — a delegated push that was never closed (F-5)`,
+    };
+  }
+  if (undecided.length > 0) {
+    const u = undecided[0];
+    return {
+      ...base,
+      status: GATE_STATUSES.UNVERIFIED,
+      value,
+      reason: `Phase "${u.phase}" has no recorded gate_result — the orchestrator never wrote its gate decision`,
+    };
+  }
+  return { ...base, status: GATE_STATUSES.PASS, value, reason: null };
 }
 
 function evalVerifyStructural(phaseData) {
@@ -876,8 +937,8 @@ function buildReport(jobDir, options = {}) {
   // phaseAttemptRows above) for audit, but must not re-fail a job that a
   // later attempt already fixed.
   const latestAttempts = PHASE_NAMES.filter((p) => phaseData[p]).map((p) => phaseData[p]);
-  const skillVerdicts = collectSkillVerdicts(jobDir, latestAttempts);
-  const consensus = collectConsensus(jobDir, latestAttempts);
+  const skillVerdicts = collectSkillVerdicts(latestAttempts);
+  const consensus = collectConsensus(latestAttempts);
 
   // B2 (F-5): the ship phase's delegated-push sub-state, if any. When a `pr`-mode push
   // fails on missing credentials the attempt records delegation.status; the orchestrator
@@ -896,6 +957,7 @@ function buildReport(jobDir, options = {}) {
 
   const gates = [
     evalPipelineCompletion(phaseData, finalStatus),
+    evalPhaseGates(phaseSummaries),
     evalVerifyStructural(phaseData),
     evalGraderVerdict(phaseData),
     evalDriftVerdict(phaseData),
@@ -1001,7 +1063,6 @@ module.exports = {
   DECISIONS,
   GATE_STATUSES,
   PHASE_NAMES,
-  TERMINAL_STATES,
   NO_RETRY_REASONS,
   QUARANTINE_REASONS,
   SCHEMA_VERSION,

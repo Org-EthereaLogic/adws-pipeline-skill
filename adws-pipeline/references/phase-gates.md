@@ -1,5 +1,17 @@
 # Phase Gates — Entry/Exit Criteria, Retry Budgets, Tier Selection
 
+## Contents
+
+- Per-phase table — agent, validators, exit criterion, retry budget
+- Gate rules (imperative)
+- Cross-phase rewind — test rewind, check-defect repair, environment gaps, verify drift
+- Falsifiability at the test gate (SC-3 A1/A2/F-14)
+- Consensus at test and review gates (FR-7) — reconciliation, operator resolution
+- Delegated push at ship (F-5)
+- Failure-reason classes — no-retry vs quarantine-class
+- Stability gate — entropy regulator (SC-1.b / X-2)
+- Model-tier selection (FR-12) — Codex aliases, risk→tier table, escalation
+
 Semantics ported from ADWS_Pro `src/phases.js`, `src/orchestrator.js`,
 `src/orchestrator-cross-phase.js`. The phase order is fixed and linear:
 

@@ -14,6 +14,14 @@
 > SCHEMA_VERSION 1.1.0. The `10/10` and "gate fails on any recorded dissent" statements
 > below are the point-in-time record; see `DPPD.md` §10 (v1.2) for the current state.
 
+> **Post-acceptance update (maintenance audit M-1, 2026-08-05):** an audit found two ways
+> `execution-report.js` could certify PROMOTE for a job whose evidence recorded failure — an
+> empty `attempt_n` directory satisfying `pipeline_completion`, and per-phase `gate_result`
+> never being evaluated. Both are fixed; the new `phase_gates` gate makes a recorded phase
+> failure QUARANTINE. The report suite grows to **15/15** and `execution-report.js` moves to
+> SCHEMA_VERSION **1.2.0**. AC-4.2 and the verdict taxonomy are unchanged; the `13/13` and
+> `1.1.0` statements below are the point-in-time record. See `DPPD.md` §12.
+
 > **Post-acceptance update (field run, 2026-07-18):** the skill's first EXTERNAL field
 > run (agentic-starter-kit issue #103, Cowork/cloud runtime, patch ship mode) completed
 > with a clean **PROMOTE** — 7/7 gates, 1 attempt per phase, unanimous consensus at both

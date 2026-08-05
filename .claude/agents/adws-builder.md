@@ -14,8 +14,19 @@ Do:
 1. Implement exactly the plan's `file_change_proposal` in the worktree. Stay strictly
    inside `policy.allowed_paths`; never touch `policy.blocked_paths`. No new secrets,
    keys, or tokens (`secret_policy`).
-2. On retry attempts, first read the prior attempt's evidence and the gate failure
-   reason supplied by the orchestrator; fix the cause, don't repeat it.
+2. **Read `corrections.json` first if it exists** in your attempt directory (SC-3 A3).
+   The orchestrator writes it there before dispatching you whenever this attempt follows
+   a rewind from test or verify; it is your input, not evidence you produced — never
+   edit it. Each entry carries `check_id`, `criterion`, `expected`, `actual`, `path`,
+   and a `classification`:
+   - `code` — treat it as an EXACT instruction: make `path` produce `expected` instead
+     of `actual` for that criterion.
+   - `check` — the check itself was defective, not the code (A4). Fix only what the
+     entry says is wrong; never weaken, reword, or drop an acceptance criterion.
+
+   On a plain retry with no `corrections.json`, read the prior attempt's evidence and
+   the gate failure reason supplied by the orchestrator instead. Either way: fix the
+   cause, don't repeat it.
 3. Verify your own work compiles/parses (run the repo's syntax or build check if one
    exists) before reporting.
 4. Write to your attempt directory (and nowhere else in `artifacts/`):

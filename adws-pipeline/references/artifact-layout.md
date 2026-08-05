@@ -1,5 +1,15 @@
 # Artifact Layout — Append-Only Evidence Tree
 
+## Contents
+
+- Root and job id — evidence root, job id format
+- Tree — the full directory layout
+- File shapes — `run_manifest`, `phase_manifest`, per-phase `phase_output`,
+  `corrections`, `consensus/{critic,advocate}`, `skill_trace`, `grader_verdict`,
+  `entropy_history`
+- Append-only rules (FR-4) — write-once, the designated post-hoc fields, evidence
+  hygiene, schema discipline, timestamp integrity
+
 Ported from ADWS_Pro `src/artifacts.js` conventions, simplified for the skill runtime.
 This layout is the input contract of `scripts/execution-report.js` — do not deviate.
 
@@ -73,8 +83,8 @@ audit, never a gate input: **absent or partial provenance NEVER implies pass or 
 (mirrors F-9). It is not X-1 hosting telemetry — no dashboard, socket, DB, or process.
 `execution-report.js` ignores it (tolerant reader, rule 8), so the report suite is
 unchanged (SC-3 B2 leaves the report generator untouched).
-The deterministic harness `parity/provenance-fixtures/run-tests.js` validates the three
-schema shapes (SC-3 B1 present / partial / absent) without making provenance a gate input:
+The three schema shapes (SC-3 B1 present / partial / absent) are validated by a
+deterministic harness in the source repository, without making provenance a gate input:
 - full: `{ "model_id": "opus", "cost_usd": 0.42, "tokens_in": 18000, "tokens_out": 900, "elapsed_ms": 51200, "tool_call_count": 12, "timeout": false, "cancel": false }`
 - partial: `{ "model_id": "sonnet", "elapsed_ms": 8300, "tool_call_count": 4 }` (runtime exposed no cost/token counts — omit or null, never a fabricated zero)
 - absent: `null` (no telemetry available)
@@ -95,7 +105,7 @@ the delegation resolves first.
 
 `phase_output.json` — phase-specific. Required minimums:
 
-- plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [] }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars)
+- plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [], "planning_blocked": false, "planning_blocked_reason": null }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars). `planning_blocked` is `true` only when the contract cannot be planned at all — a criterion is unimplementable inside `allowed_paths` — in which case `planning_blocked_reason` states why and the planner invents no plan rather than guessing.
 - build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "" }`
 - test: `{ "checks": [{ "check": "", "criterion": "", "pass": true, "output": "", "baseline_pass": false, "baseline_reason": "assertion-failed-runtime-present | collection-error | not-run", "falsifiable": true, "verdict": "verified | gate_weak | fail", "classification": "null | code | check | environment | prerequisite" }], "command_log": [] }` — the `baseline_*`/`falsifiable`/`verdict` fields carry the SC-3 A1/A2 falsifiability result (present when `test_policy: required` or `policy.falsifiability: true`); a `gate_weak` verdict is an unverified criterion (warn), never a pass. On a `fail` verdict, `classification` records WHY the tester attributes the failure — the orchestrator routes on it (A3/A4) and copies it into `corrections.json`; `null` otherwise.
 - review: `{ "findings": [], "risk_level": "", "approved": true }`

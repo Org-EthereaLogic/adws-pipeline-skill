@@ -126,10 +126,14 @@ install.sh                one-command install/port helper
 Run the suites (dependency-free, plain Node):
 
 ```bash
-node parity/run-parity.js                       # 84/84 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 13/13 report verdict fixtures
+node parity/run-parity.js                            # 84/84 validator-parity fixtures
+node parity/execution-report-fixtures/run-tests.js   # 15/15 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
+node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
+node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
 ```
+
+`make local-ci` runs all five plus the static floors and skill lints.
 
 - **Validator parity:** 8 of 9 validators are verified byte-for-byte against the ADWS_Pro
   originals; `criteria-to-checks` is deliberately diverged (v1.1.0, see `docs/DPPD.md` §9) and
