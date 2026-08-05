@@ -75,6 +75,40 @@ synced via #131. Review bots: Codacy green after repo-convention nosec/nosemgrep
 suppressions; CodeRabbit's two nitpicks applied. Run record:
 `docs/field-runs/2026-07-19-issue109-agentic-starter-kit.md`.
 
+**Status (2026-07-19, `job_20260719_0002`):** production run against agentic-starter-kit
+issue #135 — rendered-project `make validate` failures in a clean Linux CI container,
+first surfaced by the local `RUN_VALIDATE=1 make ci-orb` gate that GitHub Actions never
+exercised while billing-locked. **PROMOTE** (exit 0, no warnings) on the FIRST attempt of
+every phase: 7/7 gates, both consensus rounds clean with exact schemas, grader 4/4
+satisfied, zero rewinds, zero parse failures. No `entropy_history.jsonl` was created, so
+the healthy-missing path fed `drift-sentinel` `{"entropy_history": []}` at verify
+(SAFE/pass) — the first recorded exercise of that path. Three files / +40 lines shipped
+as target-repo PR #138 (squash `534cf14`, #135 auto-closed), dashboard synced via #139.
+Run record: `docs/field-runs/2026-07-19-issue135-agentic-starter-kit.md`.
+
+**Status (2026-07-19, `job_20260719_0003`):** production run against agentic-starter-kit
+issue #119 — the CRIT-001 `marker-scan.sh` vacuous-scan follow-up filed during the
+#104/#118 review, where an unguarded `done < <(...)` process substitution let a
+governance-loader crash leave `surfaces` empty so the scan ran against zero surfaces
+instead of failing. **PROMOTE with warnings** (exit 10) — 7/7 gates on the first attempt
+of every phase, 9/9 validators `pass`, both consensus rounds clean, grader 3/4
+`satisfied` + 1 `partial`. The warning path, not a clean promote: this is the first
+recorded exit-10 verdict in the field-run series. Run record:
+`docs/field-runs/2026-07-19-issue119-agentic-starter-kit.md`.
+
+**Status (2026-07-20, `job_20260720_0001`):** production run against agentic-starter-kit
+issue #111, a seven-item refactoring & optimization epic. Two items were found ALREADY
+resolved on `main` by the #110 fix (PR #132) and correctly left untouched — the pipeline
+did not manufacture work to look productive. The five remaining items shipped.
+**PROMOTE**. Run record: `docs/field-runs/2026-07-20-issue111-agentic-starter-kit.md`.
+
+> **Note on run numbering.** The three entries above are keyed by job ID and date rather
+> than by a "run N" label. The existing labels are already inconsistent with job-ID
+> chronology — issue #107 is recorded as "run 7" on `job_20260719_0001` while issue #109
+> is "run 8" on `job_20260718_0008`, which precedes it — so extending that sequence would
+> compound the inconsistency rather than resolve it. Job ID is the unambiguous key; the
+> historical labels are left untouched as the point-in-time record.
+
 ## Delivered
 
 | WBS | Deliverable | Status |
