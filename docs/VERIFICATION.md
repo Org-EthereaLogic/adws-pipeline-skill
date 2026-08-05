@@ -345,3 +345,42 @@ Full originating plan and reconciliation ledger: `SC3_PLAN.md`.
   Reproduction with the real `GIT_DIR` injected leaves `HEAD` and the worktree unchanged.
   Tier 1 and the Node 20/24 Tier 2 matrix then passed at the signed PR head and the merged
   tree is recorded by PR #27.
+
+## Maintenance audit (2026-08-05) — terminal-verdict evidence gaps
+
+Full-repo audit against the skill-authoring guide and SWEBOK v4. Two live defects in
+`execution-report.js` let a job with recorded failure evidence certify a clean PROMOTE,
+in contradiction of hard rule 8 / FR-10 ("the verdict is derived from the evidence, not
+the narrative status"). Both were reproduced against a copy of the `promote_clean`
+fixture before the fix.
+
+- **Empty attempt directory counted as evidence.** `pipeline_completion` derived its
+  `missing` set from directory existence alone, so the F-12 shape — a dispatch that dies
+  before writing anything — passed the gate. A phase now counts only when its latest
+  attempt has a readable `phase_manifest.json` AND `phase_output.json`; the reason text
+  distinguishes "no attempt recorded" from "attempt_n wrote no readable …".
+- **Per-phase `gate_result` collected but never evaluated.** The orchestrator's own gate
+  decisions were rendered in the Phases table and nowhere else, so a `completed` job whose
+  document gate recorded `fail` promoted at exit 0 with zero warnings. New `phase_gates`
+  gate over the latest attempt of each phase: any `fail` → gate `fail` (QUARANTINE); any
+  `deferred` → `warn` (an F-5 delegated push never closed); any unrecorded decision →
+  `unverified`. Decision vocabulary, exit codes, and the other six gates are unchanged.
+- **`SCHEMA_VERSION` 1.1.0 → 1.2.0** (additive: one new gate key). Report suite **13 → 15**
+  fixtures — `quarantine_missing_phase_evidence` and `quarantine_phase_gate_fail`.
+- **Contract gaps closed:** `adws-builder.md` now reads its `corrections.json` input
+  (SC-3 A3 had a writer and no reader); the planner's `planning_blocked` /
+  `planning_blocked_reason` fields are documented in the plan `phase_output.json` shape,
+  removing a rule-8 strict-writer violation; `docs/`- and `parity/`-rooted paths were
+  removed from the skill's own markdown (`install.sh` ships neither, so they were broken
+  the moment the skill was installed) and `frontmatter-lint.mjs` now rejects that class.
+- **Best-practice alignment:** `## Contents` added to the three reference files over 100
+  lines; `README.md` Validation now lists all five suites `make local-ci` runs.
+- **Suites after the audit:** parity **84/84**, report **15/15**, entropy **7/7**,
+  provenance **3/3**, SC-3 micro-drill, plus node-check, shell-lint, and both skill
+  lints — all green. `SKILL.md` remains under 500 lines.
+- **Reported, not changed:** the 9 validators' duplicated CLI wrapper (self-containment
+  is NFR-4 and `run-parity.js` asserts it); the unreachable `!modeValid` disjunct in
+  `patch-compose.js` (dead but inside a byte-for-byte parity port); `drift-sentinel`'s
+  `dTx` underflow past ~40 history entries, which is spec-faithful and unreachable given
+  the retry budgets; and the redundant `QUARANTINE_REASONS` ⊂ `NO_RETRY_REASONS` branch
+  in `decideLifecycle` (verbatim port; both branches already return QUARANTINE).

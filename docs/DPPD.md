@@ -361,3 +361,36 @@ The reconciliation and linked-worktree/hook-isolation CI hardening landed throug
 PR #27 (`149712c`).
 The larger seven-phase real-task confirmation remains explicitly deferred until a
 suitable post-SC-3 task can produce a PROMOTE evidence tree retained before teardown.
+
+## 12. Maintenance audit M-1 (2026-08-05) — terminal-verdict evidence gaps
+
+Not a scope change: no requirement, user story, acceptance criterion, or verdict taxonomy
+moves. A full-repo audit against the skill-authoring guide and SWEBOK v4 found two defects
+by which `execution-report.js` could certify PROMOTE for a job whose own evidence records
+failure — a direct breach of FR-10 / hard rule 8. Both were reproduced before being fixed.
+
+- **M-1a** `pipeline_completion` treated the mere existence of an `attempt_n` DIRECTORY as
+  "the phase produced an attempt", so the F-12 shape (a dispatch that dies before writing
+  anything) passed. A phase now requires a readable `phase_manifest.json` AND
+  `phase_output.json` on its latest attempt.
+- **M-1b** The orchestrator's own per-phase `gate_result` was collected and rendered but
+  never evaluated, so a `completed` job with a recorded `fail` gate promoted at exit 0.
+  New `phase_gates` gate: `fail` → gate fail; `deferred` → warn (an F-5 delegated push
+  never closed); unrecorded → unverified.
+
+This is exactly the amendment path SC-3 B2 reserved for `execution-report.js`, and it
+holds every condition that clause set: **additive only** (one new gate key), **SCHEMA_VERSION
+bumped** 1.1.0 → 1.2.0, **regression-first** (fixture before logic), the **13 existing
+verdict fixtures unchanged and still green**, and **no new DECISION, exit code, or
+reason-set entry**. Suite counts move 13 → **15** report fixtures
+(`quarantine_missing_phase_evidence`, `quarantine_phase_gate_fail`); **84/84** validator,
+**7/7** entropy, **3/3** provenance, and the SC-3 micro-drill are unchanged.
+
+Contract defects closed in the same pass: `adws-builder.md` now READS the SC-3 A3
+`corrections.json` the orchestrator writes for it (the channel had a writer and no
+reader); the planner's `planning_blocked` / `planning_blocked_reason` are documented in the
+plan `phase_output.json` shape, ending a rule-8 strict-writer violation; and `docs/`- and
+`parity/`-rooted paths were removed from the skill's own markdown, since `install.sh` ships
+neither — `frontmatter-lint.mjs` now rejects that class. NFR-3 holds (SKILL.md < 500 lines).
+Full finding list, including the four issues deliberately left unchanged, is in
+`VERIFICATION.md` "Maintenance audit (2026-08-05)".

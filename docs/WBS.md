@@ -29,6 +29,18 @@ CI landed through PR #27 (`149712c`) after the implementation in PR #26. The aut
 seven-phase real-task confirmation is explicitly deferred to the first suitable post-SC-3
 task. See `DPPD.md` §11, `SC3_PLAN.md`, and `acceptance/SC3_MICRO_DRILL.md`.
 
+**Status (2026-08-05):** maintenance audit **M-1** (not a scope change — no requirement,
+story, AC, or verdict-taxonomy movement) closed two defects by which `execution-report.js`
+could certify PROMOTE for a job whose evidence recorded failure: an empty `attempt_n`
+directory satisfying `pipeline_completion`, and per-phase `gate_result` being rendered but
+never evaluated. Amended under the path SC-3 B2 reserved — additive gate only,
+SCHEMA_VERSION 1.1.0 → 1.2.0, regression-first, the 13 existing verdict fixtures unchanged
+and green, no new DECISION/exit. Report suite **13 → 15**; 84/84 + 7/7 + 3/3 + the SC-3
+micro-drill unchanged. Same pass closed the SC-3 A3 `corrections.json` reader gap in
+`adws-builder.md`, documented the planner's `planning_blocked` fields, and removed
+non-installed `docs/`/`parity/` paths from the skill (now lint-enforced). See `DPPD.md` §12
+and `VERIFICATION.md` "Maintenance audit (2026-08-05)".
+
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime
 (agent types unregistered → validated the inline-spec dispatch fallback, now codified

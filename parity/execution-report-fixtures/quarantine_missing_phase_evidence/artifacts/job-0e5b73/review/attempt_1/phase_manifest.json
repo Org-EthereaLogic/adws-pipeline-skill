@@ -1,0 +1,11 @@
+{
+  "phase": "review",
+  "attempt": 1,
+  "job_id": "job-0e5b73",
+  "started_at": "2026-07-10T17:00:00Z",
+  "completed_at": "2026-07-10T17:12:00Z",
+  "agent": "reviewer",
+  "model_tier": "opus",
+  "gate_result": "pass",
+  "failure_reason": null
+}

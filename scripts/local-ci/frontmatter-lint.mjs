@@ -4,8 +4,8 @@
 // Asserts the SKILL.md frontmatter is well-formed and that the reference/script paths
 // it names actually exist. Run from the repo root: `node scripts/local-ci/frontmatter-lint.mjs`.
 // Exit 0 = pass, 1 = one or more violations (printed).
-import { readFileSync, existsSync } from 'node:fs';
-import { dirname, basename, join } from 'node:path';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { basename, join } from 'node:path';
 
 const SKILL_DIR = 'adws-pipeline';
 const SKILL_MD = join(SKILL_DIR, 'SKILL.md');
@@ -52,9 +52,28 @@ while ((r = refRe.exec(text)) !== null) {
   if (!existsSync(full)) problems.push(`SKILL.md references \`${rel}\` but ${full} does not exist`);
 }
 
+// --- no references to files outside the skill directory ---
+// install.sh copies ONLY adws-pipeline/ and .claude/agents/adws-*.md into a target
+// project, so a backticked `docs/…` or `parity/…` path inside the skill is a link that
+// is already broken the moment the skill is installed. Development material must be
+// described, not addressed by path.
+const OUTSIDE_ROOTS = /`((?:docs|parity)\/[^`\s]+)`/g;
+const skillDocs = readdirSync(SKILL_DIR, { recursive: true })
+  .filter((f) => typeof f === 'string' && f.endsWith('.md'))
+  .sort();
+for (const rel of skillDocs) {
+  const body = readFileSync(join(SKILL_DIR, rel), 'utf8');
+  for (const hit of body.matchAll(OUTSIDE_ROOTS)) {
+    problems.push(`${SKILL_DIR}/${rel} references \`${hit[1]}\`, which is not installed with the skill`);
+  }
+}
+
 if (problems.length) {
   console.error(`[frontmatter-lint] FAIL (${problems.length}):`);
   for (const p of problems) console.error(`  - ${p}`);
   process.exit(1);
 }
-console.log(`[frontmatter-lint] OK — name matches dir, description present, ${seen.size} referenced path(s) exist`);
+console.log(
+  `[frontmatter-lint] OK — name matches dir, description present, ${seen.size} referenced path(s) exist, ` +
+    `${skillDocs.length} skill doc(s) free of out-of-skill paths`
+);

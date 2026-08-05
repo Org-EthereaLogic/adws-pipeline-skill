@@ -70,8 +70,10 @@ file exists (e.g. `ls -l` it) before finishing — at haiku tier the spec text a
 not been sufficient (an agent may return its verdict in its final message without
 writing the file); the orchestrator still verifies the file exists and parses before
 deciding the gate.
-Field-validated end to end in `docs/field-runs/2026-07-18-issue103-agentic-starter-kit.md`;
-the single-file-writer dispatch note in `docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
+Field-validated end to end on issue #103 of the agentic-starter-kit; the
+single-file-writer dispatch note comes from the issue-#107 run. (Both runs are recorded
+in the adws-pipeline-skill source repository's field-run log; that log is development
+material and is not installed alongside the skill.)
 
 ## Hard rules (never violate)
 
@@ -342,4 +344,4 @@ This is NOT a gate failure and MUST NOT consume the phase's retry budget:
 
 Field-validated: the issue-#105 run's first planner dispatch died on a stream idle
 timeout having written nothing; re-dispatch into the same empty `plan/attempt_1/`
-proceeded cleanly with no budget consumed (see `docs/field-runs/`).
+proceeded cleanly with no budget consumed.

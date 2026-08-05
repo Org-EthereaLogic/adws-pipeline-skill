@@ -1,5 +1,13 @@
 # Task Contract — Template and Field Definitions
 
+## Contents
+
+- Template — the full contract JSON
+- Field rules — required/optional and the rule for each field
+- Hard intake failures — reject the contract, do not start plan
+- Soft warnings — record in evidence, do not block
+- Vague-task rejection guidance (AC-1.2) — when to ask instead of guessing
+
 Every job begins by normalizing the operator's request into this contract. No phase may
 run before the contract is written to `artifacts/{jobId}/task_contract_snapshot.json`
 and has passed intake validation (below). Derived from ADWS_Pro

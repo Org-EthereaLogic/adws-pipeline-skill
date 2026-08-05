@@ -156,6 +156,35 @@ const CASES = [
     // gate failed). build here: attempt_1 gate-failed (BUILD_GATE_FAILURE) → attempt_2 passed.
     expectWarning: 'Phase "build" passed on attempt 2 (attempt(s) 1..1 gate-failed',
   },
+  {
+    name: 'quarantine_missing_phase_evidence',
+    jobId: 'job-0e5b73',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression: an `attempt_n` DIRECTORY is not evidence. document/attempt_1 here
+    // holds only a phase_log.md — the F-12 shape where a dispatch dies before writing
+    // anything structured. `pipeline_completion` must not certify that as "produced an
+    // attempt" (pre-fix it did, and the job reported clean PROMOTE / exit 0 with zero
+    // warnings), and `phase_gates` has no recorded gate decision to read.
+    expectGate: [
+      { key: 'pipeline_completion', result: 'fail' },
+      { key: 'phase_gates', result: 'unverified' },
+    ],
+  },
+  {
+    name: 'quarantine_phase_gate_fail',
+    jobId: 'job-b41d8e',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Regression (hard rule 8 / FR-10): a `completed` job whose latest document
+    // attempt recorded `gate_result: "fail"` must QUARANTINE. Pre-fix the per-phase
+    // gate decisions were rendered in the Phases table but never evaluated, so the
+    // narrative final_status alone carried the job to clean PROMOTE / exit 0.
+    expectGate: { key: 'phase_gates', result: 'fail' },
+    expectWarning: 'recorded gate_result=fail on its latest attempt (DOCUMENT_GATE_FAILURE)',
+  },
 ];
 
 function runCli(jobDir) {
@@ -210,17 +239,18 @@ for (const testCase of CASES) {
     check(`${testCase.name} json exit_code`, out1.json.exit_code === testCase.exit_code, out1.json.exit_code, testCase.exit_code);
     check(
       `${testCase.name} schema_version`,
-      out1.json.schema_version === '1.1.0',
+      out1.json.schema_version === '1.2.0',
       out1.json.schema_version,
-      '1.1.0'
+      '1.2.0'
     );
-    if (testCase.expectGate) {
-      const gate = out1.json.gates.find((g) => g.gate === testCase.expectGate.key);
+    // expectGate accepts one {key, result} or an array of them.
+    for (const expected of [].concat(testCase.expectGate || [])) {
+      const gate = out1.json.gates.find((g) => g.gate === expected.key);
       check(
-        `${testCase.name} gate ${testCase.expectGate.key}`,
-        gate && gate.result === testCase.expectGate.result,
+        `${testCase.name} gate ${expected.key}`,
+        gate && gate.result === expected.result,
         gate && gate.result,
-        testCase.expectGate.result
+        expected.result
       );
     }
     if (testCase.expectWarning) {
