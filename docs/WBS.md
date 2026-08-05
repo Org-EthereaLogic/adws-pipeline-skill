@@ -82,6 +82,16 @@ the verify RETRY path with tier escalation. Target repo: PR #118 merged, follow-
 `docs/field-runs/2026-07-18-issue104-agentic-starter-kit.md`. **Still deferred:** C2
 and E2E-2 (B1/B2 unexercised).
 
+**Status (2026-08-05, field-run series):** the external field-run series now stands at
+**nine retained records** under `docs/field-runs/`, covering agentic-starter-kit issues
+#103, #104, #105, #106, #107, #109, #111, #119, and #135. Verdicts: seven PROMOTE, one
+PROMOTE-with-warnings (#119, exit 10 — the first recorded exit-10 in the series), and one
+RETRY / `TEST_GATE_FAILURE` (#109, operator-completed the same day). The last two records
+(#119 `job_20260719_0003`, #135 `job_20260719_0002`) were merged 2026-08-05 via PRs #22
+and #33; the #135 branch had never been pushed and existed only in the operator's local
+clone. Per-run detail lives in `VERIFICATION.md`; the earlier per-run status blocks below
+(#103, #104) are retained as the point-in-time record and are not extended per run.
+
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
 ---
