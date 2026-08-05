@@ -56,8 +56,12 @@ phase — plus three SC-1 regex artifacts replaced. Rubric and all three counts 
 measured 0 verdict flips and 0 count flips across the frozen corpus. `adws-tester.md`,
 `phase-gates.md`, and `SKILL.md` updated so `unclassified` cannot be read as out of scope.
 Parity **84 → 88**; 15/15 + 7/7 + 3/3 + the SC-3 micro-drill unchanged; verdict taxonomy
-frozen and `execution-report.js` untouched. See `DPPD.md` §14, `SC5_PLAN.md`, and
-`field-runs/2026-08-05-issue4-cadence-method-skill.md`.
+frozen and `execution-report.js` untouched. Post-submission review added F-31…F-34, fixed in
+the same PR: `check_id` now flows onto `phase_output.json.checks` so coverage is verified by
+id rather than by prose (F-31), and the run's 7-of-8 tally is attributed consistently as
+orchestrator-reported across all four documents (F-34). Merged through PR #36 (`51a163d`);
+Tier 1 nine-of-nine and Tier 2 both legs PASS at the merged head. See `DPPD.md` §14,
+`SC5_PLAN.md`, and `field-runs/2026-08-05-issue4-cadence-method-skill.md`.
 
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
