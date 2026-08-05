@@ -7,7 +7,8 @@
 (commit `c333bb9`; feature branch `feat/adws-pipeline-skill-v1` deleted after merge).
 Only WBS 6.1-6.4 (live E2E drills, see "Gaps" below) remain open.
 
-**Status (2026-07-18):** post-acceptance, the skill's second production run (first
+**Status (2026-07-18, run 2, `job_20260718_0001`):** post-acceptance, the skill's second
+production run (first
 external field run, agentic-starter-kit issue #103) completed with a clean PROMOTE;
 its 7 findings — none touching validator or report logic — were resolved docs/spec-side
 and merged via [PR #12](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/12)
@@ -48,21 +49,10 @@ target-repo PR #126 (squash-merged, #106 auto-closed), dashboard synced via #127
 No same-day skill-repo record was written; recorded retroactively in
 `docs/field-runs/2026-07-18-issue106-agentic-starter-kit.md` (marked retroactive).
 Operational finding from these runs — haiku-tier single-file writers may skip writing
-their output file under F-11 fallback — was carried forward and codified after run 7.
+their output file under F-11 fallback — was carried forward and codified after run 8.
 
-**Status (2026-07-19, run 7):** seventh production run (agentic-starter-kit issue #107,
-devcontainer `post-create.sh` false-success/curl-map/npm-abort robustness bugs) — the
-FIRST run orchestrated from this standalone repository rather than the target repo's
-vendored copy (Cowork cloud, `patch` mode, F-11 fallback for all ten dispatches):
-**PROMOTE** (exit 0, no warnings), 7/7 gates first-attempt, consensus clean at both
-gates with exact schemas, drift-grader 4/4, zero rewinds, zero parse failures. Shipped
-as target-repo PR #128 (squash-merged, #107 auto-closed), dashboard synced via #129.
-Skill change from the run: SKILL.md F-11 now requires dispatch prompts for the
-single-file writers (Critic/Advocate/Grader) to instruct explicit file-write +
-`date -u` timestamps + existence verification (commit `e9eda50`). Run record:
-`docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
-
-**Status (2026-07-19, run 8):** eighth production run (agentic-starter-kit issue #109,
+**Status (2026-07-18, run 7, `job_20260718_0008`):** seventh production run
+(agentic-starter-kit issue #109,
 six shell validation-script correctness/portability bugs) — the first run to terminate
 on the retry path: **RETRY / TEST_GATE_FAILURE** (build passed on attempt 2; test gate
 failed at both tiers; no ship). The retained worktree held all six fixes, a Critic-found
@@ -75,8 +65,21 @@ synced via #131. Review bots: Codacy green after repo-convention nosec/nosemgrep
 suppressions; CodeRabbit's two nitpicks applied. Run record:
 `docs/field-runs/2026-07-19-issue109-agentic-starter-kit.md`.
 
-**Status (2026-07-19, `job_20260719_0002`):** production run against agentic-starter-kit
-issue #135 — rendered-project `make validate` failures in a clean Linux CI container,
+**Status (2026-07-19, run 8, `job_20260719_0001`):** eighth production run
+(agentic-starter-kit issue #107,
+devcontainer `post-create.sh` false-success/curl-map/npm-abort robustness bugs) — the
+FIRST run orchestrated from this standalone repository rather than the target repo's
+vendored copy (Cowork cloud, `patch` mode, F-11 fallback for all ten dispatches):
+**PROMOTE** (exit 0, no warnings), 7/7 gates first-attempt, consensus clean at both
+gates with exact schemas, drift-grader 4/4, zero rewinds, zero parse failures. Shipped
+as target-repo PR #128 (squash-merged, #107 auto-closed), dashboard synced via #129.
+Skill change from the run: SKILL.md F-11 now requires dispatch prompts for the
+single-file writers (Critic/Advocate/Grader) to instruct explicit file-write +
+`date -u` timestamps + existence verification (commit `e9eda50`). Run record:
+`docs/field-runs/2026-07-19-issue107-agentic-starter-kit.md`.
+
+**Status (2026-07-19, run 9, `job_20260719_0002`):** ninth production run against
+agentic-starter-kit issue #135 — rendered-project `make validate` failures in a clean Linux CI container,
 first surfaced by the local `RUN_VALIDATE=1 make ci-orb` gate that GitHub Actions never
 exercised while billing-locked. **PROMOTE** (exit 0, no warnings) on the FIRST attempt of
 every phase: 7/7 gates, both consensus rounds clean with exact schemas, grader 4/4
@@ -86,8 +89,8 @@ the healthy-missing path fed `drift-sentinel` `{"entropy_history": []}` at verif
 as target-repo PR #138 (squash `534cf14`, #135 auto-closed), dashboard synced via #139.
 Run record: `docs/field-runs/2026-07-19-issue135-agentic-starter-kit.md`.
 
-**Status (2026-07-19, `job_20260719_0003`):** production run against agentic-starter-kit
-issue #119 — the CRIT-001 `marker-scan.sh` vacuous-scan follow-up filed during the
+**Status (2026-07-19, run 10, `job_20260719_0003`):** tenth production run against
+agentic-starter-kit issue #119 — the CRIT-001 `marker-scan.sh` vacuous-scan follow-up filed during the
 #104/#118 review, where an unguarded `done < <(...)` process substitution let a
 governance-loader crash leave `surfaces` empty so the scan ran against zero surfaces
 instead of failing. **PROMOTE with warnings** (exit 10) — 7/7 gates on the first attempt
@@ -96,18 +99,25 @@ of every phase, 9/9 validators `pass`, both consensus rounds clean, grader 3/4
 recorded exit-10 verdict in the field-run series. Run record:
 `docs/field-runs/2026-07-19-issue119-agentic-starter-kit.md`.
 
-**Status (2026-07-20, `job_20260720_0001`):** production run against agentic-starter-kit
-issue #111, a seven-item refactoring & optimization epic. Two items were found ALREADY
+**Status (2026-07-20, run 11, `job_20260720_0001`):** eleventh production run against
+agentic-starter-kit issue #111, a seven-item refactoring & optimization epic. Two items were found ALREADY
 resolved on `main` by the #110 fix (PR #132) and correctly left untouched — the pipeline
 did not manufacture work to look productive. The five remaining items shipped.
 **PROMOTE**. Run record: `docs/field-runs/2026-07-20-issue111-agentic-starter-kit.md`.
 
-> **Note on run numbering.** The three entries above are keyed by job ID and date rather
-> than by a "run N" label. The existing labels are already inconsistent with job-ID
-> chronology — issue #107 is recorded as "run 7" on `job_20260719_0001` while issue #109
-> is "run 8" on `job_20260718_0008`, which precedes it — so extending that sequence would
-> compound the inconsistency rather than resolve it. Job ID is the unambiguous key; the
-> historical labels are left untouched as the point-in-time record.
+> **Note on run numbering (renumbered 2026-08-05).** "Run N" now counts **production
+> runs in job-ID allocation order**, and every entry carries its job ID so the key is
+> checkable. The full sequence: run 1 `job_20260715_0001` (the first production run, no
+> field-run record — SC-2's evidence source); runs 2–4 issues #103/#104/#105; runs 5–6
+> the two jobs of issue #106; run 7 issue #109; run 8 issue #107; runs 9–11 issues
+> #135/#119/#111.
+>
+> Runs 7 and 8 were previously the other way round. That was not an error in the original
+> record — the labels had been assigned in **completion** order, and issue #109's job was
+> allocated on 07-18 but terminated RETRY and was operator-completed after issue #107's
+> 07-19 job had finished. Allocation order is now the single key because it is derivable
+> from the evidence tree without narrative, whereas completion order is not. The two
+> orders differ only at this one pair; runs 1–6 were already identical under both.
 
 ## Delivered
 
@@ -456,7 +466,7 @@ Per DPPD §13 (v1.4), approved R-6 per item (A1–A10, B1–B3). Merged through 
   `operator-resolution-saturated`, so a real escalation is never indistinguishable from
   a no-op. Recording rule only — no gate, budget, or verdict changes.
 - **C2 closed (A9).** SC-2 deferred the review-gate Advocate bump pending 2–3 more
-  production runs. Four followed, and run #105 records the medium-risk row directly
+  production runs. Four followed, and run 4 (issue #105) records the medium-risk row directly
   (`architect/critic/advocate = sonnet/sonnet/haiku`) with the review gate completing;
   that haiku Advocate then emitted a divergent `findings` shape violating the agents'
   own no-extra-keys rule. The bump is taken at the review gate only; the test-gate

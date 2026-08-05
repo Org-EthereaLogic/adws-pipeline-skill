@@ -92,6 +92,15 @@ and #33; the #135 branch had never been pushed and existed only in the operator'
 clone. Per-run detail lives in `VERIFICATION.md`; the earlier per-run status blocks below
 (#103, #104) are retained as the point-in-time record and are not extended per run.
 
+**Run numbering (renumbered 2026-08-05):** "run N" counts production runs in **job-ID
+allocation order**, spanning 11 runs — run 1 `job_20260715_0001` (no field-run record),
+runs 2–4 issues #103/#104/#105, runs 5–6 the two jobs of issue #106, run 7 issue #109,
+run 8 issue #107, runs 9–11 issues #135/#119/#111. Runs 7 and 8 were previously
+reversed: the labels had been assigned in *completion* order, and issue #109's job was
+allocated 07-18 but terminated RETRY and was operator-completed after issue #107's 07-19
+job finished. Allocation order is now the single key because it is derivable from the
+evidence tree without narrative. Full sequence and rationale: `VERIFICATION.md`.
+
 Effort scale: **S** ≤ half day · **M** ≈ 1 day · **L** ≈ 2–3 days.
 
 ---
