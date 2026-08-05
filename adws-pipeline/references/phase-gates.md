@@ -29,7 +29,7 @@ The only terminal states are `completed`, `failed`, `quarantined`, `canceled`.
 |---|---|---|---|---|
 | plan | adws-planner | `task-normalize` | Plan written with per-criterion file-change proposal; validator not `fail` | 1 |
 | build | adws-builder | `repo-context-scan` | All planned changes applied in worktree; no policy-path violation; validator not `fail` | 1 |
-| test | adws-tester | `criteria-to-checks` | All derived checks executed and passing; each criterion falsifiable (a RED-for-the-right-reason pre-change baseline) or recorded `gate_weak` (SC-3 A1/A2); Critic `pass`; no Advocate dissent; validator not `fail` | 2 |
+| test | adws-tester | `criteria-to-checks` | All derived checks executed and passing; every emitted `check_specs.check_id` present in `phase_output.json.checks` (SC-5/F-31); each criterion falsifiable (a RED-for-the-right-reason pre-change baseline) or recorded `gate_weak` (SC-3 A1/A2); Critic `pass`; no Advocate dissent; validator not `fail` | 2 |
 | review | adws-reviewer | `review-risk-assess` | Critic `pass`; no Advocate dissent; risk recorded; validator not `fail` | 1 |
 | document | adws-documenter | `document-coverage-map` | Docs delta + changelog entry written; validator not `fail` | 1 |
 | ship | adws-shipper | `ship-mode-select`, `patch-compose` | Mode-specific artifact produced (PR URL / pushed branch / patch file); both validators not `fail` | 1 |
@@ -109,6 +109,22 @@ is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and preserves
 (container-green stays necessary-not-sufficient). Falsifiability reuses `criteria-to-checks`'
 emitted `check_specs` as the criterion→check source of truth and `adws-tester` as the
 execution surface — no new DSL, runner, verdict, or exit code.
+
+Since v2.0.0 (SC-5/F-27) `check_specs` carries EVERY criterion, typed `behavioral` or
+`unclassified`; `unclassified` records that the lexical classifier found no outcome verb,
+which is a statement about the wording, NOT a verdict on the criterion. An `unclassified`
+spec needs a pre-change baseline and an executed check on the same terms as a `behavioral`
+one, and is `gate_weak` when it has none. Before v2.0.0 an unrecognized criterion was
+omitted from `check_specs` entirely — it silently left the tester's work list while
+`test_policy: required` still demanded a check for it. A criterion count that disagrees
+with the `check_specs` length is therefore a defect, never an expected narrowing.
+
+Coverage is verified **by id, not by prose** (SC-5/F-31): `adws-tester` echoes each spec's
+`check_id` onto the checks it runs, and the gate confirms every emitted id appears at least
+once in `phase_output.json.checks`. One id may repeat across several checks; a missing one
+is an uncovered criterion and fails the gate. Full emission (F-27) guarantees the criterion
+reaches the tester; the id join is what proves it was answered — without it the guarantee
+stops at the hand-off, which is exactly where the original defect hid.
 
 ## Consensus at test and review gates (FR-7)
 

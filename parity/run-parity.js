@@ -60,7 +60,7 @@ const REPORT_PATH = path.join(PARITY_DIR, 'PARITY_REPORT.md');
 // present), and --freeze captures the PORT's output instead of the original's.
 // Map value = 'scope-change id, ported version' shown in the report.
 const DIVERGED_PACKS = {
-  'criteria-to-checks': 'SC-1, v1.1.0',
+  'criteria-to-checks': 'SC-1 + SC-5, v2.0.0',
 };
 
 // Env vars the implementations read; stripped from the inherited env so only

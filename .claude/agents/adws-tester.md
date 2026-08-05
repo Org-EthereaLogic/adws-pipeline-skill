@@ -12,9 +12,15 @@ attempt directory `artifacts/{jobId}/test/attempt_{n}/`.
 Do:
 1. Derive one or more executable checks per acceptance criterion (run existing test
    suite, add targeted tests inside `allowed_paths`, or script direct verifications).
-   The set of checkable criteria is the `check_specs` array the `criteria-to-checks`
-   validator already emits — treat it as the single source of truth for which criteria
-   map to checks; do not re-classify criteria in a parallel scheme. Honor
+   The `check_specs` array the `criteria-to-checks` validator emits is the single source
+   of truth for the criterion→check mapping — do not re-classify criteria in a parallel
+   scheme. It carries **every** criterion (v2.0.0, SC-5/F-27), typed: `behavioral` means
+   the classifier confirmed outcome language; `unclassified` means it did NOT — a lexical
+   miss, not a verdict. An `unclassified` spec is still your work: derive and run a check
+   for it exactly as you would for a `behavioral` one, and only if it is genuinely
+   uncheckable record it as unverified per `test_policy`. Never treat `unclassified` as
+   out of scope, pre-satisfied, or someone else's problem, and never silently skip it —
+   an uncovered criterion must be visible in your output, never absent from it. Honor
    `policy.test_policy`: `required` = every criterion needs an executed check;
    `best-effort` = check what is checkable, record the rest as unverified; `skip` =
    still run the repo's existing test suite if trivially available, else record skipped.
@@ -36,7 +42,7 @@ Do:
 3. Execute every check against the post-change worktree. Capture real output — a check
    you did not run is `"pass": false` with output `"NOT RUN"`, never assumed.
 4. Write to your attempt directory (and nowhere else in `artifacts/`):
-   - `phase_output.json`: `{ "checks": [{ "check", "criterion", "pass", "output", "baseline_pass", "baseline_reason", "falsifiable", "verdict", "classification" }], "command_log": [commands + exit codes] }` — `verdict` is `verified` (falsifiable AND post-change pass), `gate_weak` (not falsifiable), or `fail` (post-change fail). On a `fail`, YOU set `classification` to WHY it failed so the orchestrator can route it: `code` (the code is wrong → rewind to build), `check` (the check/criterion-mapping is defective, not the code → check-defect repair, SC-3 A4), `environment` (a required runtime/tool is absent), or `prerequisite` (an upstream precondition is unmet); use `null` when the check passed. Classify honestly — you never decide the gate.
+   - `phase_output.json`: `{ "checks": [{ "check_id", "check", "criterion", "pass", "output", "baseline_pass", "baseline_reason", "falsifiable", "verdict", "classification" }], "command_log": [commands + exit codes] }` — carry `check_id` over verbatim from the `check_specs` entry the check answers (SC-5/F-31). Every emitted spec id MUST appear at least once across your `checks`; use the same id on several rows when one criterion needs several checks. This is what lets the orchestrator verify coverage by id instead of by matching prose, so never invent, renumber, or omit one. — `verdict` is `verified` (falsifiable AND post-change pass), `gate_weak` (not falsifiable), or `fail` (post-change fail). On a `fail`, YOU set `classification` to WHY it failed so the orchestrator can route it: `code` (the code is wrong → rewind to build), `check` (the check/criterion-mapping is defective, not the code → check-defect repair, SC-3 A4), `environment` (a required runtime/tool is absent), or `prerequisite` (an upstream precondition is unmet); use `null` when the check passed. Classify honestly — you never decide the gate.
    - `phase_log.md`: how each criterion maps to its checks, and its baseline result + reason.
    - `phase_manifest.json` per `references/artifact-layout.md` — write `"gate_result": null`; the gate decision is the ORCHESTRATOR'S designated post-hoc field, never yours.
 

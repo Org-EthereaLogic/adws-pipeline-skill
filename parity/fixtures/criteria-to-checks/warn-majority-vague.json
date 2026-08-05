@@ -6,7 +6,7 @@
       "Looks polished"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when a majority of criteria lack verifiable language\"",
+  "note": "tests/skill-modules.test.js — \"returns warn when a majority of criteria lack verifiable language\". SC-5/F-27 re-baseline: check_specs now carries all three criteria (two 'unclassified'); the warn verdict and both counts are unchanged, proving full spec coverage did not weaken the rubric.",
   "expected": {
     "rubric_result": "warn",
     "criteria_count": 3,
@@ -17,6 +17,16 @@
         "check_id": "CHK001",
         "criterion": "GET /api/items returns the inventory list",
         "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The code is clean",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "Looks polished",
+        "check_type": "unclassified"
       }
     ],
     "cost_usd": 0,

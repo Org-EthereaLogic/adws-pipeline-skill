@@ -1,0 +1,42 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The importer parses the CSV header row",
+      "The tone feels friendlier overall",
+      "The whole thing ought to be tidier",
+      "Nicer than the old one"
+    ]
+  },
+  "note": "SC-5/F-27 rubric-preservation guard — full spec coverage must NOT mute the vagueness signal. All four criteria get a spec, but three are 'unclassified' and 3 > 4/2, so warn still fires with verifiable_count 1 / vague_count 3. Pairs with unclassified-specs-cover-every-criterion.json: that one proves nothing is dropped, this one proves the rubric still complains.",
+  "expected": {
+    "rubric_result": "warn",
+    "criteria_count": 4,
+    "verifiable_count": 1,
+    "vague_count": 3,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The importer parses the CSV header row",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The tone feels friendlier overall",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "The whole thing ought to be tidier",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "Nicer than the old one",
+        "check_type": "unclassified"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

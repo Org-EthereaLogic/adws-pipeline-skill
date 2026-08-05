@@ -502,3 +502,62 @@ Per DPPD §13 (v1.4), approved R-6 per item (A1–A10, B1–B3). Merged through 
 - **Explicit deferral:** live confirmation that a per-phase table and a real
   escalation-to-`fable` behave as specified on an autonomous run. The proof here is
   spec- and fixture-level; no synthetic drill is represented as production confirmation.
+
+## SC-5 scope change (2026-08-05, field run job_20260805_0003) — F-27…F-30
+
+Governing record: `DPPD.md` §14 (v1.5); plan and findings register: `SC5_PLAN.md`.
+Field-run record: `docs/field-runs/2026-08-05-issue4-cadence-method-skill.md`.
+
+- **The drop mechanism is confirmed; the run's exact 7-of-8 count is not re-derivable**
+  (F-27). The orchestrator reported seven `check_specs` for eight criteria, the omission
+  being the criterion phrased "…is specified as…". The contract snapshot was lost with the
+  worktree, so that count rests on the run's self-report. What *is* reproducible is the
+  mechanism: replaying a reconstruction of the contract (the six acceptance criteria
+  verbatim from issue #4 plus the two the operator added) through both versions gives
+  **v1.1.0: 8 criteria → 3 specs, rubric `warn`** against **v2.0.0: 8 criteria → 8 specs,
+  rubric `pass`**. The reconstruction drops five rather than one because the live contract
+  used tightened prose, so treat 3-of-8 as an illustration of the mechanism's reach on raw
+  issue-style wording, not as a restatement of the run. Either number makes the same point:
+  the omission was silent. The evidence tree recorded the specs that existed and never
+  recorded the criterion that did not — `vague_count` reports how many were vague, never
+  which, and no consumer compared it against `check_specs.length`.
+- **The verb gap was measured, not estimated** (F-28). A 127-verb probe using a neutral
+  carrier sentence (to isolate the verb from incidental matches elsewhere in the string)
+  found **126 unmatched** under v1.1.0. Among them: the whole specification family, and
+  `fail`, `assert`, `skip`, `warn`, `require` — in the validator that gates the test phase,
+  which covered `pass` but not `fail`.
+- **The widened regex moved nothing it should not have.** Simulated against all 14
+  pre-existing fixtures before implementation: **0 rubric flips, 0 count flips**. All seven
+  subjective controls stay vague, every previously-verifiable criterion stays verifiable.
+  The three F-29 artifact replacements were verified equivalent across every real English
+  form of `run`, `set`, and `output` — old and new differ only on the non-words `runn`,
+  `runns`, `sett`, `outputt`. This is why A1, A2, and A3 could be taken in one pass: the
+  rubric surface was provably untouched.
+- **Full coverage did not mute the warn signal.** `warn-unclassified-majority-still-warns`
+  exists to hold that invariant: four criteria, four specs, three `unclassified`, verdict
+  still `warn` at 1/3. Paired with `unclassified-specs-cover-every-criterion`, which pins
+  `check_specs.length === criteria_count` and index-stable `check_id`s.
+- **Consumer contracts were corrected, not just the emitter** (F-30). `adws-tester.md` had
+  told the agent both that `check_specs` is the single source of truth for the mapping and
+  that `test_policy: required` needs a check per criterion — mutually exclusive the moment a
+  criterion dropped, with no sanctioned way for the agent to notice. It now states that the
+  array covers every criterion and that `unclassified` is a lexical miss, not a licence to
+  skip. `phase-gates.md` and `SKILL.md` carry the matching statement, including that a
+  length mismatch is a defect rather than an expected narrowing.
+- **Freeze limitation (carried from SC-1, unchanged).** `run-parity.js --freeze` exits 3
+  without a local `ADWS_PRO_source/` checkout even for a diverged pack, whose baseline is
+  captured from the port. The nine `expected` blocks were written by hand from the patched
+  CLI's own output and confirmed by a full suite run.
+- **Suites after the change:** parity **88/88** (84 → 88), report **15/15**, entropy
+  **7/7**, provenance **3/3**, SC-3 micro-drill, plus node-check, shell-lint, and both skill
+  lints — all green. `execution-report.js` untouched, `SCHEMA_VERSION` still 1.2.0,
+  `SKILL.md` 367 lines (NFR-3 < 500).
+- **Honest scope note.** This closes the mechanism by which a criterion can leave the
+  tester's work list unannounced. It does **not** make a lexical classifier good at judging
+  vagueness — F-28 widens the allowlist, it does not complete it, and no allowlist can be
+  completed. The claim proved here is narrower and more useful: after SC-5, being wrong
+  about a criterion's wording never costs the criterion. Retention and the rubric are
+  **separate outcomes** and should not be stated as one (F-33): the criterion is retained
+  as an `unclassified` spec unconditionally, while `rubric_result` only degrades to `warn`
+  when unclassified criteria exceed half the input. A lone misread criterion in a
+  well-formed set is retained *and* still verdicts `pass` — it costs nothing at all.

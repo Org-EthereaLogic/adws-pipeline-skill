@@ -304,6 +304,16 @@ Validator inputs are assembled by you (orchestrator) from the contract and phase
 outputs — each script's expected input shape is documented in its header comment
 (canonical) and summarized with assembly sources in `references/validator-inputs.md`.
 
+**Criterion coverage at the test gate (SC-5/F-27).** `criteria-to-checks` v2.0.0 emits one
+entry in `check_specs` for EVERY acceptance criterion, typed `behavioral` (outcome language
+confirmed) or `unclassified` (not confirmed — a statement about the wording, not a verdict).
+`check_specs.length` therefore always equals `criteria_count`; if it does not, treat that as
+a defect and do not proceed as though the criteria narrowed. Earlier versions emitted specs
+only for criteria the lexical classifier recognized, so an unrecognized one disappeared from
+the tester's work list without any signal — a live run silently dropped 1 of 8 criteria that
+way. `unclassified` never licenses skipping a criterion; the vagueness signal lives in
+`rubric_result`/`vague_count`, which are unchanged.
+
 Empty-history convention (verify phase): when `artifacts/{jobId}/entropy_history.jsonl`
 does not exist because the job recorded zero parse failures, feed `drift-sentinel`
 `{ "entropy_history": [] }` — an empty history evaluates SAFE/`pass` by design. A

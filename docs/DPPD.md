@@ -1,13 +1,13 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.4 (SC-4 scope change §13, 2026-08-05)
+**Version:** 1.5 (SC-5 scope change §14, 2026-08-05)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
-`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), and SC-4
-(§13) approved per R-6; maintenance audit M-1 (§12) is a defect fix, not a revision.
-Governing version: 1.4.
+`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
+(§13), and SC-5 (§14) approved per R-6; maintenance audit M-1 (§12) is a defect fix,
+not a revision. Governing version: 1.5.
 **Companion document:** `WBS.md`
 
 ---
@@ -461,3 +461,55 @@ PASS and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/a
 The remote CodeQL check failed in 3s on the account-wide billing lock — the same
 non-code failure carried by every merged PR since #24; it is not a required check and
 `main` has no branch protection.
+
+## 14. Scope Change SC-5 (2026-08-05, field run job_20260805_0003) — APPROVED
+
+Approved per R-6 (operator approval 2026-08-05, **per item**). Amends the
+`criteria.to_checks` port only; no requirement, story, acceptance criterion, or verdict
+taxonomy moves. Governing version: **DPPD 1.5**. Motivated by a production field run
+against `Org-EthereaLogic/cadence-method-skill` issue #4 (findings **F-27 … F-30**); full
+register, per-item detail, and invariants in **`docs/SC5_PLAN.md`**.
+
+**Trigger.** The orchestrator reported that the validator emitted **7 check specs for 8
+acceptance criteria**, that the omission was AC-4 ("…output format is specified as…"), and
+that it caught the count mismatch and covered AC-4 by hand so nothing shipped ungraded.
+That run's evidence tree was not retained, so those specifics are **orchestrator-reported,
+not independently re-derivable** (`SC5_PLAN.md` §"Evidence boundary"). The *mechanism* is
+established from the committed code alone: v1.1.0 classed the "is specified as"
+construction vague, and the pre-change `execute()` built `check_specs` from the verifiable
+list only — so a criterion classed vague did not merely lose its `pass` rubric
+contribution, it left the tester's work list entirely, silently. The pipeline's own
+evidence recorded no trace of such a drop, and that is the defect SC-5 fixes.
+
+**What changed.** `check_specs` now carries **every** criterion in input order, typed
+`behavioral` (outcome language confirmed) or `unclassified` (not confirmed — a fact about
+the wording, never a verdict on the criterion); `check_id` is index-stable as a result. The
+verb set was widened by ~40 families, including the specification family that caused the
+live drop and — for the validator gating the *test* phase — `fail`, `assert`, `skip`, and
+`warn`, none of which v1.1.0 covered though it covered `pass`. Three SC-1 regex artifacts
+that matched non-words (`runn`, `runns`, `sett`, `outputt`) were replaced with real-form
+equivalents. `criteria-to-checks` version-bumped **1.1.0 → 2.0.0**; the major reflects the
+changed meaning of the emitted array, not a changed key set.
+
+**What did not change.** `rubric_result`, `criteria_count`, `verifiable_count`, and
+`vague_count` are computed exactly as before, and across all 14 pre-existing fixtures the
+widened regex moved **zero verdicts and zero counts** — the seven subjective controls stay
+vague. A criterion is still *judged* the same way; it is now *reported* either way. This is
+the boundary SC-5 enforces: what the validator emits changed, what it judges did not.
+
+### Invariants held
+
+Classifier stays a pure lexical function (NFR-1) with no network or new dependency (NFR-2,
+NFR-4); the eight original-parity packs untouched and `criteria-to-checks` still the sole
+diverged-by-design pack; verdict taxonomy frozen (no new DECISION, exit code, or reason-set
+entry) and `execution-report.js` untouched at `SCHEMA_VERSION` 1.2.0; report 15/15, entropy
+7/7, provenance 3/3, and the SC-3 micro-drill preserved; NFR-3 SKILL.md < 500 lines (367).
+Parity moves **84/84 → 88/88** (four new fixtures; five re-baselined on `check_specs` alone,
+nine byte-identical). **R-3 remains open** — cross-provider Trinity (X-3) stays deferred per
+SC-1.c.
+
+**Rejected (see `docs/SC5_PLAN.md` §5):** an LLM-judgment classifier (breaks NFR-1/NFR-2 and
+makes the tester's one trusted artifact non-reproducible), a second classifier or
+`acceptance_gate` DSL (already rejected under SC-3 for R-2 drift), relaxing the 10-character
+gate, making `unclassified` fail the gate or adding a fourth `rubric_result`, a parallel
+vague-criteria metric key, and backfilling `check_type` into historical evidence trees.

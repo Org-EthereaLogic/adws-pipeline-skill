@@ -44,6 +44,21 @@ micro-drill unchanged. Same pass closed the SC-3 A3 `corrections.json` reader ga
 non-installed `docs/`/`parity/` paths from the skill (now lint-enforced). Merged through
 PR #29 (`e2e8a5d`). See `DPPD.md` §12 and `VERIFICATION.md` "Maintenance audit (2026-08-05)".
 
+**Status (2026-08-05, SC-5):** scope change **SC-5** (findings F-27–F-30 from field run
+`job_20260805_0003`, `cadence-method-skill` #4) was **APPROVED (operator R-6, 2026-08-05,
+per item A1–A3)** and implemented. `criteria-to-checks` 1.1.0 → **2.0.0**: `check_specs`
+now carries every acceptance criterion, typed `behavioral` | `unclassified`, closing the
+path by which a lexical miss deleted a criterion from the tester's work list instead of
+flagging it (live impact 1 of 8 dropped — orchestrator-reported, not re-derivable; the
+mechanism itself is proven from the committed validator). The verb set widened by ~40 families — a 127-verb probe
+had found 126 unmatched, including `fail` and `assert` in the validator that gates the test
+phase — plus three SC-1 regex artifacts replaced. Rubric and all three counts unchanged;
+measured 0 verdict flips and 0 count flips across the frozen corpus. `adws-tester.md`,
+`phase-gates.md`, and `SKILL.md` updated so `unclassified` cannot be read as out of scope.
+Parity **84 → 88**; 15/15 + 7/7 + 3/3 + the SC-3 micro-drill unchanged; verdict taxonomy
+frozen and `execution-report.js` untouched. See `DPPD.md` §14, `SC5_PLAN.md`, and
+`field-runs/2026-08-05-issue4-cadence-method-skill.md`.
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table

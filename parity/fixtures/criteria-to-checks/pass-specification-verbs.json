@@ -1,0 +1,48 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The AC-4 field is specified as a string in the manifest",
+      "The section lists all four labels",
+      "The document states the default resolution order",
+      "The manifest declares a schema version",
+      "Every cell is populated with real content"
+    ]
+  },
+  "note": "SC-5/F-28 — the specification family. The first criterion is the live field-run phrasing that v1.1.0 classed vague (no form of 'specify' was covered), which cost it its check spec entirely under the pre-F-27 shape. All five are verifiable under v2.0.0.",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 5,
+    "verifiable_count": 5,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The AC-4 field is specified as a string in the manifest",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The section lists all four labels",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "The document states the default resolution order",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "The manifest declares a schema version",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK005",
+        "criterion": "Every cell is populated with real content",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}
