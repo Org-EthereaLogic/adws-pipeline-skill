@@ -20,7 +20,9 @@
 > never being evaluated. Both are fixed; the new `phase_gates` gate makes a recorded phase
 > failure QUARANTINE. The report suite grows to **15/15** and `execution-report.js` moves to
 > SCHEMA_VERSION **1.2.0**. AC-4.2 and the verdict taxonomy are unchanged; the `13/13` and
-> `1.1.0` statements below are the point-in-time record. See `DPPD.md` §12.
+> `1.1.0` statements below are the point-in-time record. Merged via
+> [PR #29](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/29) (`e2e8a5d`).
+> See `DPPD.md` §12.
 
 > **Post-acceptance update (field run, 2026-07-18):** the skill's first EXTERNAL field
 > run (agentic-starter-kit issue #103, Cowork/cloud runtime, patch ship mode) completed
