@@ -556,4 +556,8 @@ Field-run record: `docs/field-runs/2026-08-05-issue4-cadence-method-skill.md`.
   tester's work list unannounced. It does **not** make a lexical classifier good at judging
   vagueness — F-28 widens the allowlist, it does not complete it, and no allowlist can be
   completed. The claim proved here is narrower and more useful: after SC-5, being wrong
-  about a criterion's wording costs a `warn`, never a criterion.
+  about a criterion's wording never costs the criterion. Retention and the rubric are
+  **separate outcomes** and should not be stated as one (F-33): the criterion is retained
+  as an `unclassified` spec unconditionally, while `rubric_result` only degrades to `warn`
+  when unclassified criteria exceed half the input. A lone misread criterion in a
+  well-formed set is retained *and* still verdicts `pass` — it costs nothing at all.

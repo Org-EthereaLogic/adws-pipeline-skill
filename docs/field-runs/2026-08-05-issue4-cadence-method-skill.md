@@ -68,9 +68,11 @@ solely because no form of *specify* was in the outcome-verb regex, and the pre-c
 `execute()` built `check_specs` from the verifiable list only. The criterion did not just
 lose a rubric contribution: it left the tester's work list entirely.
 
-The orchestrator noticed the 7-vs-8 mismatch, instructed the tester to check AC-4 anyway,
-and recorded the artifact in the skill trace — so nothing shipped ungraded, and the grader
-returned 8/8 satisfied. **That the run stayed correct is not mitigation.** It stayed correct
+The orchestrator reported noticing the 7-vs-8 mismatch, instructing the tester to check AC-4
+anyway, and recording the artifact in the skill trace — so, per that same report, nothing
+shipped ungraded and the grader returned 8/8 satisfied. With the evidence tree gone, none of
+that is re-derivable; it is attributed, not confirmed. **That the run stayed correct is not
+mitigation** — and on this record "stayed correct" is itself the orchestrator's account. It stayed correct
 because a human-facing summary happened to compare two numbers; the pipeline's own evidence
 recorded the seven specs and never recorded the eighth criterion's absence. `vague_count`
 reports how many criteria were vague, never which, and no consumer compared it against
@@ -80,7 +82,10 @@ PROMOTE.
 This is the same regex SC-1 patched once already for F-2, which is the tell that the
 approach — not the verb list — was wrong. It became scope change **SC-5** (F-27…F-30):
 `check_specs` now carries every criterion, typed `behavioral` | `unclassified`, so a lexical
-miss costs a `warn` instead of a criterion. See `DPPD.md` §14, `SC5_PLAN.md`, and
+miss no longer costs the criterion. It does not automatically cost a `warn` either —
+retention is unconditional, while the rubric degrades only when unclassified criteria
+exceed half the input, so a single misread criterion in a sound set still verdicts `pass`.
+See `DPPD.md` §14, `SC5_PLAN.md`, and
 `VERIFICATION.md` "SC-5 scope change".
 
 ## Lessons

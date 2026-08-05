@@ -49,7 +49,8 @@ PR #29 (`e2e8a5d`). See `DPPD.md` §12 and `VERIFICATION.md` "Maintenance audit 
 per item A1–A3)** and implemented. `criteria-to-checks` 1.1.0 → **2.0.0**: `check_specs`
 now carries every acceptance criterion, typed `behavioral` | `unclassified`, closing the
 path by which a lexical miss deleted a criterion from the tester's work list instead of
-flagging it (live: 1 of 8 dropped). The verb set widened by ~40 families — a 127-verb probe
+flagging it (live impact 1 of 8 dropped — orchestrator-reported, not re-derivable; the
+mechanism itself is proven from the committed validator). The verb set widened by ~40 families — a 127-verb probe
 had found 126 unmatched, including `fail` and `assert` in the validator that gates the test
 phase — plus three SC-1 regex artifacts replaced. Rubric and all three counts unchanged;
 measured 0 verdict flips and 0 count flips across the frozen corpus. `adws-tester.md`,

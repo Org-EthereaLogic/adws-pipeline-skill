@@ -470,13 +470,16 @@ taxonomy moves. Governing version: **DPPD 1.5**. Motivated by a production field
 against `Org-EthereaLogic/cadence-method-skill` issue #4 (findings **F-27 … F-30**); full
 register, per-item detail, and invariants in **`docs/SC5_PLAN.md`**.
 
-**Trigger.** The validator emitted **7 check specs for 8 acceptance criteria**. AC-4 —
-"…output format is specified as…" — was classed vague because no form of *specify* was in
-the outcome-verb regex, and the pre-change `execute()` built `check_specs` from the
-verifiable list only. The criterion did not merely lose its `pass` rubric contribution; it
-left the tester's work list entirely, silently. The orchestrator caught the count mismatch
-and covered AC-4 by hand, so nothing shipped ungraded — but the pipeline's own evidence
-recorded no trace of the drop, which is the defect.
+**Trigger.** The orchestrator reported that the validator emitted **7 check specs for 8
+acceptance criteria**, that the omission was AC-4 ("…output format is specified as…"), and
+that it caught the count mismatch and covered AC-4 by hand so nothing shipped ungraded.
+That run's evidence tree was not retained, so those specifics are **orchestrator-reported,
+not independently re-derivable** (`SC5_PLAN.md` §"Evidence boundary"). The *mechanism* is
+established from the committed code alone: v1.1.0 classed the "is specified as"
+construction vague, and the pre-change `execute()` built `check_specs` from the verifiable
+list only — so a criterion classed vague did not merely lose its `pass` rubric
+contribution, it left the tester's work list entirely, silently. The pipeline's own
+evidence recorded no trace of such a drop, and that is the defect SC-5 fixes.
 
 **What changed.** `check_specs` now carries **every** criterion in input order, typed
 `behavioral` (outcome language confirmed) or `unclassified` (not confirmed — a fact about
