@@ -14,6 +14,20 @@
 > SCHEMA_VERSION 1.1.0. The `10/10` and "gate fails on any recorded dissent" statements
 > below are the point-in-time record; see `DPPD.md` §10 (v1.2) for the current state.
 
+> **Post-acceptance update (SC-4, 2026-08-05):** scope change SC-4 (findings F-18…F-26
+> from an operator review of FR-12) replaced the single `Architect` model-tier column —
+> one tier for all seven phase agents — with a **per-phase** table keyed by
+> error-propagation cost, and admitted **`fable`** as the fourth canonical evidence tier
+> (an escalation ceiling and operator opt-in, never a mandated cell). It also rewrote the
+> grader floor as an absolute, defined ladder-saturation recording, generalized the
+> haiku write-and-verify mitigation to any haiku-tier dispatch, and closed SC-2's
+> deferred C2 (review-gate Advocate → sonnet at medium risk). `execution-report.js` was
+> **not** touched and `SCHEMA_VERSION` stays 1.2.0; suite counts below are unchanged at
+> parity 84/84, report 15/15, entropy 7/7, provenance 3/3, plus the SC-3 micro-drill.
+> Approved per R-6 (per item) and merged via PR #31 (`b3bb75a`); governing record is
+> `DPPD.md` §13 at **v1.4**. The tier figures recorded in this sign-off remain the
+> point-in-time record of the original acceptance.
+>
 > **Post-acceptance update (maintenance audit M-1, 2026-08-05):** an audit found two ways
 > `execution-report.js` could certify PROMOTE for a job whose evidence recorded failure — an
 > empty `attempt_n` directory satisfying `pipeline_completion`, and per-phase `gate_result`

@@ -394,3 +394,67 @@ fixture before the fix.
   `dTx` underflow past ~40 history entries, which is spec-faithful and unreachable given
   the retry budgets; and the redundant `QUARANTINE_REASONS` ⊂ `NO_RETRY_REASONS` branch
   in `decideLifecycle` (verbatim port; both branches already return QUARANTINE).
+
+## SC-4 scope change (2026-08-05, operator review of FR-12) — F-18…F-26
+
+Per DPPD §13 (v1.4), approved R-6 per item (A1–A10, B1–B3). Merged through PR #31
+(`b3bb75a`). Full originating plan and verification ledger: `SC4_PLAN.md`.
+
+- **SC-4a:** the single `Architect` column — one tier for all seven phase agents — is
+  replaced by a per-phase table keyed by error-propagation cost. Plan runs `opus` on
+  every row (its errors pass through six downstream gates before anything catches them);
+  review takes `opus` from medium; `document` drops to `haiku` at low/medium and the
+  mechanical tail (`ship`, `verify`) comes off `opus` at high. Rows remain exactly
+  `high|medium|low`, the only shape `review-risk-assess` can key.
+- **`fable` admitted, but never mandated.** The fourth canonical tier resolves an
+  existing FR-12 self-contradiction — the requirement already permitted `sol` to resolve
+  to Fable at dispatch while mandating evidence "normalized to Haiku/Sonnet/Opus", so a
+  Fable-executed phase was recorded as `opus`, defeating SC-3 B1's provenance intent. It
+  is reachable only by escalating off `opus` or by an explicit
+  `operator-tier-override`: the tier returns `400` wherever the calling workspace is
+  below its required 30-day retention, and a classifier refusal arrives as HTTP 200 with
+  empty content — the F-12 no-evidence shape M-1a reads as QUARANTINE.
+- **Grader floor repaired.** "The grader always runs at the Architect floor (opus)" lost
+  its referent the moment `Architect` became seven values, and read literally as *haiku*
+  against the new low row. Rewritten as an absolute: `opus` on every row, never below.
+- **Saturation is now recordable.** An escalation requested at the ceiling keeps its
+  tier and records `retry-escalation-saturated` / `entropy-gate-saturated` /
+  `operator-resolution-saturated`, so a real escalation is never indistinguishable from
+  a no-op. Recording rule only — no gate, budget, or verdict changes.
+- **C2 closed (A9).** SC-2 deferred the review-gate Advocate bump pending 2–3 more
+  production runs. Four followed, and run #105 records the medium-risk row directly
+  (`architect/critic/advocate = sonnet/sonnet/haiku`) with the review gate completing;
+  that haiku Advocate then emitted a divergent `findings` shape violating the agents'
+  own no-extra-keys rule. The bump is taken at the review gate only; the test-gate
+  Advocate stays `haiku`. Whether a medium-risk review-gate *dissent* was ever
+  adjudicated is not answerable from retained records — the target-repo evidence trees
+  are external and were not copied before teardown (the DRILL_EVIDENCE lesson) — so A9
+  rests on recorded Advocate behavior plus the no-retry asymmetry, not on a dissent-path
+  observation.
+- **Three fixture manifests recorded escalations that did not escalate** (F-26):
+  `promote_retry_recovered` build attempt_2 carried `retry-escalation` at the same tier
+  as attempt_1, and the `retry` fixture's three test attempts were all `sonnet` with no
+  `tier_input` across two retries. Corrected to `sonnet → opus → fable`, which seats the
+  repository's only `phase_manifest.model_tier: "fable"` value and gives the widened
+  taxonomy a round-trip regression through `execution-report.js` at zero logic cost —
+  verified by rendering the report and confirming `fable` reaches the Model-tier column
+  rather than being coerced or dropped.
+- **Suites after the change:** parity **84/84**, report **15/15**, entropy **7/7**,
+  provenance **3/3**, SC-3 micro-drill, plus node-check, shell-lint, and both skill
+  lints — all green. `execution-report.js` untouched, `SCHEMA_VERSION` still 1.2.0,
+  `SKILL.md` 357 lines (NFR-3 < 500).
+- **Local CI at the merged head:** Tier 1 all nine steps PASS and Tier 2 both legs PASS
+  (`node20` build+run, `node24` build+run, `linux/arm64`) at `f654c73`, the commit
+  squashed into `b3bb75a`. The remote CodeQL check failed in 3s on the account-wide
+  billing lock ("the job was not started because your account is locked due to a billing
+  issue") — the same non-code failure carried by every merged PR since #24; it is not a
+  required check and `main` carries no branch protection.
+- **Reported, not changed:** `tier_input` is absent from first attempts corpus-wide, not
+  only in the two fixtures F-26 names — F-26 is scoped to *retry* attempts, where the
+  spec unambiguously requires an escalation to be recorded, and a corpus-wide backfill
+  has no finding behind it. The `.claude/agents/*.md` frontmatter `model:` values still
+  diverge from the orchestrator table, which remains intentional (frontmatter is the
+  F-11 fallback default; the orchestrator always specifies the tier explicitly).
+- **Explicit deferral:** live confirmation that a per-phase table and a real
+  escalation-to-`fable` behave as specified on an autonomous run. The proof here is
+  spec- and fixture-level; no synthetic drill is represented as production confirmation.

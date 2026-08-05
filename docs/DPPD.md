@@ -455,3 +455,9 @@ not narrow it.
 `model_tier` enum validator, a fourth risk level, mandating Fable in any cell,
 `grader = fable`, agent-frontmatter reconciliation, report-surfacing of tiers, and a
 corpus-wide `tier_input` backfill.
+
+Merged through PR #31 (`b3bb75a`). Local CI at the merged head: Tier 1 all nine steps
+PASS and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`).
+The remote CodeQL check failed in 3s on the account-wide billing lock — the same
+non-code failure carried by every merged PR since #24; it is not a required check and
+`main` has no branch protection.

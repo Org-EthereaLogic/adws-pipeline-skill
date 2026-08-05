@@ -55,8 +55,8 @@ ladder-saturation recording, and closes SC-2's deferred C2 (on run #105's medium
 Advocate record); SC-4b corrects three fixture manifests recording non-escalating
 escalations and re-keys the 15 `run_manifest.model_tiers` maps. `execution-report.js`
 untouched; SCHEMA_VERSION stays 1.2.0; suites unchanged at 84/84 + 15/15 + 7/7 + 3/3 +
-the SC-3 micro-drill. Governing version: **DPPD 1.4**. See `DPPD.md` §13 and
-`SC4_PLAN.md`.
+the SC-3 micro-drill. Merged through PR #31 (`b3bb75a`). Governing version: **DPPD 1.4**.
+See `DPPD.md` §13 and `SC4_PLAN.md`.
 
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime
