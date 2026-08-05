@@ -1,0 +1,36 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The endpoint returns 404 for an unknown id",
+      "The thing ought to be nicer than before",
+      "The exporter writes one artifact per module"
+    ]
+  },
+  "note": "SC-5/F-27 structural guarantee — check_specs.length === criteria_count. The middle criterion carries no outcome verb the classifier recognizes, yet it is still emitted (CHK002, check_type 'unclassified') instead of being dropped. Under v1.1.0 it vanished from check_specs and the tester — the single source of truth per adws-tester.md — never saw it, while test_policy 'required' simultaneously demanded a check for it. check_id is index-stable: CHK003 tracks the third criterion, not the second verifiable one.",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 3,
+    "verifiable_count": 2,
+    "vague_count": 1,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The endpoint returns 404 for an unknown id",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The thing ought to be nicer than before",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "The exporter writes one artifact per module",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

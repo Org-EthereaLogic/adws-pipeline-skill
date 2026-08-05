@@ -5,7 +5,7 @@
       "The code is clean"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when only a minority of criteria lack verifiable language\" (1 vague of 2 is not a majority)",
+  "note": "tests/skill-modules.test.js — \"returns pass when only a minority of criteria lack verifiable language\" (1 vague of 2 is not a majority). SC-5/F-27 re-baseline: check_specs gains the vague criterion as 'unclassified'; rubric and counts unchanged.",
   "expected": {
     "rubric_result": "pass",
     "criteria_count": 2,
@@ -16,6 +16,11 @@
         "check_id": "CHK001",
         "criterion": "GET /api/items returns the inventory list",
         "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The code is clean",
+        "check_type": "unclassified"
       }
     ],
     "cost_usd": 0,

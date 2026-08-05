@@ -1,0 +1,54 @@
+{
+  "input": {
+    "acceptance_criteria": [
+      "The build fails when the manifest is absent",
+      "The runner skips the case and warns once",
+      "A stale entry is removed from the index",
+      "The parser applies the fallback rule",
+      "No duplicate identifier exists across namespaces",
+      "The helper asserts the exit code before returning"
+    ]
+  },
+  "note": "SC-5/F-28 — gate-outcome and mutation verbs. v1.1.0 covered 'pass' but not 'fail', 'skip', 'warn', or 'assert', which is a conspicuous gap for the validator that gates the TEST phase; 'removed', 'applies', and 'exists' were missing too.",
+  "expected": {
+    "rubric_result": "pass",
+    "criteria_count": 6,
+    "verifiable_count": 6,
+    "vague_count": 0,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The build fails when the manifest is absent",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "The runner skips the case and warns once",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "A stale entry is removed from the index",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "The parser applies the fallback rule",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK005",
+        "criterion": "No duplicate identifier exists across namespaces",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK006",
+        "criterion": "The helper asserts the exit code before returning",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

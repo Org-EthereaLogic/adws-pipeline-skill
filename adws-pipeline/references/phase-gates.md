@@ -110,6 +110,15 @@ is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and preserves
 emitted `check_specs` as the criterion→check source of truth and `adws-tester` as the
 execution surface — no new DSL, runner, verdict, or exit code.
 
+Since v2.0.0 (SC-5/F-27) `check_specs` carries EVERY criterion, typed `behavioral` or
+`unclassified`; `unclassified` records that the lexical classifier found no outcome verb,
+which is a statement about the wording, NOT a verdict on the criterion. An `unclassified`
+spec needs a pre-change baseline and an executed check on the same terms as a `behavioral`
+one, and is `gate_weak` when it has none. Before v2.0.0 an unrecognized criterion was
+omitted from `check_specs` entirely — it silently left the tester's work list while
+`test_policy: required` still demanded a check for it. A criterion count that disagrees
+with the `check_specs` length is therefore a defect, never an expected narrowing.
+
 ## Consensus at test and review gates (FR-7)
 
 At the test and review gates, after the phase agent (Architect) produces its output:

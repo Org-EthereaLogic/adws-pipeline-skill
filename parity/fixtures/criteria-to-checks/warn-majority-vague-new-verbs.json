@@ -8,7 +8,7 @@
       "The layout looks modern and fresh"
     ]
   },
-  "note": "SC-1/F-2 boundary check — 2 criteria verifiable only via the new forms ('passing', 'producing'), 3 vague: 3 > 5/2 so the >50%-vague warn boundary still holds under v1.1.0",
+  "note": "SC-1/F-2 boundary check — 2 criteria verifiable only via the new forms ('passing', 'producing'), 3 vague: 3 > 5/2 so the >50%-vague warn boundary still holds under v1.1.0. SC-5/F-27 re-baseline: check_specs now carries all five criteria (three 'unclassified'); the warn boundary and both counts are unchanged under v2.0.0, and the three subjective criteria are the F-28 controls that the widened verb set must NOT reclassify.",
   "expected": {
     "rubric_result": "warn",
     "criteria_count": 5,
@@ -24,6 +24,21 @@
         "check_id": "CHK002",
         "criterion": "The exporter is producing a manifest for each build",
         "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "The UX feels intuitive",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "Performance is good overall",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK005",
+        "criterion": "The layout looks modern and fresh",
+        "check_type": "unclassified"
       }
     ],
     "cost_usd": 0,

@@ -2,7 +2,7 @@
 # gate.sh — TIER 1 local CI: the fast deterministic host gate (zero-LLM, ~seconds).
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
-# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 84
+# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 88
 # validator-parity fixtures, 15 report-verdict fixtures, 7 stability-gate fixtures,
 # 3 provenance-schema fixtures, and the SC-3 contract micro-drill — plus a syntax floor,
 # shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
@@ -77,7 +77,7 @@ shell_lint() {
   return $rc
 }
 
-# Deterministic suites (must stay green: 84 / 15 / 7 + provenance 3 + SC-3 drill).
+# Deterministic suites (must stay green: 88 / 15 / 7 + provenance 3 + SC-3 drill).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js

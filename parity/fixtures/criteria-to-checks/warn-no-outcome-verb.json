@@ -4,13 +4,19 @@
       "The code is nice and clean"
     ]
   },
-  "note": "SC-1/F-2 regression guard — no outcome verb at all, so the criterion stays vague and warn still fires under v1.1.0",
+  "note": "SC-1/F-2 regression guard — no outcome verb at all, so the criterion stays vague and warn still fires under v1.1.0. SC-5/F-27 re-baseline: the criterion is no longer dropped — it appears as CHK001 check_type 'unclassified' — while verifiable_count 0 / vague_count 1 / warn are unchanged. This fixture is now the sharpest statement of F-27: a wholly unrecognized criterion still reaches the tester.",
   "expected": {
     "rubric_result": "warn",
     "criteria_count": 1,
     "verifiable_count": 0,
     "vague_count": 1,
-    "check_specs": [],
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The code is nice and clean",
+        "check_type": "unclassified"
+      }
+    ],
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

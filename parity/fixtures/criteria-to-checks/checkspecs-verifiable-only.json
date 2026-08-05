@@ -5,7 +5,7 @@
       "Code is good"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"generates check specs only for verifiable criteria\" (CHK001 for the verifiable one)",
+  "note": "tests/skill-modules.test.js — \"generates check specs only for verifiable criteria\" (CHK001 for the verifiable one). SC-5/F-27 re-baseline: check_specs now carries the vague criterion too, as CHK002 check_type 'unclassified'; the rubric and both counts are unchanged, so the original assertion (only one criterion is behavioral) still holds via check_type.",
   "expected": {
     "rubric_result": "pass",
     "criteria_count": 2,
@@ -16,6 +16,11 @@
         "check_id": "CHK001",
         "criterion": "GET /api/items returns the list",
         "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "Code is good",
+        "check_type": "unclassified"
       }
     ],
     "cost_usd": 0,
