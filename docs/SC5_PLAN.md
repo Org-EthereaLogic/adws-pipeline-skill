@@ -1,6 +1,7 @@
 # SC-5 Plan — Full Criterion Coverage in `check_specs`
 
-**Status:** APPROVED (operator R-6, 2026-08-05, per item A1–A3) & IMPLEMENTED.
+**Status:** APPROVED (operator R-6, 2026-08-05, per item A1–A3) & IMPLEMENTED —
+merged to `main` via PR #36 (squash `51a163d`), including the F-31…F-34 review fixes in §6.
 `DPPD.md` §14 is the governing record (v1.5), and `WBS.md` records the implementation.
 This document is retained as the originating plan and verification ledger
 (`SC4_PLAN.md` is the precedent format).

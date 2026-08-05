@@ -85,7 +85,10 @@ approach — not the verb list — was wrong. It became scope change **SC-5** (F
 miss no longer costs the criterion. It does not automatically cost a `warn` either —
 retention is unconditional, while the rubric degrades only when unclassified criteria
 exceed half the input, so a single misread criterion in a sound set still verdicts `pass`.
-See `DPPD.md` §14, `SC5_PLAN.md`, and
+Merged through PR #36 (`51a163d`), which also absorbed four review findings against the fix
+itself (F-31…F-34) — most notably that full emission proved a criterion was *delivered* to
+the tester but not *answered*, closed by joining executed checks to their specs by
+`check_id`. See `DPPD.md` §14, `SC5_PLAN.md`, and
 `VERIFICATION.md` "SC-5 scope change".
 
 ## Lessons

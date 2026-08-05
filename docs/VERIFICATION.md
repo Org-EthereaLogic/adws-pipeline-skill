@@ -548,10 +548,28 @@ Field-run record: `docs/field-runs/2026-08-05-issue4-cadence-method-skill.md`.
   without a local `ADWS_PRO_source/` checkout even for a diverged pack, whose baseline is
   captured from the port. The nine `expected` blocks were written by hand from the patched
   CLI's own output and confirmed by a full suite run.
+- **Post-submission review (F-31…F-34).** Automated review of the SC-5 change set itself
+  raised four valid findings, fixed in the same PR (`e6e7be5`) rather than deferred; full
+  detail in `SC5_PLAN.md` §6. The two substantive ones: **F-31** — full emission proves a
+  criterion was *delivered* to the tester, not that it was *answered*, since nothing joined
+  an executed check back to its spec (`corrections.json` already keyed on `check_id`, so the
+  tester schema omitting it was also an internal inconsistency); closed by carrying
+  `check_id` onto `phase_output.json.checks` and requiring every emitted spec id to appear
+  there at least once. **F-34** — the change set carried two evidence standards for the
+  originating run's 7-of-8 tally, this section stating it was not re-derivable while four
+  other documents asserted it flatly; now one boundary, stated in `SC5_PLAN.md`. Worth
+  recording that F-31 is the same defect class as F-27 one layer downstream: the guarantee
+  stopped at the hand-off, which is precisely where the original drop hid.
 - **Suites after the change:** parity **88/88** (84 → 88), report **15/15**, entropy
   **7/7**, provenance **3/3**, SC-3 micro-drill, plus node-check, shell-lint, and both skill
   lints — all green. `execution-report.js` untouched, `SCHEMA_VERSION` still 1.2.0,
   `SKILL.md` 367 lines (NFR-3 < 500).
+- **Local CI at the merged head:** Tier 1 all nine steps PASS (`run_id`
+  `20260805T211223Z`) and Tier 2 both legs PASS (`node20` build+run, `node24` build+run,
+  `linux/arm64`; `run_id` `20260805T211228Z`) at `51a163d`, the squash of PR #36. The remote
+  CodeQL check failed in 2s on the account-wide billing lock — the same non-code failure
+  carried by every merged PR since #24; it is not a required check and `main` carries no
+  branch protection.
 - **Honest scope note.** This closes the mechanism by which a criterion can leave the
   tester's work list unannounced. It does **not** make a lexical classifier good at judging
   vagueness — F-28 widens the allowlist, it does not complete it, and no allowlist can be

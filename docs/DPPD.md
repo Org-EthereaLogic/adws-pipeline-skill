@@ -513,3 +513,20 @@ makes the tester's one trusted artifact non-reproducible), a second classifier o
 `acceptance_gate` DSL (already rejected under SC-3 for R-2 drift), relaxing the 10-character
 gate, making `unclassified` fail the gate or adding a fourth `rubric_result`, a parallel
 vague-criteria metric key, and backfilling `check_type` into historical evidence trees.
+
+**Post-submission review (F-31…F-34, `docs/SC5_PLAN.md` §6).** Automated review of the change
+set raised four valid findings, all fixed in the same PR rather than deferred. Two were
+substantive: **F-31**, that full emission guarantees a criterion is *delivered* to the tester
+but not that it was *answered* — closed by carrying `check_id` onto `phase_output.json.checks`
+and requiring every emitted spec id to appear there; and **F-34**, that this change set
+carried two different evidence standards for the originating run's 7-of-8 tally, now reduced
+to one boundary stated in `SC5_PLAN.md` and referenced by the rest (tally, omitted-criterion
+identity, manual coverage, and PROMOTE are orchestrator-reported; the *mechanism* is proven
+from the committed validator). **F-32** finished A3's `output` cleanup (`outputed`/`outputing`
+still matched); **F-33** separated retention from the rubric in both summaries.
+
+Merged through PR #36 (`51a163d`). Local CI at the merged head: Tier 1 all nine steps PASS
+and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`). The remote
+CodeQL check failed in 2s on the account-wide billing lock — the same non-code failure
+carried by every merged PR since #24; it is not a required check and `main` has no branch
+protection.
