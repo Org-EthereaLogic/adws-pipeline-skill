@@ -5,7 +5,8 @@
   "started_at": "2026-07-10T17:00:00Z",
   "completed_at": "2026-07-10T17:12:00Z",
   "agent": "test-runner",
-  "model_tier": "sonnet",
+  "model_tier": "opus",
+  "tier_input": { "source": "retry-escalation", "value": "opus" },
   "gate_result": "fail",
   "failure_reason": "TEST_GATE_FAILURE"
 }

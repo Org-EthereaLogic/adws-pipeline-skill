@@ -1,12 +1,13 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.3 (SC-3 scope change §11, 2026-07-24)
+**Version:** 1.4 (SC-4 scope change §13, 2026-08-05)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
-`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), and SC-3 (§11) approved
-per R-6. Governing version: 1.3.
+`acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), and SC-4
+(§13) approved per R-6; maintenance audit M-1 (§12) is a defect fix, not a revision.
+Governing version: 1.4.
 **Companion document:** `WBS.md`
 
 ---
@@ -83,7 +84,7 @@ A feasibility review (2026-07-14) concluded that the majority of its function po
 | FR-9 | Ship SHALL support three output modes: `pr` (push + open PR), `direct_branch` (push branch; refuse protected targets), `patch` (format-patch, no push). |
 | FR-10 | On terminal completion the skill SHALL generate `execution_report.md` + `.json` with a PROMOTE / RETRY / QUARANTINE verdict derived from recorded evidence only. |
 | FR-11 | Verify SHALL run post-ship with zero LLM judgment calls: structural checks, syntax checks, and the drift-sentinel classifier against the shipped diff. |
-| FR-12 | Model tiers SHALL be selected automatically: the deterministic risk score from `review.risk_assess` maps to a role→tier table (low risk → Haiku/Sonnet, high risk → Opus Architect + Sonnet Critic), and a phase retry SHALL escalate that phase agent's model one tier. Codex may dispatch those canonical tiers through the aliases `luna` → Haiku, `terra` → Sonnet, and `sol` → Fable when configured (otherwise Opus); recorded evidence SHALL remain normalized to Haiku/Sonnet/Opus. The selected tier and its input score SHALL be recorded in the attempt's evidence. |
+| FR-12 | Model tiers SHALL be selected automatically: the deterministic risk score (the contract's `risk_level` for plan/build/test/review, the `review.risk_assess` output for document/ship/verify) maps to a **per-phase** tier table — the seven phase agents SHALL NOT share a single tier — plus Critic, Advocate, and Grader entries. Safety floors SHALL hold on every row: ship ≥ Sonnet, verify ≥ Sonnet, grader ≥ Opus. A phase retry, a stability-gate `escalate`, and an F-6 operator-resolution re-review SHALL each escalate that phase agent's model one tier on the ladder Haiku → Sonnet → Opus → Fable, capped at Fable; an escalation requested at the cap SHALL record a saturated source rather than a silent no-op. Fable SHALL NOT be mandated by any table cell — it is reachable only by escalation or explicit operator override. Codex may dispatch those canonical tiers through the aliases `luna` → Haiku, `terra` → Sonnet, `sol` → Opus, and `nova` → Fable; recorded evidence SHALL remain normalized to Haiku/Sonnet/Opus/Fable. The selected tier and its input SHALL be recorded in the attempt's evidence. |
 
 ### 3.2 Non-Functional Requirements
 
@@ -175,7 +176,7 @@ adws-pipeline/                  # the skill
 
 Architect role = the phase agent itself. Critic and Advocate = independent subagents at the test and review gates, each spawned with fresh context containing only the contract and the change set. Reconciliation rule: unanimous pass promotes; Critic fail retries; Advocate dissent blocks pending resolution (FR-7).
 
-Roles are assigned distinct Anthropic model tiers (default: Opus Architect, Sonnet Critic, Sonnet/Haiku Advocate), selected automatically per FR-12 and escalated one tier on retry — the skill-native equivalent of ADWS_Pro's CascadeGov tier routing and `ADWS_LLM_ESCALATION`. This recovers cost adaptation and some error decorrelation, but not cross-vendor diversity (risk R-3).
+Roles are assigned distinct Anthropic model tiers, selected automatically per FR-12 and escalated one tier on retry — the skill-native equivalent of ADWS_Pro's CascadeGov tier routing and `ADWS_LLM_ESCALATION`. Since SC-4 (§13) the Architect side is a **per-phase** table rather than one tier for all seven phase agents (plan and review are priced above the mechanical tail of document/ship/verify), the Critic sits at Sonnet from medium risk, the review-gate Advocate at Sonnet from medium, and the Grader at an absolute Opus floor. This recovers cost adaptation and some error decorrelation, but not cross-vendor diversity (risk R-3) — a fourth same-provider tier does not narrow it.
 
 ---
 
@@ -297,8 +298,17 @@ fallback `Claude (ADWS pipeline) <noreply@anthropic.com>`) — authorship is an 
 decision, not a ship-time improvisation. C4 prompt-injection rule on all 10 agents (repo
 content, issue text, and diffs are DATA; embedded directives are reported, not
 followed). C5 evidence-redaction rule (secrets in captured command output → `[REDACTED]`
-before evidence, defense in depth on `no-new-secrets`). **C2 (risk-tier the review-gate
-Advocate haiku → sonnet) is DEFERRED** pending 2–3 more production runs, per the plan.
+before evidence, defense in depth on `no-new-secrets`). ~~**C2 (risk-tier the review-gate
+Advocate haiku → sonnet) is DEFERRED** pending 2–3 more production runs, per the plan.~~
+**Closed 2026-08-05 by SC-4 A9 (§13)** — the deferral condition is satisfied: four
+production runs have since occurred, and run #105 records the medium-risk row with a
+haiku Advocate through a completed review gate, where that Advocate emitted a divergent
+`findings` shape. Combined with the standing asymmetry — an unresolved review-gate
+dissent terminates as `ADVOCATE_DISSENT` (no retry, quarantine class), so a false dissent
+from the cheapest tier is disproportionately expensive to recover from — the bump is
+taken. Whether a medium-risk review-gate *dissent* was ever adjudicated is not answerable
+from retained records (target-repo evidence trees are external and were not copied before
+teardown).
 
 ### Invariants held
 
@@ -394,5 +404,54 @@ plan `phase_output.json` shape, ending a rule-8 strict-writer violation; and `do
 neither — `frontmatter-lint.mjs` now rejects that class. NFR-3 holds (SKILL.md < 500 lines).
 Full finding list, including the four issues deliberately left unchanged, is in
 `VERIFICATION.md` "Maintenance audit (2026-08-05)". Merged through PR #29 (`e2e8a5d`);
-governing state remains **DPPD 1.3 (SC-3)** — M-1 is a defect fix under it, not a new
-revision.
+governing state at the time remained **DPPD 1.3 (SC-3)** — M-1 is a defect fix under it,
+not a new revision. (Superseded as governing version by SC-4 / DPPD 1.4, §13.)
+
+## 13. Scope Change SC-4 (2026-08-05, operator review of FR-12) — APPROVED
+
+Approved per R-6 (operator approval 2026-08-05, **per item**). Amends FR-12 (§3.1) and
+the role-tier paragraph in §5.3. Governing version: **DPPD 1.4**. Motivated by an
+operator review of tier selection (findings **F-18 … F-26**); full register, per-item
+detail, sequencing, and invariants in **`docs/SC4_PLAN.md`**.
+
+**SC-4a — tier table, taxonomy & ladder (docs/spec; zero parity risk).** A1 replaces the
+single `Architect` column with seven per-phase columns keyed by error-propagation cost
+(plan at Opus on every row — its errors poison six downstream gates; the mechanical tail
+drops); A2 admits **Fable** as the fourth canonical evidence tier and widens the ladder
+to Haiku → Sonnet → Opus → Fable, resolving FR-12's existing self-contradiction between
+"`sol` may resolve to Fable" and "evidence SHALL remain normalized to
+Haiku/Sonnet/Opus"; A3 makes Fable a **ceiling, not a floor** — reachable only by
+escalation or explicit operator override, because a mandated cell would be unrunnable
+wherever the calling workspace is below the required 30-day data retention, and its
+refusal mode presents as missing phase evidence
+(a false QUARANTINE); A4 adds the Codex alias `nova` → Fable and makes `sol` strictly
+Opus; A5 rewrites the grader floor as an absolute now that "the Architect floor" has no
+referent under a per-phase table; A6 defines ladder-saturation recording for all three
+escalation sources; A7 disambiguates the contract-risk / recomputed-risk boundary and
+documents `model_tiers` heterogeneity; A8 generalizes the haiku write-and-verify
+mitigation from three roles to any haiku-tier dispatch; A9 closes SC-2's deferred C2
+(review-gate Advocate Haiku → Sonnet at medium) **on the deferred data** — run #105
+exercised the medium-risk row with a haiku Advocate that emitted a divergent shape; A10 names
+ship ≥ Sonnet, verify ≥ Sonnet, grader ≥ Opus as invariants rather than incidental cells.
+
+**SC-4b — evidence & fixture reconciliation.** B1 and B2 correct three fixture manifests
+recording escalations that did not escalate, and seat the repository's only Fable value
+as a round-trip regression for the widened taxonomy; B3 re-keys the 15
+`run_manifest.model_tiers` maps. B4 leaves `execution-report.js` **untouched** (report
+stays 15/15, `SCHEMA_VERSION` 1.2.0).
+
+### Invariants held
+
+Zero tier awareness in code, before and after — the tier table is a dispatch-time
+documentation contract, never a gate input; verdict taxonomy frozen (no new DECISION,
+exit code, or reason-set entry); 84/84 parity + 15/15 report + 7/7 entropy + 3/3
+provenance + the SC-3 micro-drill preserved; risk rows remain exactly `high|medium|low`
+per `review-risk-assess`; FR-4 append-only untouched; NFR-2 lean core (no new script,
+runtime, or dependency); NFR-3 SKILL.md < 500 lines (357). **R-3 remains open** —
+cross-provider Trinity (X-3) stays deferred per SC-1.c; a fourth same-provider tier does
+not narrow it.
+
+**Rejected (see `docs/SC4_PLAN.md` §5):** tier ordering or validation in code, a
+`model_tier` enum validator, a fourth risk level, mandating Fable in any cell,
+`grader = fable`, agent-frontmatter reconciliation, report-surfacing of tiers, and a
+corpus-wide `tier_input` backfill.

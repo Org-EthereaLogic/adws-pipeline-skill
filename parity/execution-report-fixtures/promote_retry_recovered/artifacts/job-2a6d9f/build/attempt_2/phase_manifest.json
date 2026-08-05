@@ -5,8 +5,8 @@
   "started_at": "2026-07-10T15:15:00Z",
   "completed_at": "2026-07-10T15:27:00Z",
   "agent": "builder",
-  "model_tier": "sonnet",
-  "tier_input": { "source": "retry-escalation", "value": "sonnet" },
+  "model_tier": "opus",
+  "tier_input": { "source": "retry-escalation", "value": "opus" },
   "gate_result": "pass",
   "failure_reason": null
 }

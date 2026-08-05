@@ -14,7 +14,7 @@
     "review": "opus",
     "document": "haiku",
     "ship": "sonnet",
-    "verify": "haiku"
+    "verify": "sonnet"
   },
   "schema_version": "1.0.0"
 }

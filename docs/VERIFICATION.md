@@ -93,7 +93,11 @@ suppressions; CodeRabbit's two nitpicks applied. Run record:
 
 1. **Contract trimmed** of hosting fields: `tenant_id`, `submitted_by/at`, `max_cost_usd`, duplicate-task-ID registry (server-side store doesn't exist in a skill).
 2. **Retry budgets** follow `src/phases.js` (plan/build/review/document/ship/verify = 1, test = 2); DPPD FR-3's "default 2" applies to any unlisted phase.
-3. **Tier selection** (FR-12) is risk-driven (contract `risk_level` → `review-risk-assess` recomputation), replacing the original's CTM/CascadeGov env-gated routing. Retry escalates one tier, capped at opus.
+3. **Tier selection** (FR-12) is risk-driven (contract `risk_level` → `review-risk-assess` recomputation), replacing the original's CTM/CascadeGov env-gated routing. ~~Retry escalates one tier, capped at opus.~~
+   **Amended 2026-08-05 by SC-4 (DPPD §13):** the seven phase agents no longer share one
+   tier — the table is per phase — and the ladder is haiku → sonnet → opus → fable,
+   capped at fable, with a saturated source recorded at the cap. `fable` is an escalation
+   ceiling and operator opt-in, never a mandated cell.
 4. **Cross-phase rewind** (test→build) is default behavior per AC-2.1 (original gated it behind `ADWS_CROSS_PHASE_RETRY`). Test and verify rewind budgets are independent, 1 each.
 5. ~~**skills_clean gate** in the report scans ALL skill traces in the tree (original: latest attempt only) — strictly more conservative, never more lenient.~~
    **Retracted 2026-07-15** (see "Review gate — independent audit" below): this was

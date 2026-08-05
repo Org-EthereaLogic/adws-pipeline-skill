@@ -10,7 +10,8 @@
 - Delegated push at ship (F-5)
 - Failure-reason classes — no-retry vs quarantine-class
 - Stability gate — entropy regulator (SC-1.b / X-2)
-- Model-tier selection (FR-12) — Codex aliases, risk→tier table, escalation
+- Model-tier selection (FR-12) — canonical tiers, Codex aliases, per-phase risk→tier
+  table, safety floors, escalation and saturation
 
 Semantics ported from ADWS_Pro `src/phases.js`, `src/orchestrator.js`,
 `src/orchestrator-cross-phase.js`. The phase order is fixed and linear:
@@ -128,10 +129,12 @@ At the test and review gates, after the phase agent (Architect) produces its out
    - **Operator-resolution re-review (F-6):** if the operator judges the dissent a
      false positive and elects a fresh independent re-review, that re-review is a new
      attempt that escalates one model tier on the same ladder as a retry (haiku →
-     sonnet → opus, capped at opus), recorded as
+     sonnet → opus → fable, capped at fable), recorded as
      `tier_input: { "source": "operator-resolution", "value": "<resolved dissent location, e.g. review/attempt_1/consensus/advocate.json>" }`.
      This is distinct from `retry-escalation` (which follows a gate failure) — here no
      gate failed; the operator invoked a re-look to clear a suspected false positive.
+     If the agent is already at the ceiling, the saturation rule below applies and the
+     source is recorded as `operator-resolution-saturated`.
 3. An Advocate `verdict: "fail"` IS a dissent and must carry a non-null `dissent`
    text. A `fail` with null `dissent` is malformed evidence: re-dispatch the Advocate
    once; if still malformed, treat the findings text as the dissent and proceed per
@@ -216,7 +219,7 @@ canonical band math) runs at phase entry whenever the history file exists:
 |---|---|
 | SAFE | proceed |
 | WATCH | proceed; record `watch: true` in the attempt manifest |
-| WARN | escalate this phase agent one model tier for this attempt (`tier_input: entropy-gate`) |
+| WARN | escalate this phase agent one model tier for this attempt (`tier_input: entropy-gate`; at the ceiling, `entropy-gate-saturated` — see Escalation) |
 | COLLAPSE | halt: terminate `failed` / `STABILITY_BUDGET_EXCEEDED` (RETRY verdict class) |
 
 The gate's JSON output is recorded verbatim as `stability_gate` in the attempt's
@@ -226,8 +229,22 @@ or halts; gate pass/fail logic is unchanged.
 ## Model-tier selection (FR-12)
 
 Deterministic inputs → tier table. The risk score is the contract's `risk.risk_level`
-until the review gate; from review onward, use the `risk_level` output of the
-`review-risk-assess` validator (recomputed from the actual change set).
+for plan, build, test, **and review**; from document onward, use the `risk_level` output
+of the `review-risk-assess` validator (recomputed from the actual change set).
+`review-risk-assess` is a review-gate *validator*, so it runs AFTER the review agent —
+the reviewer's own tier therefore comes from contract risk, not from its own output.
+
+Because the two halves of a run may be keyed to different risk levels,
+`run_manifest.model_tiers` is a **heterogeneous** map: a `plan` tier selected from
+contract risk sitting beside a `document` tier selected from recomputed risk is expected,
+not a defect. The authoritative per-attempt record is `phase_manifest.model_tier` plus
+its `tier_input`.
+
+### Canonical tiers
+
+`phase_manifest.model_tier` is one of `haiku`, `sonnet`, `opus`, `fable` — in ascending
+capability order. That order is the escalation ladder; nothing else defines it, and no
+validator, report, or gate reads it.
 
 ### Codex aliases
 
@@ -239,21 +256,66 @@ fixtures, validators, and reports remain stable.
 |---|---|---|
 | `luna` | `haiku` | Fast, low-cost model tier |
 | `terra` | `sonnet` | Balanced default model tier |
-| `sol` | `opus` | Highest-capability tier; use `fable` when the Codex runtime exposes or configures it, otherwise use `opus` |
+| `sol` | `opus` | High-capability tier |
+| `nova` | `fable` | Highest-capability tier; ceiling only (see below) |
 
-Resolve aliases at dispatch time only. Do not write `luna`, `terra`, `sol`, or a
+Resolve aliases at dispatch time only. Do not write `luna`, `terra`, `sol`, `nova`, or a
 provider-specific model identifier into `phase_manifest.model_tier`; write `haiku`,
-`sonnet`, or `opus`. This preserves the evidence schema while letting Codex use a
-stable, provider-neutral routing vocabulary.
+`sonnet`, `opus`, or `fable`. This preserves the evidence schema while letting Codex use
+a stable, provider-neutral routing vocabulary.
 
-| Risk | Architect (phase agents) | Critic | Advocate | Grader |
+### Risk → tier table
+
+Rows are keyed to the three values `review-risk-assess` emits (`high`, `medium`, `low`);
+there is no fourth risk level. Columns are per phase — the seven phase agents are NOT a
+single tier, because their errors do not cost the same. A plan error propagates through
+six downstream gates before anything catches it, so plan buys capability on every row;
+`document` is cheap to redo and locally caught, so it drops.
+
+| Risk | plan | build | test | review | document | ship | verify |
+|---|---|---|---|---|---|---|---|
+| low | opus | sonnet | sonnet | sonnet | haiku | sonnet | sonnet |
+| medium | opus | sonnet | sonnet | opus | haiku | sonnet | sonnet |
+| high | opus | opus | opus | opus | sonnet | sonnet | sonnet |
+
+| Risk | Critic | Advocate (test gate) | Advocate (review gate) | Grader |
 |---|---|---|---|---|
-| low | sonnet | haiku | haiku | opus |
-| medium | sonnet | sonnet | haiku | opus |
-| high | opus | sonnet | sonnet | opus |
+| low | haiku | haiku | haiku | opus |
+| medium | sonnet | haiku | sonnet | opus |
+| high | sonnet | sonnet | sonnet | opus |
 
-- **Retry escalation:** each retry escalates one tier (`luna` → `terra` → `sol` in
-  Codex; canonically haiku → sonnet → opus), capped at `sol` / `opus`.
+- **Safety floors (hold on every row, independent of risk):** `ship` ≥ sonnet, `verify`
+  ≥ sonnet, `grader` ≥ opus. Ship performs irreversible git operations gated on subtle
+  conditionals (detected-vs-assumed push failure, the signed-commit carve-out, the
+  protected-branch ordering rule). Verify carries a conditional-suppression rule — a file
+  with no applicable checker must NOT produce a `checks` entry — whose failure mode is a
+  false QUARANTINE on a correct change, and its retry budget is 1, so a single flake
+  burns the only retry.
+- **Grader floor:** the grader runs at `opus` on every row, independent of any phase
+  tier and never below it (the original `pr.drift_sentinel.spec` tier policy).
+- **`fable` is a ceiling, not a floor.** No cell above mandates it. It is reachable only
+  by (i) escalating off `opus` on the ladder, or (ii) an explicit operator opt-in
+  recorded as `tier_input: { "source": "operator-tier-override", "value": "fable" }`.
+  Two reasons it is never mandated: the tier requires 30-day data retention and returns
+  `400` wherever the effective retention configuration is below that, so a mandated cell
+  would make a whole row unrunnable on any install that has not enabled 30-day retention
+  for the calling workspace; and its safety classifiers can decline a
+  request (HTTP 200, `stop_reason: "refusal"`, empty content), which reaches the evidence
+  tree as a phase that wrote nothing — the same shape the missing-phase-evidence gate
+  reads as QUARANTINE.
+
+### Escalation
+
+- **Retry escalation:** each retry escalates the phase agent one tier (`luna` → `terra`
+  → `sol` → `nova` in Codex; canonically haiku → sonnet → opus → fable), capped at
+  `nova` / `fable`.
+- **Other escalation sources:** the stability gate's `escalate` action and the F-6
+  operator-resolution re-review use this same ladder and cap.
+- **Saturation.** An escalation requested when the agent is already at `fable` does not
+  change the tier. Record the unchanged `model_tier` and mark the source saturated —
+  `retry-escalation-saturated`, `entropy-gate-saturated`, or
+  `operator-resolution-saturated` — so a real escalation is never indistinguishable from
+  a no-op in the evidence. Saturation is a recording rule only: it consumes the retry as
+  usual and changes no gate, budget, or verdict.
 - **Recording:** every attempt's `phase_manifest.json` records `model_tier` and the
-  risk input that selected it (`tier_input`: source + value). The grader always runs at
-  the Architect floor (opus) per the original `pr.drift_sentinel.spec` tier policy.
+  input that selected it (`tier_input`: source + value).

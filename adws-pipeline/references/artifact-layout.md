@@ -59,15 +59,21 @@ artifacts/{jobId}/
 a `cross_phase_rewinds`-style counter capped at 1 (a second check defect terminates on
 the ordinary `TEST_GATE_FAILURE`/budget path). Like `cross_phase_rewinds`, it is
 orchestrator bookkeeping and is NOT read by `execution-report.js`.
-`model_tiers` stores canonical tier names (`haiku`, `sonnet`, `opus`). Codex resolves
-the routing aliases `luna`, `terra`, and `sol` only when dispatching; aliases and
-provider-specific model identifiers do not enter the evidence schema.
+`model_tiers` maps each phase to a canonical tier name (`haiku`, `sonnet`, `opus`,
+`fable`) — one entry per phase, not one tier for the whole run. It is legitimately
+HETEROGENEOUS: plan/build/test/review are keyed to contract risk while document/ship/
+verify are re-keyed to the recomputed `review-risk-assess` risk, so entries selected
+under different risk levels sitting side by side is expected, not a defect. The
+authoritative per-attempt record is `phase_manifest.model_tier` plus its `tier_input`.
+Codex resolves the routing aliases `luna`, `terra`, `sol`, and `nova` only when
+dispatching; aliases and provider-specific model identifiers do not enter the evidence
+schema.
 
 `phase_manifest.json`
 ```json
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
-  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution", "value": "" },
+  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution | operator-tier-override | retry-escalation-saturated | entropy-gate-saturated | operator-resolution-saturated", "value": "" },
   "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null, "provenance": null }
 ```
@@ -91,9 +97,17 @@ deterministic harness in the source repository, without making provenance a gate
 `tier_input.source` names what selected this attempt's model tier. `operator-resolution`
 is the dissent-resolution re-attempt source (F-6): a re-review the operator triggered to
 clear a dissent they judged a false positive. It escalates one tier on the same ladder as
-`retry-escalation` (haiku → sonnet → opus, capped at opus), and its `value` records the
-resolved dissent's location — `"{phase}/attempt_{n}/consensus/advocate.json"`. See
-`references/phase-gates.md` "Consensus" for the flow.
+`retry-escalation` (haiku → sonnet → opus → fable, capped at fable), and its `value`
+records the resolved dissent's location —
+`"{phase}/attempt_{n}/consensus/advocate.json"`. See `references/phase-gates.md`
+"Consensus" for the flow.
+`operator-tier-override` records an explicit operator tier election; it is the only
+source that may select `fable` outright, since no table cell mandates that tier (it is
+otherwise reachable only by escalating off `opus`).
+The three `*-saturated` sources record an escalation requested when the agent was
+already at the `fable` ceiling: the tier is unchanged, the retry is consumed as usual,
+and the marker keeps a real escalation distinguishable from a no-op. They change no
+gate, budget, or verdict.
 `gate_result` is `null` as written by the phase agent (the pre-gate state; the
 orchestrator overwrites it post-hoc per rule 2 below) and normally `pass`/`fail`
 once the gate is decided. `deferred` (F-5) is a ship-only intermediate: a
