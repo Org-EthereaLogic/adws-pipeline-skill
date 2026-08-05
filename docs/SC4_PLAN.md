@@ -1,6 +1,7 @@
 # SC-4 Plan — Per-Phase Model Tiers & the `fable` Evidence Tier
 
-**Status:** APPROVED (operator R-6, 2026-08-05, per item A1–A10 and B1–B3) & IMPLEMENTED.
+**Status:** APPROVED (operator R-6, 2026-08-05, per item A1–A10 and B1–B3) & IMPLEMENTED —
+merged to `main` via PR #31 (squash `b3bb75a`).
 `DPPD.md` §13 is the governing record (v1.4), and `WBS.md` records the implementation.
 This document is retained as the originating plan and verification ledger
 (SC3_PLAN.md is the precedent format).
