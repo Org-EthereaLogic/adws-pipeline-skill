@@ -16,6 +16,9 @@ evidence-schema & report logic (report suite 10 → 13 fixtures, `execution-repo
 SCHEMA_VERSION 1.0.0 → 1.1.0), SC-2c perf/security hardening. **Deferred:** C2
 (review-gate Advocate tier bump) and the E2E-2 confirmation run (SC2_PLAN step 6),
 both pending more production-run data. See `DPPD.md` §10 and `SC2_PLAN.md`.
+*(C2 closed 2026-08-05 by SC-4 A9 — the deferral condition is satisfied; run #105
+supplies the medium-risk Advocate record. See `DPPD.md` §13 and `SC4_PLAN.md` §4.11.
+The E2E-2 confirmation run remains deferred.)*
 
 **Status (2026-07-24):** scope change **SC-3** (findings F-14–F-17 from the fusion-harness
 comparative review) was **APPROVED (operator R-6, 2026-07-24, per-item: A1–A6, B1)** and
@@ -40,6 +43,20 @@ micro-drill unchanged. Same pass closed the SC-3 A3 `corrections.json` reader ga
 `adws-builder.md`, documented the planner's `planning_blocked` fields, and removed
 non-installed `docs/`/`parity/` paths from the skill (now lint-enforced). Merged through
 PR #29 (`e2e8a5d`). See `DPPD.md` §12 and `VERIFICATION.md` "Maintenance audit (2026-08-05)".
+
+**Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
+review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
+implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table
+keyed by error-propagation cost (plan at opus on every row; document/ship/verify make up
+the cost), admits `fable` as the fourth canonical evidence tier as an escalation ceiling
+rather than a mandated cell, adds the Codex alias `nova` → fable, rewrites the grader
+floor as an absolute now that "the Architect floor" has no referent, defines
+ladder-saturation recording, and closes SC-2's deferred C2 (on run #105's medium-risk
+Advocate record); SC-4b corrects three fixture manifests recording non-escalating
+escalations and re-keys the 15 `run_manifest.model_tiers` maps. `execution-report.js`
+untouched; SCHEMA_VERSION stays 1.2.0; suites unchanged at 84/84 + 15/15 + 7/7 + 3/3 +
+the SC-3 micro-drill. Governing version: **DPPD 1.4**. See `DPPD.md` §13 and
+`SC4_PLAN.md`.
 
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime

@@ -99,9 +99,19 @@ intake ─▶ plan ─▶ build ─▶ test ─▶ review ─▶ document ─▶
   *before* committing — no orphan commit), or `patch` (`git format-patch`, no push).
 - **Stability gate (X-2).** A parse-failure “entropy” signal can escalate a model tier
   (`WARN`) or halt a spiraling job (`COLLAPSE → STABILITY_BUDGET_EXCEEDED`).
+- **Per-phase model tiers (FR-12).** The seven phase agents don't share one tier — they're
+  priced by how far an error propagates. Plan runs Opus on every risk row (a bad plan
+  poisons six downstream gates); document/ship/verify make up the cost from the mechanical
+  tail. Safety floors hold everywhere: ship ≥ Sonnet, verify ≥ Sonnet, grader ≥ Opus.
+- **Escalation ladder.** Haiku → Sonnet → Opus → Fable, capped at Fable, shared by retry,
+  the stability gate, and operator-resolution re-review. Fable is a **ceiling, not a
+  floor**: no table cell mandates it, so an install whose workspace lacks Fable's
+  required 30-day data retention can still run every row. An escalation requested at the
+  cap records a saturated source rather than
+  silently no-op'ing.
 - **Codex tier aliases.** Codex dispatch may express the canonical evidence tiers as
-  `luna` → Haiku, `terra` → Sonnet, and `sol` → Fable when configured (otherwise Opus).
-  Evidence remains normalized to Haiku/Sonnet/Opus for validator compatibility.
+  `luna` → Haiku, `terra` → Sonnet, `sol` → Opus, and `nova` → Fable. Evidence stays
+  normalized to Haiku/Sonnet/Opus/Fable for validator compatibility.
 - **One authoritative verdict.** `scripts/execution-report.js` reads the evidence tree and
   emits PROMOTE (exit 0) / PROMOTE-with-warnings (10) / RETRY (1) / QUARANTINE (2).
 

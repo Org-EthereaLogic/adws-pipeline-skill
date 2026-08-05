@@ -63,13 +63,14 @@ VERBATIM into its prompt (spec first, then the phase inputs), apply the model ti
 the dispatch mechanism's model option, and record the usual `agent` name in
 `phase_manifest.json`. The inlined spec must include the agent's Security paragraph
 and evidence-integrity rules — the fallback changes the transport, never the contract.
-For the single-file writers (Critic, Advocate, Grader), the dispatch prompt must ALSO
-explicitly instruct: write the output file with the file-writing tool at the exact
-given path, take timestamps from a live `date -u +%Y-%m-%dT%H:%M:%SZ`, and verify the
-file exists (e.g. `ls -l` it) before finishing — at haiku tier the spec text alone has
-not been sufficient (an agent may return its verdict in its final message without
-writing the file); the orchestrator still verifies the file exists and parses before
-deciding the gate.
+For the single-file writers (Critic, Advocate, Grader) — and for ANY dispatch at `haiku`
+tier, whichever agent it is — the dispatch prompt must ALSO explicitly instruct: write
+the output file with the file-writing tool at the exact given path, take timestamps from
+a live `date -u +%Y-%m-%dT%H:%M:%SZ`, and verify the file exists (e.g. `ls -l` it) before
+finishing — at haiku tier the spec text alone has not been sufficient (an agent may
+return its verdict in its final message without writing the file); the orchestrator still
+verifies the file exists and parses before deciding the gate. The hazard was first
+observed on a single-file writer, but it is a property of the tier, not of the role.
 Field-validated end to end on issue #103 of the agentic-starter-kit; the
 single-file-writer dispatch note comes from the issue-#107 run. (Both runs are recorded
 in the adws-pipeline-skill source repository's field-run log; that log is development
@@ -104,11 +105,15 @@ material and is not installed alongside the skill.)
    specific rule violated and ask for correction.
 3. Allocate `jobId` (`job_YYYYMMDD_NNNN`, next free), create `artifacts/{jobId}/`,
    write `task_contract_snapshot.json` and initial `run_manifest.json`.
-4. Select initial model tiers from `risk.risk_level` per the tier table in
-   `references/phase-gates.md`; record in `run_manifest.model_tiers`.
-   In Codex, route those canonical tiers through the aliases `luna`, `terra`, and
-   `sol` defined in that reference. Keep canonical tier names in evidence so existing
-   validators and reports remain compatible.
+4. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
+   `references/phase-gates.md`; record in `run_manifest.model_tiers`. The seven phase
+   agents do not share one tier — plan and review are priced above the mechanical tail.
+   Honor the safety floors (ship ≥ sonnet, verify ≥ sonnet, grader ≥ opus) and never
+   assign `fable` from the table: it is an escalation ceiling and an explicit operator
+   opt-in only. In Codex, route those canonical tiers through the aliases `luna`,
+   `terra`, `sol`, and `nova` defined in that reference. Keep canonical tier names
+   (`haiku`, `sonnet`, `opus`, `fable`) in evidence so existing validators and reports
+   remain compatible.
 
 ### 1 — Worktree
 
@@ -130,7 +135,8 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    exists, run `node scripts/entropy-gate.js` on it BEFORE dispatching.
    `proceed` → continue (record `watch: true` in the attempt manifest if set).
    `escalate` → raise this phase agent's model one tier for this attempt
-   (`tier_input: entropy-gate`). `halt` → terminate `failed` /
+   (`tier_input: entropy-gate`; already at the `fable` ceiling → keep the tier and record
+   `entropy-gate-saturated`). `halt` → terminate `failed` /
    `STABILITY_BUDGET_EXCEEDED` (RETRY verdict class). Exit 3 (unreadable or corrupt
    history) → evidence-integrity problem: do not proceed; surface to the operator
    once; unresolved → terminate `failed` / `MISSING_UPSTREAM_ARTIFACT` (quarantine
@@ -168,8 +174,10 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    attempt's `phase_manifest.json`.
    - Pass → update `run_manifest.current_phase`, proceed to next phase.
    - Fail, retries remain → new attempt; escalate this phase agent's model one tier
-     (`luna` → `terra` → `sol` in Codex; canonically haiku → sonnet → opus); record
-     `tier_input: retry-escalation`.
+     (`luna` → `terra` → `sol` → `nova` in Codex; canonically haiku → sonnet → opus →
+     fable, capped at fable); record `tier_input: retry-escalation`. Already at the cap →
+     keep the tier and record `retry-escalation-saturated` instead, so a real escalation
+     is never indistinguishable from a no-op.
    - Test-checks fail because the CODE is wrong → rewind to build (once per job;
      increment `cross_phase_rewinds.test`); second occurrence → terminate `failed` /
      `TEST_GATE_FAILURE`. This rewind budget is separate from the verify-drift one. On the
@@ -192,7 +200,9 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
      specific reason applies).
    - Retry budgets: plan 1, build 1, test 2, review 1, document 1, ship 1, verify 1.
 5. After review gate passes: recompute tiers from the `review-risk-assess` output's
-   `risk_level` for remaining phases; record in `run_manifest.model_tiers`.
+   `risk_level` for the remaining phases (document, ship, verify) and record in
+   `run_manifest.model_tiers`. The reviewer's own tier came from contract risk — the
+   validator runs after it — so the resulting map is legitimately heterogeneous.
 6. **Parse-failure accounting** (X-2): count malformed structured outputs during the
    attempt (unparseable `phase_output.json`/consensus files, validator CLI exit 3 on
    agent-produced input, re-prompts for broken JSON). Append one line
