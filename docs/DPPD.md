@@ -393,4 +393,6 @@ plan `phase_output.json` shape, ending a rule-8 strict-writer violation; and `do
 `parity/`-rooted paths were removed from the skill's own markdown, since `install.sh` ships
 neither — `frontmatter-lint.mjs` now rejects that class. NFR-3 holds (SKILL.md < 500 lines).
 Full finding list, including the four issues deliberately left unchanged, is in
-`VERIFICATION.md` "Maintenance audit (2026-08-05)".
+`VERIFICATION.md` "Maintenance audit (2026-08-05)". Merged through PR #29 (`e2e8a5d`);
+governing state remains **DPPD 1.3 (SC-3)** — M-1 is a defect fix under it, not a new
+revision.

@@ -38,8 +38,8 @@ SCHEMA_VERSION 1.1.0 → 1.2.0, regression-first, the 13 existing verdict fixtur
 and green, no new DECISION/exit. Report suite **13 → 15**; 84/84 + 7/7 + 3/3 + the SC-3
 micro-drill unchanged. Same pass closed the SC-3 A3 `corrections.json` reader gap in
 `adws-builder.md`, documented the planner's `planning_blocked` fields, and removed
-non-installed `docs/`/`parity/` paths from the skill (now lint-enforced). See `DPPD.md` §12
-and `VERIFICATION.md` "Maintenance audit (2026-08-05)".
+non-installed `docs/`/`parity/` paths from the skill (now lint-enforced). Merged through
+PR #29 (`e2e8a5d`). See `DPPD.md` §12 and `VERIFICATION.md` "Maintenance audit (2026-08-05)".
 
 **Status (2026-07-18):** second production run — first external field run — executed
 against `Org-EthereaLogic/agentic-starter-kit` issue #103 in a Cowork/cloud runtime

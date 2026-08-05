@@ -348,7 +348,8 @@ Full originating plan and reconciliation ledger: `SC3_PLAN.md`.
 
 ## Maintenance audit (2026-08-05) — terminal-verdict evidence gaps
 
-Full-repo audit against the skill-authoring guide and SWEBOK v4. Two live defects in
+Merged through PR #29 (`e2e8a5d`). Full-repo audit against the skill-authoring guide and
+SWEBOK v4. Two live defects in
 `execution-report.js` let a job with recorded failure evidence certify a clean PROMOTE,
 in contradiction of hard rule 8 / FR-10 ("the verdict is derived from the evidence, not
 the narrative status"). Both were reproduced against a copy of the `promote_clean`
@@ -378,6 +379,11 @@ fixture before the fix.
 - **Suites after the audit:** parity **84/84**, report **15/15**, entropy **7/7**,
   provenance **3/3**, SC-3 micro-drill, plus node-check, shell-lint, and both skill
   lints — all green. `SKILL.md` remains under 500 lines.
+- **Local CI at the merged head:** Tier 1 all nine steps PASS and Tier 2 both legs PASS
+  (`node20` build+run, `node24` build+run, `linux/arm64`) at `6b49f4e`, the commit squashed
+  into `e2e8a5d`. The remote CodeQL check failed in 2s on the account-wide billing lock
+  ("the job was not started because your account is locked due to a billing issue") — the
+  same non-code failure carried by every merged PR since #24; it is not a required check.
 - **Reported, not changed:** the 9 validators' duplicated CLI wrapper (self-containment
   is NFR-4 and `run-parity.js` asserts it); the unreachable `!modeValid` disjunct in
   `patch-compose.js` (dead but inside a byte-for-byte parity port); `drift-sentinel`'s
