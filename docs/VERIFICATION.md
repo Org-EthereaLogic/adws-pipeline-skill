@@ -492,7 +492,8 @@ Per DPPD §13 (v1.4), approved R-6 per item (A1–A10, B1–B3). Merged through 
   squashed into `b3bb75a`. The remote CodeQL check failed in 3s on the account-wide
   billing lock ("the job was not started because your account is locked due to a billing
   issue") — the same non-code failure carried by every merged PR since #24; it is not a
-  required check and `main` carries no branch protection.
+  required check. (Wording corrected in the M-3 post-merge sync: `main` IS protected but
+  declares an EMPTY required-checks list, so nothing blocks on CodeQL. See the M-3 section.)
 - **Reported, not changed:** `tier_input` is absent from first attempts corpus-wide, not
   only in the two fixtures F-26 names — F-26 is scoped to *retry* attempts, where the
   spec unambiguously requires an escalation to be recorded, and a corpus-wide backfill
@@ -568,8 +569,8 @@ Field-run record: `docs/field-runs/2026-08-05-issue4-cadence-method-skill.md`.
   `20260805T211223Z`) and Tier 2 both legs PASS (`node20` build+run, `node24` build+run,
   `linux/arm64`; `run_id` `20260805T211228Z`) at `51a163d`, the squash of PR #36. The remote
   CodeQL check failed in 2s on the account-wide billing lock — the same non-code failure
-  carried by every merged PR since #24; it is not a required check and `main` carries no
-  branch protection.
+  carried by every merged PR since #24; it is not a required check. (Wording corrected in
+  the M-3 post-merge sync: `main` IS protected but declares an EMPTY required-checks list.)
 - **Honest scope note.** This closes the mechanism by which a criterion can leave the
   tester's work list unannounced. It does **not** make a lexical classifier good at judging
   vagueness — F-28 widens the allowlist, it does not complete it, and no allowlist can be
@@ -619,6 +620,7 @@ no schema, zero parity risk.
   a sibling agent's file to hold the line.
 - **Suites unchanged by M-2:** parity 88/88, report 15/15 (at the time of the audit),
   entropy 7/7, provenance 3/3, SC-3 micro-drill, both skill lints — all green. NFR-3 holds.
+- **Merged** through PR #38 (`029ee0d`), together with SC-6 and M-3.
 
 ## SC-6 scope change (2026-08-06, field run job_20260805_0004) — F-37…F-40
 
@@ -682,6 +684,12 @@ Field-run record: `docs/field-runs/2026-08-05-issue5-cadence-method-skill.md`.
   and SC-4 closed as A9. Noticing four *absences* by cross-referencing a 226-line document
   against a 200-line research record is not a haiku-tier task, so A9 has a field data point
   now, though a single run is a data point and not a demonstration.
+- **Local CI at the merged head:** Tier 1 all nine steps PASS (`run_id` `20260806T032406Z`)
+  and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`; `run_id`
+  `20260806T032411Z`) at `029ee0d`, the squash of PR #38. The remote CodeQL check failed in
+  10s on the account-wide billing lock — the same non-code failure carried by every merged
+  PR since #24; it is not a required check (`main` is protected with an EMPTY required-checks
+  list, which is the corrected form of a claim this document made twice — see M-3 below).
 
 ## Maintenance audit M-3 (2026-08-06) — local CI vs. the codebase it gates, F-41…F-44
 
@@ -742,7 +750,14 @@ recent changes? It had not.
 - **Suites after M-3:** report **16/16**, parity **88/88**, entropy **7/7**, provenance
   **3/3**, SC-3 micro-drill — every size unchanged and now self-asserting. Tier 1 nine of
   nine PASS; Tier 2 both legs PASS.
+- **A stale claim the audit surfaced, corrected in the post-merge sync.** `DPPD.md` §13 and
+  this document (twice) asserted that the failing CodeQL check is non-blocking because
+  "`main` has no branch protection." `main` IS protected; the reason nothing blocks is that
+  its required-status-checks list is EMPTY. Right conclusion, wrong reason — a shape that
+  survives review precisely because the conclusion holds. Corrected at all three sites.
 - **Honest scope note.** M-3 makes the harness notice its own shrinkage; it does not make
   the suites *bigger*, and coverage of the skill's markdown contracts is still shallow — the
   frontmatter lint checks structure and canonical tiers, not meaning. Nothing here would
   catch a rule that is well-formed and wrong, which is what M-2 and SC-6 were about.
+- **Merged** through PR #38 (`029ee0d`), together with M-2 and SC-6. Tier 1 nine of nine and
+  Tier 2 both legs PASS at the merged head (`run_id`s `20260806T032406Z` / `20260806T032411Z`).
