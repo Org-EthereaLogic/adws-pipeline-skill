@@ -459,8 +459,10 @@ corpus-wide `tier_input` backfill.
 Merged through PR #31 (`b3bb75a`). Local CI at the merged head: Tier 1 all nine steps
 PASS and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`).
 The remote CodeQL check failed in 3s on the account-wide billing lock — the same
-non-code failure carried by every merged PR since #24; it is not a required check and
-`main` has no branch protection.
+non-code failure carried by every merged PR since #24; it is not a required check.
+(This section originally added "and `main` has no branch protection." Corrected during the
+M-3 post-merge sync: `main` IS protected, with an EMPTY required-status-checks list. The
+operative fact is unchanged — nothing blocks on CodeQL — but the stated reason was wrong.)
 
 ## 14. Scope Change SC-5 (2026-08-05, field run job_20260805_0003) — APPROVED
 
@@ -559,6 +561,7 @@ in `field-runs/2026-08-05-issue5-cadence-method-skill.md`.
 
 Suite counts unchanged by M-2 (88 / 15 / 7 / 3 + micro-drill at the time of the audit);
 NFR-3 holds. Governing state remains **DPPD 1.6 (SC-6)** — M-2 is a defect fix under it.
+Merged through PR #38 (`029ee0d`), together with SC-6 (§16) and M-3 (§17).
 
 ## 16. Scope Change SC-6 (2026-08-06, field run job_20260805_0004) — APPROVED
 
@@ -624,6 +627,13 @@ orchestrator auto-repair without the operator, an uncapped repair budget, backfi
 `superseded_consensus` into historical trees, and enumerating every live `run_manifest` key
 in the documented shape.
 
+Merged through PR #38 (`029ee0d`), carrying M-2 (§15) and M-3 (§17) in the same squash.
+Local CI at the merged head: Tier 1 all nine steps PASS (`run_id` `20260806T032406Z`) and
+Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`; `run_id`
+`20260806T032411Z`). The remote CodeQL check failed in 10s on the account-wide billing lock
+— the same non-code failure carried by every merged PR since #24; it is not a required
+check (`main` is protected with an EMPTY required-checks list).
+
 ## 17. Maintenance audit M-3 (2026-08-06) — the harness held itself to a lower standard
 
 Not a scope change: tooling only. No requirement, story, acceptance criterion, verdict
@@ -668,3 +678,10 @@ had already been fixed for twice (findings **F-41 … F-44**).
 Suites: report **16/16**, parity **88/88**, entropy **7/7**, provenance **3/3**, SC-3
 micro-drill — all unchanged in size, now all self-asserting. Tier 1 nine of nine PASS.
 Governing state remains **DPPD 1.6 (SC-6)** — M-3 is a defect fix under it, not a revision.
+Merged through PR #38 (`029ee0d`), together with M-2 (§15) and SC-6 (§16).
+
+M-3's own audit turned up one stale claim in this document and two in `VERIFICATION.md`:
+"`main` has no branch protection," repeated since SC-4. `main` IS protected; what makes the
+failing CodeQL check non-blocking is that its required-status-checks list is EMPTY. The
+conclusion was right and the reason was wrong, which is the kind of thing that survives
+review precisely because the conclusion is right. Corrected in place at each site.

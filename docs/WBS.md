@@ -96,8 +96,15 @@ declared cases against fixtures on disk in both directions; `run-parity.js` carr
 hand-counted, the ten agent definitions are linted for frontmatter and canonical SC-4 tiers,
 and the Tier-3 review prompt — which still told reviewers to defend the unbounded
 "mandatory-parallel consensus" that was F-35 — is refreshed through SC-6. All four
-assertions were falsified before acceptance. Suite sizes unchanged (88/16/7/3 + drill). See
-`DPPD.md` §17 and `VERIFICATION.md` "Maintenance audit M-3".
+assertions were falsified before acceptance. Suite sizes unchanged (88/16/7/3 + drill). The
+audit also caught a stale claim repeated since SC-4 — "`main` has no branch protection" —
+corrected at all three sites: `main` IS protected, with an EMPTY required-checks list, which
+is the actual reason the billing-locked CodeQL check does not block. See `DPPD.md` §17 and
+`VERIFICATION.md` "Maintenance audit M-3".
+
+M-2, SC-6, and M-3 were merged together through **PR #38** (squash `029ee0d`), with Tier 1
+nine of nine and Tier 2 both legs PASS at the merged head (`run_id`s `20260806T032406Z` /
+`20260806T032411Z`).
 
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and

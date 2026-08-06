@@ -1,9 +1,10 @@
 # SC-6 Plan — An Exit for a Dissent That Is Right
 
-**Status:** APPROVED (operator R-6, 2026-08-06, per item) & IMPLEMENTED on branch
-`fix/m2-consensus-boundary-sc6-repair-path`. `DPPD.md` §16 is the governing record
-(v1.6); `WBS.md` records the implementation. This document is the originating plan and
-verification ledger (`SC5_PLAN.md` is the precedent format).
+**Status:** APPROVED (operator R-6, 2026-08-06, per item) & IMPLEMENTED — merged to `main`
+via PR #38 (squash `029ee0d`), which carried M-2 and M-3 in the same commit. `DPPD.md` §16
+is the governing record (v1.6); `WBS.md` records the implementation. This document is
+retained as the originating plan and verification ledger (`SC5_PLAN.md` is the precedent
+format).
 
 **Evidence source:** a production field run against `Org-EthereaLogic/cadence-method-skill`
 issue #5 (job `job_20260805_0004`, 2026-08-05/06), shipped as PR #50.

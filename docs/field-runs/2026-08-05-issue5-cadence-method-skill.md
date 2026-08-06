@@ -75,7 +75,9 @@ below.
 ## Findings — what this run changed in the pipeline (F-35 … F-40)
 
 Split across two vehicles: **M-2** (docs/prompt, no code) and **SC-6** (spec + schema +
-report). Full register in `SC6_PLAN.md` §1; governing records `DPPD.md` §15 and §16.
+report). Full register in `SC6_PLAN.md` §1; governing records `DPPD.md` §15 and §16. Both
+merged through PR #38 (`029ee0d`), together with the M-3 CI audit (`DPPD.md` §17) that
+followed from asking whether local CI had kept up with them.
 
 ### F-35 — the consensus parallel mandate stated no boundary (M-2)
 
