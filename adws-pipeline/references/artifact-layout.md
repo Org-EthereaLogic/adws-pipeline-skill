@@ -51,14 +51,29 @@ artifacts/{jobId}/
   "completed_at": null, "final_status": null, "failure_reason": null,
   "current_phase": "plan", "output_mode": "pr", "isolation_mode": "worktree",
   "worktree_path": "", "branch_name": "", "model_tiers": {},
-  "cross_phase_rewinds": { "test": 0, "verify": 0 }, "check_defect_repairs": 0 }
+  "cross_phase_rewinds": { "test": 0, "verify": 0 }, "check_defect_repairs": 0,
+  "operator_directed_rewinds": { "test": 0, "review": 0 } }
 ```
+These are the keys the pipeline DEFINES; the shape is a floor, not a ceiling. A run may
+carry additional orchestrator bookkeeping (`source_ref`, `repo_root`, `target_branch`,
+`risk_level`, `intake`, `tier_source`, per-phase `phases` rollups, free-text
+`operator_notes`), and `execution-report.js` reads only `job_id`, `task_id`,
+`final_status`, and `failure_reason` from this file — everything else here is for the
+operator and the audit trail. Extra keys are therefore not schema drift. Missing DEFINED
+keys are.
 `final_status` is null while running; set once to one of
 `completed | failed | quarantined | canceled` at terminal state.
 `check_defect_repairs` (SC-3 A4/F-16) counts gate-defect repairs performed this job —
 a `cross_phase_rewinds`-style counter capped at 1 (a second check defect terminates on
 the ordinary `TEST_GATE_FAILURE`/budget path). Like `cross_phase_rewinds`, it is
 orchestrator bookkeeping and is NOT read by `execution-report.js`.
+`operator_directed_rewinds` (SC-6 F-37/F-39) counts rewinds the OPERATOR directed after
+confirming an Advocate dissent (`resolution.action: "repair"`), keyed by the gate the
+dissent came from and capped at 1 each. It is the fourth and last of the independent
+rewind/repair budgets — `cross_phase_rewinds.test`, `cross_phase_rewinds.verify`,
+`check_defect_repairs`, and this one never draw on each other. Spending it does consume
+an ordinary build retry, which is what bounds the loop. Same status as its siblings:
+orchestrator bookkeeping, not read by `execution-report.js`.
 `model_tiers` maps each phase to a canonical tier name (`haiku`, `sonnet`, `opus`,
 `fable`) — one entry per phase, not one tier for the whole run. It is legitimately
 HETEROGENEOUS: plan/build/test/review are keyed to contract risk while document/ship/
@@ -132,13 +147,19 @@ rewind-to-build (SC-3 A3/F-15). Written ONCE by the ORCHESTRATOR into the fresh 
 `attempt_{n}/` directory BEFORE it dispatches the builder — the structured, auditable
 form of the rewind feedback, replacing the previous free-text channel:
 ```json
-{ "source_attempt": "test/attempt_{n} | verify/attempt_{n}",
+{ "source_attempt": "test/attempt_{n} | verify/attempt_{n} | review/attempt_{n}",
   "corrections": [ { "check_id": "", "criterion": "", "expected": "", "actual": "",
                      "path": "", "classification": "code | check | environment | prerequisite" } ] }
 ```
 The builder treats each `code`-classified entry as an exact instruction; `check` entries
 are the gate-defect signal (A4). This is a rule-1 fresh-attempt artifact (see append-only
 rules), NOT a rule-2 post-hoc field — the orchestrator authors it once and never edits it.
+`review/attempt_{n}` joined the `source_attempt` enum in SC-6/F-39: a rewind can now also
+originate at the REVIEW gate, from an operator-directed repair of a confirmed Advocate
+dissent (F-37). Before that the enum admitted only the two gate-automatic rewind origins,
+so a live repair had to record a truthful value outside the documented set. Record the
+real origin always — a conforming but false `source_attempt` is worse than an
+out-of-enum true one, and this enum exists to be widened when a new origin is defined.
 
 `consensus/critic.json` and `consensus/advocate.json`
 ```json
@@ -157,13 +178,23 @@ strict (rule 8). An Advocate dissent goes in `dissent` VERBATIM (the full text o
 `resolution` (advocate only, optional, F-3) is written POST-HOC by the ORCHESTRATOR —
 never by the Advocate agent — when the operator resolves a recorded dissent:
 ```json
-{ "resolved_by": "operator", "action": "override | uphold",
+{ "resolved_by": "operator", "action": "override | uphold | repair",
   "rationale": "<why>", "resolved_at": "<iso>" }
 ```
 `action: "override"` (operator judged the dissent a false positive) clears the terminal
 consensus block but ALWAYS leaves a permanent warning; `action: "uphold"` (dissent
-confirmed) behaves exactly as an unresolved dissent → QUARANTINE. See
-`references/phase-gates.md` "Consensus" rule 5.
+confirmed, job ends) behaves exactly as an unresolved dissent → QUARANTINE;
+`action: "repair"` (SC-6/F-37 — dissent confirmed and the deliverable FIXED) clears the
+block once a later attempt supersedes this one, and likewise always leaves a permanent
+warning. An unrecognized action is treated as NO resolution, so the dissent stays
+blocking — fail closed. See `references/phase-gates.md` "Consensus" rule 5 and
+"Operator-directed repair of a correct dissent".
+
+Writing `resolution` never edits anything else on the file and never removes the
+attempt: a resolved dissent is still a recorded dissent. Since SC-6/F-38 the terminal
+report scans SUPERSEDED attempts for dissents too and surfaces them in its
+`superseded_consensus` array with the text quoted verbatim, so no resolution — not even
+a successful repair — can make a dissent disappear from the record.
 
 `skills/{skill_id}/skill_trace.json` — wrap the validator CLI's stdout:
 ```json

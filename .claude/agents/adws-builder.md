@@ -16,9 +16,10 @@ Do:
    keys, or tokens (`secret_policy`).
 2. **Read `corrections.json` first if it exists** in your attempt directory (SC-3 A3).
    The orchestrator writes it there before dispatching you whenever this attempt follows
-   a rewind from test or verify; it is your input, not evidence you produced — never
-   edit it. Each entry carries `check_id`, `criterion`, `expected`, `actual`, `path`,
-   and a `classification`:
+   a rewind — from test, from verify, or from an operator-directed repair of a confirmed
+   Advocate dissent at the review gate (SC-6/F-37, `source_attempt: review/attempt_{n}`).
+   It is your input, not evidence you produced — never edit it. Each entry carries
+   `check_id`, `criterion`, `expected`, `actual`, `path`, and a `classification`:
    - `code` — treat it as an EXACT instruction: make `path` produce `expected` instead
      of `actual` for that criterion.
    - `check` — the check itself was defective, not the code (A4). Fix only what the

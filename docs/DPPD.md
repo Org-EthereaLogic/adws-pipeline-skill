@@ -1,13 +1,13 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.5 (SC-5 scope change §14, 2026-08-05)
+**Version:** 1.6 (SC-6 scope change §16, 2026-08-06)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
 `acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
-(§13), and SC-5 (§14) approved per R-6; maintenance audit M-1 (§12) is a defect fix,
-not a revision. Governing version: 1.5.
+(§13), SC-5 (§14), and SC-6 (§16) approved per R-6; maintenance audits M-1 (§12) and
+M-2 (§15) are defect fixes, not revisions. Governing version: 1.6.
 **Companion document:** `WBS.md`
 
 ---
@@ -530,3 +530,96 @@ and Tier 2 both legs PASS (`node20` build+run, `node24` build+run, `linux/arm64`
 CodeQL check failed in 2s on the account-wide billing lock — the same non-code failure
 carried by every merged PR since #24; it is not a required check and `main` has no branch
 protection.
+
+## 15. Maintenance audit M-2 (2026-08-06) — dispatch boundary & baseline safety
+
+Not a scope change: no requirement, user story, acceptance criterion, or verdict taxonomy
+moves, and no code changes. Two docs/prompt defects from the `job_20260805_0004` field run
+(findings **F-35**, **F-36**), both cases where the spec's emphasis and its safety boundary
+were written at different volumes. Full detail in `SC6_PLAN.md` §1–§2; the run is recorded
+in `field-runs/2026-08-05-issue5-cadence-method-skill.md`.
+
+- **M-2a (F-35)** The consensus parallel mandate stated no BOUNDARY. `SKILL.md` and
+  `phase-gates.md` require Critic ∥ Advocate in capitals while expressing the ordering only
+  as the parenthetical `Architect → (Critic ∥ Advocate)`, so nothing forbade widening the
+  batch to include the phase agent — which a runtime that encourages batching independent
+  calls will do. The live run did: at `test/attempt_1` the tester ran 23:09:56–23:15:42Z
+  while the Advocate assessed at 23:13:02Z and the Critic at 23:14:06Z, both inside that
+  window. The consensus agents cannot distinguish a mid-write worktree from a finished one,
+  so the failure mode is silent by construction. Both files now state that the parallel set
+  is EXACTLY `{Critic, Advocate}` and that the arrow is a barrier.
+- **M-2b (F-36)** `adws-tester.md` and `phase-gates.md` named
+  `git stash push --include-untracked` … `git stash pop` as *the* falsifiability-baseline
+  technique — the operation `adws-reviewer.md` has always prohibited in the worktree, for a
+  reason that is strictly stronger at the test gate: the worktree holds the ONLY copy of an
+  uncommitted, partly untracked change set, so a dispatch that dies mid-stash loses the
+  whole build. Replaced with a non-mutating baseline (`git archive` into a scratch dir, a
+  worktree/clone created outside the pipeline worktree, or `git show` for targeted checks),
+  and the reviewer's prohibition is now carried in the tester's contract too.
+
+Suite counts unchanged by M-2 (88 / 15 / 7 / 3 + micro-drill at the time of the audit);
+NFR-3 holds. Governing state remains **DPPD 1.6 (SC-6)** — M-2 is a defect fix under it.
+
+## 16. Scope Change SC-6 (2026-08-06, field run job_20260805_0004) — APPROVED
+
+Approved per R-6 (operator approval 2026-08-06, **per item**). Amends the consensus
+resolution set (§5.3) and the evidence schema; no requirement, story, acceptance criterion,
+or verdict taxonomy moves. Governing version: **DPPD 1.6**. Motivated by a production field
+run against `Org-EthereaLogic/cadence-method-skill` issue #5 (findings **F-37 … F-40**);
+full register, per-item detail, and invariants in **`docs/SC6_PLAN.md`**.
+
+**Evidence boundary — met, for the first time.** SC-5's originating run lost its evidence
+tree and its central tally was therefore orchestrator-reported. This run's tree survived, in
+the target repo's primary checkout at `artifacts/job_20260805_0004/` (hard rule 5 keeps
+evidence outside the worktree, so teardown did not take it). Every claim in SC-6 was
+re-derived from that tree, and the two central ones were re-derived *against* the
+orchestrator's summary: the concurrent dispatch is in the phase/consensus timestamps, and
+the report's blindness to the repaired dissent is in the rendered
+`| consensus | pass | 2 round(s) clean |` sitting beside a `verdict: "fail"` advocate file.
+
+**Trigger.** A review-gate Advocate dissented that the deliverable had silently dropped four
+findings the research record marked VERIFIED. The dissent was correct, the reviewer had
+independently found the same class of defect, and the operator agreed. At that point the
+spec offered three resolutions — `override` (false positive), `uphold` (terminate with
+`ADVOCATE_DISSENT`), and F-6's fresh re-review (for a *suspected* false positive) — none of
+which means "you are right; fix it and check again." **A correct dissent's only sanctioned
+exit was termination**, so the Advocate doing its job well was procedurally indistinguishable
+from the job failing. The run took the undefined path anyway, and the improvisation
+necessarily landed outside the schema and outside the report's field of view.
+
+**What changed.** `resolution.action: "repair"` becomes the fourth resolution: the operator
+confirms the dissent, the gate attempt closes `fail` with the attempt-level annotation
+`ADVOCATE_DISSENT_REPAIRED`, the job rewinds to build carrying the dissent as
+`corrections.json` (`source_attempt` now admits `review/attempt_{n}`), the build attempt
+escalates one tier on the existing F-6 operator-resolution ladder, and the phases re-run
+forward. A fourth independent budget `operator_directed_rewinds: { test, review }` caps it
+at 1 per gate; it consumes an ordinary build retry, which bounds the loop twice.
+`execution-report.js` now also scans SUPERSEDED attempts for dissents, exposes them as
+`superseded_consensus`, quotes them verbatim in a dedicated report section, and drives the
+existing `consensus` gate to **WARN** on any it finds — so the governing rule becomes one
+sentence: *an Advocate dissent recorded anywhere in a job's evidence forbids a CLEAN
+promote.* Before this, the STRONGEST resolution was the invisible one: repairing a dissent
+erased it from the report while `override` — the dissent was wrong, nothing changed — had
+warned since F-3.
+
+**What did not change.** Superseded evidence WARNS, never fails: the latest-attempt gating
+contract stays exactly as it was, so a successful retry still reaches clean PROMOTE. No new
+DECISION, exit code, terminal failure-reason entry, or gate key; `ADVOCATE_DISSENT_REPAIRED`
+is an attempt annotation no decision function reads. An unrecognized `resolution.action` is
+still treated as no resolution, leaving the dissent blocking (fail closed).
+
+### Invariants held
+
+Verdict taxonomy frozen; latest-attempt gating preserved; `execution-report.js` amended on
+the SC-3 B2 path (additive only, regression-first, **SCHEMA_VERSION 1.2.0 → 1.3.0**, existing
+verdict fixtures unchanged and still green); no new script, runtime, or dependency (NFR-2);
+zero tier awareness in code (SC-4); NFR-3 SKILL.md < 500 lines (**379**). Parity **88/88**,
+entropy **7/7**, provenance **3/3**, and the SC-3 micro-drill unchanged; report fixtures move
+**15 → 16** (`promote_repaired_dissent`, which also carries the F-40 regression). **R-3
+remains open** — cross-provider Trinity (X-3) stays deferred per SC-1.c.
+
+**Rejected (see `docs/SC6_PLAN.md` §5):** making a superseded dissent FAIL the gate, a new
+terminal failure reason for the repair path, a separate `repaired_dissent` gate key,
+orchestrator auto-repair without the operator, an uncapped repair budget, backfilling
+`superseded_consensus` into historical trees, and enumerating every live `run_manifest` key
+in the documented shape.

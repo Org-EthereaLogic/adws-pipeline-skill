@@ -4,7 +4,7 @@
 .PHONY: local-ci ci-orb review ci install-hooks help
 
 help:
-	@echo "make local-ci      Tier 1: fast host gate (84/15/7 + SC-3 fixtures/drill + static/lints)"
+	@echo "make local-ci      Tier 1: fast host gate (88/16/7 + SC-3 fixtures/drill + static/lints)"
 	@echo "make ci-orb        Tier 2: OrbStack clean-room, Node 20/24 (closes F-13)"
 	@echo "make review        Tier 3: advisory local-LLM review (Ollama; never blocks)"
 	@echo "make ci            Tier 1 + Tier 2 (what the pre-push hook runs)"

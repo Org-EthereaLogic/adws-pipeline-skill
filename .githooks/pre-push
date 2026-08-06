@@ -7,7 +7,7 @@
 # per clone: `make install-hooks`. Tier 3 (`make review`) is advisory and run separately.
 set -e
 
-echo "[pre-push] Tier 1 — host gate (parity 88/15/7 + static + lints)..."
+echo "[pre-push] Tier 1 — host gate (parity 88/16/7 + static + lints)..."
 /usr/bin/env bash scripts/local-ci/gate.sh
 
 echo "[pre-push] Tier 2 — OrbStack clean-room (Node 20/24)..."

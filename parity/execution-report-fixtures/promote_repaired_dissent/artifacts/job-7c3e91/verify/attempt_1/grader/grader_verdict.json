@@ -1,0 +1,9 @@
+{
+  "skill_id": "adws-grader",
+  "rubric_result": "pass",
+  "criteria_results": [
+    { "criterion": "No crash on expired session", "verdict": "satisfied" },
+    { "criterion": "Test added", "verdict": "satisfied" }
+  ],
+  "summary": "All acceptance criteria satisfied by the shipped diff."
+}

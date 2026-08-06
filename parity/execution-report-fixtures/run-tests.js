@@ -114,6 +114,23 @@ const CASES = [
     expectGate: { key: 'consensus', result: 'warn' },
   },
   {
+    name: 'promote_repaired_dissent',
+    jobId: 'job-7c3e91',
+    decision: 'PROMOTE',
+    warn_flag: true,
+    exit_code: 10,
+    // SC-6 (F-37/F-38): the operator judged a review-gate dissent CORRECT and rewound
+    // to build to fix the deliverable (`resolution.action: "repair"`); build/test/review
+    // re-ran and attempt_2 came back clean. Pre-fix this reported
+    // `consensus: pass — "2 round(s) clean"` and a CLEAN promote at exit 0, because the
+    // gate reads latest attempts only and the repaired dissent lived on a superseded
+    // one — so the pipeline hid the resolution that CHANGED the shipped artifact while
+    // still surfacing `override`, which changes nothing. A dissent recorded anywhere in
+    // a job's evidence must never yield a clean promote (FR-7).
+    expectGate: { key: 'consensus', result: 'warn' },
+    expectWarning: 'review/attempt_1 (superseded)',
+  },
+  {
     name: 'quarantine_upheld_dissent',
     jobId: 'job-4e5f6a',
     decision: 'QUARANTINE',
@@ -239,9 +256,9 @@ for (const testCase of CASES) {
     check(`${testCase.name} json exit_code`, out1.json.exit_code === testCase.exit_code, out1.json.exit_code, testCase.exit_code);
     check(
       `${testCase.name} schema_version`,
-      out1.json.schema_version === '1.2.0',
+      out1.json.schema_version === '1.3.0',
       out1.json.schema_version,
-      '1.2.0'
+      '1.3.0'
     );
     // expectGate accepts one {key, result} or an array of them.
     for (const expected of [].concat(testCase.expectGate || [])) {

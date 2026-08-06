@@ -63,6 +63,28 @@ orchestrator-reported across all four documents (F-34). Merged through PR #36 (`
 Tier 1 nine-of-nine and Tier 2 both legs PASS at the merged head. See `DPPD.md` §14,
 `SC5_PLAN.md`, and `field-runs/2026-08-05-issue4-cadence-method-skill.md`.
 
+**Status (2026-08-06, M-2 + SC-6):** a second field run against `cadence-method-skill`
+(issue #5, `job_20260805_0004`) produced findings **F-35–F-40**, split across two vehicles.
+Maintenance audit **M-2** (docs/prompt only) bounded the consensus parallel mandate — the
+parallel set is exactly `{Critic, Advocate}` and the `Architect →` arrow is a barrier, after
+timestamps showed the tester running concurrently with both consensus agents at
+`test/attempt_1` — and replaced the tester's mandated `git stash` falsifiability baseline
+with a non-mutating one, ending a contract in which the tester was told to perform the
+operation the reviewer is forbidden to perform. Scope change **SC-6** (**APPROVED, operator
+R-6, 2026-08-06, per item**) gave a *correct* Advocate dissent an exit other than
+termination: `resolution.action: "repair"` (operator confirms the dissent, job rewinds to
+build carrying it as `corrections.json`, re-runs forward), a fourth independent budget
+`operator_directed_rewinds` capped at 1 per gate, `source_attempt` widened to admit
+`review/attempt_{n}`, and — because repairing a dissent previously erased it from the report
+while overriding one did not — `execution-report.js` now scans superseded attempts, exposes
+`superseded_consensus`, quotes each dissent verbatim, and drives the `consensus` gate to
+WARN. Superseded evidence warns, never fails, so the latest-attempt gating contract is
+intact. `SCHEMA_VERSION` 1.2.0 → **1.3.0**, report fixtures **15 → 16**; parity 88/88,
+entropy 7/7, provenance 3/3, and the SC-3 micro-drill unchanged; verdict taxonomy frozen.
+This run's evidence tree **survived** (primary checkout, per hard rule 5), so unlike SC-5
+every finding was re-derived from evidence rather than attributed. See `DPPD.md` §15–§16,
+`SC6_PLAN.md`, and `field-runs/2026-08-05-issue5-cadence-method-skill.md`.
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table
@@ -110,6 +132,12 @@ RETRY / `TEST_GATE_FAILURE` (#109, operator-completed the same day). The last tw
 and #33; the #135 branch had never been pushed and existed only in the operator's local
 clone. Per-run detail lives in `VERIFICATION.md`; the earlier per-run status blocks below
 (#103, #104) are retained as the point-in-time record and are not extended per run.
+
+A second series runs against `cadence-method-skill` — issue #4 (`job_20260805_0003`,
+PROMOTE, source of SC-5) and issue #5 (`job_20260805_0004`, PROMOTE-with-warnings, source of
+M-2 and SC-6) — bringing the retained total to **eleven**. The #5 record is the first in
+either series whose evidence tree survived the run, so it is the first whose gate claims are
+independently re-derivable rather than orchestrator-reported.
 
 **Run numbering (renumbered 2026-08-05):** "run N" counts production runs in **job-ID
 allocation order**, spanning 11 runs — run 1 `job_20260715_0001` (no field-run record),

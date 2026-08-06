@@ -93,8 +93,16 @@ continuation).
 Always-on when `policy.test_policy: required` (an explicit `falsifiability: false` with
 required tests is rejected at intake) or when `policy.falsifiability: true`:
 before a criterion's check counts as a pass, the tester establishes a PRE-change baseline
-(stash the build changes including untracked files, or evaluate against the base commit)
-and runs the same checks there. A criterion is *verified* only if its check went RED
+and runs the same checks there. The baseline is materialized in a SEPARATE location —
+`git archive {target_branch}` into a scratch directory, a temporary worktree/clone created
+outside the pipeline worktree, or `git show {target_branch}:<path>` for targeted checks —
+and NEVER by reverting the pipeline worktree (F-36). `git stash push --include-untracked`
++ `git stash pop`, which earlier revisions of this section and of `adws-tester.md` named as
+the technique, is now PROHIBITED for the same reason `adws-reviewer.md` has always
+prohibited it: at the test gate the worktree holds the only copy of an uncommitted, partly
+untracked change set, so a dispatch that dies mid-stash orphans the whole build with
+nothing to recover from, and any concurrent reader (see F-35 above) silently observes an
+empty tree. A criterion is *verified* only if its check went RED
 pre-change for the right reason (`baseline_reason: assertion-failed-runtime-present` — the
 check ran and failed because the feature was absent) AND passes post-change. A check that
 
@@ -137,6 +145,25 @@ At the test and review gates, after the phase agent (Architect) produces its out
    dependency at these gates is Architect → (Critic ∥ Advocate); the two consensus
    agents have no dependency on each other, so running them concurrently is the
    wall-clock-optimal and mandated form.
+
+   **The parallel set is exactly {Critic, Advocate} (F-35).** That arrow is a
+   BARRIER, not a formality: the phase agent must have finished writing its evidence
+   — and the phase validators must have run — before either consensus agent is
+   dispatched. Never widen the batch to include the phase agent itself. Both
+   consensus agents read the worktree the phase agent is still writing, so a
+   concurrent dispatch means they may assess a change set that does not yet exist, is
+   half-written, or (if the phase agent touches git state) has momentarily vanished.
+   The failure is silent by construction — the consensus agents cannot tell a
+   mid-write tree from a finished one, and a verdict reached against the wrong tree
+   looks exactly like a verdict reached against the right one. A live run took this
+   path: at `test/attempt_1` of `job_20260805_0004` the tester ran 23:09:56–23:15:42Z
+   while the Advocate assessed at 23:13:02Z and the Critic at 23:14:06Z, both inside
+   that window, and the tester's `git stash` baseline (see F-36 below, now
+   prohibited) briefly emptied the tree underneath them. The assessments survived on
+   the evidence, but nothing in the pipeline would have caught it if they had not.
+   Where the dispatch mechanism encourages batching independent calls into one
+   message, that guidance is about calls with no ordering constraint; this one has an
+   ordering constraint.
 2. Reconciliation: unanimous pass → promote. Critic `fail` → gate fails (retry path,
    rule 4/rewind). Advocate dissent → record the dissent VERBATIM in
    `consensus/advocate.json`, present it to the operator once for resolution; if
@@ -159,7 +186,16 @@ At the test and review gates, after the phase agent (Architect) produces its out
    `consensus` gate that reads the recorded `consensus/{critic,advocate}.json` of the
    latest attempt of each phase and evaluates to `fail` on any Advocate dissent (or
    Advocate `fail`) or Critic `fail` — EXCEPT a dissent the operator overrode (rule 5),
-   which downgrades to `warn` (still not a clean promote). Because a failed gate on a
+   which downgrades to `warn` (still not a clean promote). Since SC-6/F-38 it ALSO
+   scans the superseded (non-latest) attempts for dissents and downgrades to `warn` on
+   any it finds, recording them in the report's `superseded_consensus` array and
+   quoting each dissent verbatim. Superseded rounds never FAIL the gate — a later
+   attempt already answered them, and the report certifies the job's final state — but
+   they can no longer be invisible. The governing rule is simple: **an Advocate dissent
+   recorded anywhere in a job's evidence forbids a CLEAN promote.** Before F-38 the
+   opposite held for the strongest resolution: a dissent the operator conceded and
+   repaired vanished behind the later clean round, while an `override` (the dissent was
+   wrong, nothing changed) stayed visible. Because a failed gate on a
    `completed` job maps to QUARANTINE, a job whose evidence records a blocking dissent
    CANNOT promote even if `run_manifest.final_status` was (incorrectly) set to
    `completed` — the verdict is derived from the consensus evidence, not the narrative
@@ -174,12 +210,65 @@ At the test and review gates, after the phase agent (Architect) produces its out
      `consensus` gate no longer FAILS on it but downgrades to `warn`: the job can only
      PROMOTE-with-warnings, never a clean promote. A resolved dissent is never silent
      (FR-7).
-   - `action: "uphold"` — operator confirms the dissent. Behaves exactly as an
-     unresolved dissent: `consensus` gate `fail` → QUARANTINE / `ADVOCATE_DISSENT`.
-   Only `override` clears the block; uphold, a malformed action, or an absent
-   resolution all leave the dissent blocking. This path creates no new attempt, so it
-   preserves the phase's retry budget (the F-3 defect: previously a false-positive
-   dissent could only clear by burning a full review retry).
+   - `action: "uphold"` — operator confirms the dissent and ends the job. Behaves
+     exactly as an unresolved dissent: `consensus` gate `fail` → QUARANTINE /
+     `ADVOCATE_DISSENT`.
+   - `action: "repair"` (SC-6/F-37) — operator confirms the dissent and elects to FIX
+     the deliverable instead of ending the job. See "Operator-directed repair" below.
+   Only `override` and a COMPLETED `repair` clear the block; uphold, a malformed
+   action, or an absent resolution all leave the dissent blocking. `override` creates
+   no new attempt, so it preserves the phase's retry budget (the F-3 defect:
+   previously a false-positive dissent could only clear by burning a full review
+   retry); `repair` deliberately does create new attempts, because its whole purpose
+   is to change the artifact.
+
+## Operator-directed repair of a correct dissent (SC-6/F-37)
+
+Before SC-6 the three resolutions above covered only dissents the operator thought
+WRONG (`override`, and rule 2's fresh re-review) or dissents that ended the job
+(`uphold`). A dissent the operator judged RIGHT had exactly one exit: terminate with
+`ADVOCATE_DISSENT`. That inverted the incentive at the most important moment in the
+pipeline — the Advocate doing its job well was indistinguishable, procedurally, from
+the job failing — and it left the obvious response, "the Advocate is correct, so fix
+the deliverable and check again," undefined. A live run (`job_20260805_0004`,
+cadence-method-skill issue #5) took that response anyway and had to improvise the
+bookkeeping. SC-6 defines it:
+
+1. The orchestrator writes `resolution.action: "repair"` onto the dissenting
+   `consensus/advocate.json`, with a `rationale` recording that the dissent was
+   CONFIRMED, not overridden.
+2. The gate attempt closes `gate_result: "fail"` with the attempt-level
+   `failure_reason: "ADVOCATE_DISSENT_REPAIRED"`. This is an ATTEMPT annotation only —
+   it is never written to `run_manifest.failure_reason`, never enters the terminal
+   failure-reason classes, and never reaches `decideLifecycle`. The terminal verdict
+   taxonomy is unchanged; in particular this is NOT the terminal `ADVOCATE_DISSENT`,
+   which means almost the opposite (an unresolved or upheld dissent that quarantines).
+3. Rewind to `build`: write the dissent into a FRESH `build/attempt_{n}/corrections.json`
+   with `classification: "code"` and `source_attempt` pointing at the dissent's real
+   location (`review/attempt_{n}` or `test/attempt_{n}` — the enum admits both since
+   SC-6/F-39). Then re-run forward from build; each downstream phase opens an ordinary
+   new attempt inside its own budget.
+4. The build attempt escalates one tier on the standard ladder recording
+   `tier_input: { "source": "operator-resolution", "value": "<dissent location>" }` —
+   the same F-6 rule that governs rule 2's re-review, for the same reason (the previous
+   tier produced work an independent assessor faulted).
+5. **Budget.** Track it in `run_manifest.operator_directed_rewinds` (`{ "test": 0,
+   "review": 0 }`), capped at 1 per gate. This is a FOURTH independent budget: it is
+   neither of the two gate-AUTOMATIC rewinds (`cross_phase_rewinds.test` from failing
+   checks, `cross_phase_rewinds.verify` from a grader BLOCK) nor the check-defect
+   repair, and it consumes none of them. It DOES consume an ordinary build retry,
+   which is what bounds the loop. When either the repair cap or the build retry budget
+   is spent, `repair` is no longer available and the operator's remaining choices are
+   `override` or `uphold`.
+6. **The dissent is never erased.** `resolution` is a designated post-hoc field on the
+   original attempt (`references/artifact-layout.md` rule 2); the dissenting
+   `advocate.json` is not edited otherwise and the superseded attempt stays in the
+   tree. A repaired dissent surfaces in the terminal report as a `consensus` WARN, so
+   the job can reach PROMOTE-with-warnings and never a CLEAN promote (F-38) — the same
+   standard `override` has carried since F-3.
+7. A `repair` still sitting on a phase's LATEST attempt means the rewind never produced
+   a newer round (the job died first). That is not a completed repair, so it stays
+   blocking exactly like `uphold`.
 
 ## Delegated push at ship (F-5)
 
