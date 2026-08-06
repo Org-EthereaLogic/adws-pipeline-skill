@@ -85,6 +85,20 @@ This run's evidence tree **survived** (primary checkout, per hard rule 5), so un
 every finding was re-derived from evidence rather than attributed. See `DPPD.md` §15–§16,
 `SC6_PLAN.md`, and `field-runs/2026-08-05-issue5-cadence-method-skill.md`.
 
+**Status (2026-08-06, M-3):** maintenance audit **M-3** (tooling only — `adws-pipeline/`
+untouched) closed four local-CI gaps found by asking whether the harness had kept up with
+SC-5/SC-6 (findings **F-41–F-44**). The largest was F-27 recurring inside the harness itself:
+four places printed fixture counts that nothing asserted, and no runner checked its own
+size, so deleting a fixture together with its `CASES` entry would have left every suite
+green under a stale banner. The report, entropy, and provenance runners now cross-check
+declared cases against fixtures on disk in both directions; `run-parity.js` carries
+`EXPECTED_FIXTURE_TOTAL`. Also: NFR-3 (SKILL.md < 500 lines) is asserted rather than
+hand-counted, the ten agent definitions are linted for frontmatter and canonical SC-4 tiers,
+and the Tier-3 review prompt — which still told reviewers to defend the unbounded
+"mandatory-parallel consensus" that was F-35 — is refreshed through SC-6. All four
+assertions were falsified before acceptance. Suite sizes unchanged (88/16/7/3 + drill). See
+`DPPD.md` §17 and `VERIFICATION.md` "Maintenance audit M-3".
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table

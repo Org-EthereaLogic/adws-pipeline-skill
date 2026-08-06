@@ -6,8 +6,8 @@
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
 `acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
-(§13), SC-5 (§14), and SC-6 (§16) approved per R-6; maintenance audits M-1 (§12) and
-M-2 (§15) are defect fixes, not revisions. Governing version: 1.6.
+(§13), SC-5 (§14), and SC-6 (§16) approved per R-6; maintenance audits M-1 (§12),
+M-2 (§15), and M-3 (§17) are defect fixes, not revisions. Governing version: 1.6.
 **Companion document:** `WBS.md`
 
 ---
@@ -623,3 +623,48 @@ terminal failure reason for the repair path, a separate `repaired_dissent` gate 
 orchestrator auto-repair without the operator, an uncapped repair budget, backfilling
 `superseded_consensus` into historical trees, and enumerating every live `run_manifest` key
 in the documented shape.
+
+## 17. Maintenance audit M-3 (2026-08-06) — the harness held itself to a lower standard
+
+Not a scope change: tooling only. No requirement, story, acceptance criterion, verdict
+taxonomy, skill text, or evidence schema moves; `adws-pipeline/` is untouched apart from
+nothing at all. Prompted by asking, after SC-6, whether local CI had kept up with the
+codebase it gates. It had not — and the largest gap was a defect class the pipeline itself
+had already been fixed for twice (findings **F-41 … F-44**).
+
+- **M-3a (F-41) Suite sizes were narrated, never asserted.** Four places printed fixture
+  counts (`Makefile`, `gate.sh` ×2, `.githooks/pre-push`, `scripts/local-ci/README.md`) and
+  nothing compared them to anything. `Makefile` still said `84` — parity moved 84 → 88 under
+  SC-5 the previous day and the banner was never updated, so the drift predated the audit.
+  Worse than stale prose: **no runner asserted its own size.** `run-parity.js` derived its
+  total from disk; the report, entropy, and provenance runners derived theirs from
+  `CASES.length`. Delete a fixture and its `CASES` entry and every suite reports green with
+  fewer tests. That is exactly SC-5/F-27 — *a count no consumer compares is not a control* —
+  sitting in the harness that guards against F-27. Fixed by cross-checking the declared
+  `CASES` against the fixtures on disk **in both directions** inside the report, entropy,
+  and provenance runners (two independent sources for the same fact), and by adding
+  `EXPECTED_FIXTURE_TOTAL = 88` to `run-parity.js`, which discovers from disk and therefore
+  has no second source. All four were falsified before being accepted: hiding a fixture
+  makes each fail with the specific name.
+- **M-3b (F-42) NFR-3 was verified by hand.** "SKILL.md < 500 lines" is claimed in every
+  scope change's "Invariants held" — 357 (SC-4), 367 (SC-5), 379 (SC-6), monotonic — and the
+  verification was a human running `wc -l`. `frontmatter-lint.mjs` now asserts it, using
+  `wc -l` semantics so the number it prints is the number the docs quote.
+- **M-3c (F-43) The ten agent definitions were unlinted.** `install.sh` ships
+  `.claude/agents/adws-*.md` alongside the skill and Claude Code registers each as a subagent
+  type keyed by its `name`, yet nothing checked that the frontmatter existed, that `name`
+  matched the filename, or that `model` was a canonical SC-4 tier. A typo'd `name` does not
+  fail loudly — the type never registers, the F-11 fallback papers over it, and the defect
+  surfaces at run time several layers from its cause. Now linted; falsified against an
+  injected bad `name` and a non-canonical `model`.
+- **M-3d (F-44) The Tier-3 review prompt argued against the current spec.** It told the
+  advisory reviewer to protect "the mandatory-parallel consensus at the test/review gates" —
+  the exact unbounded phrasing that *was* F-35 — so it would have flagged M-2's fix as a
+  regression. It also predated SC-5's full `check_specs` emission and all of SC-6. Refreshed
+  through SC-6, with new dimensions for the evidence-schema/consensus invariants and for
+  suite coverage. Advisory tier, so this never gated anything; a stale reviewer prompt is
+  still a reviewer arguing for a defect.
+
+Suites: report **16/16**, parity **88/88**, entropy **7/7**, provenance **3/3**, SC-3
+micro-drill — all unchanged in size, now all self-asserting. Tier 1 nine of nine PASS.
+Governing state remains **DPPD 1.6 (SC-6)** — M-3 is a defect fix under it, not a revision.

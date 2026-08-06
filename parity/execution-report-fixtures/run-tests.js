@@ -228,6 +228,35 @@ function stripVolatile({ json, md }) {
 let failures = 0;
 const results = [];
 
+// M-3a: the suite must not be able to SHRINK silently. `CASES` above and the fixture
+// directories on disk are two independent sources for the same fact — cross-check them
+// in BOTH directions, so deleting a fixture dir, or dropping its CASES entry, fails here
+// instead of passing quietly with fewer tests. The banner counts printed by this file and
+// by scripts/local-ci are narration; this is the assertion. (Same defect class as SC-5's
+// F-27: a count no consumer compares is not a control. It cost the pipeline a criterion
+// once; there is no reason to leave the identical hole in the harness that guards it.)
+{
+  const onDisk = fs
+    .readdirSync(__dirname, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => d.name)
+    .sort();
+  const declared = CASES.map((c) => c.name).sort();
+  const orphans = onDisk.filter((n) => !declared.includes(n));
+  const phantoms = declared.filter((n) => !onDisk.includes(n));
+  for (const n of orphans) {
+    failures += 1;
+    console.log(`FAIL fixture coverage: directory "${n}" exists but no CASES entry runs it`);
+  }
+  for (const n of phantoms) {
+    failures += 1;
+    console.log(`FAIL fixture coverage: CASES entry "${n}" has no fixture directory`);
+  }
+  if (orphans.length === 0 && phantoms.length === 0) {
+    console.log(`PASS fixture coverage — ${onDisk.length} fixture dir(s) ↔ ${declared.length} CASES entr(ies)`);
+  }
+}
+
 function check(label, condition, actual, expected) {
   if (!condition) {
     failures += 1;

@@ -682,3 +682,67 @@ Field-run record: `docs/field-runs/2026-08-05-issue5-cadence-method-skill.md`.
   and SC-4 closed as A9. Noticing four *absences* by cross-referencing a 226-line document
   against a 200-line research record is not a haiku-tier task, so A9 has a field data point
   now, though a single run is a data point and not a demonstration.
+
+## Maintenance audit M-3 (2026-08-06) — local CI vs. the codebase it gates, F-41…F-44
+
+Governing record: `DPPD.md` §17. Tooling only — `adws-pipeline/` untouched, no schema, no
+skill text. Triggered by an operator question after SC-6: had local CI kept up with the
+recent changes? It had not.
+
+- **Every fixture count in the CI was prose** (F-41). `Makefile`, `gate.sh` (twice),
+  `.githooks/pre-push`, and `scripts/local-ci/README.md` printed suite sizes that nothing
+  compared to anything. `Makefile` read `84` — parity moved 84 → 88 under SC-5 the previous
+  day — so the drift was already there before SC-6 added a sixteenth report fixture and
+  invalidated the other four.
+- **The counts were the symptom; the missing assertion was the defect.** `run-parity.js`
+  computed its total by walking `parity/fixtures/`; the report, entropy, and provenance
+  runners computed theirs from `CASES.length`. Both are self-consistent by construction and
+  neither can detect a shrink: remove a fixture *and* its `CASES` entry and all four suites
+  report green with fewer tests, under a banner still claiming the old number. This is
+  SC-5/F-27 restated — *a count no consumer compares is not a control* — inside the harness
+  whose job is to catch F-27-class defects. The field-run lesson it violates is its own:
+  "the fix is not 'watch for it' — it is making the mismatch impossible."
+- **Fixed with two independent sources wherever two exist.** The report, entropy, and
+  provenance runners now cross-check declared `CASES` names against the fixture files/dirs
+  on disk in BOTH directions — an orphan fixture (exists, never run) and a phantom case
+  (declared, no fixture) each fail by name. `run-parity.js` discovers from disk and so has
+  no second source; it gets `EXPECTED_FIXTURE_TOTAL = 88`, a constant a human must change in
+  the same commit as any corpus change.
+- **All four were falsified before acceptance.** Hiding `promote_warn` produced both
+  directions of the report failure; removing one `patch-compose` fixture produced
+  `discovered 87 fixtures, expected 88`. (The falsification of the parity check also
+  restored its fixture under the wrong filename, which `git status` caught before the
+  commit — noted because it is the reason the fixture tree was re-verified byte-identical to
+  HEAD before amending.) A residual blind spot, accepted: `run-parity.js` keys cases by
+  filename, so a *renamed* fixture keeps the total at 88 and still validates against its own
+  frozen `expected`. That changes a display name, not a verdict, so it is recorded rather
+  than fixed.
+- **NFR-3 is no longer an honor system** (F-42). "SKILL.md < 500 lines" appears in every
+  scope change's Invariants section and was verified by a human running `wc -l` each time —
+  357 → 367 → 379 across SC-4/SC-5/SC-6, monotonic, with nothing watching the trend.
+  `frontmatter-lint.mjs` asserts it and reports `379/500`, matching `wc -l` semantics so the
+  lint's number and the DPPD's number cannot diverge.
+- **The ten agent definitions had no lint at all** (F-43). They are installed by
+  `install.sh` and registered by Claude Code under their frontmatter `name`, yet nothing
+  verified the block existed, that `name` matched the filename stem, that `description` and
+  `tools` were present, or that `model` was one of the four canonical SC-4 tiers. The
+  failure mode is quiet in the worst way: a typo'd `name` simply fails to register the
+  subagent type, F-11's fallback then handles the "unregistered type" case as designed, and
+  the operator sees a phase running through the fallback path for no visible reason.
+  Falsified against an injected `adws-critik` name and a `claude-3-opus` model.
+- **The Tier-3 review prompt would have flagged M-2's fix as a regression** (F-44). Its
+  contract-coherence dimension told the reviewer to protect "the mandatory-parallel
+  consensus at the test/review gates" — the unbounded phrasing that *was* F-35. It also
+  predated SC-5 and SC-6 entirely. Refreshed: the consensus pair is parallel with each other
+  and nothing else, `check_specs` carries every criterion and checks carry back `check_id`,
+  a dissent recorded anywhere forbids a clean promote while superseded rounds warn and never
+  fail, and suite counts in prose may not move without the assertion behind them moving too.
+  This tier never blocks, so nothing shipped wrong because of it — but an advisory reviewer
+  reasoning from a superseded spec argues for the defect.
+- **Suites after M-3:** report **16/16**, parity **88/88**, entropy **7/7**, provenance
+  **3/3**, SC-3 micro-drill — every size unchanged and now self-asserting. Tier 1 nine of
+  nine PASS; Tier 2 both legs PASS.
+- **Honest scope note.** M-3 makes the harness notice its own shrinkage; it does not make
+  the suites *bigger*, and coverage of the skill's markdown contracts is still shallow — the
+  frontmatter lint checks structure and canonical tiers, not meaning. Nothing here would
+  catch a rule that is well-formed and wrong, which is what M-2 and SC-6 were about.

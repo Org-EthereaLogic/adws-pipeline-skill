@@ -61,6 +61,25 @@ function validateProvenance(value) {
 
 let failures = 0;
 
+// M-3a: cross-check the declared CASES against the fixtures on disk in both directions,
+// so the suite cannot shrink silently. See the same block in
+// parity/execution-report-fixtures/run-tests.js for the reasoning.
+{
+  const onDisk = fs.readdirSync(__dirname).filter((f) => f.endsWith('.json')).sort();
+  const declared = CASES.map((c) => c.name).sort();
+  for (const n of onDisk.filter((n) => !declared.includes(n))) {
+    failures += 1;
+    console.log(`FAIL fixture coverage: "${n}" exists but no CASES entry runs it`);
+  }
+  for (const n of declared.filter((n) => !onDisk.includes(n))) {
+    failures += 1;
+    console.log(`FAIL fixture coverage: CASES entry "${n}" has no fixture file`);
+  }
+  if (failures === 0) {
+    console.log(`PASS fixture coverage — ${onDisk.length} fixture file(s) ↔ ${declared.length} CASES entr(ies)`);
+  }
+}
+
 for (const testCase of CASES) {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, testCase.name), 'utf8'));
   const provenance = manifest.provenance;

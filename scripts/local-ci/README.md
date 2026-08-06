@@ -45,6 +45,13 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
 
 ## Notes
 
+- **Suite sizes are asserted, not narrated** (M-3a). The counts in this table, in the
+  `Makefile`, in `gate.sh`, and in `.githooks/pre-push` are prose; the assertions live in the
+  runners. The report, entropy, and provenance suites cross-check their declared `CASES`
+  against the fixtures on disk in both directions (an unrun fixture and a fixtureless case
+  each fail by name); `run-parity.js` discovers from disk and so carries
+  `EXPECTED_FIXTURE_TOTAL`, which must be updated in the same commit as any fixture
+  addition or removal. If you change a count in prose, change the assertion behind it.
 - All host-side shell stays **bash-3.2-safe** (macOS stock: no assoc arrays, `${x^^}`,
   `mapfile`) — the repo's own F-13 lesson applied to its tooling.
 - Tier 1/2 suites write only gitignored side-effects (`parity/PARITY_REPORT.md`, fixture

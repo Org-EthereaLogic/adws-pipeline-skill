@@ -63,6 +63,15 @@ const DIVERGED_PACKS = {
   'criteria-to-checks': 'SC-1 + SC-5, v2.0.0',
 };
 
+// M-3a: the declared size of the corpus. Unlike the report/entropy/provenance suites —
+// which cross-check a CASES list against the files on disk — this harness DISCOVERS its
+// fixtures, so disk is its only source and a deleted fixture would simply reduce the
+// total with every assertion still green. This constant is the second source: it must be
+// changed deliberately, by a human, in the same commit that adds or removes a fixture.
+// Bump it when the corpus legitimately grows (84 → 88 under SC-5, four new
+// criteria-to-checks cases). A mismatch is a hard failure, never a warning.
+const EXPECTED_FIXTURE_TOTAL = 88;
+
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.
 const CONTROLLED_ENV = ['ADWS_UMIF_CANONICAL', 'ADWS_GRADIENT_THRESHOLD', 'TRINITY_ENTROPY_GATING', 'ADWS_NATIVE_UMIF'];
@@ -341,6 +350,16 @@ function main() {
   );
   lines.push('');
   fs.writeFileSync(REPORT_PATH, lines.join('\n'));
+
+  // M-3a: fail loudly if the corpus changed size without the constant being updated.
+  if (total !== EXPECTED_FIXTURE_TOTAL) {
+    console.error(
+      '\nFIXTURE COVERAGE FAILURE: discovered ' + total + ' fixtures, expected ' +
+        EXPECTED_FIXTURE_TOTAL + '. A suite that silently shrinks is not a suite — if this ' +
+        'change is intentional, update EXPECTED_FIXTURE_TOTAL in run-parity.js in the same commit.'
+    );
+    process.exit(1);
+  }
 
   console.log(
     '\nSummary: ' + matches + '/' + total + ' fixtures identical, ' + mismatches + ' failures.' +
