@@ -190,9 +190,22 @@ own gates.
    decision-relevant PreToolUse/PostToolUse pair is carried verbatim, and unlike the dissent
    case the omission is **stated, not silent** — which is the distinction that matters. A
    one-line §12 stated-limits entry would close it.
-3. **Issue #6 (the WP 1.4 design freeze)** still carries the stale "Q1 and Q2 resolved"
-   criteria an earlier audit flagged, now that WP 1.4's row reads Q1/Q2/Q4. Merging #5
-   unblocked it; the criteria need correcting before it runs.
+3. ~~**Issue #6 (the WP 1.4 design freeze)** still carries the stale "Q1 and Q2 resolved"
+   criteria an earlier audit flagged.~~ **Struck — this was wrong when written.** The
+   originating run's closing summary said issue #6 still carried stale `Q1 and Q2` criteria,
+   and this record repeated it without re-checking. Issue #6 was edited **2026-08-06
+   02:54:12Z** — about fifteen minutes after PR #50 merged, and ~5 minutes before this line
+   was written — and now reads `Q1/Q2/Q4` in its title, its requested-change paragraph, and
+   its acceptance criteria, matching WBS §8's WP 1.4 row. Verified 2026-08-06 against the
+   issue's `userContentEdits` history and the authority document: §7 carries Q1, Q2 and Q4
+   as open with pending defaults, while **Q3 is deferred by design** (revisit after WBS 9.0),
+   so its exclusion is correct rather than an omission. The issue's Depends-on
+   (`1.1–1.3, 1.5`), Traces (`SC-1–SC-4`), M1 gate, and its §9 pointer into the map (which
+   does hold the two recorded divergences) all check out. **No edit was made.**
+
+   Left visible rather than deleted, because the error is the point: lesson 3 below says to
+   check the report against the evidence, and this line is what happens when you don't. It
+   was written one paragraph above that lesson.
 
 ## Lessons
 
