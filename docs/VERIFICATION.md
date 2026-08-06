@@ -579,3 +579,170 @@ Field-run record: `docs/field-runs/2026-08-05-issue4-cadence-method-skill.md`.
   as an `unclassified` spec unconditionally, while `rubric_result` only degrades to `warn`
   when unclassified criteria exceed half the input. A lone misread criterion in a
   well-formed set is retained *and* still verdicts `pass` — it costs nothing at all.
+
+## Maintenance audit M-2 (2026-08-06) — dispatch boundary & baseline safety, F-35…F-36
+
+Governing record: `DPPD.md` §15. Findings register: `SC6_PLAN.md` §1. Field-run record:
+`docs/field-runs/2026-08-05-issue5-cadence-method-skill.md`. Docs/prompt only — no code,
+no schema, zero parity risk.
+
+- **The concurrent dispatch is proven from timestamps, not from the self-report** (F-35).
+  The orchestrator disclosed it, and the evidence tree independently confirms it:
+  `test/attempt_1/phase_manifest.json` records the tester at **23:09:56Z → 23:15:42Z**
+  while `consensus/advocate.json` is stamped **23:13:02Z** and `consensus/critic.json`
+  **23:14:06Z** — both inside the tester's window. `test/attempt_2` (agent finished
+  02:05:30Z, consensus 02:08:51Z / 02:09:20Z) and both review rounds show the correct
+  serialized shape, so the one run contains its own before/after pair.
+- **The spec permitted it.** Nothing in `SKILL.md` or `phase-gates.md` bounded the parallel
+  set; the ordering existed only as the parenthetical `Architect → (Critic ∥ Advocate)` and
+  as the implicit numbering of the phase-loop steps. A mandate to parallelize written in
+  capitals, next to an unstated limit, in a runtime that encourages batching independent
+  calls, is a defect in the mandate. Both files now name the set explicitly and state that
+  the arrow is a barrier.
+- **Why it cannot be caught after the fact.** A Critic or Advocate reading a half-written
+  worktree produces a verdict that is indistinguishable, in the evidence, from one reached
+  against the finished change set. In this run the Critic caught a `git stash` reset in the
+  reflog and its assessment survived on content it had already captured — but that was
+  luck, not a control.
+- **The tester was told to do what the reviewer is forbidden to do** (F-36).
+  `adws-tester.md:30-32` and `phase-gates.md:96` named `git stash push --include-untracked`
+  … `git stash pop` as the baseline technique; `adws-reviewer.md:27-31` has prohibited
+  `git stash` in the worktree since SC-2, with the correct rationale. The hazard is
+  strictly worse at the test gate, where the worktree holds the **only** copy of an
+  uncommitted, partly untracked change set: a dispatch that dies mid-stash orphans the
+  entire build with nothing to recover from. This is independent of F-35 — serializing the
+  dispatch does not make the stash safe.
+- **Replaced, not merely warned about.** The baseline is now materialized elsewhere
+  (`git archive {target_branch}` into a scratch dir, a worktree/clone created outside the
+  pipeline worktree, or `git show {target_branch}:<path>` for targeted checks), and
+  `adws-tester.md` carries the prohibition in its own Rules section rather than relying on
+  a sibling agent's file to hold the line.
+- **Suites unchanged by M-2:** parity 88/88, report 15/15 (at the time of the audit),
+  entropy 7/7, provenance 3/3, SC-3 micro-drill, both skill lints — all green. NFR-3 holds.
+
+## SC-6 scope change (2026-08-06, field run job_20260805_0004) — F-37…F-40
+
+Governing record: `DPPD.md` §16 (v1.6); plan and findings register: `SC6_PLAN.md`.
+Field-run record: `docs/field-runs/2026-08-05-issue5-cadence-method-skill.md`.
+
+- **The evidence boundary was met this time.** SC-5's originating run lost its tree, so its
+  central tally was orchestrator-reported. This run's tree survived in the target repo's
+  primary checkout (`artifacts/job_20260805_0004/`) because hard rule 5 keeps evidence
+  outside the worktree. Every SC-6 claim was re-derived from it, and the two central ones
+  were re-derived *against* the orchestrator's summary rather than from it.
+- **A correct dissent had no exit but termination** (F-37). The resolution set was
+  `override` (false positive), `uphold` (→ terminal `ADVOCATE_DISSENT`, quarantine), and
+  F-6's fresh re-review (for a *suspected* false positive). None of the three means "you
+  are right; fix it and check again." The live operator, agreeing with a dissent that the
+  reviewer had independently corroborated, therefore had to invent the path — and the
+  invention necessarily landed outside the schema (`corrections.json.source_attempt` had no
+  legal value for a review origin; `operator_directed_rewinds` did not exist) and outside
+  the report's field of view. Recording the truthful out-of-enum `source_attempt` over a
+  conforming false one was the right call by the orchestrator and is now unnecessary.
+- **The strongest resolution was the invisible one** (F-38). `execution_report.md` for this
+  job renders `| consensus | pass | 2 round(s) clean |` beside a
+  `review/attempt_1/consensus/advocate.json` carrying `verdict: "fail"` and a full dissent
+  text. The `consensus` gate reads latest attempts only — a deliberate contract
+  (`execution-report.js:127-132`), and the right one, since a superseded failure must not
+  permanently fail a job a retry fixed. But combined with F-37 it meant that *repairing* a
+  dissent erased it while *overriding* one (the dissent was wrong; nothing changed) has
+  warned since F-3. The exit-10 this run reported came entirely from the grader and drift
+  warns; the dissent contributed nothing. FR-7's "a resolved dissent is never silent" did
+  not hold on this path.
+- **The fix preserves the contract it exposes.** Superseded dissents WARN; they never fail.
+  `promote_retry_recovered` is unchanged and still reaches clean PROMOTE at exit 0, so an
+  ordinary successful retry is unaffected. What changed is that a *dissent* — as opposed to
+  any other superseded failure — now forbids a clean promote wherever it sits in the tree,
+  and is quoted verbatim in a dedicated report section.
+- **`ADVOCATE_DISSENT_REPAIRED` is deliberately not a terminal reason.** It annotates the
+  superseded attempt's `phase_manifest.failure_reason` and is read by nothing:
+  `decideLifecycle` consumes `run_manifest.failure_reason` only, and the terminal
+  failure-reason classes are unchanged. It also reads almost opposite to the terminal
+  `ADVOCATE_DISSENT` it resembles, which is why the distinction is stated in
+  `phase-gates.md` rather than left to the name.
+- **"gate-failed — attempt 1: pass"** (F-40). `buildWarnings` hard-coded "gate-failed" into
+  the multi-attempt sentence while rendering each prior attempt's real `gate_result`. Under
+  ordinary retries every prior attempt has failed, so the assumption held until a rewind
+  superseded attempts that had PASSED — which is exactly what an operator-directed repair
+  does to build and test. The live report contains the contradiction twice. Priors are now
+  labeled by what happened to them, and the lead clause claims "gate-failed" only when
+  every prior actually failed, which keeps the B3/F-8 regression string byte-identical.
+- **Suites after the change:** report **15 → 16** (`promote_repaired_dissent`, which carries
+  the F-38 and F-40 regressions together by modeling the live run's shape — build and test
+  each superseded at `gate_result: pass`, review carrying the `repair` resolution, and
+  `build/attempt_2/corrections.json` with `source_attempt: "review/attempt_1"`). Parity
+  **88/88**, entropy **7/7**, provenance **3/3**, SC-3 micro-drill — unchanged. The 15
+  pre-existing report fixtures kept every decision, warn_flag, and exit code; only the
+  centrally-asserted `schema_version` string was re-baselined 1.2.0 → **1.3.0**. `SKILL.md`
+  **379** lines (NFR-3 < 500).
+- **Honest scope note.** SC-6 gives a correct dissent somewhere to go and stops a repaired
+  one from vanishing. It does not make the Advocate better at dissenting, and it does not
+  help with a dissent nobody notices is correct. Worth recording that the dissent in this
+  run came from the **review-gate Advocate at sonnet** — the tier raise SC-2 deferred as C2
+  and SC-4 closed as A9. Noticing four *absences* by cross-referencing a 226-line document
+  against a 200-line research record is not a haiku-tier task, so A9 has a field data point
+  now, though a single run is a data point and not a demonstration.
+
+## Maintenance audit M-3 (2026-08-06) — local CI vs. the codebase it gates, F-41…F-44
+
+Governing record: `DPPD.md` §17. Tooling only — `adws-pipeline/` untouched, no schema, no
+skill text. Triggered by an operator question after SC-6: had local CI kept up with the
+recent changes? It had not.
+
+- **Every fixture count in the CI was prose** (F-41). `Makefile`, `gate.sh` (twice),
+  `.githooks/pre-push`, and `scripts/local-ci/README.md` printed suite sizes that nothing
+  compared to anything. `Makefile` read `84` — parity moved 84 → 88 under SC-5 the previous
+  day — so the drift was already there before SC-6 added a sixteenth report fixture and
+  invalidated the other four.
+- **The counts were the symptom; the missing assertion was the defect.** `run-parity.js`
+  computed its total by walking `parity/fixtures/`; the report, entropy, and provenance
+  runners computed theirs from `CASES.length`. Both are self-consistent by construction and
+  neither can detect a shrink: remove a fixture *and* its `CASES` entry and all four suites
+  report green with fewer tests, under a banner still claiming the old number. This is
+  SC-5/F-27 restated — *a count no consumer compares is not a control* — inside the harness
+  whose job is to catch F-27-class defects. The field-run lesson it violates is its own:
+  "the fix is not 'watch for it' — it is making the mismatch impossible."
+- **Fixed with two independent sources wherever two exist.** The report, entropy, and
+  provenance runners now cross-check declared `CASES` names against the fixture files/dirs
+  on disk in BOTH directions — an orphan fixture (exists, never run) and a phantom case
+  (declared, no fixture) each fail by name. `run-parity.js` discovers from disk and so has
+  no second source; it gets `EXPECTED_FIXTURE_TOTAL = 88`, a constant a human must change in
+  the same commit as any corpus change.
+- **All four were falsified before acceptance.** Hiding `promote_warn` produced both
+  directions of the report failure; removing one `patch-compose` fixture produced
+  `discovered 87 fixtures, expected 88`. (The falsification of the parity check also
+  restored its fixture under the wrong filename, which `git status` caught before the
+  commit — noted because it is the reason the fixture tree was re-verified byte-identical to
+  HEAD before amending.) A residual blind spot, accepted: `run-parity.js` keys cases by
+  filename, so a *renamed* fixture keeps the total at 88 and still validates against its own
+  frozen `expected`. That changes a display name, not a verdict, so it is recorded rather
+  than fixed.
+- **NFR-3 is no longer an honor system** (F-42). "SKILL.md < 500 lines" appears in every
+  scope change's Invariants section and was verified by a human running `wc -l` each time —
+  357 → 367 → 379 across SC-4/SC-5/SC-6, monotonic, with nothing watching the trend.
+  `frontmatter-lint.mjs` asserts it and reports `379/500`, matching `wc -l` semantics so the
+  lint's number and the DPPD's number cannot diverge.
+- **The ten agent definitions had no lint at all** (F-43). They are installed by
+  `install.sh` and registered by Claude Code under their frontmatter `name`, yet nothing
+  verified the block existed, that `name` matched the filename stem, that `description` and
+  `tools` were present, or that `model` was one of the four canonical SC-4 tiers. The
+  failure mode is quiet in the worst way: a typo'd `name` simply fails to register the
+  subagent type, F-11's fallback then handles the "unregistered type" case as designed, and
+  the operator sees a phase running through the fallback path for no visible reason.
+  Falsified against an injected `adws-critik` name and a `claude-3-opus` model.
+- **The Tier-3 review prompt would have flagged M-2's fix as a regression** (F-44). Its
+  contract-coherence dimension told the reviewer to protect "the mandatory-parallel
+  consensus at the test/review gates" — the unbounded phrasing that *was* F-35. It also
+  predated SC-5 and SC-6 entirely. Refreshed: the consensus pair is parallel with each other
+  and nothing else, `check_specs` carries every criterion and checks carry back `check_id`,
+  a dissent recorded anywhere forbids a clean promote while superseded rounds warn and never
+  fail, and suite counts in prose may not move without the assertion behind them moving too.
+  This tier never blocks, so nothing shipped wrong because of it — but an advisory reviewer
+  reasoning from a superseded spec argues for the defect.
+- **Suites after M-3:** report **16/16**, parity **88/88**, entropy **7/7**, provenance
+  **3/3**, SC-3 micro-drill — every size unchanged and now self-asserting. Tier 1 nine of
+  nine PASS; Tier 2 both legs PASS.
+- **Honest scope note.** M-3 makes the harness notice its own shrinkage; it does not make
+  the suites *bigger*, and coverage of the skill's markdown contracts is still shallow — the
+  frontmatter lint checks structure and canonical tiers, not meaning. Nothing here would
+  catch a rule that is well-formed and wrong, which is what M-2 and SC-6 were about.

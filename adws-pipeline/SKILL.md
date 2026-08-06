@@ -157,8 +157,13 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    `skills/{skill_id}/` directory.
 3. **Consensus** (test and review only): dispatch `adws-critic` and `adws-advocate`
    in parallel (MANDATORY — they have no data dependency on each other; see
-   `references/phase-gates.md` "Consensus"), each with FRESH context — contract +
-   change set only, no Architect reasoning, not each other's output. Include the
+   `references/phase-gates.md` "Consensus"). The parallel set is EXACTLY those two:
+   never fan the phase agent (or any other agent) in alongside them. Steps 1 → 2 → 3
+   are strictly sequential — the consensus pair is dispatched only after the phase
+   agent has finished writing its evidence and the validators have run, because both
+   read the change set the phase agent is still producing (F-35). Each gets FRESH
+   context — contract + change set only, no Architect reasoning, not each other's
+   output. Include the
    standard **pipeline-mechanics preamble** in each briefing so neither flags
    expected pipeline state as a defect: staging and commits happen ONLY at ship, so
    at the test and review gates the change set is expected to be UNTRACKED in the
@@ -167,8 +172,15 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    never inside the worktree. Write both verdicts to `consensus/`.
    - Both pass → continue to gate decision.
    - Critic fail → gate fails (retry path).
-   - Advocate dissent → record verbatim; present it to the user ONCE for resolution;
-     unresolved → terminate `failed` / `ADVOCATE_DISSENT`.
+   - Advocate dissent → record verbatim; present it to the user ONCE for resolution.
+     Four resolutions, all recorded as `resolution.action` on the dissenting
+     `advocate.json`: `override` (false positive — promotes with a permanent warn),
+     `uphold` (confirmed, job ends), a fresh escalated re-review (F-6), or `repair`
+     (confirmed AND fixed — rewind to build with the dissent as `corrections.json`,
+     re-run forward, capped at 1 per gate in `operator_directed_rewinds`; SC-6/F-37).
+     Unresolved → terminate `failed` / `ADVOCATE_DISSENT`. A dissent recorded anywhere
+     in the evidence — including on an attempt a later one superseded — forbids a CLEAN
+     promote (F-38); only `override` and a completed `repair` clear the block.
 4. **Gate decision**: gate passes iff the phase agent succeeded, no validator returned
    `fail`, and consensus (where applicable) passed. Write `gate_result` into the
    attempt's `phase_manifest.json`.

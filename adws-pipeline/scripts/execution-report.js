@@ -35,7 +35,11 @@ const path = require('path');
 
 // 1.2.0 adds the `phase_gates` gate to the gates array (additive; existing gate
 // keys, decision vocabulary, and exit codes are unchanged).
-const SCHEMA_VERSION = '1.2.0';
+// 1.3.0 (SC-6/F-38) adds the `superseded_consensus` array and lets it drive the
+// existing `consensus` gate to WARN, so a dissent an operator conceded and repaired
+// can no longer vanish behind a later clean round (additive; no new gate key, no new
+// DECISION, no new exit code).
+const SCHEMA_VERSION = '1.3.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
 
@@ -160,13 +164,20 @@ function collectSkillVerdicts(latestAttempts) {
 }
 
 // B1 (F-3): the operator-resolution object the orchestrator records post-hoc on a
-// dissenting advocate.json. Only a recognized action (override|uphold) counts; any
-// other/malformed value is treated as no resolution (the dissent stays blocking).
+// dissenting advocate.json. Only a recognized action (override|uphold|repair) counts;
+// any other/malformed value is treated as no resolution (the dissent stays blocking).
+// SC-6 (F-37) adds `repair`: the operator judged the dissent CORRECT and rewound to
+// build to fix the deliverable. Like `uphold` it concedes the dissent, but unlike
+// `uphold` it is not terminal — the repaired attempt is superseded by a later one, so
+// `repair` is only ever seen on a NON-latest attempt and is scored there (see
+// collectSupersededDissents). A `repair` sitting on the LATEST attempt means the
+// rewind never produced a newer round, so it stays blocking exactly like `uphold`.
+const RESOLUTION_ACTIONS = new Set(['override', 'uphold', 'repair']);
 function normalizeResolution(advocate) {
   const r = advocate && advocate.resolution;
   if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
   const action = typeof r.action === 'string' ? r.action.toLowerCase() : null;
-  if (action !== 'override' && action !== 'uphold') return null;
+  if (!RESOLUTION_ACTIONS.has(action)) return null;
   return {
     resolved_by: typeof r.resolved_by === 'string' ? r.resolved_by : null,
     action,
@@ -191,6 +202,40 @@ function collectConsensus(latestAttempts) {
       critic: critic && typeof critic.verdict === 'string' ? critic.verdict : null,
       advocate: advocate && typeof advocate.verdict === 'string' ? advocate.verdict : null,
       dissent: advocateDissent || criticDissent || null,
+      resolution: normalizeResolution(advocate),
+    });
+  }
+  return rows;
+}
+
+// SC-6 (F-38): the counterpart to the latest-attempt contract above. Gates certify the
+// job's FINAL state, so a superseded attempt must never FAIL the terminal verdict — but
+// FR-7 also says a dissent is never silent, and before this the two rules together made
+// a dissent DISAPPEAR whenever a later attempt cleared it. That is the loudest case
+// there is: the operator conceded the dissent and rewound to build to fix the
+// deliverable (`resolution.action: "repair"`), the fix worked, and the report then read
+// `consensus: pass — "2 round(s) clean"` for a job whose evidence recorded a blocking
+// dissent. The weaker resolution (`override` — the dissent was WRONG and nothing
+// changed) stayed visible as a WARN the whole time, so the pipeline surfaced the
+// resolution that changed nothing and hid the one that changed the shipped artifact.
+//
+// These rows therefore WARN, never fail: any Advocate dissent recorded anywhere in a
+// job's evidence forbids a CLEAN promote. Pass the non-latest attempts only.
+function collectSupersededDissents(supersededAttempts) {
+  const rows = [];
+  for (const entry of supersededAttempts) {
+    const advocate = safeReadJson(path.join(entry.dir, 'consensus', 'advocate.json'));
+    if (!advocate) continue;
+    const dissent = typeof advocate.dissent === 'string' && advocate.dissent.trim().length > 0
+      ? advocate.dissent
+      : null;
+    const verdict = typeof advocate.verdict === 'string' ? advocate.verdict : null;
+    if (!dissent && verdict !== 'fail') continue;
+    rows.push({
+      phase: entry.phase,
+      attempt: entry.attempt,
+      advocate: verdict,
+      dissent,
       resolution: normalizeResolution(advocate),
     });
   }
@@ -435,8 +480,9 @@ const CONSENSUS_LABEL = 'Critic/Advocate consensus — no blocking dissent, no c
 // SILENTLY — it downgrades to WARN so the terminal verdict is PROMOTE-with-warnings,
 // never a clean promote (FR-7 / SC2_PLAN invariant #4). An upheld or unresolved
 // dissent, and any Critic fail, still FAIL exactly as before.
-function evalConsensus(consensusRows) {
+function evalConsensus(consensusRows, supersededDissentRows) {
   const rows = consensusRows || [];
+  const superseded = supersededDissentRows || [];
   if (rows.length === 0) {
     return {
       key: 'consensus',
@@ -498,6 +544,26 @@ function evalConsensus(consensusRows) {
       value: `${overridden.length} operator-overridden dissent(s)`,
       threshold: '0 blocking dissent, 0 critic fail',
       reason: `Advocate dissent in ${where} operator-resolved (override) — promotes with a permanent warning${rat}`,
+    };
+  }
+
+  // SC-6 (F-38): the latest round is clean, but an EARLIER round recorded a dissent
+  // that a later attempt superseded — most often because the operator conceded it and
+  // rewound to build to repair the deliverable. The fix worked, so this never fails;
+  // it warns, because a job whose evidence records a dissent must not read as though
+  // no dissent ever happened (FR-7: a resolved dissent is never silent).
+  if (superseded.length > 0) {
+    const d = superseded[0];
+    const where = `${d.phase}/attempt_${d.attempt}`;
+    const how = d.resolution ? `operator ${d.resolution.action}` : 'superseded by a later attempt';
+    const rat = d.resolution && d.resolution.rationale ? ` — ${d.resolution.rationale}` : '';
+    return {
+      key: 'consensus',
+      label: CONSENSUS_LABEL,
+      status: GATE_STATUSES.WARN,
+      value: `${rows.length} latest round(s) clean, ${superseded.length} superseded dissent(s)`,
+      threshold: '0 blocking dissent, 0 critic fail',
+      reason: `Advocate dissent in ${where} (${how}) was superseded by a later clean round — promotes with a permanent warning${rat}`,
     };
   }
 
@@ -669,7 +735,7 @@ function exitCodeFor(decision, warnFlag) {
 
 // --- Warnings (modeled on normalize.js buildOutstandingIssues) --------------
 
-function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, phaseAttemptRows, consensus, shipDelegation }) {
+function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, phaseAttemptRows, consensus, supersededDissents, shipDelegation }) {
   const warnings = [];
   if (failureReason) {
     warnings.push(`Failure reason recorded: ${failureReason}`);
@@ -720,13 +786,27 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
     const latest = rows.length ? rows[rows.length - 1] : null;
     const n = latest ? latest.attempt : ps.attempts;
     const priors = rows.slice(0, -1);
+    // SC-6 (F-40): a prior attempt is not necessarily a FAILED attempt. A rewind can
+    // supersede an attempt that passed its own gate — the operator-directed repair
+    // (F-37) re-runs build/test forward from a review-gate dissent, so build and test
+    // attempt_1 can both read `gate_result: pass` while being superseded. The old
+    // wording rendered that as "attempt(s) 1..1 gate-failed — attempt 1: pass", which
+    // contradicts itself in a single line. Label each prior by what actually happened,
+    // and only claim "gate-failed" in the lead when every prior did fail (which keeps
+    // the B3/F-8 regression string byte-identical for the ordinary retry case).
+    const anySuperseded = priors.some((r) => r.gate_result === 'pass');
     const reasons = priors
-      .map((r) => `attempt ${r.attempt}: ${r.failure_reason || r.gate_result || 'gate-failed'}`)
+      .map((r) =>
+        r.gate_result === 'pass'
+          ? `attempt ${r.attempt}: superseded (gate_result=pass)`
+          : `attempt ${r.attempt}: ${r.failure_reason || r.gate_result || 'gate-failed'}`
+      )
       .join('; ');
+    const lead = anySuperseded ? 'superseded or gate-failed' : 'gate-failed';
     if (latest && latest.gate_result === 'pass') {
       warnings.push(
         `Phase "${ps.phase}" passed on attempt ${n}` +
-          (reasons ? ` (attempt(s) 1..${n - 1} gate-failed — ${reasons})` : '') +
+          (reasons ? ` (attempt(s) 1..${n - 1} ${lead} — ${reasons})` : '') +
           '.'
       );
     } else {
@@ -745,6 +825,17 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
         : '';
       warnings.push(`Consensus dissent in ${c.phase}/attempt_${c.attempt}: ${c.dissent}${res}`);
     }
+  }
+  // SC-6 (F-38): the same line for a dissent a later attempt superseded. It carries the
+  // dissent text VERBATIM exactly as the latest-attempt case does — FR-7's record
+  // requirement is about the dissent, not about which attempt it landed on.
+  for (const s of supersededDissents || []) {
+    const res = s.resolution
+      ? ` [operator ${s.resolution.action}${s.resolution.rationale ? `: ${s.resolution.rationale}` : ''}]`
+      : ' [superseded by a later attempt]';
+    warnings.push(
+      `Consensus dissent in ${s.phase}/attempt_${s.attempt} (superseded): ${s.dissent || '(advocate returned fail)'}${res}`
+    );
   }
   warnings.sort();
   return Array.from(new Set(warnings));
@@ -849,6 +940,42 @@ function renderMarkdown(report, phaseAttemptRows) {
   }
   lines.push('');
 
+  // SC-6 (F-38): dissents from superseded attempts get their own section rather than
+  // rows in the table above, so the table keeps its latest-attempt-only meaning while
+  // the dissent text still appears VERBATIM in the report (FR-7).
+  const superseded = report.superseded_consensus || [];
+  if (superseded.length > 0) {
+    lines.push('## Superseded Consensus Rounds');
+    lines.push('');
+    lines.push(
+      '_These rounds did not gate the verdict — a later attempt superseded them — but a recorded dissent is never silent (FR-7)._'
+    );
+    lines.push('');
+    lines.push('| Phase | Attempt | Advocate | Resolution |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const row of superseded) {
+      lines.push(
+        `| ${row.phase} | ${row.attempt} | ${mdEscapeCell(row.advocate)} | ${mdEscapeCell(
+          row.resolution ? row.resolution.action : null
+        )} |`
+      );
+    }
+    for (const row of superseded) {
+      lines.push('');
+      const res = row.resolution
+        ? ` — operator ${row.resolution.action}${row.resolution.resolved_at ? ` (${row.resolution.resolved_at})` : ''}`
+        : '';
+      lines.push(`Dissent recorded in ${row.phase}/attempt_${row.attempt}${res}:`);
+      lines.push('');
+      lines.push(`> ${row.dissent || '(advocate returned fail with no dissent text)'}`);
+      if (row.resolution && row.resolution.rationale) {
+        lines.push('');
+        lines.push(`Resolution rationale: ${mdEscapeCell(row.resolution.rationale)}`);
+      }
+    }
+    lines.push('');
+  }
+
   lines.push('## Warnings');
   lines.push('');
   if (report.warnings.length === 0) {
@@ -939,6 +1066,17 @@ function buildReport(jobDir, options = {}) {
   const latestAttempts = PHASE_NAMES.filter((p) => phaseData[p]).map((p) => phaseData[p]);
   const skillVerdicts = collectSkillVerdicts(latestAttempts);
   const consensus = collectConsensus(latestAttempts);
+  // SC-6 (F-38): superseded attempts do not gate the verdict, but a dissent recorded in
+  // one must still surface — see collectSupersededDissents.
+  const latestDirs = new Set(latestAttempts.map((e) => e.dir));
+  const supersededAttempts = [];
+  for (const phaseName of PHASE_NAMES) {
+    for (const n of listAttempts(jobDir, phaseName)) {
+      const entry = readAttempt(jobDir, phaseName, n);
+      if (!latestDirs.has(entry.dir)) supersededAttempts.push(entry);
+    }
+  }
+  const supersededDissents = collectSupersededDissents(supersededAttempts);
 
   // B2 (F-5): the ship phase's delegated-push sub-state, if any. When a `pr`-mode push
   // fails on missing credentials the attempt records delegation.status; the orchestrator
@@ -961,7 +1099,7 @@ function buildReport(jobDir, options = {}) {
     evalVerifyStructural(phaseData),
     evalGraderVerdict(phaseData),
     evalDriftVerdict(phaseData),
-    evalConsensus(consensus),
+    evalConsensus(consensus, supersededDissents),
     evalSkillsClean(skillVerdicts),
   ];
 
@@ -975,6 +1113,7 @@ function buildReport(jobDir, options = {}) {
     phaseSummaries,
     phaseAttemptRows,
     consensus,
+    supersededDissents,
     shipDelegation,
   });
 
@@ -1002,6 +1141,7 @@ function buildReport(jobDir, options = {}) {
       rubric_result: r.rubric_result,
     })),
     consensus,
+    superseded_consensus: supersededDissents,
     warnings,
     evidence_root: jobDir,
   };

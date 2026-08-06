@@ -9,6 +9,15 @@ import { basename, join } from 'node:path';
 
 const SKILL_DIR = 'adws-pipeline';
 const SKILL_MD = join(SKILL_DIR, 'SKILL.md');
+const AGENTS_DIR = join('.claude', 'agents');
+// NFR-3. Asserted by hand in every scope change's "Invariants held" until M-3 (357 at
+// SC-4, 367 at SC-5, 379 at SC-6 — monotonic, and nothing was watching the trend).
+const SKILL_MD_MAX_LINES = 500;
+// SC-4 A2: the canonical evidence tiers. `fable` is a ceiling reachable only by
+// escalation or explicit operator override, so it is valid here but never expected as a
+// checked-in default; anything outside this set is a typo that would surface at dispatch
+// time as an unresolvable model, or silently as the runtime's own default.
+const CANONICAL_TIERS = new Set(['haiku', 'sonnet', 'opus', 'fable']);
 const problems = [];
 
 let text;
@@ -36,6 +45,57 @@ if (!m) {
   const expected = basename(SKILL_DIR);
   if (name && name !== expected) {
     problems.push(`frontmatter name "${name}" must equal the skill directory name "${expected}"`);
+  }
+}
+
+// --- NFR-3: SKILL.md stays lean (M-3b) ---
+// `wc -l` semantics (count newlines, not split segments) so this number matches the one
+// quoted by hand in the DPPD/plan docs.
+const skillLines = text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
+if (skillLines >= SKILL_MD_MAX_LINES) {
+  problems.push(`${SKILL_MD} is ${skillLines} lines; NFR-3 requires < ${SKILL_MD_MAX_LINES}`);
+}
+
+// --- agent frontmatter (M-3c) ---
+// install.sh ships .claude/agents/adws-*.md alongside the skill, and Claude Code
+// registers each as a subagent type keyed by its `name`. Nothing validated these before
+// M-3: a typo'd or missing `name` does not fail loudly — the type simply never registers,
+// and the F-11 fallback then papers over it, so the defect surfaces at run time as a
+// mystery several layers from its cause.
+let agentFiles = [];
+try {
+  agentFiles = readdirSync(AGENTS_DIR)
+    .filter((f) => f.startsWith('adws-') && f.endsWith('.md'))
+    .sort();
+} catch (e) {
+  problems.push(`cannot read ${AGENTS_DIR}: ${e.message}`);
+}
+if (agentFiles.length === 0) problems.push(`${AGENTS_DIR} contains no adws-*.md agent definitions`);
+for (const file of agentFiles) {
+  const body = readFileSync(join(AGENTS_DIR, file), 'utf8');
+  const fm = body.match(/^---\n([\s\S]*?)\n---\n/);
+  if (!fm) {
+    problems.push(`${file}: no YAML frontmatter block`);
+    continue;
+  }
+  const get = (k) => {
+    const mm = fm[1].match(new RegExp(`^${k}:\\s*(.+?)\\s*$`, 'm'));
+    return mm ? mm[1].trim() : null;
+  };
+  const expectedName = file.replace(/\.md$/, '');
+  const name = get('name');
+  if (!name) problems.push(`${file}: frontmatter missing \`name\``);
+  else if (name !== expectedName) {
+    problems.push(`${file}: frontmatter name "${name}" must equal the filename stem "${expectedName}"`);
+  }
+  if (!get('description')) problems.push(`${file}: frontmatter missing \`description\``);
+  if (!get('tools')) problems.push(`${file}: frontmatter missing \`tools\``);
+  const model = get('model');
+  if (!model) problems.push(`${file}: frontmatter missing \`model\``);
+  else if (!CANONICAL_TIERS.has(model)) {
+    problems.push(
+      `${file}: model "${model}" is not a canonical tier (${[...CANONICAL_TIERS].join(', ')}) — SC-4 A2`
+    );
   }
 }
 
@@ -75,5 +135,6 @@ if (problems.length) {
 }
 console.log(
   `[frontmatter-lint] OK — name matches dir, description present, ${seen.size} referenced path(s) exist, ` +
-    `${skillDocs.length} skill doc(s) free of out-of-skill paths`
+    `${skillDocs.length} skill doc(s) free of out-of-skill paths, SKILL.md ${skillLines}/${SKILL_MD_MAX_LINES} lines (NFR-3), ` +
+    `${agentFiles.length} agent definition(s) well-formed`
 );

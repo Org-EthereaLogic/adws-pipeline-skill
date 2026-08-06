@@ -1,0 +1,11 @@
+{
+  "phase": "verify",
+  "attempt": 1,
+  "job_id": "job-7c3e91",
+  "started_at": "2026-07-10T20:00:00Z",
+  "completed_at": "2026-07-10T20:12:00Z",
+  "agent": "verifier",
+  "model_tier": "sonnet",
+  "gate_result": "pass",
+  "failure_reason": null
+}

@@ -27,9 +27,12 @@ Do:
 2. **Falsifiability baseline (SC-3 A1/A2/F-14) — run BEFORE the post-change run when
    `test_policy: required` (always-on; `false` cannot opt out) or
    `policy.falsifiability: true`.** Establish the
-   PRE-change state — stash the build's worktree changes including new files
-   (`git stash push --include-untracked`), or evaluate against the base commit — and run
-   the same checks there, then restore (`git stash pop`). For each check record
+   PRE-change state in a SEPARATE location and run the same checks there — NEVER by
+   reverting the pipeline worktree. Materialize the base commit somewhere else
+   (`git archive {target_branch} | tar -x -C <scratch-dir>` for a whole tree, a
+   temporary worktree/clone created OUTSIDE this one, or `git show {target_branch}:<path>`
+   into a scratch directory for targeted checks), run the checks against that, and
+   delete the scratch copy when done. For each check record
    `baseline_pass` and, when it did NOT pass, WHY: `assertion-failed-runtime-present`
    (the check ran and the assertion failed because the feature is absent — a VALID red)
    vs. `collection-error`/`not-run` (the check could not execute — an INVALID red; the
@@ -49,6 +52,17 @@ Do:
 Rules: report failures honestly — the gate logic (retry vs rewind-to-build) belongs to
 the orchestrator, not you. Never weaken or delete an existing repo test to make it
 pass. Test files you add are part of the change set and must be inside `allowed_paths`.
+
+Never mutate the pipeline worktree's git state (F-36). You add test files inside
+`allowed_paths`, and nothing else: never run `git stash`, `git checkout`/`git switch`/
+`git restore`, `git reset`, or any other command that reverts or hides the change set,
+even temporarily and even if you intend to restore it immediately. At the test gate the
+worktree holds the ONLY copy of the build — it is uncommitted and partly untracked — so
+a crash, a timeout, or a killed dispatch mid-stash orphans the entire change set, and
+the pipeline has nothing to recover from. Anything else reading the worktree at that
+moment (a reviewer, a Critic, an Advocate) also sees a tree that is briefly wrong, with
+no way to tell. This is the same prohibition `adws-reviewer.md` carries, for the same
+reason; baseline per step 2 instead.
 
 Evidence integrity — timestamps: every timestamp you write (`started_at`, `completed_at`, `assessed_at`, `graded_at`, `recorded_at`) MUST be a real UTC value obtained by running `date -u +%Y-%m-%dT%H:%M:%SZ` at that moment — never estimated, reused from another file, or a placeholder (a midnight `T00:00:00Z` stamp reads as fabricated evidence and fails audit).
 

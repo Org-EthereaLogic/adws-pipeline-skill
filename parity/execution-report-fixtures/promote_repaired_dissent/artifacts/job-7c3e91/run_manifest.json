@@ -1,0 +1,29 @@
+{
+  "job_id": "job-7c3e91",
+  "task_id": "TASK-604",
+  "started_at": "2026-08-05T21:45:54Z",
+  "completed_at": "2026-08-06T02:39:30Z",
+  "final_status": "completed",
+  "failure_reason": null,
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "opus",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet"
+  },
+  "cross_phase_rewinds": {
+    "test": 0,
+    "verify": 0
+  },
+  "check_defect_repairs": 0,
+  "operator_directed_rewinds": {
+    "test": 0,
+    "review": 1
+  },
+  "schema_version": "1.0.0"
+}

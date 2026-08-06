@@ -1,0 +1,13 @@
+{
+  "source_attempt": "review/attempt_1",
+  "corrections": [
+    {
+      "check_id": "ADV-DISSENT",
+      "criterion": "Advocate dissent at the review gate (review/attempt_1/consensus/advocate.json): every VERIFIED finding bearing on a downstream decision must be carried into the deliverable, because the evidence tree is not durable.",
+      "expected": "The four VERIFIED findings appear in the deliverable, each with its VERIFIED marking and citation.",
+      "actual": "All four absent; not carried and not recorded as open items.",
+      "path": "docs/runtime-invocation-map.md",
+      "classification": "code"
+    }
+  ]
+}

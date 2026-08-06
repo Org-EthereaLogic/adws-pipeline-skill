@@ -14,7 +14,7 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 88 + report 15 + entropy 7 fixtures; SC-3 provenance fixtures 3 + contract micro-drill; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan. Seconds, zero-LLM. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 88 + report 16 + entropy 7 fixtures; SC-3 provenance fixtures 3 + contract micro-drill; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan. Seconds, zero-LLM. |
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Closes the F-13 host-runtime blind spot. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
@@ -45,6 +45,13 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
 
 ## Notes
 
+- **Suite sizes are asserted, not narrated** (M-3a). The counts in this table, in the
+  `Makefile`, in `gate.sh`, and in `.githooks/pre-push` are prose; the assertions live in the
+  runners. The report, entropy, and provenance suites cross-check their declared `CASES`
+  against the fixtures on disk in both directions (an unrun fixture and a fixtureless case
+  each fail by name); `run-parity.js` discovers from disk and so carries
+  `EXPECTED_FIXTURE_TOTAL`, which must be updated in the same commit as any fixture
+  addition or removal. If you change a count in prose, change the assertion behind it.
 - All host-side shell stays **bash-3.2-safe** (macOS stock: no assoc arrays, `${x^^}`,
   `mapfile`) — the repo's own F-13 lesson applied to its tooling.
 - Tier 1/2 suites write only gitignored side-effects (`parity/PARITY_REPORT.md`, fixture
