@@ -134,6 +134,14 @@ orchestrator's summary — the narrative reported `consensus: pass (2 rounds cle
 the tree records `critic: fail` on two superseded attempts. See `DPPD.md` §18,
 `SC7_PLAN.md`, and `field-runs/2026-08-07-issue21-cadence-method-skill.md`.
 
+M-4 and SC-7 were merged together through **PR #41** (squash `a0d725b`), with Tier 1 nine
+of nine and Tier 2 both legs PASS at the merged head (`run_id`s `20260807T194011Z` /
+`20260807T194016Z`). The post-merge sync also corrected the root `README.md`, which still
+advertised **15/15** report fixtures — stale across BOTH SC-6 and SC-7 — and listed three
+`references/` files when there are four. That is M-3a's finding recurring in the one file
+M-3 did not cover: the runners now assert their own suite sizes, but nothing asserts the
+counts printed in `README.md`.
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table

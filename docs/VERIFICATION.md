@@ -807,6 +807,20 @@ never been seen to fail is a claim, not a test).
 **Gate results.** Tier 1 nine of nine PASS. Suite sizes now 88 / **17** / 7 / 3 + SC-3
 micro-drill.
 
+**Merged** through PR #41 (squash `a0d725b`), with Tier 1 nine of nine and Tier 2 both
+legs PASS at the merged head (`run_id`s `20260807T194011Z` / `20260807T194016Z`).
+
+**Post-merge sync.** The root `README.md` still advertised **15/15** report verdict
+fixtures — stale across BOTH SC-6 (15 → 16) and SC-7 (16 → 17) — and listed three
+`references/` files where there are four (`validator-inputs.md` has been missing from the
+layout since SC-2). Corrected in the sync PR. This is M-3a ("suite sizes are asserted, not
+narrated") recurring in the one file M-3 did not reach: the runners cross-check their
+declared cases against fixtures on disk in both directions, but nothing asserts the counts
+printed in `README.md`, so the two drifted apart for two consecutive scope changes without
+a single gate noticing. `docs/acceptance/ACCEPTANCE.md` was reviewed and deliberately left
+alone — its counts are dated point-in-time annotations inside post-acceptance blocks, and
+its block convention lapsed at M-1 (neither SC-5, SC-6, nor M-3 added one).
+
 **What this does NOT verify.** The same limit M-3 recorded still applies, and SC-7 is
 mostly spec text: the frontmatter and requires lints check structure, and the fixtures
 check the report's behavior, but nothing here can catch a *rule* that is well-formed and

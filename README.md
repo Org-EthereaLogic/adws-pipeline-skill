@@ -20,7 +20,7 @@ evidence, not by narrative.
 
 | Piece | Path | Role |
 |---|---|---|
-| The skill | `adws-pipeline/` | `SKILL.md` (orchestration), `references/` (contract, gates, layout), `scripts/` (validators + report + stability gate) |
+| The skill | `adws-pipeline/` | `SKILL.md` (orchestration), `references/` (contract, gates, layout, validator inputs), `scripts/` (validators + report + stability gate) |
 | The agents | `.claude/agents/adws-*.md` | 10 subagents: 7 phase agents + Critic + Advocate + AC-coverage Grader |
 
 Everything else (`docs/`, `parity/`) is development and verification material — not needed
@@ -123,7 +123,7 @@ See [`adws-pipeline/SKILL.md`](adws-pipeline/SKILL.md) and
 ```
 adws-pipeline/            the skill (install this)
   SKILL.md                orchestration procedure + hard rules
-  references/             task-contract.md · phase-gates.md · artifact-layout.md
+  references/             task-contract.md · phase-gates.md · artifact-layout.md · validator-inputs.md
   scripts/                validators/ (9) · execution-report.js · entropy-gate.js
 .claude/agents/           the 10 subagents (install these)
 parity/                   verification harness + fixtures (dev only)
@@ -137,7 +137,7 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                            # 88/88 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 15/15 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 17/17 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
