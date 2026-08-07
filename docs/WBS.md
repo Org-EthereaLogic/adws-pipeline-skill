@@ -106,6 +106,34 @@ M-2, SC-6, and M-3 were merged together through **PR #38** (squash `029ee0d`), w
 nine of nine and Tier 2 both legs PASS at the merged head (`run_id`s `20260806T032406Z` /
 `20260806T032411Z`).
 
+**Status (2026-08-07, M-4 + SC-7):** a third field run against `cadence-method-skill`
+(issue #21, `job_20260807_0001`) produced findings **F-45–F-52**, again split across two
+vehicles. The run promoted correctly but improvised in seven places and carried an eighth
+defect it never noticed. Maintenance audit **M-4** (docs/prompt only) closed four hand-off
+gaps: `criteria-to-checks` is now an explicit PRE-dispatch step at the test phase and the
+tester's input list carries `check_specs` — by the old letter the tester was required to
+echo ids from an artifact produced after it ran (F-45); the reviewer, Critic, and Advocate
+are told to ENUMERATE the change set (`files_changed` ∪ `git status --porcelain -uall`)
+because `git diff` is empty for a green-field change set and the old step 1 could approve
+an unread tree (F-49); `check_type` is named outside the validator source (F-50); and the
+documenter has a defined, compliant path when `allowed_paths` admits no doc location, plus
+the `NO_DOC_PATH_IN_SCOPE` intake warning (F-51). Scope change **SC-7** (**APPROVED,
+operator, 2026-08-07**) gave the CRITIC the machinery SC-6 built only for the Advocate: a
+verified Critic `fail` on a code defect now rewinds to build (`cross_phase_rewinds.review`,
+capped at 1, attempt annotation `CRITIC_FAIL_REPAIRED`) instead of dead-ending at
+`REVIEW_GATE_FAILURE` (F-46); one authoritative rewind-budget accounting table settles
+which of the five budgets charge a build retry — the gate-automatic ones do not, the
+operator-directed one does (F-47); `tier_input.source` gains `cross-phase-rewind` and the
+forward re-run after a rewind is defined as a table-tier fresh attempt, not a retry (F-48);
+and `execution-report.js` now scans superseded attempts for Critic fails, not just Advocate
+dissents, so the resolution that CHANGED the artifact can no longer be the invisible one
+(F-52). `SCHEMA_VERSION` 1.3.0 → **1.4.0**, report fixtures **16 → 17**; parity 88/88,
+entropy 7/7, provenance 3/3, and the SC-3 micro-drill unchanged; verdict taxonomy frozen.
+This run's evidence tree also survived, and in the decisive case it CONTRADICTS the
+orchestrator's summary — the narrative reported `consensus: pass (2 rounds clean)` while
+the tree records `critic: fail` on two superseded attempts. See `DPPD.md` §18,
+`SC7_PLAN.md`, and `field-runs/2026-08-07-issue21-cadence-method-skill.md`.
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table

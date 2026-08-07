@@ -104,6 +104,13 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
   `target_branch` is protected. Warn the operator now: this contract will pass intake
   but is GUARANTEED to be refused at ship (`PROTECTED_BRANCH_BLOCKED`). Suggest `pr`
   mode or an unprotected target before starting.
+- `NO_DOC_PATH_IN_SCOPE` — no `allowed_paths` entry admits a documentation location
+  (`README*`, `CHANGELOG*`, `docs/`, or the repo's equivalent), so the document phase
+  cannot write docs without violating path policy. This is NOT a conflict and never
+  blocks: the documenter records `docs_delta: []` with a substantive changelog entry and
+  summary, which passes `document-coverage-map` on its own (see
+  `references/validator-inputs.md`). Recorded so the empty `docs_delta` reads as the
+  contract's consequence rather than as a documenter that skipped its job.
 
 ## Vague-task rejection guidance (AC-1.2)
 

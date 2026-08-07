@@ -39,7 +39,12 @@ const path = require('path');
 // existing `consensus` gate to WARN, so a dissent an operator conceded and repaired
 // can no longer vanish behind a later clean round (additive; no new gate key, no new
 // DECISION, no new exit code).
-const SCHEMA_VERSION = '1.3.0';
+// 1.4.0 (SC-7/F-52) extends that array to the CRITIC: a superseded Critic fail carries
+// `critic` and `critic_finding` and warns on the same terms as a superseded dissent.
+// F-38 closed the hole for one half of consensus and left the other open — a Critic fail
+// is now a rewind origin (F-46), so the clean later round it produces was exactly what
+// hid it. Additive: same gate key, same decisions, same exit codes.
+const SCHEMA_VERSION = '1.4.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
 
@@ -170,7 +175,7 @@ function collectSkillVerdicts(latestAttempts) {
 // build to fix the deliverable. Like `uphold` it concedes the dissent, but unlike
 // `uphold` it is not terminal — the repaired attempt is superseded by a later one, so
 // `repair` is only ever seen on a NON-latest attempt and is scored there (see
-// collectSupersededDissents). A `repair` sitting on the LATEST attempt means the
+// collectSupersededConsensus). A `repair` sitting on the LATEST attempt means the
 // rewind never produced a newer round, so it stays blocking exactly like `uphold`.
 const RESOLUTION_ACTIONS = new Set(['override', 'uphold', 'repair']);
 function normalizeResolution(advocate) {
@@ -221,25 +226,76 @@ function collectConsensus(latestAttempts) {
 //
 // These rows therefore WARN, never fail: any Advocate dissent recorded anywhere in a
 // job's evidence forbids a CLEAN promote. Pass the non-latest attempts only.
-function collectSupersededDissents(supersededAttempts) {
+//
+// SC-7 (F-52): the scan originally read `advocate.json` ONLY, which left the other half
+// of consensus in exactly the hole F-38 had just closed for the Advocate. A Critic fail
+// is now a rewind origin in its own right (F-46: reproduce the finding, rewind to build,
+// re-run forward), so the clean later round that F-46 produces is precisely what hid it.
+// A live run promoted reading `consensus: pass — "2 round(s) clean"` after two
+// independent Critics caught two real defects that changed the shipped artifact. Both
+// halves are scored here now, on the same terms: WARN, never fail.
+function collectSupersededConsensus(supersededAttempts) {
   const rows = [];
   for (const entry of supersededAttempts) {
-    const advocate = safeReadJson(path.join(entry.dir, 'consensus', 'advocate.json'));
-    if (!advocate) continue;
-    const dissent = typeof advocate.dissent === 'string' && advocate.dissent.trim().length > 0
+    const consensusDir = path.join(entry.dir, 'consensus');
+    const advocate = safeReadJson(path.join(consensusDir, 'advocate.json'));
+    const critic = safeReadJson(path.join(consensusDir, 'critic.json'));
+    const dissent = advocate && typeof advocate.dissent === 'string' && advocate.dissent.trim().length > 0
       ? advocate.dissent
       : null;
-    const verdict = typeof advocate.verdict === 'string' ? advocate.verdict : null;
-    if (!dissent && verdict !== 'fail') continue;
+    const advocateVerdict = advocate && typeof advocate.verdict === 'string' ? advocate.verdict : null;
+    const criticVerdict = critic && typeof critic.verdict === 'string' ? critic.verdict : null;
+    const criticFailed = criticVerdict === 'fail';
+    if (!dissent && advocateVerdict !== 'fail' && !criticFailed) continue;
     rows.push({
       phase: entry.phase,
       attempt: entry.attempt,
-      advocate: verdict,
+      advocate: advocateVerdict,
       dissent,
+      critic: criticVerdict,
+      // The Critic writes no `dissent`; its objection lives in `findings`. Carry BOTH
+      // shapes: `critic_issue` is the one-phrase claim, for the terse surfaces (gate
+      // detail, warning line); `critic_finding` is issue + evidence verbatim, for the
+      // Superseded Consensus Rounds section. The Advocate's `dissent` is designed to be
+      // quoted whole, but a finding's `evidence` is a CITATION — a live one ran past
+      // 2,500 characters — so quoting it into a gate detail makes the gates table
+      // unreadable. FR-7 asks that the objection never be silent, not that every surface
+      // carry all of it.
+      critic_issue: criticFailed ? firstFindingIssue(critic) : null,
+      critic_finding: criticFailed ? firstFindingText(critic) : null,
       resolution: normalizeResolution(advocate),
     });
   }
   return rows;
+}
+
+// The first finding's `issue` alone, clipped, for the terse surfaces.
+const CRITIC_ISSUE_MAX = 160;
+function firstFindingIssue(critic) {
+  const findings = critic && Array.isArray(critic.findings) ? critic.findings : [];
+  for (const f of findings) {
+    if (!f || typeof f !== 'object') continue;
+    const issue = typeof f.issue === 'string' ? f.issue.trim() : '';
+    if (issue) {
+      return issue.length > CRITIC_ISSUE_MAX ? `${issue.slice(0, CRITIC_ISSUE_MAX - 1)}…` : issue;
+    }
+  }
+  return null;
+}
+
+// A Critic finding is `{ issue, evidence }`. Render it as one short line, tolerating a
+// malformed or empty `findings` array (tolerant reader, artifact-layout rule 8).
+function firstFindingText(critic) {
+  const findings = critic && Array.isArray(critic.findings) ? critic.findings : [];
+  for (const f of findings) {
+    if (!f || typeof f !== 'object') continue;
+    const issue = typeof f.issue === 'string' ? f.issue.trim() : '';
+    const evidence = typeof f.evidence === 'string' ? f.evidence.trim() : '';
+    if (issue && evidence) return `${issue} (${evidence})`;
+    if (issue) return issue;
+    if (evidence) return evidence;
+  }
+  return null;
 }
 
 // --- Gates (ported from ADWS_Pro src/execution-report/gates.js) ------------
@@ -547,23 +603,27 @@ function evalConsensus(consensusRows, supersededDissentRows) {
     };
   }
 
-  // SC-6 (F-38): the latest round is clean, but an EARLIER round recorded a dissent
-  // that a later attempt superseded — most often because the operator conceded it and
-  // rewound to build to repair the deliverable. The fix worked, so this never fails;
-  // it warns, because a job whose evidence records a dissent must not read as though
-  // no dissent ever happened (FR-7: a resolved dissent is never silent).
+  // SC-6 (F-38): the latest round is clean, but an EARLIER round recorded an objection
+  // that a later attempt superseded — most often because the objection was conceded and
+  // the job rewound to build to repair the deliverable. The fix worked, so this never
+  // fails; it warns, because a job whose evidence records an objection must not read as
+  // though none ever happened (FR-7: a resolved dissent is never silent). SC-7 (F-52)
+  // scores a superseded Critic fail on exactly the same terms.
   if (superseded.length > 0) {
     const d = superseded[0];
     const where = `${d.phase}/attempt_${d.attempt}`;
     const how = d.resolution ? `operator ${d.resolution.action}` : 'superseded by a later attempt';
     const rat = d.resolution && d.resolution.rationale ? ` — ${d.resolution.rationale}` : '';
+    const isDissent = (typeof d.dissent === 'string' && d.dissent.trim().length > 0) || d.advocate === 'fail';
+    const what = isDissent ? 'Advocate dissent' : 'Critic fail';
+    const detail = !isDissent && d.critic_issue ? `: ${d.critic_issue}` : '';
     return {
       key: 'consensus',
       label: CONSENSUS_LABEL,
       status: GATE_STATUSES.WARN,
-      value: `${rows.length} latest round(s) clean, ${superseded.length} superseded dissent(s)`,
+      value: `${rows.length} latest round(s) clean, ${superseded.length} superseded objection(s)`,
       threshold: '0 blocking dissent, 0 critic fail',
-      reason: `Advocate dissent in ${where} (${how}) was superseded by a later clean round — promotes with a permanent warning${rat}`,
+      reason: `${what} in ${where} (${how}) was superseded by a later clean round — promotes with a permanent warning${rat}${detail}`,
     };
   }
 
@@ -826,16 +886,25 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
       warnings.push(`Consensus dissent in ${c.phase}/attempt_${c.attempt}: ${c.dissent}${res}`);
     }
   }
-  // SC-6 (F-38): the same line for a dissent a later attempt superseded. It carries the
-  // dissent text VERBATIM exactly as the latest-attempt case does — FR-7's record
-  // requirement is about the dissent, not about which attempt it landed on.
+  // SC-6 (F-38): the same line for an objection a later attempt superseded. It carries
+  // the dissent text VERBATIM exactly as the latest-attempt case does — FR-7's record
+  // requirement is about the dissent, not about which attempt it landed on. SC-7 (F-52)
+  // adds the Critic's side, quoting its first finding for the same reason.
   for (const s of supersededDissents || []) {
     const res = s.resolution
       ? ` [operator ${s.resolution.action}${s.resolution.rationale ? `: ${s.resolution.rationale}` : ''}]`
       : ' [superseded by a later attempt]';
-    warnings.push(
-      `Consensus dissent in ${s.phase}/attempt_${s.attempt} (superseded): ${s.dissent || '(advocate returned fail)'}${res}`
-    );
+    const hasDissent = (typeof s.dissent === 'string' && s.dissent.trim().length > 0) || s.advocate === 'fail';
+    if (hasDissent) {
+      warnings.push(
+        `Consensus dissent in ${s.phase}/attempt_${s.attempt} (superseded): ${s.dissent || '(advocate returned fail)'}${res}`
+      );
+    }
+    if (s.critic === 'fail') {
+      warnings.push(
+        `Critic fail in ${s.phase}/attempt_${s.attempt} (superseded): ${s.critic_issue || '(critic returned fail with no findings recorded)'}${res}`
+      );
+    }
   }
   warnings.sort();
   return Array.from(new Set(warnings));
@@ -940,34 +1009,44 @@ function renderMarkdown(report, phaseAttemptRows) {
   }
   lines.push('');
 
-  // SC-6 (F-38): dissents from superseded attempts get their own section rather than
+  // SC-6 (F-38): objections from superseded attempts get their own section rather than
   // rows in the table above, so the table keeps its latest-attempt-only meaning while
-  // the dissent text still appears VERBATIM in the report (FR-7).
+  // the objection text still appears VERBATIM in the report (FR-7). SC-7 (F-52) adds the
+  // Critic column and quotes its finding on the same terms.
   const superseded = report.superseded_consensus || [];
   if (superseded.length > 0) {
     lines.push('## Superseded Consensus Rounds');
     lines.push('');
     lines.push(
-      '_These rounds did not gate the verdict — a later attempt superseded them — but a recorded dissent is never silent (FR-7)._'
+      '_These rounds did not gate the verdict — a later attempt superseded them — but a recorded dissent or Critic fail is never silent (FR-7)._'
     );
     lines.push('');
-    lines.push('| Phase | Attempt | Advocate | Resolution |');
-    lines.push('| --- | --- | --- | --- |');
+    lines.push('| Phase | Attempt | Critic | Advocate | Resolution |');
+    lines.push('| --- | --- | --- | --- | --- |');
     for (const row of superseded) {
       lines.push(
-        `| ${row.phase} | ${row.attempt} | ${mdEscapeCell(row.advocate)} | ${mdEscapeCell(
+        `| ${row.phase} | ${row.attempt} | ${mdEscapeCell(row.critic)} | ${mdEscapeCell(row.advocate)} | ${mdEscapeCell(
           row.resolution ? row.resolution.action : null
         )} |`
       );
     }
     for (const row of superseded) {
-      lines.push('');
       const res = row.resolution
         ? ` — operator ${row.resolution.action}${row.resolution.resolved_at ? ` (${row.resolution.resolved_at})` : ''}`
         : '';
-      lines.push(`Dissent recorded in ${row.phase}/attempt_${row.attempt}${res}:`);
-      lines.push('');
-      lines.push(`> ${row.dissent || '(advocate returned fail with no dissent text)'}`);
+      const hasDissent = (typeof row.dissent === 'string' && row.dissent.trim().length > 0) || row.advocate === 'fail';
+      if (hasDissent) {
+        lines.push('');
+        lines.push(`Dissent recorded in ${row.phase}/attempt_${row.attempt}${res}:`);
+        lines.push('');
+        lines.push(`> ${row.dissent || '(advocate returned fail with no dissent text)'}`);
+      }
+      if (row.critic === 'fail') {
+        lines.push('');
+        lines.push(`Critic fail recorded in ${row.phase}/attempt_${row.attempt}${res}:`);
+        lines.push('');
+        lines.push(`> ${row.critic_finding || '(critic returned fail with no findings recorded)'}`);
+      }
       if (row.resolution && row.resolution.rationale) {
         lines.push('');
         lines.push(`Resolution rationale: ${mdEscapeCell(row.resolution.rationale)}`);
@@ -1066,8 +1145,9 @@ function buildReport(jobDir, options = {}) {
   const latestAttempts = PHASE_NAMES.filter((p) => phaseData[p]).map((p) => phaseData[p]);
   const skillVerdicts = collectSkillVerdicts(latestAttempts);
   const consensus = collectConsensus(latestAttempts);
-  // SC-6 (F-38): superseded attempts do not gate the verdict, but a dissent recorded in
-  // one must still surface — see collectSupersededDissents.
+  // SC-6 (F-38) / SC-7 (F-52): superseded attempts do not gate the verdict, but an
+  // Advocate dissent or a Critic fail recorded in one must still surface — see
+  // collectSupersededConsensus.
   const latestDirs = new Set(latestAttempts.map((e) => e.dir));
   const supersededAttempts = [];
   for (const phaseName of PHASE_NAMES) {
@@ -1076,7 +1156,7 @@ function buildReport(jobDir, options = {}) {
       if (!latestDirs.has(entry.dir)) supersededAttempts.push(entry);
     }
   }
-  const supersededDissents = collectSupersededDissents(supersededAttempts);
+  const supersededDissents = collectSupersededConsensus(supersededAttempts);
 
   // B2 (F-5): the ship phase's delegated-push sub-state, if any. When a `pr`-mode push
   // fails on missing credentials the attempt records delegation.status; the orchestrator

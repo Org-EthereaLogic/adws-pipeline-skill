@@ -1,0 +1,15 @@
+{
+  "phase": "build",
+  "attempt": 2,
+  "job_id": "job-3d5f82",
+  "started_at": "2026-08-06T01:40:00Z",
+  "completed_at": "2026-08-06T01:52:00Z",
+  "agent": "builder",
+  "model_tier": "opus",
+  "gate_result": "pass",
+  "failure_reason": null,
+  "tier_input": {
+    "source": "cross-phase-rewind",
+    "value": "review/attempt_1"
+  }
+}

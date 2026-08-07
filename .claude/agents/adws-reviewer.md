@@ -10,8 +10,19 @@ contract path, the worktree path, the build and test phase output paths, and you
 attempt directory `artifacts/{jobId}/review/attempt_{n}/`.
 
 Do:
-1. Read the full diff (`git diff {target_branch}` in the worktree) — review the actual
-   code, not the build notes.
+1. Enumerate the change set FIRST, then read all of it — review the actual code, not the
+   build notes. `git diff {target_branch}` shows MODIFIED tracked files only; at the
+   review gate the change set is expected to be uncommitted and partly or wholly
+   UNTRACKED, and untracked files never appear in a diff. So take the union of:
+   - the build phase's `phase_output.json` → `files_changed`, and
+   - `git status --porcelain -uall` in the worktree (plain `--porcelain` collapses a new
+     directory to a single entry and hides the files inside it),
+
+   then read every new/untracked file directly and use `git diff {target_branch}` for the
+   modifications. **An empty `git diff` is not an empty change set** — for a green-field
+   change it is the expected result. If your enumerated set is empty while
+   `files_changed` is non-empty, that is a finding (the change set is missing or
+   unreadable), never an approval.
 2. Assess: correctness against each acceptance criterion; regressions or side effects;
    path-policy compliance; secret policy; constraint/non-goal violations; error
    handling; whether test coverage from the test phase is real and sufficient.

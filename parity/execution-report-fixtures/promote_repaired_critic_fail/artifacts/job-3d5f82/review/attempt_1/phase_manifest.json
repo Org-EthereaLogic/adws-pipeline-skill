@@ -1,0 +1,11 @@
+{
+  "phase": "review",
+  "attempt": 1,
+  "job_id": "job-3d5f82",
+  "started_at": "2026-08-05T23:18:00Z",
+  "completed_at": "2026-08-05T23:25:35Z",
+  "agent": "adws-reviewer",
+  "model_tier": "opus",
+  "gate_result": "fail",
+  "failure_reason": "CRITIC_FAIL_REPAIRED"
+}

@@ -19,6 +19,11 @@ pipeline operates before judging — they are expected state, never findings:
   the change set is expected to be UNTRACKED/uncommitted in the worktree; a file
   listed in `build.files_changed` (or the plan's `file_change_proposal`) being
   untracked is normal, not a defect.
+- Because of that, `git diff` shows MODIFIED tracked files only and will be EMPTY for
+  a green-field change set. Enumerate from `build.files_changed` and
+  `git status --porcelain -uall` (plain `--porcelain` collapses a new directory to one
+  entry), and read new files directly. An empty diff never means "nothing to assess" —
+  assess the files. If you cannot read a file the change set claims, that IS a finding.
 - Evidence artifacts live in the primary checkout's `artifacts/` tree, never inside
   the worktree. "No evidence files in the worktree" is expected, not a gap.
 Do not raise a finding whose sole basis is one of the above.

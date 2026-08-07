@@ -146,7 +146,14 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    at its current model tier (agent type not registered in this runtime → F-11
    fallback in "Environment & runtimes"). Give it: the contract path, the worktree path, its
    attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
-   the previous phase's `phase_output.json` path. Phase agents write their own
+   the previous phase's `phase_output.json` path.
+   **At the TEST phase only, run `criteria-to-checks` BEFORE this dispatch** (it is a
+   pure function of the frozen criteria, so it needs no phase output), confirm
+   `check_specs.length == criteria_count`, write its `skill_trace.json` now, and pass the
+   `check_specs` to `adws-tester` in its dispatch. The tester must echo each spec's
+   `check_id` onto the checks it runs (SC-5/F-31) — it cannot do that with specs that do
+   not exist yet, and ids it mints itself cannot join back to the criteria. Every other
+   validator runs at step 2, on its agent's output. Phase agents write their own
    evidence files per `references/artifact-layout.md`. Where the runtime exposes per-phase
    telemetry (model id, cost, tokens, wall-clock, tool-call count, timeout/cancel), record
    it in the attempt's `phase_manifest.provenance` (SC-3 B1/F-17) — ADVISORY only; absent
@@ -169,9 +176,19 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    at the test and review gates the change set is expected to be UNTRACKED in the
    worktree — a file listed in `build.files_changed` being uncommitted/untracked is
    normal, not a finding; evidence lives in the primary checkout's `artifacts/`,
-   never inside the worktree. Write both verdicts to `consensus/`.
+   never inside the worktree. Because of that, `git diff` is EMPTY for a green-field
+   change set: brief them (and the reviewer) to enumerate from `build.files_changed`
+   plus `git status --porcelain -uall` and read new files directly — an empty diff is
+   never grounds to assess nothing. Write both verdicts to `consensus/`.
    - Both pass → continue to gate decision.
-   - Critic fail → gate fails (retry path).
+   - Critic fail → gate fails. REPRODUCE the finding from the evidence before routing
+     it (verification picks the route, not the verdict — the gate failed either way):
+     a reproduced CODE defect rewinds to build (`cross_phase_rewinds.review` at review,
+     `cross_phase_rewinds.test` at test, each capped at 1, attempt-level
+     `failure_reason: CRITIC_FAIL_REPAIRED`); one that does not reproduce takes the
+     ordinary retry path with the non-reproduction recorded. Second fail at the same
+     gate → `{PHASE}_GATE_FAILURE`. See `references/phase-gates.md` "Critic-fail
+     remediation" (SC-7/F-46).
    - Advocate dissent → record verbatim; present it to the user ONCE for resolution.
      Four resolutions, all recorded as `resolution.action` on the dissenting
      `advocate.json`: `override` (false positive — promotes with a permanent warn),
@@ -192,7 +209,8 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
      is never indistinguishable from a no-op.
    - Test-checks fail because the CODE is wrong → rewind to build (once per job;
      increment `cross_phase_rewinds.test`); second occurrence → terminate `failed` /
-     `TEST_GATE_FAILURE`. This rewind budget is separate from the verify-drift one. On the
+     `TEST_GATE_FAILURE`. This rewind budget is separate from the review and verify-drift
+     ones. On the
      rewind, write the failing checks as a structured `corrections.json` (classification
      `code`) into the fresh build `attempt_{n}/` before re-dispatching (SC-3 A3/F-15).
    - A CHECK is defective, not the code (the tester classifies the failure `check`) →
@@ -211,6 +229,13 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
      (default `{PHASE}_GATE_FAILURE`, e.g. `BUILD_GATE_FAILURE`, unless a more
      specific reason applies).
    - Retry budgets: plan 1, build 1, test 2, review 1, document 1, ship 1, verify 1.
+   - Rewind budgets are separate from retry budgets and from each other. The
+     gate-automatic rewinds (`cross_phase_rewinds.test`, `.review`, `.verify`) and the
+     check-defect repair do NOT consume a build retry — their own cap of 1 bounds them;
+     only the operator-directed repair does (SC-6/F-37). A rewind's build attempt
+     escalates one tier (`tier_input.source: cross-phase-rewind`); the forward re-run of
+     downstream phases afterwards is not a retry and runs at the table tier. Full
+     accounting table in `references/phase-gates.md`.
 5. After review gate passes: recompute tiers from the `review-risk-assess` output's
    `risk_level` for the remaining phases (document, ship, verify) and record in
    `run_manifest.model_tiers`. The reviewer's own tier came from contract risk — the
