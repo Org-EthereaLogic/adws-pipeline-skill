@@ -51,7 +51,8 @@ artifacts/{jobId}/
   "completed_at": null, "final_status": null, "failure_reason": null,
   "current_phase": "plan", "output_mode": "pr", "isolation_mode": "worktree",
   "worktree_path": "", "branch_name": "", "model_tiers": {},
-  "cross_phase_rewinds": { "test": 0, "verify": 0 }, "check_defect_repairs": 0,
+  "cross_phase_rewinds": { "test": 0, "verify": 0, "review": 0 },
+  "check_defect_repairs": 0,
   "operator_directed_rewinds": { "test": 0, "review": 0 } }
 ```
 These are the keys the pipeline DEFINES; the shape is a floor, not a ceiling. A run may
@@ -63,15 +64,21 @@ operator and the audit trail. Extra keys are therefore not schema drift. Missing
 keys are.
 `final_status` is null while running; set once to one of
 `completed | failed | quarantined | canceled` at terminal state.
+`cross_phase_rewinds` counts the GATE-AUTOMATIC rewinds to `build`, each capped at 1 and
+independent of the others: `test` (checks fail, tester classifies `code`), `verify`
+(grader drift BLOCK), and — since SC-7/F-46 — `review` (a Critic `fail` at the review
+gate whose defect the orchestrator reproduced in the code). None of the three consumes an
+ordinary build retry; see the accounting table in `references/phase-gates.md`.
 `check_defect_repairs` (SC-3 A4/F-16) counts gate-defect repairs performed this job —
 a `cross_phase_rewinds`-style counter capped at 1 (a second check defect terminates on
 the ordinary `TEST_GATE_FAILURE`/budget path). Like `cross_phase_rewinds`, it is
 orchestrator bookkeeping and is NOT read by `execution-report.js`.
 `operator_directed_rewinds` (SC-6 F-37/F-39) counts rewinds the OPERATOR directed after
 confirming an Advocate dissent (`resolution.action: "repair"`), keyed by the gate the
-dissent came from and capped at 1 each. It is the fourth and last of the independent
-rewind/repair budgets — `cross_phase_rewinds.test`, `cross_phase_rewinds.verify`,
-`check_defect_repairs`, and this one never draw on each other. Spending it does consume
+dissent came from and capped at 1 each. It is the last of the independent rewind/repair
+budgets — `cross_phase_rewinds.{test,review,verify}`, `check_defect_repairs`, and this one
+never draw on each other (accounting table in `references/phase-gates.md`). Alone among
+them, spending it does consume
 an ordinary build retry, which is what bounds the loop. Same status as its siblings:
 orchestrator bookkeeping, not read by `execution-report.js`.
 `model_tiers` maps each phase to a canonical tier name (`haiku`, `sonnet`, `opus`,
@@ -88,7 +95,7 @@ schema.
 ```json
 { "phase": "", "attempt": 1, "job_id": "", "started_at": "", "completed_at": "",
   "agent": "adws-…", "model_tier": "sonnet",
-  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution | operator-tier-override | retry-escalation-saturated | entropy-gate-saturated | operator-resolution-saturated", "value": "" },
+  "tier_input": { "source": "contract.risk_level | review-risk-assess | retry-escalation | entropy-gate | operator-resolution | cross-phase-rewind | operator-tier-override | retry-escalation-saturated | entropy-gate-saturated | operator-resolution-saturated | cross-phase-rewind-saturated", "value": "" },
   "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null, "provenance": null }
 ```
@@ -116,10 +123,18 @@ clear a dissent they judged a false positive. It escalates one tier on the same 
 records the resolved dissent's location —
 `"{phase}/attempt_{n}/consensus/advocate.json"`. See `references/phase-gates.md`
 "Consensus" for the flow.
+`cross-phase-rewind` (SC-7/F-48) records the tier of a `build` attempt opened by a rewind
+— from failing test checks, a verified Critic fail, a grader drift BLOCK, or a
+check-defect repair. Its `value` names the origin attempt (`"review/attempt_1"`,
+`"test/attempt_2"`, `"verify/attempt_1"`). It escalates one tier on the standard ladder
+for the same reason F-6 and F-37 do: the previous tier produced work an independent
+assessor or an executed check faulted. The FORWARD re-run of downstream phases after the
+rewind is not a retry and records the ordinary `contract.risk_level` /
+`review-risk-assess` source at the table tier.
 `operator-tier-override` records an explicit operator tier election; it is the only
 source that may select `fable` outright, since no table cell mandates that tier (it is
 otherwise reachable only by escalating off `opus`).
-The three `*-saturated` sources record an escalation requested when the agent was
+The four `*-saturated` sources record an escalation requested when the agent was
 already at the `fable` ceiling: the tier is unchanged, the retry is consumed as usual,
 and the marker keeps a real escalation distinguishable from a no-op. They change no
 gate, budget, or verdict.
@@ -154,9 +169,10 @@ form of the rewind feedback, replacing the previous free-text channel:
 The builder treats each `code`-classified entry as an exact instruction; `check` entries
 are the gate-defect signal (A4). This is a rule-1 fresh-attempt artifact (see append-only
 rules), NOT a rule-2 post-hoc field — the orchestrator authors it once and never edits it.
-`review/attempt_{n}` joined the `source_attempt` enum in SC-6/F-39: a rewind can now also
+`review/attempt_{n}` joined the `source_attempt` enum in SC-6/F-39: a rewind can
 originate at the REVIEW gate, from an operator-directed repair of a confirmed Advocate
-dissent (F-37). Before that the enum admitted only the two gate-automatic rewind origins,
+dissent (F-37) or — since SC-7/F-46 — from a Critic `fail` whose code defect the
+orchestrator reproduced. Before that the enum admitted only the two gate-automatic rewind origins,
 so a live repair had to record a truthful value outside the documented set. Record the
 real origin always — a conforming but false `source_attempt` is worse than an
 out-of-enum true one, and this enum exists to be widened when a new origin is defined.

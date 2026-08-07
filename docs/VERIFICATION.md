@@ -761,3 +761,56 @@ recent changes? It had not.
   catch a rule that is well-formed and wrong, which is what M-2 and SC-6 were about.
 - **Merged** through PR #38 (`029ee0d`), together with M-2 and SC-6. Tier 1 nine of nine and
   Tier 2 both legs PASS at the merged head (`run_id`s `20260806T032406Z` / `20260806T032411Z`).
+
+---
+
+## M-4 + SC-7 (2026-08-07, field run job_20260807_0001) — F-45…F-52
+
+Findings and actions: `SC7_PLAN.md`; narrative: `DPPD.md` §18; run record:
+`field-runs/2026-08-07-issue21-cadence-method-skill.md`.
+
+Every assertion was FALSIFIED before acceptance (M-3a discipline — an assertion that has
+never been seen to fail is a claim, not a test).
+
+- **The new fixture depends on the change it tests.** Reverting the single `criticFailed`
+  term in `collectSupersededConsensus` — nothing else — flips
+  `promote_repaired_critic_fail` from `PROMOTE` / `warn_flag: true` / exit 10 /
+  `consensus: warn` to `PROMOTE` / `warn_flag: false` / **exit 0** / `consensus: pass`.
+  That is the live-run bug reproduced on demand. Restored → 17/17.
+- **The latest-attempt contract is intact.** `quarantine_critic_fail` (Critic fail on the
+  LATEST attempt) unchanged: QUARANTINE, exit 2. A superseded fail warns; an unresolved
+  one still fails.
+- **The F-38 path is undisturbed.** `promote_repaired_dissent` unchanged: PROMOTE, warn,
+  exit 10, `consensus: warn`, dissent quoted verbatim.
+- **The fix produces the right verdict on the run that exposed it.** The post-change
+  report was run against a COPY of the live `job_20260807_0001` evidence tree (the
+  operator's tree was not mutated — the report writes derived files into the job dir).
+  Pre-change that tree records `consensus: pass — "2 round(s) clean"` and
+  `superseded_consensus: []` while carrying `critic: fail` on BOTH `test/attempt_1` and
+  `review/attempt_1`. Post-change: `consensus: warn`, `2 superseded objection(s)`, both
+  findings surfaced, exit 10 in both cases.
+- **A rendering defect found by that same run, not by the fixtures.** The Critic's
+  `findings[].evidence` in this job exceeded 2,500 characters, and quoting it into the
+  gate `detail` made the gates table unreadable. The Advocate's `dissent` is designed to
+  be quoted whole; a finding's `evidence` is a citation. The report now carries
+  `critic_issue` (the one-phrase claim, clipped at 160) for the terse surfaces and
+  `critic_finding` (verbatim) for the Superseded Consensus Rounds section. FR-7 asks that
+  the objection never be silent, not that every surface carry all of it. **A synthetic
+  fixture would not have caught this** — the fixture's finding is one tidy sentence.
+- **Suite sizes are asserted, not narrated** (M-3a). `run-tests.js` cross-checks `CASES` ↔
+  fixture directories in both directions; the count moved 16 → 17 in the runner and at all
+  five prose sites (`Makefile`, `gate.sh` ×2, `scripts/local-ci/README.md`,
+  `.githooks/pre-push`) in the same commit.
+- **NFR-3** — `SKILL.md` 379 → 403 lines, asserted under 500 by `frontmatter-lint.mjs`.
+  **NFR-4** — `execution-report.js` still imports only `fs` and `path` (`requires-lint`).
+
+**Gate results.** Tier 1 nine of nine PASS. Suite sizes now 88 / **17** / 7 / 3 + SC-3
+micro-drill.
+
+**What this does NOT verify.** The same limit M-3 recorded still applies, and SC-7 is
+mostly spec text: the frontmatter and requires lints check structure, and the fixtures
+check the report's behavior, but nothing here can catch a *rule* that is well-formed and
+wrong. B1's requirement that the orchestrator reproduce a Critic finding before spending a
+rewind, B2's budget table, and B3's tier policy are all prose that the next field run is
+the real test of — exactly as F-45…F-51 were prose that three field runs were needed to
+falsify.

@@ -23,13 +23,40 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 |---|---|---|---|
 | `task-normalize` | plan | `{ title, requested_change, problem_statement, acceptance_criteria: [string], constraints: [string], file_hints: [string] }` | `task_contract_snapshot.json` → `task.*` fields verbatim |
 | `repo-context-scan` | build | `{ plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] } }` | plan `phase_output.json` + contract `policy.*` — each proposal's `description` is required; missing/<3-char yields `warn` |
-| `criteria-to-checks` | test | `{ acceptance_criteria: [string] }` | contract `task.acceptance_criteria` |
+| `criteria-to-checks` | test | `{ acceptance_criteria: [string] }` | contract `task.acceptance_criteria`. **Runs PRE-dispatch** — see below |
 | `review-risk-assess` | review | `{ build_output: { files_changed: [{file_path, action}] } }` | build `phase_output.json` → `files_changed`; output `risk_level` re-selects model tiers for remaining phases |
 | `document-coverage-map` | document | `{ build_output: { files_changed: [...] }, doc_output: { docs_delta: [{file_path, change}], changelog_entry, documentation_summary }, acceptance_criteria: [string] }` | build + document `phase_output.json` + contract criteria |
 | `ship-mode-select` | ship | `{ output_mode, branch_name, policy: { allow_direct_commit } }` | contract `execution.output_mode` + `run_manifest.branch_name` + contract `execution.allow_direct_commit` |
 | `patch-compose` | ship | `{ build_output: { files_changed: [...] }, output_mode, branch_name }` | build `phase_output.json` + contract/manifest as above |
 | `verify-evidence-map` | verify | `{ checks: [{check, pass}] }` | verifier `phase_output.json` → `verify_result.checks` |
 | `drift-sentinel` | verify | `{ entropy_history: [{entropy}\|{parseFailureScore}\|number] }` (env: `ADWS_UMIF_CANONICAL` on\|off\|shadow, default on) | `artifacts/{jobId}/entropy_history.jsonl` lines, MAPPED: each line's `parse_failures` becomes `parseFailureScore` (or pass the bare numbers) — drift-sentinel does NOT read the `parse_failures` key, and feeding raw lines scores every entry 0 → silent false-SAFE (entropy-gate.js does this mapping internally; at verify YOU assemble it). **File absent (zero parse failures) → pass `{ "entropy_history": [] }`, which is SAFE/`pass` by design** |
+
+## Outputs worth naming
+
+Most validator outputs are consumed only as a `rubric_result` verdict, but two carry
+fields the orchestrator must read by name:
+
+- **`criteria-to-checks`** → `check_specs: [{ check_id, criterion, check_type }]` plus
+  `criteria_count`, `vague_count`, `rubric_result`. The type key is **`check_type`**
+  (values `behavioral` | `unclassified`) — not `type`. `check_id` is `CHK001`, `CHK002`, …
+  in criterion order. `check_specs.length` always equals `criteria_count`; a disagreement
+  is a defect, never an expected narrowing (SC-5/F-27).
+- **`review-risk-assess`** → `risk_level` (`low` | `medium` | `high`), which re-selects
+  the model tiers for document, ship, and verify.
+
+**`criteria-to-checks` is the one validator that runs BEFORE its phase agent.** The
+tester must echo each spec's `check_id` onto the checks it runs so coverage is verifiable
+by id rather than by prose (SC-5/F-31), which is impossible if the specs do not exist
+until after it finishes. Run it at test-phase entry, confirm
+`check_specs.length == criteria_count`, hand the specs to `adws-tester` in its dispatch,
+and write its `skill_trace.json` at that point. Every other validator runs after its
+phase agent, on that agent's output.
+
+**`document-coverage-map` scoring** (so an empty `docs_delta` can be judged without
+opening the script): `changelog_entry` present 0.5 + at least one documented path 0.3 +
+`documentation_summary` present 0.2, `pass` at ≥ 0.7. A contract whose `allowed_paths`
+excludes every documentation location therefore still passes on a real changelog plus a
+real summary with `docs_delta: []` — see `adws-documenter.md`.
 
 ## Non-validator scripts
 

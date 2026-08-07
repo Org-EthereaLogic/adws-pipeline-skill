@@ -131,6 +131,24 @@ const CASES = [
     expectWarning: 'review/attempt_1 (superseded)',
   },
   {
+    name: 'promote_repaired_critic_fail',
+    jobId: 'job-3d5f82',
+    decision: 'PROMOTE',
+    warn_flag: true,
+    exit_code: 10,
+    // SC-7 (F-46/F-52): the CRITIC's side of the fixture above. A Critic fail at the
+    // review gate is now a rewind origin in its own right — the orchestrator reproduced
+    // the finding, rewound to build (`cross_phase_rewinds.review`), and re-ran forward
+    // to a clean attempt_2. That clean round is exactly what used to hide it:
+    // `collectSupersededDissents` read only `advocate.json`, so a superseded Critic fail
+    // was invisible and this job promoted CLEAN at exit 0. A live run did precisely
+    // that, reporting `consensus: pass — "2 round(s) clean"` after two independent
+    // Critics caught two real defects that changed the shipped artifact. F-38's rule
+    // holds for both halves of consensus or it holds for neither.
+    expectGate: { key: 'consensus', result: 'warn' },
+    expectWarning: 'Critic fail in review/attempt_1 (superseded)',
+  },
+  {
     name: 'quarantine_upheld_dissent',
     jobId: 'job-4e5f6a',
     decision: 'QUARANTINE',
@@ -285,9 +303,9 @@ for (const testCase of CASES) {
     check(`${testCase.name} json exit_code`, out1.json.exit_code === testCase.exit_code, out1.json.exit_code, testCase.exit_code);
     check(
       `${testCase.name} schema_version`,
-      out1.json.schema_version === '1.3.0',
+      out1.json.schema_version === '1.4.0',
       out1.json.schema_version,
-      '1.3.0'
+      '1.4.0'
     );
     // expectGate accepts one {key, result} or an array of them.
     for (const expected of [].concat(testCase.expectGate || [])) {

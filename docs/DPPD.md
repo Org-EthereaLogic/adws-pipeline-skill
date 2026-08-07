@@ -685,3 +685,85 @@ M-3's own audit turned up one stale claim in this document and two in `VERIFICAT
 failing CodeQL check non-blocking is that its required-status-checks list is EMPTY. The
 conclusion was right and the reason was wrong, which is the kind of thing that survives
 review precisely because the conclusion is right. Corrected in place at each site.
+
+---
+
+## 18. Maintenance audit M-4 + Scope Change SC-7 (2026-08-07, field run job_20260807_0001) — APPROVED
+
+The third field run against `Org-EthereaLogic/cadence-method-skill` (issue #21, WP 5.1,
+`job_20260807_0001` → PR #70) promoted with warnings and shipped a correct artifact. It
+also improvised in seven places where the spec is silent or wrong, and carried an eighth
+defect the run itself never noticed. Findings **F-45 … F-52** are registered with
+per-finding evidence in `SC7_PLAN.md` §1; the run record is
+`field-runs/2026-08-07-issue21-cadence-method-skill.md`.
+
+**The scope change is F-38 finished.** SC-6 gave a *correct* Advocate dissent an exit
+other than termination, and made a repaired dissent visible in the terminal report under
+the rule "an Advocate dissent recorded anywhere in a job's evidence forbids a CLEAN
+promote." Every mechanism it built was built on `advocate.json`. So when the CRITIC — the
+adversarial half of the same gate — correctly identified a real code defect at the review
+gate, there was no remediation but job death (**F-46**), and when a rewind produced a
+clean later round, the Critic fail behind it was scored by nothing at all (**F-52**). Two
+independent Critics in this run caught two verified, reproducible defects that changed the
+shipped artifact; the terminal report read `consensus: pass — "2 round(s) clean"` with
+`superseded_consensus: []`. The rule held for one half of consensus and not the other.
+
+**M-4 (docs/prompt only, no code, no schema).** Four hand-off gaps where the spec's
+*requirement* and its *mechanics* were written at different volumes:
+
+- **F-45** — `adws-tester` was required to treat `check_specs` as its source of truth and
+  echo each `check_id` verbatim (the SC-5/F-31 coverage-by-id gate), while its documented
+  inputs contained no `check_specs` and the phase loop ran validators AFTER dispatch. By
+  the letter, the tester can only mint ids that cannot join back to the criteria — the
+  same hand-off hole F-31 closed, reopened one step upstream. `criteria-to-checks` is now
+  an explicit PRE-dispatch step (it is a pure function of the frozen criteria, so it costs
+  nothing to run early), and the tester is told to STOP rather than invent ids.
+- **F-49** — `adws-reviewer.md` step 1 was "read the full diff (`git diff
+  {target_branch}`)" for a change set the pipeline *expects* to be uncommitted and partly
+  untracked. `git diff` never shows untracked files, so for a green-field change it
+  returns nothing, and no rule said an empty diff means "enumerate and read directly."
+  The failure mode is an approval of an unread change set whose evidence is
+  indistinguishable from a real review — the F-35 silent-by-construction shape. Now:
+  enumerate `files_changed` ∪ `git status --porcelain -uall`, read new files directly, and
+  an enumerated set that is empty while `files_changed` is not is a FINDING.
+- **F-50 / F-51** — `check_type` documented only in the validator source; and no defined
+  behavior for a contract whose `allowed_paths` admits no documentation location, though
+  `document-coverage-map`'s scoring (0.5 + 0.3 + 0.2, pass ≥ 0.7) makes `docs_delta: []`
+  plus a real changelog and summary a legitimate pass. Third consecutive run to hit an
+  `allowed_paths`/docs conflict; now carries the non-blocking `NO_DOC_PATH_IN_SCOPE`
+  intake warning so the empty delta reads as the contract's consequence.
+
+**SC-7 (spec + evidence schema + report).** Approved by the operator per item:
+
+- **B1 (F-46)** — Critic-fail remediation. Reproduce the finding first: **verification
+  chooses the route, never the verdict** (the gate failed either way). A reproduced code
+  defect rewinds to build via `corrections.json`, tracked in `cross_phase_rewinds.review`
+  (review gate) or `.test` (test gate), capped at 1; a finding that does not reproduce
+  takes the ordinary retry path with the non-reproduction recorded. Attempt annotation
+  `CRITIC_FAIL_REPAIRED`, exactly parallel to `ADVOCATE_DISSENT_REPAIRED` — never a
+  terminal reason. No new terminal state, DECISION, or exit code.
+- **B2 (F-47)** — one authoritative rewind budget accounting table. The answer existed for
+  two of the four budgets and was unstated for the rest, which is why the run took THREE
+  build attempts against a documented budget of 1 with nothing flagging it. Gate-automatic
+  rewinds and the check-defect repair do NOT consume a build retry (their own cap of 1
+  bounds them, and charging them would make the first such finding exhaust the budget);
+  the operator-directed repair DOES, because nothing else bounds a repeatedly-electing
+  operator.
+- **B3 (F-48)** — `tier_input.source` gains `cross-phase-rewind` (+ saturated). The run's
+  rewind builds had no legal source and wrote improvised attempt reasons
+  (`CRITIC_FAIL_REWIND_TO_BUILD`, `CRITIC_FAIL`) outside every enum, correctly annotating
+  them as attempt-level. The forward re-run after a rewind is defined as a table-tier
+  fresh attempt, not a retry.
+- **B4/B5 (F-52)** — `collectSupersededConsensus` reads `critic.json` alongside
+  `advocate.json`; the `consensus` gate warns for either half; new fixture
+  `promote_repaired_critic_fail`. **SCHEMA_VERSION 1.3.0 → 1.4.0** (additive), report
+  fixtures **16 → 17**. Superseded evidence still WARNS and never fails — the
+  latest-attempt gating contract is untouched, and a latest-attempt Critic fail still
+  FAILS exactly as before.
+
+**What makes this record citable.** The evidence tree survived (hard rule 5), and in the
+decisive case it contradicts the orchestrator's own summary: the narrative reported a
+clean two-round consensus while the tree records `critic: fail` on both `test/attempt_1`
+and `review/attempt_1`. Running the post-change report against a copy of that tree moves
+it to `consensus: warn` with both fails surfaced. The run that exposed the defect is the
+run that demonstrates the fix.

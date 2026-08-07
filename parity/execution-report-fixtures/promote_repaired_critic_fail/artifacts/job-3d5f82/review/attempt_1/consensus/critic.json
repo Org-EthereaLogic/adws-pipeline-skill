@@ -1,0 +1,13 @@
+{
+  "role": "critic",
+  "verdict": "fail",
+  "dissent": null,
+  "findings": [
+    {
+      "issue": "Self-entry excluded from the forward existence check, so a broken self-entry passes silently",
+      "evidence": "gate-self-test.js:204-245 iterates siblingEntries (self-slug filtered out) when checking registry-entry-without-fixture; a self-entry whose fixture_root is absent is never flagged. Reproduced: broken self-entry + one valid sibling returns pass/exit 0."
+    }
+  ],
+  "model_tier": "sonnet",
+  "assessed_at": "2026-08-05T23:31:30Z"
+}

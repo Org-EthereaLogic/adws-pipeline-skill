@@ -84,9 +84,83 @@ continuation).
   diff): rewind to `build` carrying the grader's findings as feedback. At most ONE
   verify rewind per job (tracked as `cross_phase_rewinds.verify`); a SECOND BLOCK
   terminates with `PR_DRIFT_SENTINEL_BLOCK` → quarantine.
-- The two rewind budgets are INDEPENDENT: spending the test rewind does not consume
-  the verify rewind, and vice versa. The check-defect repair (SC-3 A4,
-  `check_defect_repairs`) is a THIRD, independent budget, also capped at 1.
+- **A Critic `fail` whose defect is in the CODE** (SC-7/F-46): see "Critic-fail
+  remediation" below. Rewinds to `build`, tracked as `cross_phase_rewinds.review` at the
+  review gate and `cross_phase_rewinds.test` at the test gate.
+- The rewind budgets are INDEPENDENT: spending one never consumes another. The
+  check-defect repair (SC-3 A4, `check_defect_repairs`) and the operator-directed repair
+  (SC-6 F-37, `operator_directed_rewinds`) are likewise independent budgets, each capped
+  at 1. The table below is the authoritative accounting.
+
+### Rewind budget accounting (SC-7/F-47)
+
+Five budgets can send a job back to `build`. Two things about each were previously
+scattered or unstated — the cap, and whether the destination build attempt consumes an
+ordinary **build retry** (budget 1). A live run took three build attempts against that
+budget with no accounting because the answer was written for only two of the five.
+
+| Budget | Origin | Cap | Consumes a build retry? |
+|---|---|---|---|
+| `cross_phase_rewinds.test` | test checks fail, tester classifies `code` | 1 | **No** |
+| `cross_phase_rewinds.review` | verified Critic `fail` at the review gate (F-46) | 1 | **No** |
+| `cross_phase_rewinds.verify` | grader drift BLOCK | 1 | **No** |
+| `check_defect_repairs` | tester classifies `check` (SC-3 A4) | 1 | **No** |
+| `operator_directed_rewinds.{test,review}` | operator confirms a dissent, `resolution.action: "repair"` (SC-6 F-37) | 1 each | **Yes** |
+
+The gate-automatic rewinds do not draw on the build retry budget because their own
+cap-of-1 already bounds them: a rewind is not the builder failing, it is the pipeline
+finding a defect the build gate could not see, and charging it to the build's retry would
+make the FIRST such finding exhaust the budget and the second impossible. The
+operator-directed repair does consume one, because nothing else bounds an operator who
+keeps electing `repair` — that is the loop-breaker named in F-37 step 5.
+
+Exhausting a rewind budget is not a retry exhaustion: a second occurrence terminates on
+that rewind's own recorded reason (`TEST_GATE_FAILURE`, `REVIEW_GATE_FAILURE`, second
+`PR_DRIFT_SENTINEL_BLOCK` → quarantine), never silently.
+
+### Critic-fail remediation (SC-7/F-46)
+
+Before SC-7 the whole rule was "Critic `fail` → gate fails (retry path)". At the TEST
+gate that is survivable — a code defect there can reach `cross_phase_rewinds.test`
+through the tester's `code` classification. At the REVIEW gate it was a dead end: rule 4
+re-dispatches `adws-reviewer` over UNCHANGED code, the review budget is 1, and no rewind
+origin admitted a Critic finding. So a Critic that correctly identified a real code
+defect at review could only burn the review retry and terminate `REVIEW_GATE_FAILURE`.
+That is exactly the inverted incentive SC-6/F-37 removed for the Advocate — the
+adversarial agent doing its job well being procedurally indistinguishable from the job
+failing — left in place for the other half of consensus. A live run
+(`job_20260807_0001`, cadence-method-skill issue #21) hit it, stopped, and asked the
+operator, because the spec had no answer.
+
+1. **Reproduce before routing.** The orchestrator MUST attempt to reproduce the Critic's
+   finding from the evidence — read the cited code, construct the failing case, run it.
+   Verification chooses the ROUTE, never the verdict: a Critic `fail` has already failed
+   the gate either way. This is what keeps a wrong Critic from spending a rewind, and it
+   is cheap next to the build attempt it gates.
+2. **Reproduced, and the defect is in the CODE** → rewind to `build`. Write the finding
+   into a FRESH `build/attempt_{n}/corrections.json` with `classification: "code"` and
+   `source_attempt` naming the real origin (`review/attempt_{n}` or `test/attempt_{n}` —
+   the enum admits both since SC-6/F-39). Increment `cross_phase_rewinds.review` (review
+   gate) or `cross_phase_rewinds.test` (test gate), each capped at 1. The failing gate
+   attempt closes `gate_result: "fail"` with the attempt-level `failure_reason:
+   "CRITIC_FAIL_REPAIRED"` — an ATTEMPT annotation only, exactly like
+   `ADVOCATE_DISSENT_REPAIRED`: never written to `run_manifest.failure_reason`, never in
+   the terminal failure-reason classes, never seen by `decideLifecycle`.
+3. **Not reproduced** → the finding does not route to build. Take the ordinary retry path
+   (rule 4): a new attempt of the same phase at the escalated tier, with a fresh
+   consensus round. Record in the attempt manifest that the finding did not reproduce and
+   what you ran — a Critic fail is never dismissed silently.
+4. **Reproduced, but the defect is in the CHECK or the environment** (a test-gate case):
+   route it exactly as the tester's own `check` / `environment` classifications route —
+   check-defect repair, or an operator-facing gap. No new path.
+5. **Second Critic fail at the same gate**, or the rewind cap already spent → terminate
+   `failed` with `{PHASE}_GATE_FAILURE` (`REVIEW_GATE_FAILURE` / `TEST_GATE_FAILURE`).
+   **No new terminal state, verdict, or exit code** — this resolves entirely inside the
+   existing RETRY vocabulary.
+6. **The finding is never erased.** The superseded attempt stays in the tree with its
+   `critic.json` intact, and the terminal report scores it (see Consensus rule 4): a
+   Critic fail recorded anywhere in a job's evidence forbids a CLEAN promote, the same
+   standard an Advocate dissent has carried since F-38.
 
 ## Falsifiability at the test gate (SC-3 A1/A2/F-14)
 
@@ -118,7 +192,8 @@ is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and preserves
 emitted `check_specs` as the criterion→check source of truth and `adws-tester` as the
 execution surface — no new DSL, runner, verdict, or exit code.
 
-Since v2.0.0 (SC-5/F-27) `check_specs` carries EVERY criterion, typed `behavioral` or
+Since v2.0.0 (SC-5/F-27) `check_specs` carries EVERY criterion, typed in its
+**`check_type`** field (the key is `check_type`, not `type`) as `behavioral` or
 `unclassified`; `unclassified` records that the lexical classifier found no outcome verb,
 which is a statement about the wording, NOT a verdict on the criterion. An `unclassified`
 spec needs a pre-change baseline and an executed check on the same terms as a `behavioral`
@@ -133,6 +208,16 @@ once in `phase_output.json.checks`. One id may repeat across several checks; a m
 is an uncovered criterion and fails the gate. Full emission (F-27) guarantees the criterion
 reaches the tester; the id join is what proves it was answered — without it the guarantee
 stops at the hand-off, which is exactly where the original defect hid.
+
+That join only works if the tester HAS the specs, so **`criteria-to-checks` is the one
+validator that runs before its phase agent** (SC-7/F-45): the orchestrator runs it at
+test-phase entry, confirms `check_specs.length == criteria_count`, and passes the specs
+into the `adws-tester` dispatch. It is a pure function of the frozen
+`task.acceptance_criteria`, so it needs no phase output and running it early costs
+nothing. A tester dispatched without the specs can only mint its own ids, which cannot
+join back to the criteria — the coverage gate then either fails spuriously or is
+satisfied by ids that prove nothing. Deterministic re-runs (e.g. after a rewind) recompute
+the same specs, so each fresh test attempt gets its own trace with identical contents.
 
 ## Consensus at test and review gates (FR-7)
 
@@ -164,8 +249,10 @@ At the test and review gates, after the phase agent (Architect) produces its out
    Where the dispatch mechanism encourages batching independent calls into one
    message, that guidance is about calls with no ordering constraint; this one has an
    ordering constraint.
-2. Reconciliation: unanimous pass → promote. Critic `fail` → gate fails (retry path,
-   rule 4/rewind). Advocate dissent → record the dissent VERBATIM in
+2. Reconciliation: unanimous pass → promote. Critic `fail` → gate fails; reproduce the
+   finding, then route it per "Critic-fail remediation" above (rewind to build on a
+   verified code defect, ordinary retry when it does not reproduce). Advocate dissent →
+   record the dissent VERBATIM in
    `consensus/advocate.json`, present it to the operator once for resolution; if
    unresolved, terminate with `ADVOCATE_DISSENT` (no retry — quarantine class). Never
    silently override a dissent.
@@ -187,15 +274,21 @@ At the test and review gates, after the phase agent (Architect) produces its out
    latest attempt of each phase and evaluates to `fail` on any Advocate dissent (or
    Advocate `fail`) or Critic `fail` — EXCEPT a dissent the operator overrode (rule 5),
    which downgrades to `warn` (still not a clean promote). Since SC-6/F-38 it ALSO
-   scans the superseded (non-latest) attempts for dissents and downgrades to `warn` on
-   any it finds, recording them in the report's `superseded_consensus` array and
-   quoting each dissent verbatim. Superseded rounds never FAIL the gate — a later
+   scans the superseded (non-latest) attempts and downgrades to `warn` on what it finds,
+   recording them in the report's `superseded_consensus` array and quoting each verbatim.
+   Superseded rounds never FAIL the gate — a later
    attempt already answered them, and the report certifies the job's final state — but
-   they can no longer be invisible. The governing rule is simple: **an Advocate dissent
-   recorded anywhere in a job's evidence forbids a CLEAN promote.** Before F-38 the
+   they can no longer be invisible. The governing rule is simple: **a blocking Advocate
+   dissent OR a Critic `fail`, recorded anywhere in a job's evidence, forbids a CLEAN
+   promote.** Before F-38 the
    opposite held for the strongest resolution: a dissent the operator conceded and
    repaired vanished behind the later clean round, while an `override` (the dissent was
-   wrong, nothing changed) stayed visible. Because a failed gate on a
+   wrong, nothing changed) stayed visible. SC-7/F-52 extends the same scan to the Critic,
+   which F-38 had left out: the superseded scan read only `advocate.json`, so a Critic
+   fail — the other half of consensus, and now a rewind origin in its own right (F-46) —
+   disappeared completely the moment a later attempt superseded it. A live run promoted
+   reading `consensus: pass — "2 round(s) clean"` after two independent Critics had
+   caught two real defects that changed the shipped artifact. Because a failed gate on a
    `completed` job maps to QUARANTINE, a job whose evidence records a blocking dissent
    CANNOT promote even if `run_manifest.final_status` was (incorrectly) set to
    `completed` — the verdict is derived from the consensus evidence, not the narrative
@@ -253,10 +346,11 @@ bookkeeping. SC-6 defines it:
    the same F-6 rule that governs rule 2's re-review, for the same reason (the previous
    tier produced work an independent assessor faulted).
 5. **Budget.** Track it in `run_manifest.operator_directed_rewinds` (`{ "test": 0,
-   "review": 0 }`), capped at 1 per gate. This is a FOURTH independent budget: it is
-   neither of the two gate-AUTOMATIC rewinds (`cross_phase_rewinds.test` from failing
-   checks, `cross_phase_rewinds.verify` from a grader BLOCK) nor the check-defect
-   repair, and it consumes none of them. It DOES consume an ordinary build retry,
+   "review": 0 }`), capped at 1 per gate. This is an independent budget: it is none of
+   the three gate-AUTOMATIC rewinds (`cross_phase_rewinds.test` from failing checks,
+   `.review` from a verified Critic fail, `.verify` from a grader BLOCK) nor the
+   check-defect repair, and it consumes none of them — see the accounting table above.
+   Alone among them it DOES consume an ordinary build retry,
    which is what bounds the loop. When either the repair cap or the build retry budget
    is spent, `repair` is no longer available and the operator's remaining choices are
    `override` or `uphold`.
@@ -416,10 +510,26 @@ six downstream gates before anything catches it, so plan buys capability on ever
   `nova` / `fable`.
 - **Other escalation sources:** the stability gate's `escalate` action and the F-6
   operator-resolution re-review use this same ladder and cap.
+- **Cross-phase rewind (SC-7/F-48).** A rewind's destination `build` attempt escalates
+  one tier on the same ladder, recording
+  `tier_input: { "source": "cross-phase-rewind", "value": "<origin attempt, e.g. review/attempt_1>" }`
+  (`cross-phase-rewind-saturated` at the ceiling). The rationale is F-6's and F-37's: the
+  previous tier produced work an independent assessor or an executed check faulted, so
+  the fix attempt is worth more capability. This applies to every rewind origin in the
+  accounting table — test-checks, Critic-fail, verify-drift, and the check-defect repair.
+  Before SC-7 no enum value covered this, so a live run escalated its rewind build from
+  sonnet to opus and had nowhere conforming to record why.
+- **The forward re-run after a rewind is NOT a retry.** Once the rewind's build attempt
+  passes its gate, each downstream phase opens an ordinary fresh attempt at the **table
+  tier** for the current risk level, recording the ordinary
+  `contract.risk_level` / `review-risk-assess` source — not `retry-escalation`. Nothing
+  about those phases failed; they are being re-run because their input changed. A phase
+  that then fails its own gate escalates from the table tier as usual.
 - **Saturation.** An escalation requested when the agent is already at `fable` does not
   change the tier. Record the unchanged `model_tier` and mark the source saturated —
-  `retry-escalation-saturated`, `entropy-gate-saturated`, or
-  `operator-resolution-saturated` — so a real escalation is never indistinguishable from
+  `retry-escalation-saturated`, `entropy-gate-saturated`,
+  `operator-resolution-saturated`, or `cross-phase-rewind-saturated` — so a real
+  escalation is never indistinguishable from
   a no-op in the evidence. Saturation is a recording rule only: it consumes the retry as
   usual and changes no gate, budget, or verdict.
 - **Recording:** every attempt's `phase_manifest.json` records `model_tier` and the

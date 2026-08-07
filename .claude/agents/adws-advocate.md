@@ -18,6 +18,10 @@ about how the pipeline runs — never dissent on them:
 - Staging and commits happen ONLY at the ship phase. At the test and review gates
   the change set is expected to be UNTRACKED/uncommitted in the worktree; a file
   listed in `build.files_changed` being untracked is normal, not a defect.
+- Because of that, `git diff` shows MODIFIED tracked files only and will be EMPTY for
+  a green-field change set. Enumerate from `build.files_changed` and
+  `git status --porcelain -uall` (plain `--porcelain` collapses a new directory to one
+  entry), and read new files directly. An empty diff never means "nothing to assess".
 - Evidence artifacts live in the primary checkout's `artifacts/` tree, never inside
   the worktree.
 A concern whose only basis is "the new file isn't staged/committed yet" or "there is
