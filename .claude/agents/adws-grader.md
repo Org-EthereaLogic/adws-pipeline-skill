@@ -1,7 +1,7 @@
 ---
 name: adws-grader
 description: ADWS pipeline AC-coverage grader — recreation of ADWS_Pro's pr.drift_sentinel.spec. Grades the shipped diff against each acceptance criterion at the verify phase. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: opus
 ---
 

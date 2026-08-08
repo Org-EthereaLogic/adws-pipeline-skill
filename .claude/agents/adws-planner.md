@@ -1,7 +1,7 @@
 ---
 name: adws-planner
 description: ADWS pipeline plan-phase agent. Turns a task contract into a per-criterion file-change proposal. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
 

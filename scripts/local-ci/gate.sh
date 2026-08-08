@@ -100,6 +100,7 @@ run_step "shell-lint"    shell_lint
 run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
 run_step "cli-block"     node scripts/local-ci/cli-block-lint.mjs
+run_step "agent-blocks"  node scripts/local-ci/agent-blocks-lint.mjs
 
 legs_json="$(IFS=,; echo "${steps[*]}")"
 record="$(printf '{"event":"gate","run_id":"%s","git_commit":"%s","branch":"%s","dirty":%s,"overall":"%s","steps":[%s]}' \

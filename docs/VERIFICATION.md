@@ -1150,3 +1150,50 @@ unchanged code.
 Validator parity is now **4 of 9** byte-for-byte against the originals, down from 7. The
 count fell because scope changes were approved, not because parity degraded, but the honest
 number is the smaller one and `README.md` states it.
+
+## SC-10 (2026-08-08, audit findings F-66, F-68) — the agents can write; the skill can shrink
+
+Plan: `docs/SC10_PLAN.md`. No validator changes, no fixture changes, no refreeze.
+
+**F-66 — six agents, not five.** The audit named five agents instructed to write evidence
+files while declaring no `Write` tool. Writing the lint found a sixth immediately:
+`adws-reviewer`, whose instruction reads "Write to your attempt directory" rather than
+"Write EXACTLY one file", and which writes three files. That is why the lint reads the agent
+**body** rather than checking a list of names — the list was already wrong on its first day.
+All ten agents now declare `Write`; `frontmatter-lint` fails any agent whose body instructs
+a write without it.
+
+Causation is stated as a hypothesis, not a finding: `Bash` can write those files, so the
+frontmatter alone does not prove the missing tool caused the three recorded haiku
+write-failures. The fix stands on its own merits. `adws-advocate` stays at `haiku` — fix the
+cause, keep the tier, and record why so a later audit does not "fix" it by raising cost.
+
+**Drift, not tokens.** The evidence-integrity and security paragraphs are byte-identical in
+all ten agent files. They cost no always-loaded context (agent files load per dispatch and
+never co-load), so the risk is drift: ten copies of a security rule are ten places a
+hardening can miss one, and no test reads agent prose. `agent-blocks-lint.mjs` now asserts
+both blocks against `references/agent-shared-blocks.md`, which doubles as the text the F-11
+fallback must inline verbatim.
+
+**SKILL.md 425 → 337 lines.** Moved to `references/runtimes.md` and
+`references/troubleshooting.md`: the macOS bash-3.2 case study, the agent-type fallback, and
+both recovery procedures. The failure-reason classes were a near-verbatim duplicate of
+`phase-gates.md:403` and became a pointer. What stayed is the operative sentence from each —
+a check that could not run is `NOT RUN` and never a valid falsifiability red; container-green
+is necessary, not sufficient — because those decide gates while the explanations do not.
+
+The reference index is now checked **both ways**. Previously only "every path SKILL.md names
+exists" was asserted; a file could sit in `references/` that nothing pointed at. That
+inversion is how reference-grade prose accumulates in an always-loaded file. An advisory
+350-line target now warns without failing, so the trend is visible before the 500-line
+ceiling — 357 → 367 → 379 → 412 was monotonic and nothing was watching it.
+
+**F-68 — the installer no longer destroys edits.** Stage-and-validate, back up only
+installer-owned paths (never a recursive `.claude/` snapshot), show the diff, prompt or
+hard-error, then swap by `mv` so an interruption cannot leave a half-written skill directory.
+Verified end to end: a local edit to an installed `SKILL.md` causes a non-interactive re-run
+to refuse and preserve the edit; `--force` replaces it and the edit survives in the backup.
+Backups are never auto-deleted and the output says so — auto-pruning would delete the one
+artifact a user reaches for after a bad upgrade.
+
+Gate: 13/13 steps pass.
