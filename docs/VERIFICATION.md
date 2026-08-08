@@ -942,6 +942,21 @@ micro-drill. The regenerated `parity/PARITY_REPORT.md` independently reports "7
 original-parity, 2 diverged-by-design", which is the second source for the README
 correction above.
 
+**Merged** through **PR #43** (squash `3ab7283`), with Tier 1 nine of nine and Tier 2 both
+legs PASS at the merged head (`run_id`s `20260808T150319Z` / `20260808T150325Z`).
+
+**Post-merge sync.** `DPPD.md` gained §19; `WBS.md` gained its SC-8 status paragraph. The
+WBS field-run series count was corrected **eleven → thirteen** (nine agentic-starter-kit +
+four cadence-method-skill): it had read "eleven" since 2026-08-05 and was stale across SC-7
+as well as SC-8. That is the third consecutive scope change to find an unasserted prose count
+drifting — M-3a in the runners, SC-7 in `README.md`, SC-8 here — and unlike the suite sizes,
+these narrative counts still have no second source that a gate compares them against.
+Gitignored `ci_logs/` was pruned from 97 files to 14: both append-only JSONL ledgers are
+retained in full (62 gate + 33 orb = every run ever recorded), along with every per-run
+`.log` whose `run_id` is cited in `docs/` and the six most recent. Each deleted transcript's
+run record survives in the ledgers, verified by checking all 95 ids against them before
+pruning.
+
 **What this does NOT verify.** The same limit SC-7 recorded applies. The fixtures prove the
 report detects a mismatch and that the validator no longer false-positives; nothing here
 can prove the *rule* is followed. A3's real enforcement is the check, not the prose — which

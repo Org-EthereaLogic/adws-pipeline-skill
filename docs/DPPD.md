@@ -767,3 +767,99 @@ clean two-round consensus while the tree records `critic: fail` on both `test/at
 and `review/attempt_1`. Running the post-change report against a copy of that tree moves
 it to `consensus: warn` with both fails surfaced. The run that exposed the defect is the
 run that demonstrates the fix.
+
+---
+
+## 19. Scope Change SC-8 (2026-08-08, field run job_20260807_0004) — APPROVED
+
+The fourth field run against `Org-EthereaLogic/cadence-method-skill` (issue #22, WP 5.3,
+`job_20260807_0004` → PR #77) promoted with warnings and shipped a correct artifact.
+SC-7's B1 rewind path worked end to end on its first live outing: the review gate caught a
+real defect, the orchestrator reproduced it before routing it, classified the root cause
+`code`, rewound to build with structured corrections, and re-ran forward to two unanimous
+consensus rounds. Findings **F-53 … F-59** are registered with per-finding evidence in
+`SC8_PLAN.md` §1 and §7; the run record is
+`field-runs/2026-08-07-issue22-cadence-method-skill.md`.
+
+**The scope change is about a validator that guessed, and a rule nothing asserted.** Of the
+nine deterministic validators, `review-risk-assess` was the only one whose *inference* could
+fail a gate: any path substring-matching `/auth/i`, `/token/i`, or `/policy/i` scored
+`risk_level: high`, and `high` returned `fail`. Three siblings already followed the opposite
+discipline — `criteria-to-checks` warns on vagueness and fails only on zero criteria,
+`document-coverage-map` warns below 0.7 and fails only on nothing-documented,
+`repo-context-scan` fails on a policy violation (a fact) and warns on a thin description (a
+guess). This one inverted it, and the inversion had a structural consequence nobody had
+noticed: because `high` always failed the gate, the `high` row of the post-review tier table
+in `phase-gates.md` was **unreachable** — the run could never arrive at the recomputation
+that row feeds (**F-53**).
+
+The run hit the heuristic on two fixture directory names its own task contract had mandated
+(`pass-resolves-through-authority/`, `fail-two-definitions-one-token/`). The operator
+adjudicated it a false positive, correctly. But `SKILL.md` hard rule 3 said a validator
+`fail` blocks promotion, full stop, and only an Advocate dissent had a resolution vocabulary
+— so there was no legal way to record the adjudication. The orchestrator wrote
+`rubric_result: "warn"` at the `skill_trace.json` wrapper while `output.rubric_result` stayed
+`"fail"`, with the rationale in `error`. `execution-report.js` read only the wrapper, so the
+terminal report certified `0 fail, 1 warn` for a run whose validator had returned `fail`
+(**F-55**). `artifact-layout.md` had defined that file as a transcription of the validator's
+stdout since SC-2. Nothing checked it. This is SC-7/F-47's lesson recurring at the level of
+evidence integrity: **a rule nothing asserts is a rule nothing enforces.**
+
+Two costs are visible in the tree rather than the narrative. The deliverable's `authority.md`
+corpus files were renamed to `method-source.md` purely to appease the validator — the tooling
+reshaped the product. And the recorded `model_tiers` show `document: sonnet`, the `high` row:
+its only field use to date was reached by overriding the `fail` that guards it.
+
+**SC-8 (validator behavior + report integrity + spec).** Approved by the operator per item:
+
+- **A1 (F-53)** — `risk_level` becomes the model-tier signal only, keeping its arithmetic;
+  `rubric_result` fails on an unassessable change set, warns on `risk_level: high`, and
+  passes on `low`/`medium`. Heuristics warn, facts fail. The `high` tier row is reachable.
+- **A2 (F-54)** — security matching is per path segment and per token within a segment
+  (extension stripped, split on non-alphanumerics), with any path under a test corpus
+  excluded outright, and the matched paths reported as `security_sensitive_paths[]` so a warn
+  names its files instead of asserting a count the operator must re-derive.
+- **A3 (F-55)** — the rule is stated in `SKILL.md` hard rule 3 and `artifact-layout.md`, and
+  then ASSERTED: `execution-report.js` cross-checks the wrapper against `output.rubric_result`
+  and, on disagreement, scores the row from the validator's stdout and QUARANTINEs — an
+  evidence-integrity breach, the same class as `MISSING_UPSTREAM_ARTIFACT`. **There is no
+  operator override for a validator verdict.** SC-7 refused the Critic one because a claim
+  about code can be settled by reproducing it; SC-8 refuses validators one because after A1
+  every remaining validator `fail` is a fact, and a fact is fixed, not adjudicated.
+- **A4 (F-57)** — `SKILL.md` §5 tells the orchestrator to cancel wakeups it scheduled for
+  itself; the run ended with a stale one firing after the terminal report.
+- **A5–A7** — fixtures, the `quarantine_trace_mismatch` report fixture, and the doc sync
+  (`phase-gates.md` gate rule 2 carries the house rule; `validator-inputs.md` makes the
+  verdict derivable without opening the validator).
+
+**Review round (F-58, F-59), found by independent review and fixed before merge.** Both are
+the same failure mode SC-8 was written about — a claim asserted in prose that no test
+exercised — and both are recorded in `SC8_PLAN.md` §7 rather than silently patched:
+
+- **F-58** — the mismatch check relied on SUBSTITUTION to fail the gate, which works only
+  when the concealed verdict is the worse one. Wrapper `warn` over an output of `pass` scored
+  clean and promoted at **exit 0** with the integrity warning gated on nothing. The invariant
+  "every mismatch quarantines" had been asserted in four documents and tested in one
+  direction — the direction where substitution happened to fail the gate by itself. The
+  disagreement is now its own failing term, and the 15-cell wrapper × output matrix was
+  enumerated: all six disagreements exit 2, the three agreements behave normally, and absent
+  or unrecognized output falls back to the wrapper.
+- **F-59** — assessability tested only that `files_changed` was a non-empty array, so
+  `[null]`, `["a-string"]`, and `[{"action":"modify"}]` returned `pass`/`low`, each inflating
+  the file count while invisible to the security scan — an unreadable change set could select
+  a LOWER tier than a readable one. Entries now require a usable `file_path`, with the
+  additive `malformed_entries` count. `action` is deliberately NOT enum-validated:
+  `artifact-layout.md` declares the field but enumerates no values, so enforcing one would
+  manufacture the false-fail class SC-8 exists to remove.
+
+**Verdict taxonomy frozen.** No new terminal state, DECISION, exit code, or failure reason;
+`SCHEMA_VERSION` stays **1.4.0** (the mismatch marker is projected out of `skill_verdicts[]`,
+and a mismatch is already machine-readable through `decision`). Parity **88 → 93**, report
+fixtures **17 → 19**; `review-risk-assess` v1.0.0 → **v2.0.0**, diverged-by-design.
+
+**The run that exposed the defect demonstrates the fix.** Re-run against
+`job_20260807_0004`'s actual 73-file change set, v2.0.0 returns `pass` / `risk medium` /
+`security_sensitive_count: 0`: all twelve matches were false positives, so the override, the
+permanent warning, and the renames in the deliverable were all unnecessary. Run against a
+copy of the same evidence tree, the new report moves it from PROMOTE/exit 10 to
+**QUARANTINE/exit 2**, naming the wrapper/output disagreement first among the warnings.
