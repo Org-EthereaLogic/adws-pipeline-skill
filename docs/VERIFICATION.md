@@ -1371,7 +1371,21 @@ CodeQL failed in ~3 s, as it has on every run in this repository including on `m
 reports `no analysis found` — an account-wide billing lock, not a code finding. `main` is
 unprotected, so no required check was overridden and no `--admin` merge was used.
 
+**Amendment — the follow-up PR repeated the failure, and worse.** PR #48 carried the entry
+above into the record and was merged **while CodeRabbit's review was still running**. The bot
+reported `Review failed — The pull request is closed.` So #48 also landed unreviewed, and
+this time nothing forced it: the PR was two files, well inside the limit, and the review
+would have completed in under a minute.
+
+That is the same rule broken twice within the hour, the second time by the author of the
+sentence recording the first. Worth stating plainly because it is the more useful of the two
+data points: #47's gap was a structural consequence of a 237-file stack, which a planning
+constraint could prevent; #48's was simple impatience at a green-looking checks list, which
+no constraint prevents and only a habit does. **A rule written into a document the same day
+it is broken is not yet a control.**
+
 **Carried forward, not acted on:** the 19 unpinned validator rules tracked in
 `parity/guard-ablation-baseline.json`; `execution-report.js` as the largest unswept surface;
-archive-before-teardown as a procedure with no mechanical enforcement; and this entry's own
-finding — that the series was not reviewable by the tool most likely to catch its defects.
+archive-before-teardown as a procedure with no mechanical enforcement; that the series was
+not reviewable by the tool most likely to catch its defects; and that the repository has no
+mechanism — only prose — requiring an in-flight external review to finish before a merge.
