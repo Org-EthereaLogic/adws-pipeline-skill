@@ -10,9 +10,10 @@ Every phase runs as a fresh subagent, every gate is backed by a standalone valid
 every decision is written to an append-only evidence tree — so job outcomes are decided by
 evidence, not by narrative.
 
-> Ported from the internal **ADWS_Pro** system; 8 of the 9 deterministic validators are
-> verified byte-for-byte against the originals — `criteria-to-checks` is deliberately
-> diverged (v2.0.0) and verified against a frozen baseline (see [Validation](#validation)).
+> Ported from the internal **ADWS_Pro** system; 7 of the 9 deterministic validators are
+> verified byte-for-byte against the originals — `criteria-to-checks` and
+> `review-risk-assess` are deliberately diverged (both v2.0.0) and verified against frozen
+> baselines (see [Validation](#validation)).
 
 ---
 
@@ -136,8 +137,8 @@ install.sh                one-command install/port helper
 Run the suites (dependency-free, plain Node):
 
 ```bash
-node parity/run-parity.js                            # 88/88 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 17/17 report verdict fixtures
+node parity/run-parity.js                            # 93/93 validator-parity fixtures
+node parity/execution-report-fixtures/run-tests.js   # 19/19 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
@@ -145,9 +146,10 @@ node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
 
 `make local-ci` runs all five plus the static floors and skill lints.
 
-- **Validator parity:** 8 of 9 validators are verified byte-for-byte against the ADWS_Pro
-  originals; `criteria-to-checks` is deliberately diverged (v2.0.0, see `docs/DPPD.md` §9 and §14) and
-  verified against a frozen baseline. Parity reproduces from a fresh clone via each fixture's
+- **Validator parity:** 7 of 9 validators are verified byte-for-byte against the ADWS_Pro
+  originals; `criteria-to-checks` (v2.0.0, see `docs/DPPD.md` §9 and §14) and
+  `review-risk-assess` (v2.0.0, see `docs/SC8_PLAN.md`) are deliberately diverged and
+  verified against frozen baselines. Parity reproduces from a fresh clone via each fixture's
   frozen `expected` field — no access to the private original is required.
 - The skill was exercised **live end-to-end** (real PRs, real gate-failure and rewind drills);
   see [`docs/acceptance/`](docs/acceptance/).

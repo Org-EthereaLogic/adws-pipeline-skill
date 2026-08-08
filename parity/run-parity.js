@@ -61,6 +61,7 @@ const REPORT_PATH = path.join(PARITY_DIR, 'PARITY_REPORT.md');
 // Map value = 'scope-change id, ported version' shown in the report.
 const DIVERGED_PACKS = {
   'criteria-to-checks': 'SC-1 + SC-5, v2.0.0',
+  'review-risk-assess': 'SC-8, v2.0.0',
 };
 
 // M-3a: the declared size of the corpus. Unlike the report/entropy/provenance suites —
@@ -69,8 +70,10 @@ const DIVERGED_PACKS = {
 // total with every assertion still green. This constant is the second source: it must be
 // changed deliberately, by a human, in the same commit that adds or removes a fixture.
 // Bump it when the corpus legitimately grows (84 → 88 under SC-5, four new
-// criteria-to-checks cases). A mismatch is a hard failure, never a warning.
-const EXPECTED_FIXTURE_TOTAL = 88;
+// criteria-to-checks cases; 88 → 93 under SC-8, five new review-risk-assess pins: two for
+// the security-matching halves, two for unassessable entries, one for the deliberate
+// non-enforcement of an `action` enum). A mismatch is a hard failure, never a warning.
+const EXPECTED_FIXTURE_TOTAL = 93;
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.

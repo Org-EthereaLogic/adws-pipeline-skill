@@ -1,0 +1,26 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "modify"
+        },
+        null
+      ]
+    }
+  },
+  "note": "SC-8/F-59 regression pin: a null entry among valid ones. An entry with no usable file_path cannot be risk-assessed — it inflates files_changed while staying invisible to the security scan — so the change set is NOT assessable: fail, high, malformed_entries 1. Before the isAssessableEntry check this returned pass/low.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_changed": 2,
+    "malformed_entries": 1,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "fixtures/id-namespace-resolution/pass-resolves-through-authority/method-source.md",
+          "action": "create"
+        },
+        {
+          "file_path": "fixtures/id-namespace-resolution/fail-two-definitions-one-token/method-source.md",
+          "action": "create"
+        }
+      ]
+    }
+  },
+  "note": "SC-8/F-54 regression pin (field run job_20260807_0004, cadence-method-skill issue #22). Two contract-mandated fixture directory names that v1.0.0 scored security-sensitive via /auth/i and /token/i substring matches, forcing an operator override of a rubric fail. A file under a test corpus is test DATA, not a security surface: sec 0, low risk, pass. Reverting the TEST_CORPUS_SEGMENTS check alone flips this to warn with sec 1 (the -one-token path; the -authority path is killed by the tokenizer instead).",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed": 2,
+    "malformed_entries": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

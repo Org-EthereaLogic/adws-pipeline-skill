@@ -1,0 +1,28 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/a.js",
+          "action": "banana"
+        },
+        {
+          "file_path": "src/b.js"
+        }
+      ]
+    }
+  },
+  "note": "SC-8/F-59 boundary: action is deliberately NOT validated against an enum. artifact-layout.md declares the field but enumerates no values, only `delete` carries behavior here, and an entry with a usable file_path is fully assessable regardless of its action. Both entries assess: pass, low, malformed_entries 0. This fixture pins the decision NOT to fail on an unrecognized action.",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed": 2,
+    "malformed_entries": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

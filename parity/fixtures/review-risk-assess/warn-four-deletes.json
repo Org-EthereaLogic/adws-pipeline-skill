@@ -21,12 +21,14 @@
       ]
     }
   },
-  "note": "Authored — 4 deletes (> 3): high risk, fail",
+  "note": "Authored — 4 deletes (> 3): high risk, warn (SC-8/F-53: high risk warns; only an unassessable change set fails)",
   "expected": {
-    "rubric_result": "fail",
+    "rubric_result": "warn",
     "files_changed": 4,
+    "malformed_entries": 0,
     "deletes_count": 4,
     "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
     "risk_level": "high",
     "cost_usd": 0,
     "token_count": 0,

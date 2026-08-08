@@ -1,0 +1,33 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/lib/tokenizer.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/render/authoring.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "docs/authorship.md",
+          "action": "modify"
+        }
+      ]
+    }
+  },
+  "note": "SC-8/F-54 regression pin: substring vs token. All three paths matched v1.0.0 (/token/i on \"tokenizer\", /auth/i on \"authoring\" and \"authorship\") and none contains a security TOKEN: sec 0, low risk, pass. Reverting the tokenizer to the v1.0.0 substring regexes alone flips this to warn with sec 3. Note src/metrics/token_count.js is deliberately absent — `token` IS one of its tokens, so it correctly still matches, at warn.",
+  "expected": {
+    "rubric_result": "pass",
+    "files_changed": 3,
+    "malformed_entries": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

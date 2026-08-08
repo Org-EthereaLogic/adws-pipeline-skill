@@ -29,12 +29,14 @@
       ]
     }
   },
-  "note": "Authored — 6 files (> 5), clean paths, no deletes: medium risk, warn",
+  "note": "Authored — 6 files (> 5), clean paths, no deletes: medium risk, pass (SC-8/F-56: file count alone no longer warns, which is what made exit 0 unreachable)",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "pass",
     "files_changed": 6,
+    "malformed_entries": 0,
     "deletes_count": 0,
     "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
     "risk_level": "medium",
     "cost_usd": 0,
     "token_count": 0,

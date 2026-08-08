@@ -13,12 +13,14 @@
       ]
     }
   },
-  "note": "Authored — 1 delete (1-2 deletes band): medium risk, warn",
+  "note": "Authored — 1 delete (1-2 deletes band): medium risk, pass (SC-8: medium risk is not a gate concern)",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "pass",
     "files_changed": 2,
+    "malformed_entries": 0,
     "deletes_count": 1,
     "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
     "risk_level": "medium",
     "cost_usd": 0,
     "token_count": 0,

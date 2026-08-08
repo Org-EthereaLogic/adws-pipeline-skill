@@ -101,6 +101,39 @@ const CASES = [
     expectGate: { key: 'consensus', result: 'fail' },
   },
   {
+    name: 'quarantine_trace_mismatch',
+    jobId: 'job-9b2e14',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // SC-8/F-55 regression: skill_trace.json TRANSCRIBES the validator CLI's stdout, so
+    // its rubric_result must equal its own output.rubric_result. This fixture is the
+    // shape a live run actually wrote — wrapper "warn" over an output of "fail", with the
+    // override rationale in `error` — to route around a validator fail it judged a false
+    // positive. The validator's verdict is authoritative: the row scores `fail`,
+    // skills_clean fails, and the job QUARANTINEs as an evidence-integrity breach rather
+    // than promoting on a warn nothing could distinguish from an honest one.
+    expectGate: { key: 'skills_clean', result: 'fail' },
+    expectWarning: 'EVIDENCE INTEGRITY',
+  },
+  {
+    name: 'quarantine_trace_mismatch_inverse',
+    jobId: 'job-3e7c05',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // SC-8/F-58 regression: the mismatch pointing the OTHER way — wrapper "warn" over an
+    // output of "pass". Substituting the validator's verdict makes the row CLEAN here, so
+    // scoring alone let this promote at exit 0 with an evidence-integrity warning nobody
+    // was gated on; the first cut of SC-8 shipped that hole because its only fixture was
+    // the direction where substitution happened to fail the gate by itself. The
+    // disagreement is the breach regardless of direction, so skills_clean fails on the
+    // mismatch term and the job QUARANTINEs. Paired with quarantine_trace_mismatch, the
+    // two fixtures cover both directions.
+    expectGate: { key: 'skills_clean', result: 'fail' },
+    expectWarning: 'EVIDENCE INTEGRITY',
+  },
+  {
     name: 'promote_resolved_dissent',
     jobId: 'job-1b2c3d',
     decision: 'PROMOTE',

@@ -1,0 +1,8 @@
+{
+  "pr_url": "https://example.invalid/repo/pull/311",
+  "branch": "adws/retry-worker-fix",
+  "files_to_commit": [
+    "src/retry_worker.py",
+    "tests/test_retry_worker.py"
+  ]
+}
