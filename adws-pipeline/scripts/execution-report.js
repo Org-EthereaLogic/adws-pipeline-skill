@@ -77,10 +77,44 @@ const GATE_STATUSES = Object.freeze({
 
 // --- Small utilities -------------------------------------------------------
 
+// SC-11/A1 (F-69). This caught EVERY error and returned null, so `EACCES`, `EISDIR`, a
+// truncated write and a JSON syntax error were all indistinguishable from "never
+// written" — in the one tool whose entire purpose is tamper-evident evidence. Downstream
+// that rendered as "wrote no readable phase_manifest.json", which reads as an agent that
+// skipped its job rather than as evidence that exists and cannot be trusted. SC-8/F-55
+// closed the same class from the other side (a wrapper that lies about its own verdict);
+// this is the side where the file simply refuses to be read.
+//
+// ENOENT is the ONLY benign absence. ENOTDIR and EISDIR are deliberately NOT benign: a
+// directory where a JSON file belongs is a structural problem, not a missing optional.
+//
+// The accumulator is module-scoped rather than threaded through all eleven call sites,
+// which sit in eight different functions with unrelated signatures. It is reset at the
+// top of buildReport(), the single entry point, so a caller that generates two reports in
+// one process (the fixture runner does) cannot leak problems between them.
+let evidenceProblems = [];
+
+function resetEvidenceProblems() {
+  evidenceProblems = [];
+}
+
 function safeReadJson(filePath) {
+  let raw;
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (_err) {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return null; // benign: the file was never written
+    evidenceProblems.push({
+      path: filePath,
+      kind: 'unreadable',
+      message: (err && (err.code || err.message)) || 'unknown error',
+    });
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    evidenceProblems.push({ path: filePath, kind: 'malformed', message: err.message });
     return null;
   }
 }
@@ -683,6 +717,28 @@ function evalConsensus(consensusRows, supersededDissentRows) {
 // append-only tree keeps it forever, so it fails the gate from wherever it sits.
 function evalSkillsClean(skillVerdicts, supersededMismatches) {
   const rows = skillVerdicts || [];
+  // SC-11/A1 (F-69). Evidence that EXISTS but cannot be read fails the gate, and it is
+  // checked ahead of everything else — including the no-outcomes early return below,
+  // which would otherwise let an unreadable tree through as `unverified`. That placement
+  // is SC-8/A11's lesson: an integrity term underneath an early return gates nothing.
+  // The route is the existing one (FAIL -> decideLifecycle -> QUARANTINE, exit 2); no new
+  // decision, no new exit code, no SCHEMA_VERSION bump.
+  if (evidenceProblems.length > 0) {
+    const detail = evidenceProblems
+      .map((p) => `${p.path} (${p.kind}: ${p.message})`)
+      .join('; ');
+    return {
+      key: 'skills_clean',
+      label: 'No skill failures or warnings',
+      status: GATE_STATUSES.FAIL,
+      value: `${evidenceProblems.length} unreadable evidence file(s)`,
+      threshold: '0 fail, 0 warn, 0 trace mismatches, 0 unreadable evidence files',
+      reason:
+        `EVIDENCE INTEGRITY: ${evidenceProblems.length} evidence file(s) present but unreadable — ${detail}. ` +
+        'An unreadable file is not an absent one: absence is recorded as a gap, but a file that ' +
+        'exists and cannot be parsed is a tampering-shaped fact the report must not score as clean.',
+    };
+  }
   // Integrity is evaluated FIRST and independently of `rows`: a job whose only mismatch
   // sits in a superseded attempt has nothing to score on the latest one, and the
   // no-outcomes early return below would otherwise let it through as `unverified`.
@@ -1167,6 +1223,7 @@ function renderMarkdown(report, phaseAttemptRows) {
 
 function buildReport(jobDir, options = {}) {
   const now = typeof options.now === 'function' ? options.now : () => new Date().toISOString();
+  resetEvidenceProblems(); // SC-11/A1: one accumulator per report, never across reports
 
   const runManifest = safeReadJson(path.join(jobDir, 'run_manifest.json'));
   if (!runManifest) {

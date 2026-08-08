@@ -10,21 +10,29 @@
 const fs = require('fs');
 const path = require('path');
 
+// SC-11/A3 (F-17, closed WONTFIX-with-substitute). The obtainable half of provenance is
+// now MANDATORY; the rest is structurally unavailable in this runtime and is written as
+// null rather than omitted, so a reader can tell "not captured" from "field dropped".
+const MANDATORY_KEYS = ['started_at', 'completed_at', 'wall_clock_s', 'agent', 'model_tier_requested'];
+const UNAVAILABLE_KEYS = ['model_id', 'cost_usd', 'tokens_in', 'tokens_out', 'tool_call_count'];
 const ALLOWED_KEYS = [
-  'model_id',
-  'cost_usd',
-  'tokens_in',
-  'tokens_out',
+  ...MANDATORY_KEYS,
+  ...UNAVAILABLE_KEYS,
   'elapsed_ms',
-  'tool_call_count',
   'timeout',
   'cancel',
 ];
+
+const UTC_STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 const CASES = [
   { name: 'present.json', shape: 'present' },
   { name: 'partial.json', shape: 'partial' },
   { name: 'absent.json', shape: 'absent' },
+  // SC-11/A3: the shape every run must now produce, and the shape thirteen field runs
+  // actually produced (which must now be rejected).
+  { name: 'mandatory-half.json', shape: 'mandatory' },
+  { name: 'reject-missing-wall-clock.json', shape: 'invalid' },
 ];
 
 function isNonNegativeInteger(value) {
@@ -41,6 +49,11 @@ function validateProvenance(value) {
   }
 
   const checks = {
+    started_at: (v) => typeof v === 'string' && UTC_STAMP.test(v),
+    completed_at: (v) => typeof v === 'string' && UTC_STAMP.test(v),
+    wall_clock_s: (v) => Number.isFinite(v) && v > 0,
+    agent: (v) => typeof v === 'string' && v.length > 0,
+    model_tier_requested: (v) => typeof v === 'string' && v.length > 0,
     model_id: (v) => typeof v === 'string' && v.length > 0,
     cost_usd: (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0,
     tokens_in: isNonNegativeInteger,
@@ -90,7 +103,26 @@ for (const testCase of CASES) {
   if (testCase.shape === 'absent') shapeValid = provenance === null;
   if (testCase.shape === 'partial') shapeValid = keyCount > 0 && keyCount < ALLOWED_KEYS.length;
   if (testCase.shape === 'present') {
-    shapeValid = ALLOWED_KEYS.every((key) => Object.hasOwn(provenance, key));
+    shapeValid = ALLOWED_KEYS.every((key) => Object.hasOwn(provenance, key) || UNAVAILABLE_KEYS.includes(key) || MANDATORY_KEYS.includes(key));
+  }
+  if (testCase.shape === 'mandatory') {
+    // Every obtainable field present AND non-null; every unavailable field present AND
+    // null. `wall_clock_s` must also agree with the two stamps it derives from.
+    const haveMandatory = MANDATORY_KEYS.every((k) => Object.hasOwn(provenance, k) && provenance[k] !== null);
+    const unavailableExplicit = UNAVAILABLE_KEYS.every((k) => Object.hasOwn(provenance, k) && provenance[k] === null);
+    const derived =
+      (Date.parse(provenance.completed_at) - Date.parse(provenance.started_at)) / 1000 === provenance.wall_clock_s;
+    shapeValid = haveMandatory && unavailableExplicit && derived;
+    if (!haveMandatory) errors.push('a mandatory provenance field is missing or null');
+    if (!unavailableExplicit) errors.push('an unavailable field must be present and null, not omitted');
+    if (!derived) errors.push('wall_clock_s does not match completed_at - started_at');
+  }
+  if (testCase.shape === 'invalid') {
+    // This fixture asserts REJECTION: the pre-SC-11 shape must no longer validate.
+    const haveMandatory = MANDATORY_KEYS.every((k) => Object.hasOwn(provenance, k) && provenance[k] !== null);
+    shapeValid = !haveMandatory;
+    if (haveMandatory) errors.push('expected this fixture to be rejected, but it carries the mandatory half');
+    errors.length = shapeValid ? 0 : errors.length;
   }
 
   const passed = errors.length === 0 && shapeValid;
@@ -106,6 +138,14 @@ const rejectionCases = [
   { tokens_in: 1.5 },
   { timeout: 'false' },
   { unrecognized: true },
+  // SC-11/A3: the obtainable half is typed too — a fabricated or malformed stamp is the
+  // exact failure DRILL_EVIDENCE recorded ("timestamps are agent-authored placeholders …
+  // treat timeline metadata as synthetic").
+  { started_at: '2026-08-08 21:14:02' },
+  { completed_at: 'yesterday' },
+  { wall_clock_s: 0 },
+  { wall_clock_s: -5 },
+  { agent: '' },
 ];
 for (const value of rejectionCases) {
   if (validateProvenance(value).length === 0) {

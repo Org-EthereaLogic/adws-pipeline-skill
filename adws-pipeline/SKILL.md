@@ -21,7 +21,7 @@ Reference files (read when needed, not all upfront):
 
 Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/validators/*.js` — 9 deterministic validators; CLI: `node <script> <input.json|->` → JSON verdict on stdout
-- `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2
+- `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2/3
 - `scripts/entropy-gate.js` — X-2 stability gate; CLI: `node scripts/entropy-gate.js artifacts/{jobId}/entropy_history.jsonl` → `{action: proceed|escalate|halt}`
 
 ## Environment & runtimes
@@ -134,10 +134,12 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    `check_id` onto the checks it runs (SC-5/F-31) — it cannot do that with specs that do
    not exist yet, and ids it mints itself cannot join back to the criteria. Every other
    validator runs at step 2, on its agent's output. Phase agents write their own
-   evidence files per `references/artifact-layout.md`. Where the runtime exposes per-phase
-   telemetry (model id, cost, tokens, wall-clock, tool-call count, timeout/cancel), record
-   it in the attempt's `phase_manifest.provenance` (SC-3 B1/F-17) — ADVISORY only; absent
-   or partial telemetry never affects the gate, and `execution-report.js` ignores it.
+   evidence files per `references/artifact-layout.md`. Record `phase_manifest.provenance`
+   (SC-3 B1/F-17): `started_at`, `completed_at`, the derived `wall_clock_s`, `agent`, and
+   `model_tier_requested` are MANDATORY and come from a live `date -u`; model id, cost,
+   tokens and tool-call count are structurally unavailable in this runtime and are written
+   as `null` rather than omitted (SC-11/A3). Provenance is never a gate input: absent or
+   null telemetry never affects a gate, and `execution-report.js` ignores it.
 2. **Validate**: run the phase's validator script(s) (mapping in
    `references/phase-gates.md`) with input assembled from the contract and phase
    outputs; wrap each stdout JSON in a `skill_trace.json` under the attempt's
@@ -288,9 +290,29 @@ Post-ship, zero orchestrator judgment:
 2. Run `node scripts/execution-report.js artifacts/{jobId}`.
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
-   and the path to `execution_report.md`. Remove the worktree
-   (`git worktree remove`) only after PROMOTE; keep it for RETRY/QUARANTINE debugging.
-4. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
+   and the path to `execution_report.md`.
+4. **Archive the evidence before any teardown (SC-11/A5).** In order:
+   1. Write `artifacts/{jobId}.tar.gz` from `artifacts/{jobId}/` to a **durable
+      destination outside the worktree and outside the target checkout** —
+      `execution.evidence_archive_dir` from the contract. If the contract names no
+      durable destination, say so in the terminal report and do NOT remove anything:
+      an archive written into a disposable checkout is not an archive.
+   2. Record `evidence_archive: { path, sha256, bytes, created_at }` in
+      `run_manifest.json`. A verdict whose evidence was archived somewhere unrecorded is
+      as unverifiable as one never archived.
+   3. **Verify by EXTRACTION, not by size.** Extract to a scratch directory and confirm
+      `execution_report.json` and every phase's `phase_manifest.json` are readable from
+      the extracted copy. A truncated tarball is non-empty.
+   4. Only then remove the worktree (`git worktree remove`), and only after PROMOTE;
+      keep it for RETRY/QUARANTINE debugging. **If any step above fails, do not remove
+      the worktree — report the failure.** Teardown is conditional on a verified
+      archive, never the reverse.
+
+   Four recorded runs lost their evidence tree at teardown; one field record notes it as
+   the *third* time that cost a verifiable claim. In each case an archive was not absent
+   so much as written somewhere disposable, which is why the destination and the
+   extraction check are both mandatory rather than advisory.
+5. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
    verdict is terminal, so anything still scheduled is stale by construction (F-57).
 
 ## Failure-reason classes

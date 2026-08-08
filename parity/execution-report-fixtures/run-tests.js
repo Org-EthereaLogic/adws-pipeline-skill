@@ -282,6 +282,45 @@ const CASES = [
     expectGate: { key: 'phase_gates', result: 'fail' },
     expectWarning: 'recorded gate_result=fail on its latest attempt (DOCUMENT_GATE_FAILURE)',
   },
+
+  // --- SC-11/A1 (F-69): evidence that EXISTS but cannot be read ---------------
+  {
+    name: 'quarantine_unreadable_manifest',
+    jobId: 'job-unr001',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // A permission, not a content, is what this fixture tests, and git stores only the
+    // exec bit — so the mode is applied by the runner and reverted in a finally. Skipped
+    // as root, where mode 000 is still readable.
+    //
+    // The target is deliberately a file whose ABSENCE is tolerated. A first cut chmod'd
+    // build/attempt_1/phase_manifest.json, and that fixture was VACUOUS: missing phase
+    // evidence already fails pipeline_completion, so the job quarantined with the fix
+    // fully reverted. Same defect class as the field record's "deleting the guard left
+    // both fixtures green" — caught here only by hand-falsification, since guard-ablation
+    // does not cover execution-report.js.
+    chmod: { 'test/attempt_1/consensus/advocate.json': 0o000 },
+    skipIfRoot: true,
+  },
+  {
+    name: 'quarantine_malformed_output',
+    jobId: 'job-mal001',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+  },
+  {
+    // The TOLERANCE pin. A1's obvious over-correction is to turn every missing file into
+    // a quarantine; this job is missing an optional subtree entirely and must still
+    // promote. Absence routes through unverified -> warn (exit 10); only evidence that
+    // exists and cannot be read routes to QUARANTINE (exit 2).
+    name: 'promote_absent_optional',
+    jobId: 'job-abs001',
+    decision: 'PROMOTE',
+    warn_flag: true,
+    exit_code: 10,
+  },
 ];
 
 function runCli(jobDir) {
@@ -344,9 +383,28 @@ function check(label, condition, actual, expected) {
   }
 }
 
+const IS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
+
 for (const testCase of CASES) {
   const jobDir = path.join(__dirname, testCase.name, 'artifacts', testCase.jobId);
   const before = results.length + failures;
+
+  if (testCase.skipIfRoot && IS_ROOT) {
+    console.log(`SKIP ${testCase.name} — running as root; mode 000 is readable`);
+    continue;
+  }
+
+  // SC-11/A1: apply fixture-declared modes, and ALWAYS revert them. A crash between
+  // here and the finally would leave an unreadable file in the working tree.
+  const restoreModes = [];
+  if (testCase.chmod) {
+    for (const [rel, mode] of Object.entries(testCase.chmod)) {
+      const target = path.join(jobDir, rel);
+      restoreModes.push([target, fs.statSync(target).mode & 0o777]);
+      fs.chmodSync(target, mode);
+    }
+  }
+  try {
 
   const run1 = runCli(jobDir);
   check(`${testCase.name} exit code`, run1.status === testCase.exit_code, run1.status, testCase.exit_code);
@@ -407,6 +465,10 @@ for (const testCase of CASES) {
     `${passed ? 'PASS' : 'FAIL'} ${testCase.name} — expected ${testCase.decision} warn_flag=${testCase.warn_flag} exit=${testCase.exit_code}, cli exit=${run1.status}`
   );
   for (const line of results.splice(0)) console.log(line);
+
+  } finally {
+    for (const [target, mode] of restoreModes) fs.chmodSync(target, mode);
+  }
 }
 
 // CLI error path: missing directory must exit 3.

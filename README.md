@@ -140,9 +140,9 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                            # 108/108 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 21/21 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 24/24 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
-node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
+node parity/provenance-fixtures/run-tests.js         # 5/5 provenance-schema fixtures
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
 node parity/cli-contract/run-tests.js                # CLI contract: 9 validators + 2 scripts
 node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rules pinned?

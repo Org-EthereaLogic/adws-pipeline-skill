@@ -1197,3 +1197,60 @@ Backups are never auto-deleted and the output says so — auto-pruning would del
 artifact a user reaches for after a bad upgrade.
 
 Gate: 13/13 steps pass.
+
+## SC-11 (2026-08-08, audit finding F-69 + four findings open since SC-3) — evidence that means something
+
+Plan: `docs/SC11_PLAN.md`. Report fixtures 21 → 24, provenance 3 → 5. No `SCHEMA_VERSION`
+bump, no new decision, no new exit code, no validator changes, no parity refreeze.
+
+**F-69.** `safeReadJson` caught every error and returned `null`, so `EACCES`, `EISDIR`, a
+truncated write and a JSON syntax error were indistinguishable from "never written" — in
+the one tool whose purpose is tamper-evident evidence. `ENOENT` is now the only benign
+absence; everything else fails the gate through the existing FAIL → QUARANTINE route. The
+term sits **above** `evalSkillsClean`'s no-outcomes early return, restating SC-8/A11: an
+integrity check underneath an early return gates nothing.
+
+Falsified two ways — restore the catch-all, or disable only the gate term — and in both the
+two new quarantine fixtures flip to **PROMOTE exit 0** while `promote_absent_optional` stays
+green. That exit 0 is the hole in one number: before SC-11 a corrupted evidence file scored
+a clean promote.
+
+**The new fixtures were vacuous on the first cut.** Both initially targeted
+`build/attempt_1/phase_manifest.json`, but missing phase evidence already fails
+`pipeline_completion`, so the job quarantined with the fix fully reverted — they pinned
+nothing. Rebuilt against files whose absence is tolerated (a `skill_trace.json`, a
+`consensus/advocate.json`) so the integrity term is the only gate that can produce the
+verdict. Same class as *"deleting the guard left both fixtures green"*, reproduced inside
+this package's own work and caught only by hand-falsification, because `guard-ablation`
+covers validators and not `execution-report.js`. That is the strongest argument for
+extending it (M-5b/B6).
+
+**F-17 closed WONTFIX-with-substitute.** Open since SC-3 across five scope changes because
+the data is not obtainable — the runtime exposes no per-subagent token or cost accounting.
+The split is now explicit: `model_id`/`cost_usd`/`tokens_in`/`tokens_out`/`tool_call_count`
+are structurally unavailable, **retained and written null**; `started_at`/`completed_at`/
+`wall_clock_s`/`agent`/`model_tier_requested` are obtainable and now **mandatory and typed**.
+A first draft proposed deleting the always-null keys; that was withdrawn — removal is a
+breaking change to every recorded evidence tree, and only the retained-and-null form lets a
+reader tell *not captured* from *field dropped*. Provenance fixtures now include the
+mandatory shape and a **rejection** of the shape thirteen field runs actually produced.
+
+**The grader mandate is settled: diff-only.** Its independence comes from not sharing the
+pipeline's evidence; reproduction would make the verdict depend on an environment nothing
+records; and executing the change is the verifier's job. A criterion satisfiable only by
+execution now grades `partial` with `requires_execution: true` when the diff carries no
+demonstrating test — the absence of that test *is* the finding. The spec also now states
+what a grader `pass` does not mean: coverage, not correctness.
+
+**Archive before teardown.** A first draft would have written `artifacts/{jobId}.tar.gz`
+and checked it non-empty; that under-reads the failure. The records show the tree was "not
+committed to the PR head and not retained locally" — the archive was not absent so much as
+written somewhere disposable, which writing beside the source tree reproduces exactly. Now
+three mandatory parts: a durable destination outside the worktree and the checkout, path
+and sha256 recorded in `run_manifest`, and **verification by extraction** rather than by
+size, since a truncated tarball is non-empty. Teardown is conditional on a verified archive.
+
+This one is prose the orchestrator must follow, not code — nothing mechanically enforces the
+durable destination. That gap is recorded rather than papered over.
+
+Gate: 13/13 steps pass.
