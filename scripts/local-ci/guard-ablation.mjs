@@ -1,0 +1,398 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * guard-ablation.mjs — asserts that the fixture corpus actually PINS the rules it
+ * appears to test (M-5a/A2).
+ *
+ * The claim to falsify: "every rule in these validators is pinned by at least one
+ * fixture." A field run proved that claim false in the target repo — two fixtures
+ * were added specifically to lock a security fix, and DELETING THE GUARD LEFT BOTH
+ * FIXTURES GREEN, because they targeted paths that did not exist and ENOENT
+ * produced output byte-identical to the guard refusing. The same mutation sweep
+ * found roughly a dozen further rules pinned by no fixture at all. The technique
+ * was recommended as routine; no mechanism was ever shipped. This is that
+ * mechanism, deliberately narrow.
+ *
+ * How it works. For each target validator: read its source, apply ONE textual
+ * mutation, instantiate the mutated source with `new Function(...)` — not `vm`,
+ * not a temp file — and run every fixture in that pack against the mutant's
+ * `execute()`, deep-comparing each result against the fixture's frozen `expected`.
+ * `require.main === module` is false for the shim module object, so the CLI
+ * wrapper at the foot of each validator never fires.
+ *
+ * A mutant whose output is IDENTICAL on every fixture in its pack SURVIVED. A
+ * survivor means: this line can be deleted or inverted and the whole suite stays
+ * green — i.e. nothing pins it.
+ *
+ * Scope (deliberate). Two operators over the three packs SC-9 modifies. The wider
+ * operator catalogue (guard-on, boundary flips, constant offsets, negation,
+ * dropped pushes) and the remaining six validators are a separate decision, to be
+ * made on the measurements this run prints rather than on estimates.
+ *
+ * Env handling is safe here precisely because drift-sentinel reads process.env at
+ * CALL time rather than module-load time: the same impurity that forces
+ * run-parity.js to spawn a child per fixture lets this run in-process.
+ *
+ * Usage: node scripts/local-ci/guard-ablation.mjs [--verbose]
+ * Exit 0 when every survivor is an accepted baseline entry and every accepted
+ * entry still survives. Exit 1 otherwise.
+ */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..', '..');
+const VALIDATOR_DIR = path.join(ROOT, 'adws-pipeline', 'scripts', 'validators');
+const FIXTURES_DIR = path.join(ROOT, 'parity', 'fixtures');
+const BASELINE_PATH = path.join(ROOT, 'parity', 'guard-ablation-baseline.json');
+
+// The three packs SC-9 modifies. Extending this list is B6's decision, not a default.
+const TARGET_PACKS = ['repo-context-scan', 'patch-compose', 'ship-mode-select'];
+
+const VERBOSE = process.argv.includes('--verbose');
+
+// --- source scanning ---------------------------------------------------------
+// A minimal state machine over the source so mutations never fire inside a comment
+// or a string. Regex-only scanning would rewrite the word `fail` in a rubric
+// description and produce meaningless mutants.
+
+const CODE = 'code';
+const LINE_COMMENT = 'line-comment';
+const BLOCK_COMMENT = 'block-comment';
+
+/**
+ * Walk `src`, invoking onCode(index, char) only for characters in real code, and
+ * onString(start, end, quote) for each complete string literal that began in code.
+ */
+function scanSource(src, { onCode, onString }) {
+  let state = CODE;
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (state === CODE) {
+      if (c === '/' && next === '/') {
+        state = LINE_COMMENT;
+        i += 2;
+        continue;
+      }
+      if (c === '/' && next === '*') {
+        state = BLOCK_COMMENT;
+        i += 2;
+        continue;
+      }
+      if (c === "'" || c === '"' || c === '`') {
+        const start = i;
+        const quote = c;
+        i += 1;
+        while (i < src.length) {
+          if (src[i] === '\\') {
+            i += 2;
+            continue;
+          }
+          if (src[i] === quote) break;
+          i += 1;
+        }
+        if (onString) onString(start, i, quote);
+        i += 1;
+        continue;
+      }
+      if (onCode) onCode(i, c);
+      i += 1;
+      continue;
+    }
+    if (state === LINE_COMMENT) {
+      if (c === '\n') state = CODE;
+      i += 1;
+      continue;
+    }
+    // BLOCK_COMMENT
+    if (c === '*' && next === '/') {
+      state = CODE;
+      i += 2;
+      continue;
+    }
+    i += 1;
+  }
+}
+
+/**
+ * The mutable region is the module body ABOVE the CLI wrapper.
+ *
+ * The first run of this tool reported nine survivors and every one of them was in
+ * the wrapper (`if (require.main === module)`, `if (!src)`, the JSON-object guard).
+ * That is a true finding stated in the wrong place: the 93 parity fixtures call
+ * execute() directly through exec-one.js and never invoke the CLI at all, so they
+ * pin no wrapper line by construction. Keeping those nine as permanent baseline
+ * entries would say the same thing nine times and drown any real survivor.
+ *
+ * So the wrapper is out of scope HERE and pinned ELSEWHERE — by
+ * parity/cli-contract/run-tests.js, which asserts all four exit-3 paths and both
+ * input modes for every validator, and by scripts/local-ci/cli-block-lint.mjs,
+ * which asserts the nine copies cannot drift apart. This tool's claim is
+ * correspondingly narrow and true: the FIXTURE CORPUS pins every rule in execute().
+ */
+function executeRegion(src, pack) {
+  const marker = src.indexOf('// --- CLI wrapper');
+  const end = marker !== -1 ? marker : src.indexOf('module.exports');
+  if (end === -1) {
+    throw new Error(`guard-ablation: ${pack} has neither a CLI-wrapper marker nor module.exports`);
+  }
+  return src.slice(0, end);
+}
+
+function lineOf(src, index) {
+  let line = 1;
+  for (let i = 0; i < index && i < src.length; i++) if (src[i] === '\n') line += 1;
+  return line;
+}
+
+function snippet(text, max = 58) {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? flat.slice(0, max - 1) + '…' : flat;
+}
+
+// --- operators ---------------------------------------------------------------
+
+/**
+ * guard-off: replace each `if (COND)` condition with `false`, so the guarded
+ * branch never runs. This is the operator that reproduces the field defect
+ * exactly — a guard deleted while its fixtures stay green.
+ */
+function guardOffMutants(src, pack) {
+  const region = executeRegion(src, pack);
+  const starts = [];
+  scanSource(region, {
+    onCode(i) {
+      // `if` as a whole token, followed by optional space then `(`
+      if (src.startsWith('if', i) && !/[A-Za-z0-9_$]/.test(src[i - 1] || ' ')) {
+        const after = src.slice(i + 2).match(/^\s*\(/);
+        if (after) starts.push(i + 2 + after[0].length - 1); // index of '('
+      }
+    },
+  });
+
+  const mutants = [];
+  starts.forEach((openIdx, ordinal) => {
+    // Balance parentheses, ignoring those inside strings/comments.
+    let depth = 0;
+    let closeIdx = -1;
+    scanSource(src.slice(openIdx), {
+      onCode(rel, ch) {
+        if (closeIdx !== -1) return;
+        if (ch === '(') depth += 1;
+        else if (ch === ')') {
+          depth -= 1;
+          if (depth === 0) closeIdx = openIdx + rel;
+        }
+      },
+    });
+    if (closeIdx === -1) return;
+    const cond = src.slice(openIdx + 1, closeIdx);
+    if (cond.trim() === 'false' || cond.trim() === 'true') return; // already constant
+    mutants.push({
+      id: `${pack}:guard-off:#${ordinal}`,
+      line: lineOf(src, openIdx),
+      original: `if (${snippet(cond)})`,
+      mutated: 'if (false)',
+      source: src.slice(0, openIdx + 1) + 'false' + src.slice(closeIdx),
+    });
+  });
+  return mutants;
+}
+
+/**
+ * verdict: replace each `'fail'` / `'warn'` STRING LITERAL with `'pass'`. A
+ * surviving verdict mutant means no fixture reaches that branch — the verdict is
+ * unreachable by the corpus, which is how a rule ships un-pinned.
+ */
+function verdictMutants(src, pack) {
+  const region = executeRegion(src, pack);
+  const spans = [];
+  scanSource(region, {
+    onString(start, end, quote) {
+      if (quote === '`') return;
+      const value = src.slice(start + 1, end);
+      if (value === 'fail' || value === 'warn') spans.push({ start, end, value });
+    },
+  });
+
+  return spans.map((span, ordinal) => ({
+    id: `${pack}:verdict:#${ordinal}`,
+    line: lineOf(src, span.start),
+    original: `'${span.value}'`,
+    mutated: "'pass'",
+    source: src.slice(0, span.start) + "'pass'" + src.slice(span.end + 1),
+  }));
+}
+
+// --- mutant execution --------------------------------------------------------
+
+const requireShim = createRequire(import.meta.url);
+
+function instantiate(source, filename) {
+  const moduleObj = { exports: {} };
+  // `require.main === module` is false here, so the CLI wrapper never fires.
+  // The shim only resolves what a validator is permitted to import (NFR-4).
+  const scopedRequire = (spec) => {
+    if (spec === 'fs' || spec === 'node:fs' || spec === 'path' || spec === 'node:path') return requireShim(spec);
+    throw new Error(`guard-ablation: mutant tried to require '${spec}' — validators may import Node built-ins only`);
+  };
+  // eslint-disable-next-line no-new-func
+  const fn = new Function('module', 'exports', 'require', '__filename', '__dirname', source);
+  fn(moduleObj, moduleObj.exports, scopedRequire, filename, path.dirname(filename));
+  return moduleObj.exports;
+}
+
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a !== typeof b) return false;
+  if (a === null || b === null) return a === b;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (typeof a !== 'object') return Number.isNaN(a) && Number.isNaN(b);
+  const ka = Object.keys(a).sort();
+  const kb = Object.keys(b).sort();
+  if (ka.length !== kb.length) return false;
+  for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return false;
+  for (const k of ka) if (!deepEqual(a[k], b[k])) return false;
+  return true;
+}
+
+function loadFixtures(pack) {
+  const dir = path.join(FIXTURES_DIR, pack);
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => ({ name: f, ...JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) }));
+}
+
+function runAgainstFixtures(exports_, fixtures) {
+  // Returns true if EVERY fixture still produces its frozen `expected` (survived).
+  for (const fixture of fixtures) {
+    const saved = {};
+    if (fixture.env) {
+      for (const [k, v] of Object.entries(fixture.env)) {
+        saved[k] = process.env[k];
+        process.env[k] = v;
+      }
+    }
+    let result;
+    try {
+      result = exports_.execute(fixture.input);
+    } catch (_err) {
+      result = { __threw: true };
+    } finally {
+      if (fixture.env) {
+        for (const [k] of Object.entries(fixture.env)) {
+          if (saved[k] === undefined) delete process.env[k];
+          else process.env[k] = saved[k];
+        }
+      }
+    }
+    if (!deepEqual(result, fixture.expected)) return false; // killed by this fixture
+  }
+  return true; // survived every fixture
+}
+
+// --- baseline ----------------------------------------------------------------
+
+function loadBaseline() {
+  if (!fs.existsSync(BASELINE_PATH)) return { accepted: [] };
+  return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
+}
+
+// --- main --------------------------------------------------------------------
+
+const started = Date.now();
+const baseline = loadBaseline();
+const acceptedById = new Map((baseline.accepted || []).map((entry) => [entry.id, entry]));
+
+let totalMutants = 0;
+let totalRuns = 0;
+const survivors = [];
+
+for (const pack of TARGET_PACKS) {
+  const scriptPath = path.join(VALIDATOR_DIR, pack + '.js');
+  const src = fs.readFileSync(scriptPath, 'utf8');
+  const fixtures = loadFixtures(pack);
+
+  // Sanity floor: the UNMUTATED source must reproduce every frozen expectation.
+  // Without this, a survivor count is meaningless — everything would "survive".
+  const pristine = instantiate(src, scriptPath);
+  if (!runAgainstFixtures(pristine, fixtures)) {
+    console.error(`guard-ablation: ${pack} does not reproduce its own fixtures unmutated — aborting.`);
+    process.exit(1);
+  }
+
+  const mutants = [...guardOffMutants(src, pack), ...verdictMutants(src, pack)];
+  totalMutants += mutants.length;
+
+  let packSurvivors = 0;
+  for (const mutant of mutants) {
+    let exports_;
+    try {
+      exports_ = instantiate(mutant.source, scriptPath);
+    } catch (_err) {
+      continue; // mutant does not parse — not a survivor, not a finding
+    }
+    totalRuns += fixtures.length;
+    if (runAgainstFixtures(exports_, fixtures)) {
+      packSurvivors += 1;
+      survivors.push({ ...mutant, pack });
+    }
+    if (VERBOSE) {
+      console.log(`  ${mutant.id} L${mutant.line} ${mutant.original} → ${mutant.mutated}`);
+    }
+  }
+
+  console.log(
+    `[guard-ablation] ${pack}: ${mutants.length} mutant(s) × ${fixtures.length} fixture(s), ${packSurvivors} survivor(s)`
+  );
+}
+
+const elapsedMs = Date.now() - started;
+
+// --- verdict: bidirectional, mirroring EXPECTED_FIXTURE_TOTAL's discipline -----
+
+let failed = false;
+const survivorIds = new Set(survivors.map((s) => s.id));
+
+const unaccepted = survivors.filter((s) => !acceptedById.has(s.id));
+if (unaccepted.length) {
+  failed = true;
+  console.log('\nNEW SURVIVOR(S) — a rule that no fixture pins:');
+  for (const s of unaccepted) {
+    console.log(`  ${s.id}`);
+    console.log(`    ${s.pack}.js:${s.line}  ${s.original} → ${s.mutated}`);
+    console.log('    Every fixture in the pack still produced its frozen `expected` with this change applied.');
+  }
+  console.log(
+    '\n  Fix: add a fixture that flips when this rule is reverted alone — or, if the mutant is\n' +
+      '  genuinely equivalent, add it to parity/guard-ablation-baseline.json with a reason.'
+  );
+}
+
+const stale = [...acceptedById.keys()].filter((id) => !survivorIds.has(id));
+if (stale.length) {
+  failed = true;
+  console.log('\nSTALE BASELINE ENTR(IES) — these mutants are now killed:');
+  for (const id of stale) console.log(`  ${id} — delete this entry from the baseline in the same commit`);
+}
+
+console.log(
+  `\n[guard-ablation] ${totalMutants} mutant(s) over ${TARGET_PACKS.length} pack(s), ` +
+    `${totalRuns} execute() call(s), ${survivors.length} survivor(s), ${elapsedMs} ms`
+);
+
+if (failed) {
+  process.exitCode = 1;
+} else {
+  console.log(
+    `[guard-ablation] OK — every survivor is an accepted baseline entry (${acceptedById.size}), and every accepted entry still survives.`
+  );
+}

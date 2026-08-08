@@ -1,0 +1,52 @@
+{
+  "_doc": [
+    "Accepted survivors for scripts/local-ci/guard-ablation.mjs (M-5a/A2).",
+    "",
+    "A SURVIVOR is a mutation of a validator's execute() that leaves every fixture in",
+    "its pack producing the same frozen `expected` — i.e. the rule it touched is pinned",
+    "by nothing. A new survivor is a HARD CI FAILURE: it means a rule shipped without a",
+    "fixture that fails when the rule is reverted alone.",
+    "",
+    "This list may only SHRINK. Two rules, both enforced by the tool:",
+    "  1. a survivor absent from `accepted` fails the gate;",
+    "  2. an `accepted` entry that is no longer a survivor ALSO fails the gate, so a",
+    "     stale exemption cannot outlive the gap it excused. Delete it in the same",
+    "     commit that kills the mutant.",
+    "",
+    "Every entry must carry `reason` and `class`. `class: equivalent` means the mutation",
+    "provably cannot change behaviour. `class: unpinned` means the rule genuinely lacks a",
+    "fixture and MUST carry an `owner` naming the work package that closes it.",
+    "",
+    "Scope note: the 31-line CLI wrapper at the foot of each validator is NOT mutated.",
+    "The 93 parity fixtures call execute() directly via exec-one.js and never invoke the",
+    "CLI, so they pin no wrapper line by construction — the first run of this tool",
+    "reported nine survivors and all nine were wrapper guards. The wrapper is pinned",
+    "instead by parity/cli-contract/run-tests.js (all four exit-3 paths and both input",
+    "modes, per validator) and by scripts/local-ci/cli-block-lint.mjs (the nine copies",
+    "cannot drift). See the header of guard-ablation.mjs."
+  ],
+  "scope": {
+    "packs": ["repo-context-scan", "patch-compose", "ship-mode-select"],
+    "operators": ["guard-off", "verdict"],
+    "why_narrow": [
+      "These are the three packs SC-9 modifies, and two operators are enough to",
+      "reproduce the failure this mechanism exists to catch. Extending to the other six",
+      "validators and to the wider operator catalogue (guard-on, boundary flips,",
+      "constant offsets, negation, dropped pushes) is M-5b/B6's decision, to be made on",
+      "measured mutant counts and runtime rather than on estimates."
+    ]
+  },
+  "measured": {
+    "as_of": "2026-08-08",
+    "mutants": 18,
+    "execute_calls": 122,
+    "wall_clock_ms": 6,
+    "survivors": 0,
+    "note": [
+      "Measured on this checkout, not projected. Recorded here so M-5b/B6 has a real",
+      "cost-per-pack figure to extrapolate from: ~6 mutants and ~2 ms per pack for packs",
+      "of this size. The gate as a whole runs in ~5 s, of which parity is ~4 s."
+    ]
+  },
+  "accepted": []
+}

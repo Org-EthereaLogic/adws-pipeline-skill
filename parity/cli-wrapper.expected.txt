@@ -1,0 +1,31 @@
+if (require.main === module) {
+  const fs = require('fs');
+  const src = process.argv[2];
+  let raw;
+  try {
+    if (!src) throw new Error('missing input path (use a file path or - for stdin)');
+    raw = src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8');
+  } catch (err) {
+    console.error('adws-validator: cannot read input: ' + err.message);
+    process.exit(3);
+  }
+  let input;
+  try {
+    input = JSON.parse(raw);
+  } catch (err) {
+    console.error('adws-validator: invalid JSON: ' + err.message);
+    process.exit(3);
+  }
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
+    console.error('adws-validator: input must be a JSON object');
+    process.exit(3);
+  }
+  let result;
+  try {
+    result = execute(input);
+  } catch (err) {
+    console.error('adws-validator: execute failed: ' + err.message);
+    process.exit(3);
+  }
+  console.log(JSON.stringify(result, null, 2));
+}

@@ -141,9 +141,18 @@ function checkRequires(portedPath) {
 }
 
 // NFR-4b: CLI wrapper runs a sample fixture end-to-end.
+// (Deep coverage of the wrapper — every exit-3 path, both input modes — lives in
+// parity/cli-contract/run-tests.js. This stays a smoke check.)
 function checkCli(portedPath, fixturePath, fixtureEnv) {
   const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
-  const tmp = path.join(os.tmpdir(), 'adws-parity-cli-input-' + process.pid + '.json');
+  // M-5a/A4: mkdtempSync, never a predictable os.tmpdir() path. The previous name
+  // was 'adws-parity-cli-input-<pid>.json' — deterministic, in a world-writable
+  // directory, created with writeFileSync (which follows symlinks and does not use
+  // O_EXCL). A local attacker who pre-created that path as a symlink got an
+  // arbitrary-file overwrite and unlink at the privilege of whoever ran `make ci`.
+  // parity/sc3-micro-drill/run-tests.js:68 already used mkdtempSync correctly.
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adws-parity-cli-'));
+  const tmp = path.join(tmpDir, 'input.json');
   fs.writeFileSync(tmp, JSON.stringify(fixture.input));
   try {
     const proc = spawnSync(process.execPath, [portedPath, tmp], {
@@ -162,7 +171,7 @@ function checkCli(portedPath, fixturePath, fixtureEnv) {
       return { ok: false, detail: 'CLI printed unparseable JSON' };
     }
   } finally {
-    fs.unlinkSync(tmp);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 

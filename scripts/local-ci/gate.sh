@@ -4,8 +4,9 @@
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 93
 # validator-parity fixtures, 21 report-verdict fixtures, 7 stability-gate fixtures,
-# 3 provenance-schema fixtures, and the SC-3 contract micro-drill — plus a syntax floor,
-# shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
+# 3 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
+# suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
+# sweep, and three skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
 # (Tier 2); local-LLM review lives in review.sh (Tier 3).
 #
 # Usage:  make local-ci   (or: bash scripts/local-ci/gate.sh)
@@ -50,7 +51,9 @@ run_step() {
 
 # The static-floor steps need a little logic, so they are functions (bash-3.2-safe).
 node_check() {
-  # node --check every *.js under adws-pipeline/ and parity/ (syntax floor).
+  # node --check every *.js under adws-pipeline/ and parity/, and every *.mjs the
+  # local-ci harness owns (syntax floor). The .mjs lints were previously unchecked —
+  # M-5a added two more of them, so the floor now covers what it is meant to cover.
   # Newline-delimited via heredoc (not `for in $(find)`) so a bad file fails the step
   # and the loop is not a subshell (rc survives). Paths here never contain spaces.
   rc=0
@@ -59,6 +62,7 @@ node_check() {
     if ! node --check "$f"; then echo "node --check FAILED: $f"; rc=1; fi
   done <<EOF
 $(find adws-pipeline parity -name '*.js')
+$(find scripts/local-ci -name '*.mjs')
 EOF
   return $rc
 }
@@ -77,18 +81,25 @@ shell_lint() {
   return $rc
 }
 
-# Deterministic suites (must stay green: 93 / 21 / 7 + provenance 3 + SC-3 drill).
+# Deterministic suites (must stay green: 93 / 21 / 7 + provenance 3 + SC-3 drill
+# + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
 run_step "provenance"    node parity/provenance-fixtures/run-tests.js
 run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
+# CLI contract: the 279 duplicated wrapper lines and stdin mode, which the parity
+# fixtures cannot reach (they call execute() directly via exec-one.js).
+run_step "cli-contract"  node parity/cli-contract/run-tests.js
+# Anti-vacuity: does the fixture corpus actually PIN the rules it appears to test?
+run_step "guard-ablation" node scripts/local-ci/guard-ablation.mjs
 # Static floors.
 run_step "node-check"    node_check
 run_step "shell-lint"    shell_lint
 # Skill-repo lints.
 run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
+run_step "cli-block"     node scripts/local-ci/cli-block-lint.mjs
 
 legs_json="$(IFS=,; echo "${steps[*]}")"
 record="$(printf '{"event":"gate","run_id":"%s","git_commit":"%s","branch":"%s","dirty":%s,"overall":"%s","steps":[%s]}' \

@@ -1025,3 +1025,73 @@ restating it. What remains untested is the counterfactual the operator decision 
 that removing the override leaves no case where a correct run is blocked by a wrong
 validator. The next field run is the test of that, exactly as F-45…F-51 were prose that
 three field runs falsified.
+
+## Maintenance audit M-5a (2026-08-08) — minimum trust foundation, F-63…F-69
+
+Full audit evidence: `docs/AUDIT_2026-08-08.md`. Package plan: `docs/M5A_PLAN.md`.
+
+The audit covered 13 field runs, 73 local-CI and 40 OrbStack records, the parity report,
+the acceptance evidence, `SKILL.md`, the 10 agent definitions, and every executable in the
+repo. Its headline is not about pipeline behaviour but about self-knowledge: **this gate had
+never gone red.** 73/73 runs, 657/657 steps, across its entire recorded life — and not as a
+logging artifact, since `gate.sh:45` sets `overall=fail` without exiting and `:94-96` emits
+the record before the exit. Every finding in the F-register was located by a field run, a
+review bot, or a human audit. None was ever located here.
+
+M-5a changes no validator behaviour, no fixture `expected` value, and no schema. It exists
+so that SC-9's claims are verified by something that can fail.
+
+### Findings registered
+
+| ID | Finding | Package |
+|---|---|---|
+| F-63 | A `__proto__` path segment makes `repo-context-scan.execute()` throw *before* its policy loop completes, so the build-phase policy gate is SKIPPED rather than returning `fail`. Reproduced. | SC-9 |
+| F-64 | `branch_name` is length-checked only in both ship validators; `--upload-pack=…` and `foo; rm -rf ~` both return `pass` from the documented pre-git gate. `{slug}` is undefined anywhere in the spec. Reproduced. | SC-9 |
+| F-65 | `Math.max(...abs)` over an unbounded array (`drift-sentinel.js:244`) throws at 200k entries; no input-size cap exists anywhere. Reproduced. | SC-9 |
+| F-66 | Five agents are instructed to write files and hold no `Write` tool. Causation for the three recorded haiku write-failures is likely, not established. | SC-10 |
+| F-67 | Predictable `os.tmpdir()` path written with `writeFileSync` in the parity harness — symlink overwrite/unlink at gate-runner privilege. | **M-5a (fixed)** |
+| F-68 | `install.sh` `rm -rf` + `cp` destroys user edits with no backup, prompt, or diff. | SC-10 |
+| F-69 | `safeReadJson` conflates unreadable/malformed with absent, in the tool whose purpose is tamper-evidence. | SC-11 |
+
+### What M-5a asserts that nothing asserted before
+
+- **The CLI wrapper.** 279 duplicated lines previously covered by one happy-path assertion
+  per pack. Now 332 assertions across 11 CLIs: every exit-3 path, both input modes, and the
+  documented equivalence of `-` and a file path. Falsified by deleting the object guard from
+  one validator — four cases flip **for that pack only**, all eight others stay green.
+- **Stdin mode**, which no test had ever exercised. Falsified by making one validator ignore
+  `-`: every `stdin-*` case fails, `file-happy` stays green.
+- **That the fixture corpus pins the rules it appears to test.** `guard-ablation` mutates
+  `execute()` one rule at a time and fails on any mutation the corpus does not notice.
+  Measured: 18 mutants, 122 `execute()` calls, **0 survivors, 6 ms**. Falsified by adding an
+  unpinned guard to `ship-mode-select` — **2 survivors reported, exit 1**, and they are
+  precisely the guard and verdict SC-9/A2 must add. SC-9 therefore cannot ship that rule
+  without a fixture pinning it.
+- **That the nine wrapper copies cannot drift.** Falsified by a one-character edit: the lint
+  names the file and the wrapper line.
+
+### A scope correction worth recording
+
+`guard-ablation`'s first run reported nine survivors, all in the CLI wrapper. True, but
+stated in the wrong place — the 93 parity fixtures call `execute()` directly via
+`exec-one.js` and never invoke the CLI, so they pin no wrapper line by construction. Nine
+permanent baseline entries saying so would drown any real survivor. The wrapper is scoped
+out of the sweep and pinned instead by the contract suite and the byte-identity lint, which
+narrows the tool's claim to one that is true: *the fixture corpus pins every rule in
+`execute()`.*
+
+This is the same discipline F-41 applied to suite sizes — a check that cannot fail for the
+right reason is not a check.
+
+### Two corrections to the audit's own first-pass figures
+
+**Parity costs ~4 s per gate run, not 277 s** — the larger number was the cumulative sum
+across all 73 recorded runs. So an anti-vacuity sweep has real budget, and `drift-sentinel`'s
+env-read-at-call-time impurity costs ~4 s rather than 277 and is not worth "fixing". That
+impurity is in fact load-bearing: it is what lets `guard-ablation` set and restore env around
+each in-process `execute()` call.
+
+**The duplicated agent boilerplate costs no always-loaded context** — agent definitions load
+per dispatch and never co-load. The 9,340 byte-identical bytes are a drift problem, not a
+token problem, so the fix is a lint rather than a refactor. `SKILL.md` is where the token
+win is (SC-10/A3).

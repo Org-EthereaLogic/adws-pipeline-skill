@@ -142,9 +142,23 @@ node parity/execution-report-fixtures/run-tests.js   # 21/21 report verdict fixt
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
+node parity/cli-contract/run-tests.js                # CLI contract: 9 validators + 2 scripts
+node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rules pinned?
 ```
 
-`make local-ci` runs all five plus the static floors and skill lints.
+`make local-ci` runs all seven plus the static floors and skill lints.
+
+- **CLI contract:** the 31-line wrapper each validator ends with is duplicated nine times
+  and, before M-5a, was covered by one happy-path assertion per pack. The contract suite
+  exercises every input-rejection path (missing argv, unreadable path, invalid JSON,
+  non-object JSON) and both input modes for all nine, plus `entropy-gate.js` and
+  `execution-report.js`, whose stderr prefixes and exit vocabularies differ from the
+  validators' and from each other. `scripts/local-ci/cli-block-lint.mjs` asserts the nine
+  copies stay byte-identical, so a fix to one is a fix to all.
+- **Guard ablation:** mutates each target validator's `execute()` one rule at a time and
+  fails if the fixture corpus does not notice. A surviving mutant is a rule that nothing
+  pins. Accepted survivors and the measured cost live in
+  `parity/guard-ablation-baseline.json`.
 
 - **Validator parity:** 7 of 9 validators are verified byte-for-byte against the ADWS_Pro
   originals; `criteria-to-checks` (v2.0.0, see `docs/DPPD.md` §9 and §14) and
