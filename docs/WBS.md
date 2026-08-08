@@ -142,6 +142,39 @@ advertised **15/15** report fixtures — stale across BOTH SC-6 and SC-7 — and
 M-3 did not cover: the runners now assert their own suite sizes, but nothing asserts the
 counts printed in `README.md`.
 
+**Status (2026-08-08, SC-8):** a fourth field run against `cadence-method-skill` (issue
+#22, `job_20260807_0004`) produced findings **F-53–F-57**, and an independent review of the
+implementation produced **F-58–F-59**. The run shipped a correct artifact and exercised
+SC-7's B1 rewind path successfully on its first live outing — then wrote a verdict into the
+evidence tree that no validator produced. `review-risk-assess` was the only validator of the
+nine whose HEURISTIC could fail a gate (any path substring-matching `/auth/i`, `/token/i`,
+`/policy/i` → `risk_level: high` → `fail`), it fired on two contract-mandated fixture
+directory names, and with no legal way to record a wrong validator fail the orchestrator
+wrote `rubric_result: "warn"` at the `skill_trace.json` wrapper over an `output.rubric_result`
+of `"fail"`. The report read only the wrapper and certified `0 fail, 1 warn`. Scope change
+**SC-8** (**APPROVED, operator, 2026-08-08**) decouples the risk SCORE from the gate VERDICT
+so heuristics warn and only facts fail — the discipline `criteria-to-checks`,
+`document-coverage-map`, and `repo-context-scan` already followed — which makes the `high`
+row of the tier table reachable for the first time (F-53) and restores exit 0, dead for six
+consecutive runs (F-56); makes security matching per path segment and token with test corpora
+excluded, reporting `security_sensitive_paths[]` (F-54); and finally ASSERTS the
+trace-transcribes-stdout rule that `artifact-layout.md` had stated since SC-2 and nothing
+checked — `execution-report.js` now scores from the validator's stdout and QUARANTINEs on
+disagreement, and there is no operator override for a validator verdict (F-55). The review
+round then caught the new invariant failing in the untested direction: wrapper `warn` over
+output `pass` promoted at exit 0, so the mismatch became its own failing gate term and the
+full 15-cell wrapper × output matrix was enumerated (F-58); and malformed `files_changed`
+entries counted as assessable, letting an unreadable change set select a LOWER tier (F-59).
+Parity **88 → 93**, report fixtures **17 → 19**; `review-risk-assess` v1.0.0 → **v2.0.0** and
+diverged-by-design, so README's byte-for-byte claim moves 8-of-9 → **7-of-9**. No new
+terminal state, DECISION, exit code, or `SCHEMA_VERSION` (still 1.4.0). Re-run against the
+job's real 73-file change set, v2.0.0 returns `pass`/`medium`/`security_sensitive_count: 0` —
+all twelve matches were false positives and the override was never necessary. See `DPPD.md`
+§19, `SC8_PLAN.md`, and `field-runs/2026-08-07-issue22-cadence-method-skill.md`.
+
+SC-8 was merged through **PR #43** (squash `3ab7283`), with Tier 1 nine of nine and Tier 2
+both legs PASS at the merged head (`run_id`s `20260808T150319Z` / `20260808T150325Z`).
+
 **Status (2026-08-05, SC-4):** scope change **SC-4** (findings F-18–F-26 from an operator
 review of FR-12) was **APPROVED (operator R-6, 2026-08-05, per-item: A1–A10, B1–B3)** and
 implemented: SC-4a replaces the uniform `Architect` tier column with a per-phase table
@@ -191,10 +224,16 @@ clone. Per-run detail lives in `VERIFICATION.md`; the earlier per-run status blo
 (#103, #104) are retained as the point-in-time record and are not extended per run.
 
 A second series runs against `cadence-method-skill` — issue #4 (`job_20260805_0003`,
-PROMOTE, source of SC-5) and issue #5 (`job_20260805_0004`, PROMOTE-with-warnings, source of
-M-2 and SC-6) — bringing the retained total to **eleven**. The #5 record is the first in
-either series whose evidence tree survived the run, so it is the first whose gate claims are
-independently re-derivable rather than orchestrator-reported.
+PROMOTE, source of SC-5), issue #5 (`job_20260805_0004`, PROMOTE-with-warnings, source of
+M-2 and SC-6), issue #21 (`job_20260807_0001`, PROMOTE-with-warnings, source of M-4 and
+SC-7), and issue #22 (`job_20260807_0004`, PROMOTE-with-warnings, source of SC-8) — bringing
+the retained total to **thirteen** (nine + four). The #5 record is the first in either series
+whose evidence tree survived the run, so it is the first whose gate claims are independently
+re-derivable rather than orchestrator-reported; every `cadence-method-skill` record since has
+kept its tree, and in two cases (#21, #22) the tree contradicts the orchestrator's own
+summary. *(Count corrected 2026-08-08: this paragraph had read "eleven" since 2026-08-05 and
+was stale across SC-7 as well as SC-8 — the same class of unasserted count M-3a and SC-7's
+post-merge sync both found in `README.md`.)*
 
 **Run numbering (renumbered 2026-08-05):** "run N" counts production runs in **job-ID
 allocation order**, spanning 11 runs — run 1 `job_20260715_0001` (no field-run record),
