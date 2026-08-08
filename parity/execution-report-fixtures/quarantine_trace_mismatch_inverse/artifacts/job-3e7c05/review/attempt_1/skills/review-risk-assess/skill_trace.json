@@ -1,0 +1,21 @@
+{
+  "skill_id": "review-risk-assess",
+  "version": "2.0.0",
+  "started_at": "2026-07-10T16:32:00Z",
+  "completed_at": "2026-07-10T16:32:01Z",
+  "rubric_result": "warn",
+  "latency_ms": 300,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "files_changed": 4,
+    "malformed_entries": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
+    "risk_level": "low",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

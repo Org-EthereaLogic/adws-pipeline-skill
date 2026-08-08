@@ -4,12 +4,14 @@
       "files_changed": []
     }
   },
-  "note": "Authored — 0 files changed: high risk, fail",
+  "note": "Authored — 0 files changed: not assessable, high risk, fail (SC-8: this is the FACT the validator fails on)",
   "expected": {
     "rubric_result": "fail",
     "files_changed": 0,
+    "malformed_entries": 0,
     "deletes_count": 0,
     "security_sensitive_count": 0,
+    "security_sensitive_paths": [],
     "risk_level": "high",
     "cost_usd": 0,
     "token_count": 0,

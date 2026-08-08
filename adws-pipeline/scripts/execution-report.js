@@ -156,12 +156,31 @@ function collectSkillVerdicts(latestAttempts) {
     for (const skillId of skillDirs) {
       const trace = safeReadJson(path.join(skillsDir, skillId, 'skill_trace.json'));
       if (!trace) continue;
+      // SC-8/F-55: skill_trace.json WRAPS the validator CLI's stdout — its rubric_result
+      // must be exactly what the validator printed, which `output` also carries. A live
+      // run wrote "warn" at the wrapper over an `output.rubric_result` of "fail" (with the
+      // rationale in `error`) to route around a validator fail it judged a false positive,
+      // and nothing in the toolchain could tell that apart from an honest warn. The rule
+      // predates this check by five scope changes; a rule nothing asserts is a rule
+      // nothing enforces. On disagreement the VALIDATOR's verdict is authoritative — the
+      // wrapper is a transcription, never a judgment — and the mismatch is surfaced as a
+      // warning. Scoring by stdout means a concealed `fail` still fails skills_clean, so
+      // the job QUARANTINEs on the existing path: an evidence-integrity breach, the same
+      // class as MISSING_UPSTREAM_ARTIFACT. Absent or unrecognized `output.rubric_result`
+      // (older traces, crashed validators) leaves the wrapper untouched.
+      const wrapperVerdict = normalizeSkillVerdict(trace.rubric_result);
+      const output = trace.output;
+      const stdoutRaw =
+        output && typeof output === 'object' && !Array.isArray(output) ? output.rubric_result : undefined;
+      const stdoutVerdict = normalizeSkillVerdict(stdoutRaw);
+      const mismatch = stdoutVerdict !== 'unverified' && stdoutVerdict !== wrapperVerdict;
       rows.push({
         skill_id: typeof trace.skill_id === 'string' ? trace.skill_id : skillId,
         phase: entry.phase,
         attempt: entry.attempt,
-        rubric_result: normalizeSkillVerdict(trace.rubric_result),
+        rubric_result: mismatch ? stdoutVerdict : wrapperVerdict,
         error: typeof trace.error === 'string' ? trace.error : null,
+        trace_mismatch: mismatch ? { wrapper: wrapperVerdict, validator: stdoutVerdict } : null,
       });
     }
   }
@@ -653,6 +672,30 @@ function evalSkillsClean(skillVerdicts) {
   const warnings = rows.filter((r) => r.rubric_result === 'warn').length;
   const unverified = rows.filter((r) => r.rubric_result === 'unverified').length;
   const passes = rows.length - failures - warnings - unverified;
+  // SC-8/F-58: the MISMATCH is the breach, independently of which way it points. Scoring
+  // the row from the validator's stdout is necessary but not sufficient — when the
+  // concealed verdict is the milder one (wrapper "warn" over an output of "pass"), the
+  // substituted row is clean and the gate would pass, promoting a job whose evidence is
+  // known to misreport a verdict. The first cut shipped exactly that hole: it had a
+  // regression fixture for warn-over-fail only, so the one direction it tested was the one
+  // where substitution happened to fail the gate on its own. An evidence tree that
+  // misstates any verdict is untrustworthy in both directions, so the disagreement itself
+  // fails the gate and the job QUARANTINEs — which is what SKILL.md hard rule 3 and
+  // references/artifact-layout.md have always claimed.
+  const mismatches = rows.filter((r) => r.trace_mismatch);
+  if (mismatches.length > 0) {
+    const detail = mismatches
+      .map((r) => `${r.skill_id} in ${r.phase}/attempt_${r.attempt} (trace "${r.trace_mismatch.wrapper}" vs validator "${r.trace_mismatch.validator}")`)
+      .join('; ');
+    return {
+      key: 'skills_clean',
+      label: 'No skill failures or warnings',
+      status: GATE_STATUSES.FAIL,
+      value: `${mismatches.length} evidence-integrity mismatch(es), ${failures} fail, ${warnings} warn`,
+      threshold: '0 fail, 0 warn, 0 trace mismatches',
+      reason: `${mismatches.length} skill_trace.json verdict(s) disagree with their own validator output — ${detail}`,
+    };
+  }
   if (failures > 0) {
     return {
       key: 'skills_clean',
@@ -821,6 +864,17 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
     warnings.push(`Gate "${gate.key}" evaluated to ${gate.status}${gate.reason ? `: ${gate.reason}` : ''}`);
   }
   for (const row of skillVerdicts) {
+    // SC-8/F-55: named FIRST and unconditionally — an evidence-integrity breach outranks
+    // the verdict it was hiding, and the reader needs to know the row below is scored from
+    // the validator's stdout rather than from what the trace claimed.
+    if (row.trace_mismatch) {
+      warnings.push(
+        `EVIDENCE INTEGRITY: skill_trace.json for "${row.skill_id}" in ${row.phase}/attempt_${row.attempt} ` +
+          `records rubric_result="${row.trace_mismatch.wrapper}" but its own output.rubric_result is ` +
+          `"${row.trace_mismatch.validator}". The trace must transcribe the validator's stdout verbatim ` +
+          `(references/artifact-layout.md); the validator's verdict is authoritative and is what this report scored.`
+      );
+    }
     if (row.rubric_result === 'fail') {
       warnings.push(
         `Skill "${row.skill_id}" failed in ${row.phase}/attempt_${row.attempt}${row.error ? ` — ${row.error}` : ''}`

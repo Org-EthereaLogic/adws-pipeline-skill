@@ -828,3 +828,125 @@ wrong. B1's requirement that the orchestrator reproduce a Critic finding before 
 rewind, B2's budget table, and B3's tier policy are all prose that the next field run is
 the real test of — exactly as F-45…F-51 were prose that three field runs were needed to
 falsify.
+
+---
+
+## SC-8 (2026-08-08, field run job_20260807_0004) — F-53…F-57
+
+Findings and actions: `SC8_PLAN.md`; run record:
+`field-runs/2026-08-07-issue22-cadence-method-skill.md`.
+
+The run that prompted this scope change wrote a verdict into the evidence tree that no
+validator produced — `rubric_result: "warn"` at the `skill_trace.json` wrapper over an
+`output.rubric_result` of `"fail"`, with the operator's rationale in `error` — to route
+around a `review-risk-assess` fail it had correctly adjudicated a lexical false positive.
+It improvised because the spec left no legal move, and it shipped because nothing in the
+toolchain compared the two fields.
+
+Every assertion was FALSIFIED before acceptance (M-3a discipline).
+
+- **The override was never necessary.** Re-running the v2.0.0 validator against
+  `job_20260807_0004`'s actual 73-file change set returns **`pass` / `risk medium` /
+  `security_sensitive_count: 0`** where v1.0.0 recorded `fail` / `high` / **12**. All
+  twelve matches were false positives against two contract-mandated fixture directory
+  names. The incident that motivated SC-8 does not occur under SC-8 — and the deliverable's
+  `authority.md` → `method-source.md` renames, made solely to appease the validator, were
+  never needed either.
+- **Exit 0 is reachable again — but not retroactively.** The first draft of this claim was
+  wrong and the falsification caught it: re-running the report over a COPY of
+  `job_20260807_0002` still exits 10, because the report reads RECORDED evidence and a
+  frozen `warn` stays frozen no matter what the validator does today. The honest test
+  re-runs the VALIDATOR: that job's 17-file, zero-security change set scored `warn` under
+  v1.0.0 (the only warning in its entire terminal report) and scores **`pass`** under
+  v2.0.0. Six consecutive runs had exited 10; the cause is removed for future runs only.
+- **Each new parity fixture pins a DIFFERENT half of the security fix.** Reverting the
+  `TEST_CORPUS_SEGMENTS` check alone fails `pass-fixture-corpus-auth-path` (89/90) while
+  `pass-token-substring` stays green; reverting the tokenizer to v1.0.0's substring regexes
+  alone fails `pass-token-substring` (89/90) while the corpus fixture stays green, because
+  the exclusion still covers it. Neither fixture is redundant, neither is vacuous, and each
+  restore returns 90/90.
+- **The mismatch check would have caught the live breach.** Run against a COPY of
+  `job_20260807_0004` (the operator's tree was not mutated), the post-change report moves
+  from PROMOTE / `warn_flag: true` / exit 10 / `skills_clean: warn` to **QUARANTINE / exit
+  2 / `skills_clean: fail`**, with `EVIDENCE INTEGRITY: … records rubric_result="warn" but
+  its own output.rubric_result is "fail"` named first in Warnings.
+- **The check is not vacuous.** Forcing `mismatch = false` — nothing else — flips
+  `quarantine_trace_mismatch` to PROMOTE / `warn_flag: true` / **exit 10**, reproducing the
+  live bug verbatim, down to the warning text. Restored → 18/18.
+- **Honest traces are undisturbed, structurally and not merely empirically.** No fixture in
+  the suite carried an `output` key before SC-8, and an absent or unrecognized
+  `output.rubric_result` leaves the wrapper's verdict untouched, so the check cannot fire on
+  any of the 17 pre-existing fixtures. All 17 pass unchanged.
+- **No schema bump.** `skill_verdicts[]` is serialized through an explicit four-field
+  projection (`skill_id`, `phase`, `attempt`, `rubric_result`), so the internal
+  `trace_mismatch` marker never reaches `execution_report.json`. `SCHEMA_VERSION` stays
+  **1.4.0**. A mismatch always produces QUARANTINE, so `decision` already carries the
+  outcome machine-readably.
+- **Suite sizes are asserted, not narrated** (M-3a). `EXPECTED_FIXTURE_TOTAL` 88 → 93 and
+  report `CASES` 17 → 19 moved with their fixtures, along with all six prose sites
+  (`README.md` ×2, `gate.sh` ×2, `scripts/local-ci/README.md`, `.githooks/pre-push`,
+  `Makefile`). `review-risk-assess` joined `DIVERGED_PACKS` as `SC-8, v2.0.0`.
+- **A second stale README count, found by looking rather than by a gate.** `README.md`
+  claimed in two places that **8 of the 9** validators are byte-for-byte parity-verified.
+  Registering `review-risk-assess` as diverged-by-design makes that **7 of 9**, and nothing
+  asserts it — the same defect class SC-7's post-merge sync found in the same file, which is
+  now the second consecutive scope change to hit it. Corrected here rather than deferred to
+  a sync PR. **Deliberately NOT corrected:** `SC5_PLAN.md` ("the sole diverged-by-design
+  pack"), `WBS.md`'s SC-1 amendment, `DPPD.md` §2, and `ACCEPTANCE.md` — these are dated
+  point-in-time annotations in historical records, several already stale since SC-5, and
+  SC-7 set the precedent of leaving them alone. The live front-door docs are kept current;
+  the archive is left as written.
+- **NFR-3** — `SKILL.md` 403 → 412 lines, asserted under 500 by `frontmatter-lint.mjs`.
+  **NFR-4** — `execution-report.js` still imports only `fs` and `path` (`requires-lint`).
+
+**Review round — F-58, F-59 (two defects in SC-8's first cut).** An independent review
+reproduced two boundary counterexamples that contradicted this document and the spec sheet.
+Both are recorded in `SC8_PLAN.md` §7 and were fixed before acceptance:
+
+- **F-58 — only one DIRECTION of trace mismatch quarantined.** The check substituted the
+  validator's verdict for the wrapper's and let that substitution fail the gate, which works
+  only when the concealed verdict is the worse one. Wrapper `warn` over an output of `pass`
+  scored CLEAN: **PROMOTE, exit 0**, with the integrity warning printed but gated on nothing.
+  The invariant "every mismatch quarantines" was asserted in four documents and tested in one
+  direction — the direction where substitution happened to fail the gate by itself. Fixed by
+  making the mismatch its own failing term in `evalSkillsClean`; pinned by
+  `quarantine_trace_mismatch_inverse`, which reproduces the counterexample and now exits 2.
+- **F-59 — malformed `files_changed` entries counted as assessable.** Assessability checked
+  only that the array was non-empty. `[null]`, `["a-string"]`, `[{"action":"modify"}]`, and
+  `[{"file_path":""}]` all returned `pass` / `risk low`, each inflating `files_changed` while
+  invisible to the security scan — so an unreadable change set could select a LOWER tier than
+  a readable one. The "missing/malformed → fail" rule was written and never implemented below
+  the top-level object. Fixed by `isAssessableEntry` plus the additive `malformed_entries`
+  count, with `risk_level: high` for an unassessable set. `action` is deliberately not
+  enum-validated (see `SC8_PLAN.md` §7); `pass-unknown-action-assessable` pins that call.
+
+- **The corrected claim was falsified across its whole input space, not at one point.** The
+  15-cell matrix of wrapper verdict (`pass`/`warn`/`fail`) × `output.rubric_result`
+  (`pass`/`warn`/`fail`/absent/unrecognized) was enumerated and run through the report. All
+  **six** genuine disagreements exit **2** with the integrity warning; the three agreements
+  behave normally (`pass`/`pass` → 0, `warn`/`warn` → 10, `fail`/`fail` → 2, no warning); and
+  absent or unrecognized `output.rubric_result` falls back to the wrapper with no warning
+  (→ 0/10/2), which is the tolerant-reader behavior older traces and crashed validators need.
+  Two fixtures pin the two directions; the matrix is what establishes the invariant.
+
+**What the review round says about the method.** F-58 is this scope change's own thesis
+turned on its author: SC-8 exists because a rule stated since SC-2 was never asserted in
+code, and its first cut then asserted a NEW rule in four documents while testing one input
+direction. M-3a falsification was applied to the mechanism (revert the term, watch the
+fixture flip) but not to the CONTRACT (enumerate the inputs satisfying the claim's
+antecedent, check it holds across them). That distinction is the durable lesson here.
+
+**Gate results.** Tier 1 nine of nine PASS and Tier 2 both legs PASS (`node20` build+run,
+`node24` build+run, `linux/arm64`). Suite sizes now **93** / **19** / 7 / 3 + SC-3
+micro-drill. The regenerated `parity/PARITY_REPORT.md` independently reports "7
+original-parity, 2 diverged-by-design", which is the second source for the README
+correction above.
+
+**What this does NOT verify.** The same limit SC-7 recorded applies. The fixtures prove the
+report detects a mismatch and that the validator no longer false-positives; nothing here
+can prove the *rule* is followed. A3's real enforcement is the check, not the prose — which
+is the whole point of the finding, and the reason SC-8 asserts the rule rather than merely
+restating it. What remains untested is the counterfactual the operator decision rests on:
+that removing the override leaves no case where a correct run is blocked by a wrong
+validator. The next field run is the test of that, exactly as F-45…F-51 were prose that
+three field runs falsified.

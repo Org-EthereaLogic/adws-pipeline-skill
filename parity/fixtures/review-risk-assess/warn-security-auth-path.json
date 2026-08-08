@@ -13,12 +13,16 @@
       ]
     }
   },
-  "note": "Authored — path matches /auth/i security-sensitive pattern: high risk, fail",
+  "note": "Authored — `auth` is a whole path segment outside any test corpus: security-sensitive, high risk, warn (SC-8/F-53)",
   "expected": {
-    "rubric_result": "fail",
+    "rubric_result": "warn",
     "files_changed": 2,
+    "malformed_entries": 0,
     "deletes_count": 0,
     "security_sensitive_count": 1,
+    "security_sensitive_paths": [
+      "src/auth/login.js"
+    ],
     "risk_level": "high",
     "cost_usd": 0,
     "token_count": 0,

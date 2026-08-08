@@ -220,6 +220,17 @@ a successful repair — can make a dissent disappear from the record.
 ```
 `output` is the full JSON object printed by the validator script.
 
+**The wrapper is a transcription, never a judgment (SC-8/F-55).** `rubric_result` MUST be
+exactly the verdict the validator printed — the same value `output.rubric_result` carries —
+and `error` holds the validator's own error or `null`, never an override, annotation, or
+rationale. There is no operator override for a validator verdict: a `fail` the operator
+judges wrong is a defect in the VALIDATOR, fixed there and re-run, not adjudicated in the
+evidence. `execution-report.js` cross-checks the two and, on disagreement, scores the row
+from the validator's stdout and quarantines the job — an evidence-integrity breach, the
+same class as `MISSING_UPSTREAM_ARTIFACT`. This rule predates the check by five scope
+changes; a live run wrote `"warn"` over an `output.rubric_result` of `"fail"` precisely
+because nothing asserted it.
+
 `grader/grader_verdict.json` — the adws-grader agent's output (same shape as the
 original `pr.drift_sentinel.spec` result): `rubric_result`, `criteria_results[]` with
 per-criterion `satisfied | partial | unaddressed | contradicted` verdicts, `summary`.

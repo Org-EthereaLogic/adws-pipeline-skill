@@ -42,7 +42,27 @@ fields the orchestrator must read by name:
   in criterion order. `check_specs.length` always equals `criteria_count`; a disagreement
   is a defect, never an expected narrowing (SC-5/F-27).
 - **`review-risk-assess`** → `risk_level` (`low` | `medium` | `high`), which re-selects
-  the model tiers for document, ship, and verify.
+  the model tiers for document, ship, and verify, plus `security_sensitive_count` and
+  `security_sensitive_paths[]` (the matched paths, capped at 20; the count is always
+  exact). Since SC-8/F-53 the score and the verdict are SEPARATE, so the outcome is
+  derivable without opening the validator:
+
+  | `rubric_result` | When |
+  |---|---|
+  | `fail` | `build_output` missing/malformed, `files_changed` empty, or ANY entry lacking a usable `file_path` — there is no assessable change set. `malformed_entries` counts the bad entries; `risk_level` is `high` (unassessable scores conservatively) |
+  | `warn` | `risk_level: high` — security-sensitive paths matched, or more than 3 deletes |
+  | `pass` | `risk_level: low` or `medium` |
+
+  An entry is assessable when it is a non-null, non-array object whose `file_path` is a
+  non-empty string. `action` is NOT validated against an enum — only `delete` carries
+  behavior, and an entry with a usable path is assessable whatever its action.
+
+  A `high` risk level therefore WARNS and the gate still passes: it buys the `high` row of
+  the tier table, it does not block. Before v2.0.0 `high` meant `fail`, which made that row
+  unreachable. Security matching is per path SEGMENT and per token within a segment
+  (extension stripped, split on non-alphanumerics), and any path under a test corpus
+  (`fixtures/`, `test/`, `spec/`, `parity/`, …) is never security-sensitive — so
+  `src/auth/login.js` matches while `tokenizer.js`, `authoring.js`, and fixture data do not.
 
 **`criteria-to-checks` is the one validator that runs BEFORE its phase agent.** The
 tester must echo each spec's `check_id` onto the checks it runs so coverage is verifiable

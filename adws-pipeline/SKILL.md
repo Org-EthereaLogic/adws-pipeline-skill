@@ -83,6 +83,12 @@ material and is not installed alongside the skill.)
 2. Every attempt writes to a NEW `artifacts/{jobId}/{phase}/attempt_{n}/` directory.
    Never modify anything in an existing attempt directory (FR-4).
 3. A validator `fail` blocks promotion. A `warn` is recorded, never blocking (FR-6).
+   `skill_trace.json` TRANSCRIBES the validator's stdout: write `rubric_result` exactly as
+   the validator printed it and never repurpose `error` (its own error, or `null`) as an
+   override, annotation, or rationale log. There is no operator override for a validator
+   verdict — a `fail` you judge wrong is a DEFECT IN THE VALIDATOR, to be fixed and re-run.
+   `execution-report.js` scores a trace whose wrapper disagrees with its own `output` from
+   the VALIDATOR's verdict and quarantines the job (SC-8/F-55).
 4. Retry-budget exhaustion terminates the job with a recorded failure reason — never
    continue silently (FR-3).
 5. Build/test/review happen in an isolated git worktree. The primary checkout is
@@ -310,6 +316,8 @@ Post-ship, zero orchestrator judgment:
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
    and the path to `execution_report.md`. Remove the worktree
    (`git worktree remove`) only after PROMOTE; keep it for RETRY/QUARANTINE debugging.
+4. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
+   verdict is terminal, so anything still scheduled is stale by construction (F-57).
 
 ## Failure-reason classes
 

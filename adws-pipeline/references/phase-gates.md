@@ -47,6 +47,17 @@ continuation).
    validator verdict as a trace file in the attempt directory.
 2. Validator `fail` → gate fails. Validator `warn` → record, surface in the execution
    report, but do not block (FR-6).
+   **Heuristics warn; facts fail (SC-8/F-53).** A validator fails only on something it can
+   OBSERVE — no criteria, nothing documented, a path outside `allowed_paths`, a malformed
+   patch, a protected branch, missing evidence. Anything it INFERS caps at `warn`:
+   `criteria-to-checks` warns on vagueness and fails only on zero criteria;
+   `document-coverage-map` warns below 0.7 and fails only on nothing-documented;
+   `repo-context-scan` fails on a policy violation and warns on a thin description;
+   `review-risk-assess` warns on `risk_level: high` and fails only on an unassessable
+   change set. That last one is why the `high` row of the tier table below is reachable at
+   all — until v2.0.0 it emitted `fail`, so the run could never reach the recomputation
+   that row feeds. This is also why no validator verdict is overridable: a fact is fixed,
+   not adjudicated (see `references/artifact-layout.md`, skill_trace).
 3. Gate passes → advance to the next phase, reset attempt counter.
 4. Gate fails and retries remain → new attempt of the same phase, escalating the phase
    agent's model one tier (see below).
