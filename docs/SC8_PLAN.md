@@ -255,7 +255,7 @@ asserted in prose that no test exercised.**
 | `fail-malformed-entry-no-path` | parity | an entry with `action` but no `file_path` → fail / high |
 | `pass-unknown-action-assessable` | parity | an unrecognized action and a missing action both stay assessable → pass / low |
 
-Corpus **90 → 93**, report **18 → 21**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and every prose
+Corpus **90 → 93**, report **18 → 19**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and every prose
 count site moved with them — **eight lines across five files** (`README.md` ×2,
 `scripts/local-ci/gate.sh` ×3, `scripts/local-ci/README.md`, `.githooks/pre-push`,
 `Makefile`).
@@ -337,3 +337,36 @@ then not applied, because the matrix that embodied it was built from the same me
 as the code. An invariant quantified over "every" needs its input space ENUMERATED along
 each axis the data actually varies on, and lettercase and attempt-position were axes the
 first enumeration did not know it had.
+
+### Review of the follow-up itself (PR #45)
+
+This time the merge waited for the review. CodeRabbit returned five inline comments; three
+were valid and fixed on the branch, one is a false positive, one is inherited.
+
+- **Valid — double-quoted mismatch values.** `trace_mismatch` stored `JSON.stringify(raw)`,
+  and the warning template quoted it again, rendering `rubric_result=""PASS""`. The raw
+  values are now stored unencoded and every display site quotes exactly once through a
+  `quoteRaw` helper, which also renders a missing or non-string value legibly
+  (`undefined`, `null`) instead of as an empty gap.
+- **Valid — §7's report-count transition.** Correcting F-62's prose count, this document's
+  §7 had been edited to read `18 → 21`, folding two rounds into the historical sentence.
+  §7 belongs to the F-58/F-59 round and is restored to **18 → 19**; §8 carries **19 → 21**.
+- **Valid — incoherent fixture timestamps.** `quarantine_trace_mismatch_superseded` carried
+  phase manifests dated 2026-07-10 inside a job window of 2026-08-05/06, with skill traces
+  running before the phases that contained them. Twelve files were remapped into a coherent
+  timeline inside the run window.
+- **False positive — "the case fixture does not exercise the mismatch."** The comment reads
+  `build/attempt_1/skills/adws-lint/skill_trace.json`, which has no `output` by design (it
+  is inherited from `promote_clean` and is one of the tolerant-reader cases). The fixture's
+  mismatch lives in `review/attempt_1/skills/review-risk-assess/skill_trace.json`, wrapper
+  `"PASS"` over output `"pass"`, and the gate records
+  `skills_clean | fail | … (trace "PASS" vs validator "pass")`. Not changed.
+- **Observed, not changed — the source fixture has the same timestamp defect.**
+  `promote_repaired_critic_fail` (merged under SC-7) mixes two lineages: the attempt_2
+  directories it authored use the Aug 5–6 window while everything inherited from
+  `promote_clean` kept 2026-07-10, so its `run_manifest` window excludes most of its own
+  phases. My clone inherited that and is now fixed; the source is left as merged, since
+  repairing a passing fixture from another scope change is not this change's business.
+  Recorded here so the next person to clone it knows. `artifact-layout.md` rule 9 governs
+  timestamp integrity for real evidence trees; nothing asserts it for fixtures, which is
+  why this survived a merge.

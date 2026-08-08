@@ -1004,6 +1004,19 @@ invariant quantified over "every" needs its input space enumerated along each ax
 actually varies on; lettercase and attempt-position were axes the first enumeration did not
 know it had.
 
+**Review of the follow-up (PR #45), merged only after the review completed.** Five inline
+comments: three valid and fixed on the branch — mismatch values were double-quoted
+(`rubric_result=""PASS""`, now quoted once via a `quoteRaw` helper); §7's historical report
+count had been edited to `18 → 21`, folding two rounds together, and is restored to
+`18 → 19`; and `quarantine_trace_mismatch_superseded` carried 2026-07-10 phase manifests
+inside a 2026-08-05/06 job window, with skill traces preceding their own phases (twelve files
+remapped). One is a **false positive**: the comment reads the fixture's inherited
+`adws-lint` trace, which has no `output` by design, while the mismatch it says is missing
+lives in the `review-risk-assess` trace and is what drives the gate. One is **inherited and
+left alone**: `promote_repaired_critic_fail`, merged under SC-7, has the same mixed-lineage
+timestamp defect; the clone is fixed, the source is not, and nothing asserts timestamp
+coherence for fixtures — which is why it survived a merge.
+
 **What this does NOT verify.** The same limit SC-7 recorded applies. The fixtures prove the
 report detects a mismatch and that the validator no longer false-positives; nothing here
 can prove the *rule* is followed. A3's real enforcement is the check, not the prose — which

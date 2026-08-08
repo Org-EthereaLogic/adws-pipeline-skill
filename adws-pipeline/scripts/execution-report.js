@@ -126,6 +126,13 @@ function readAttempt(jobDir, phaseName, attempt) {
   };
 }
 
+// Display helper for raw trace verdicts: quotes a string exactly once and renders a
+// missing or non-string value legibly (`undefined`, `null`, `123`) rather than as an empty
+// gap. Every site that prints a `trace_mismatch` value goes through this.
+function quoteRaw(value) {
+  return JSON.stringify(value === undefined ? undefined : value) || String(value);
+}
+
 function normalizeSkillVerdict(raw) {
   if (typeof raw !== 'string') return 'unverified';
   const v = raw.toLowerCase();
@@ -189,9 +196,9 @@ function collectSkillVerdicts(latestAttempts) {
         attempt: entry.attempt,
         rubric_result: mismatch ? stdoutVerdict : wrapperVerdict,
         error: typeof trace.error === 'string' ? trace.error : null,
-        trace_mismatch: mismatch
-          ? { wrapper: JSON.stringify(wrapperRaw), validator: JSON.stringify(stdoutRaw) }
-          : null,
+        // Raw values, unencoded. Display sites quote them exactly once (see `quoteRaw`) —
+        // storing them pre-encoded produced `rubric_result=""PASS""` in the warnings.
+        trace_mismatch: mismatch ? { wrapper: wrapperRaw, validator: stdoutRaw } : null,
       });
     }
   }
@@ -682,7 +689,7 @@ function evalSkillsClean(skillVerdicts, supersededMismatches) {
   const mismatches = rows.filter((r) => r.trace_mismatch).concat(supersededMismatches || []);
   if (mismatches.length > 0) {
     const detail = mismatches
-      .map((r) => `${r.skill_id} in ${r.phase}/attempt_${r.attempt} (trace ${r.trace_mismatch.wrapper} vs validator ${r.trace_mismatch.validator})`)
+      .map((r) => `${r.skill_id} in ${r.phase}/attempt_${r.attempt} (trace ${quoteRaw(r.trace_mismatch.wrapper)} vs validator ${quoteRaw(r.trace_mismatch.validator)})`)
       .join('; ');
     const failures = rows.filter((r) => r.rubric_result === 'fail').length;
     const warnings = rows.filter((r) => r.rubric_result === 'warn').length;
@@ -891,8 +898,8 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
   for (const row of supersededMismatches || []) {
     warnings.push(
       `EVIDENCE INTEGRITY: skill_trace.json for "${row.skill_id}" in ${row.phase}/attempt_${row.attempt} ` +
-        `(SUPERSEDED attempt) records rubric_result=${row.trace_mismatch.wrapper} but its own ` +
-        `output.rubric_result is ${row.trace_mismatch.validator}. A later attempt cannot un-write a verdict ` +
+        `(SUPERSEDED attempt) records rubric_result=${quoteRaw(row.trace_mismatch.wrapper)} but its own ` +
+        `output.rubric_result is ${quoteRaw(row.trace_mismatch.validator)}. A later attempt cannot un-write a verdict ` +
         `no validator produced, so this fails the gate from a superseded attempt.`
     );
   }
@@ -903,8 +910,8 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
     if (row.trace_mismatch) {
       warnings.push(
         `EVIDENCE INTEGRITY: skill_trace.json for "${row.skill_id}" in ${row.phase}/attempt_${row.attempt} ` +
-          `records rubric_result="${row.trace_mismatch.wrapper}" but its own output.rubric_result is ` +
-          `"${row.trace_mismatch.validator}". The trace must transcribe the validator's stdout verbatim ` +
+          `records rubric_result=${quoteRaw(row.trace_mismatch.wrapper)} but its own output.rubric_result is ` +
+          `${quoteRaw(row.trace_mismatch.validator)}. The trace must transcribe the validator's stdout verbatim ` +
           `(references/artifact-layout.md); the validator's verdict is authoritative and is what this report scored.`
       );
     }
