@@ -22,7 +22,7 @@
       "risk_level": "low"
     }
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when all fields are present and well-formed\"",
+  "note": "tests/skill-modules.test.js \u2014 \"returns pass when all fields are present and well-formed\"",
   "expected": {
     "rubric_result": "pass",
     "normalized_summary": {
@@ -50,5 +50,6 @@
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null
-  }
+  },
+  "expected_source": "original@ADWS_PRO_source"
 }

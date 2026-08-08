@@ -31,6 +31,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { assertFixtureCoverage, listBySuffix } = require('../_harness.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const VALIDATOR_DIR = path.join(ROOT, 'adws-pipeline', 'scripts', 'validators');
@@ -407,31 +408,10 @@ console.log('\n=== execution-report.js (bare "Error:"/"Usage:", exits 0/10/1/2/3
 
 console.log('\n=== coverage cross-check ===');
 {
-  const onDisk = fs
-    .readdirSync(VALIDATOR_DIR)
-    .filter((f) => f.endsWith('.js'))
-    .map((f) => f.replace(/\.js$/, ''))
-    .sort();
+  const onDisk = listBySuffix(VALIDATOR_DIR, '.js').map((f) => f.replace(/\.js$/, ''));
   const declared = [...VALIDATORS].sort();
-
-  for (const name of onDisk) {
-    if (!declared.includes(name)) {
-      failures += 1;
-      assertions += 1;
-      console.log(`FAIL coverage: validator "${name}" exists on disk but is not in VALIDATORS`);
-    }
-  }
-  for (const name of declared) {
-    if (!onDisk.includes(name)) {
-      failures += 1;
-      assertions += 1;
-      console.log(`FAIL coverage: VALIDATORS lists "${name}" but no such validator on disk`);
-    }
-  }
   assertions += 1;
-  if (failures === 0 || onDisk.length === declared.length) {
-    console.log(`PASS coverage — ${onDisk.length} validator(s) on disk ↔ ${declared.length} declared`);
-  }
+  failures += assertFixtureCoverage({ declared, onDisk, unit: 'validator', declaredUnit: 'declared' });
 }
 
 const pending = HOSTILE.filter((h) => h.pending_sc9).length;

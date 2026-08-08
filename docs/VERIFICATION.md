@@ -1312,3 +1312,32 @@ change and the file's presence.
 That correction is recorded rather than quietly fixed, because the broken version looked
 entirely plausible and would have shipped a field that appeared to identify the tested tree
 while not doing so — the same shape as a fixture that appears to pin a rule and does not.
+
+### M-5b/B4 — the parity headline, corrected
+
+A fixture frozen from the port and one frozen from the original were indistinguishable on
+disk, so `PARITY_REPORT.md` could report "identical" for a pack whose baseline was only ever
+the port's own output. Every fixture now carries `expected_source`, `--freeze` stamps it, and
+the verify path **fails** when a non-diverged pack carries a `port@` baseline.
+
+The report now splits the corpus instead of conflating it: **39 fixtures are original-parity;
+69 are frozen-baseline regression.** That is a materially weaker headline than "108/108
+identical" and a truer one. It does not re-derive original parity — nothing here can, without
+`ADWS_PRO_source/` — it stops the report claiming parity for fixtures that never had it.
+
+### M-5b/B1 — `parity/_harness.js`, and what was left alone
+
+Extracted what is genuinely identical: the M-3a coverage cross-check (written three times),
+the `check()` recorder, `listBySuffix`, `withScratchDir`. Left alone: the five per-suite
+epilogues and the `runCli` wrappers, which look alike but each name what they tested or
+differ in ways that matter. Extracting things that merely look alike is how a helper
+accumulates parameters until it is harder to read than the duplication was.
+
+Invariant verified by capturing all six runners' stdout before and after: **every
+pre-existing suite is byte-identical.** One line changed, in the `cli-contract` suite M-5a
+added this session, where the coverage message harmonized with the other three. It took three
+attempts to make that string match exactly — at which point the repo's own rule applies
+("when a parser heuristic needs a third patch, delete it and accept the over-report"), so the
+harmonized message stands and the difference is recorded rather than tuned away.
+
+Gate: 14/14 steps pass.

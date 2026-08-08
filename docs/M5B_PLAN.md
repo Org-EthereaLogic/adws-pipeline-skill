@@ -91,6 +91,42 @@ it down. `execution-report.js` is named as the next candidate surface but needs 
 mechanism — mutating a report generator means rebuilding job trees, not calling
 `execute(input)`.
 
+### B4 — every fixture declares where its baseline came from
+
+A fixture frozen from the port and one frozen from the original were **indistinguishable on
+disk**, so `PARITY_REPORT.md` could report "identical" for a pack whose baseline was only
+ever the port's own output. Every fixture now carries `expected_source`; `--freeze` and
+`--freeze-diverged` stamp it, and the verify path **fails** when a non-diverged pack carries
+a `port@` baseline — the "validated against itself" trap, made detectable.
+
+The report's summary now splits the corpus instead of conflating it: **39 fixtures are
+original-parity and 69 are frozen-baseline regression**. That is a materially weaker headline
+than "108/108 identical", and a truer one. It does not re-derive original parity — nothing in
+the repo can, without `ADWS_PRO_source/` — it stops the report claiming parity for fixtures
+that never had it.
+
+### B1 — `parity/_harness.js`
+
+Extracted the pieces that are genuinely identical: the M-3a coverage cross-check (written
+three times, two of which said so in a comment), the `check()` recorder, `listBySuffix`, and
+`withScratchDir`.
+
+**Deliberately NOT extracted: the per-suite epilogue and the `runCli` wrappers.** All five
+epilogues look alike but each names what it tested ("21/21 verdicts + CLI error path",
+"invalid shapes rejected", "deterministic across re-runs"). Routing them through one helper
+would either change those messages — breaking this action's own invariant — or need enough
+parameters to stop being a simplification. The `runCli` wrappers now differ in ways that
+matter (stdin, env scrubbing, maxBuffer). Extracting things that merely *look* alike is how
+a helper accumulates parameters until it is harder to read than the duplication was.
+
+**Invariant, verified:** stdout captured for all six runners before and after and diffed.
+**Every pre-existing suite is byte-identical.** One line changed, in `cli-contract` — the
+suite M-5a added this session — where the coverage message harmonized with the other three.
+That was noticed and accepted rather than tuned away: it took three attempts to make the
+string match exactly, at which point the repo's own rule applies ("when a parser heuristic
+needs a third patch, delete it and accept the over-report"), so the harmonized message
+stands and the difference is recorded here.
+
 ## 3. Invariants held
 
 1. No validator behaviour changes; parity stays 108/108 with no refreeze.
@@ -106,6 +142,8 @@ mechanism — mutating a report generator means rebuilding job trees, not callin
 | `tested_tree` identifies the tested tree | Change only an **untracked file's contents** | Digest changes (the case both naive digests missed); removing the file changes it again |
 | The 19 gaps are tracked bidirectionally | Delete three accepted entries → reported as NEW SURVIVORS. Add a nonexistent entry → reported as STALE | Both directions fail the gate |
 | The `undefined` sentinel is handled | — | `drift-sentinel` now passes the pristine floor and is swept |
+| B4 detects self-validation | Mark a **non-diverged** fixture `expected_source: port@…` | Named and failed; restoring it returns 108/108 |
+| B1 changed no suite's output | Capture all six runners' stdout before and after, diff | Every pre-existing suite byte-identical; one deliberate line in `cli-contract` |
 
 **Gate at HEAD:** 14/14 steps pass.
 

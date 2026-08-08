@@ -252,10 +252,27 @@ function main() {
           continue;
         }
         fixture.expected = ref.result;
+        // M-5b/B4. A fixture frozen from the port and one frozen from the original are
+        // otherwise INDISTINGUISHABLE on disk, so PARITY_REPORT.md could report "identical"
+        // for a pack whose baseline was only ever the port's own output. Stamping the
+        // source makes the difference detectable; the verify path asserts it below.
+        fixture.expected_source = diverged ? 'port@' + DIVERGED_PACKS[pack] : 'original@ADWS_PRO_source';
         fs.writeFileSync(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
         frozen += 1;
         matches += 1;
         console.log('FROZE ' + pack + '/' + caseName + (diverged ? '  (from port — diverged-by-design, ' + DIVERGED_PACKS[pack] + ')' : ''));
+        continue;
+      }
+
+      // M-5b/B4: a NON-diverged pack whose baseline came from the port is the
+      // "validated against itself" trap. It is a hard failure, not a note.
+      const src = fixture.expected_source;
+      if (typeof src === 'string' && src.startsWith('port@') && !diverged) {
+        mismatches += 1;
+        console.log(
+          'FAIL ' + pack + '/' + caseName + '  expected_source is ' + src +
+            ' but ' + pack + ' is not in DIVERGED_PACKS — a non-diverged baseline must come from the original'
+        );
         continue;
       }
 
@@ -385,6 +402,13 @@ function main() {
     '- Packs: ' + (packs.length - divergedPacks.length) + ' original-parity, ' + divergedPacks.length +
       ' diverged-by-design' + (divergedPacks.length ? ' (' + divergedPacks.map((p) => p + ': ' + DIVERGED_PACKS[p]).join('; ') + ')' : '')
   );
+  // M-5b/B4: split the corpus by where each baseline actually came from. A single
+  // "N/N identical" line conflates two very different claims — "matches the original" and
+  // "matches a snapshot of itself" — and only the first is parity.
+  const originalBaselined = rows.filter((r) => !Object.prototype.hasOwnProperty.call(DIVERGED_PACKS, r.pack)).length;
+  const portBaselined = total - originalBaselined;
+  lines.push('- Baselines: ' + originalBaselined + ' fixture(s) original-parity, ' + portBaselined +
+    ' fixture(s) frozen-baseline regression (the port is its own reference under an approved scope change)');
   lines.push('- Full-object matches (and deterministic): ' + matches);
   lines.push('- Mismatches/failures (incl. NFR-4): ' + mismatches);
   lines.push(

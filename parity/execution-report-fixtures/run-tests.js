@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { assertFixtureCoverage } = require('../_harness.js');
 const { spawnSync } = require('child_process');
 
 const CLI = path.join(__dirname, '..', '..', 'adws-pipeline', 'scripts', 'execution-report.js');
@@ -355,25 +356,12 @@ const results = [];
 // F-27: a count no consumer compares is not a control. It cost the pipeline a criterion
 // once; there is no reason to leave the identical hole in the harness that guards it.)
 {
-  const onDisk = fs
-    .readdirSync(__dirname, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
-    .map((d) => d.name)
+  const onDisk = fs.readdirSync(__dirname, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
     .sort();
   const declared = CASES.map((c) => c.name).sort();
-  const orphans = onDisk.filter((n) => !declared.includes(n));
-  const phantoms = declared.filter((n) => !onDisk.includes(n));
-  for (const n of orphans) {
-    failures += 1;
-    console.log(`FAIL fixture coverage: directory "${n}" exists but no CASES entry runs it`);
-  }
-  for (const n of phantoms) {
-    failures += 1;
-    console.log(`FAIL fixture coverage: CASES entry "${n}" has no fixture directory`);
-  }
-  if (orphans.length === 0 && phantoms.length === 0) {
-    console.log(`PASS fixture coverage — ${onDisk.length} fixture dir(s) ↔ ${declared.length} CASES entr(ies)`);
-  }
+  failures += assertFixtureCoverage({ declared, onDisk, unit: 'fixture dir' });
 }
 
 function check(label, condition, actual, expected) {

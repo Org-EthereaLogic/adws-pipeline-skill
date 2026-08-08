@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { assertFixtureCoverage, listBySuffix } = require('../_harness.js');
 
 // SC-11/A3 (F-17, closed WONTFIX-with-substitute). The obtainable half of provenance is
 // now MANDATORY; the rest is structurally unavailable in this runtime and is written as
@@ -78,19 +79,9 @@ let failures = 0;
 // so the suite cannot shrink silently. See the same block in
 // parity/execution-report-fixtures/run-tests.js for the reasoning.
 {
-  const onDisk = fs.readdirSync(__dirname).filter((f) => f.endsWith('.json')).sort();
+  const onDisk = listBySuffix(__dirname, '.json');
   const declared = CASES.map((c) => c.name).sort();
-  for (const n of onDisk.filter((n) => !declared.includes(n))) {
-    failures += 1;
-    console.log(`FAIL fixture coverage: "${n}" exists but no CASES entry runs it`);
-  }
-  for (const n of declared.filter((n) => !onDisk.includes(n))) {
-    failures += 1;
-    console.log(`FAIL fixture coverage: CASES entry "${n}" has no fixture file`);
-  }
-  if (failures === 0) {
-    console.log(`PASS fixture coverage — ${onDisk.length} fixture file(s) ↔ ${declared.length} CASES entr(ies)`);
-  }
+  failures += assertFixtureCoverage({ declared, onDisk, unit: 'fixture file' });
 }
 
 for (const testCase of CASES) {
