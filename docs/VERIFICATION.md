@@ -1402,8 +1402,51 @@ constraint could prevent; #48's was simple impatience at a green-looking checks 
 no constraint prevents and only a habit does. **A rule written into a document the same day
 it is broken is not yet a control.**
 
+### F-72 — a merged fix does not reach a run until someone reinstalls, and nothing says so
+
+Found by asking, after the merge, whether the changes would affect future runs. They would
+not have. **All three installed copies were still the pre-remediation code**, and the
+defects reproduced live in them:
+
+| Install | F-63 | F-64 | F-65 |
+|---|---|---|---|
+| `~/.claude` (global) | `groupedFiles[dir].push is not a function`, gate skipped | hostile branch → `pass` | `RangeError` at 200k |
+| `Dev/etherealogic-website` | same | same | same |
+| `Dev/agentic-starter-kit` | same | same | same |
+
+Each also carried the pre-SC-10 agents (no `Write`) and a 412-line `SKILL.md` with four
+references. `agentic-starter-kit` is the repository nine of the thirteen field runs targeted,
+so it was the most likely next consumer of the vulnerable code.
+
+**The gap is structural, not an oversight.** This repository lints its own tree thoroughly —
+byte-identity for the CLI wrapper, byte-identity for the shared agent blocks, a bidirectional
+reference index, a fixture-corpus ablation sweep — and has **no check whatsoever** that an
+installed copy matches the source it was installed from. `frontmatter-lint.mjs` mentions
+installation only to forbid referencing dev-only paths from inside the skill. Nothing knows
+where the skill is installed, and nothing compares.
+
+That is the same shape as every other finding in this series: a green local gate, and a real
+consumer running something else entirely. The parity harness proves the validators in `git`
+are correct; it says nothing about the validators that will actually run tomorrow.
+
+Remediated by hand here (all three reinstalled from `fa0ffdd` and re-verified by re-running
+the reproductions against each installed copy, not by trusting the installer's output).
+**No mechanism was shipped**, so it will recur on the next merge. Candidates: a
+`make check-installs` that diffs known install roots against the source tree, or a version
+stamp in `SKILL.md` that the orchestrator asserts at intake against the skill it loaded —
+the second is stronger, because it catches the case where nobody remembered to run the check.
+
 **Carried forward, not acted on:** the 19 unpinned validator rules tracked in
 `parity/guard-ablation-baseline.json`; `execution-report.js` as the largest unswept surface;
 archive-before-teardown as a procedure with no mechanical enforcement; that the series was
-not reviewable by the tool most likely to catch its defects; and that the repository has no
-mechanism — only prose — requiring an in-flight external review to finish before a merge.
+not reviewable by the tool most likely to catch its defects; that the repository has no
+mechanism — only prose — requiring an in-flight external review to finish before a merge;
+and **F-72**, that nothing detects a stale install.
+
+### Final state
+
+PR #47 (the stack), #48 (ledger record) and #49 (review-gap amendment) are merged; `main` is
+at the merge of #49. Local CI green on merged `main`: Tier 1 14/14, Tier 2 clean-room Node
+20 and 24. All three installs updated and verified. `#49` was merged at the operator's
+direction with its review gap recorded rather than closed — CodeRabbit was rate-limited and
+never started, and the check read `pass`.

@@ -961,4 +961,11 @@ SC-9 packs changed zero verdicts**; no recorded evidence tree rewritten.
 (tracked bidirectionally in `parity/guard-ablation-baseline.json`); `execution-report.js` is
 the largest unswept surface and needs a different mechanism; archive-before-teardown is a
 mandated procedure with no mechanical enforcement; F-0, F-1, F-42 and F-43 are referenced
-but never defined; **R-3 remains open**.
+but never defined; **R-3 remains open**; and **F-72** — nothing detects a stale install.
+
+**F-72 (post-merge).** Asked whether the merged changes would affect future runs, the answer
+was no: all three installed copies were still pre-remediation, and F-63/F-64/F-65 reproduced
+live in each. The repository lints its own tree thoroughly and has no check that an installed
+copy matches the source. Remediated by hand, no mechanism shipped, so it recurs on the next
+merge. The parity harness proves the validators in `git` are correct and says nothing about
+the validators that will run tomorrow.
