@@ -411,11 +411,20 @@ function main() {
     ' fixture(s) frozen-baseline regression (the port is its own reference under an approved scope change)');
   lines.push('- Full-object matches (and deterministic): ' + matches);
   lines.push('- Mismatches/failures (incl. NFR-4): ' + mismatches);
+  // M-5b/B4. The result line used to read "ALL N/N FIXTURES IDENTICAL — original parity
+  // holds", which conflated the two populations the Baselines line above separates and
+  // asserted original parity for fixtures that never had it. The two claims are now
+  // reported apart, and each says what it actually rests on.
   lines.push(
     '- Result: ' +
       (mismatches === 0
-        ? 'ALL ' + total + '/' + total + ' FIXTURES IDENTICAL — original parity holds' +
-          (divergedPacks.length ? '; diverged-by-design packs match their frozen baselines.' : '.')
+        ? 'ALL ' + total + '/' + total + ' fixtures match their recorded baseline. Of those, ' +
+          originalBaselined + ' are original-parity (compared against the ADWS_Pro original' +
+          (baselineSource === 'live-original' ? ', live' : ' via a frozen capture of it') + ')' +
+          (portBaselined
+            ? ' and ' + portBaselined +
+              ' are frozen-baseline regression only — the port is its own reference in the diverged packs, so those fixtures assert no original parity.'
+            : '.')
         : 'PARITY FAILED')
   );
   lines.push('');

@@ -16,6 +16,11 @@ consolidation, tested-tree identification, fixture provenance and the finding-ID
 all worth doing and none of them makes an SC-9 claim more trustworthy; they are **M-5b**,
 which gates nothing.
 
+*(Topology correction: M-5b gates nothing, but it is not free-standing — it extends
+`guard-ablation.mjs` and the `cli-contract` runner that M-5a introduces, so it must land
+after M-5a. The shipped series is linear: `main → M-5a → SC-9 → SC-10 → SC-11 → M-5b`. See
+`docs/M5B_PLAN.md` §0.)*
+
 ## 1. Findings register
 
 | ID | Finding | Evidence | Action |
@@ -47,7 +52,10 @@ exit **0** for the entropy gate (zero lines = no signal, gate open), and
 An M-3a coverage cross-check compares the declared `VALIDATORS` list against disk in both
 directions, so a tenth validator cannot be added without being covered.
 
-**Measured:** 332 assertions, ~2 s.
+**Measured:** 332 assertions at M-5a, ~2 s. (SC-9 later flipped the four hostile pins from
+asserting the defect to asserting the fix, which changes the count to 330 — two of the pins
+trade three exit-3 assertions for one verdict assertion. The number moves with the corpus;
+the suite's own output is the current figure.)
 
 ### A2 — `scripts/local-ci/guard-ablation.mjs` + `parity/guard-ablation-baseline.json`
 

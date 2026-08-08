@@ -1250,8 +1250,13 @@ three mandatory parts: a durable destination outside the worktree and the checko
 and sha256 recorded in `run_manifest`, and **verification by extraction** rather than by
 size, since a truncated tarball is non-empty. Teardown is conditional on a verified archive.
 
-This one is prose the orchestrator must follow, not code — nothing mechanically enforces the
-durable destination. That gap is recorded rather than papered over.
+**This is a mandated procedure, not verified behaviour.** Nothing mechanically enforces the
+durable destination, the recorded digest, or the extraction check — they are instructions in
+`SKILL.md` that an orchestrator must follow, and an orchestrator that skips them fails no
+gate. The recorded `sha256` makes a later audit possible; it does not prevent the loss. The
+four runs that lost their evidence lost it while following a procedure too, which is exactly
+why this gap is recorded rather than papered over: closing it needs a script, and a script
+needs a runtime contract for where "durable" lives.
 
 Gate: 13/13 steps pass.
 

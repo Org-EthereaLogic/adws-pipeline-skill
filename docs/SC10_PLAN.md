@@ -1,7 +1,13 @@
 # SC-10 Plan — The Agents Can Write; The Skill Can Shrink
 
 **Scope class:** agent definitions, skill prose, installer. **No validator changes, no
-fixture changes, no parity refreeze, no count sites moved.** Independent of SC-9.
+fixture changes, no parity refreeze, no count sites moved.**
+
+**Correction: this is NOT independent of SC-9, as originally planned.** A3 restructures
+`SKILL.md`, which SC-9 also edits (the `{slug}` definition and the pre-git-gate
+instruction), and A1 adds a `gate.sh` step alongside M-5a's. The plan claimed independence
+before those overlaps existed; the branch is stacked on SC-9 and the dependency is real,
+not an artifact of how it was branched. See `docs/M5B_PLAN.md` §0 for the actual topology.
 
 ## 1. Findings register
 

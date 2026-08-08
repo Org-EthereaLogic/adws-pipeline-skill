@@ -108,12 +108,24 @@ if [ -d "${SKILLS_DIR}/adws-pipeline" ] || ls "${AGENTS_DIR}/"adws-*.md >/dev/nu
   fi
 fi
 
-# --- 4. swap ------------------------------------------------------------------
-# `mv` within one filesystem is atomic, so an interruption leaves either the old tree or
-# the new one — never a half-written skill directory, which `rm -rf` + `cp` could.
+# --- 4. replace ---------------------------------------------------------------
+# NOT atomic, and the earlier comment claiming it was is corrected here. POSIX `mv` cannot
+# replace a non-empty directory in one step, and portable atomic directory swap
+# (renameat2/RENAME_EXCHANGE) is Linux-only. A first cut did `rm -rf` then `mv`, which left
+# a window with NO skill installed at all.
+#
+# What this does instead: rename the old tree ASIDE, rename the new one in, then delete the
+# old. The window is now between two renames, and an interruption inside it leaves the old
+# tree intact at `.adws-pipeline.outgoing.$$` rather than leaving nothing — recoverable by
+# renaming it back. That is a narrowed window with a recoverable failure state, which is
+# what is actually on offer here; it is not atomicity.
 trap - EXIT
-rm -rf "${SKILLS_DIR}/adws-pipeline"
+OUTGOING="${SKILLS_DIR}/.adws-pipeline.outgoing.$$"
+if [ -d "${SKILLS_DIR}/adws-pipeline" ]; then
+  mv "${SKILLS_DIR}/adws-pipeline" "${OUTGOING}"
+fi
 mv "${STAGE}" "${SKILLS_DIR}/adws-pipeline"
+rm -rf "${OUTGOING}"
 for a in "${SRC}/.claude/agents/"adws-*.md; do
   cp "$a" "${AGENTS_DIR}/.$(basename "$a").incoming.$$"
   mv "${AGENTS_DIR}/.$(basename "$a").incoming.$$" "${AGENTS_DIR}/$(basename "$a")"

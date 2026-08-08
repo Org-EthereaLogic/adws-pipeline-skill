@@ -1,7 +1,28 @@
 # M-5b Plan — Harness Improvement
 
 **Scope class:** harness (M-series). **No validator changes, no fixture `expected` changes,
-no parity refreeze.** Independent of every other package; nothing depends on it.
+no parity refreeze.**
+
+## 0. Actual topology — a correction to the plan
+
+The remediation plan described five packages as `M-5a → SC-9 → SC-11`, with SC-10 and M-5b
+independent. **That is not what shipped, and the difference is real rather than an artifact
+of branching order.** The series is linear:
+
+```
+main → M-5a → SC-9 → SC-10 → SC-11 → M-5b
+```
+
+- **SC-10 depends on SC-9** — A3 restructures `SKILL.md`, which SC-9 edits for `{slug}` and
+  the pre-git-gate instruction; both also add `gate.sh` steps.
+- **M-5b depends on M-5a** — B6 extends `guard-ablation.mjs` and its baseline, both of which
+  M-5a introduced; B1 consolidates the `cli-contract` runner M-5a added.
+
+Reviewing or merging these as five independent branches would not work: reconstructing
+SC-10 on `main` means resolving real `SKILL.md` and `gate.sh` conflicts, and M-5b on `main`
+has no `guard-ablation.mjs` to extend. **Treat this as one stacked series and merge in
+order.** The independence claims in the earlier plan docs are wrong and are corrected in
+place.
 
 ## 1. Findings register
 
