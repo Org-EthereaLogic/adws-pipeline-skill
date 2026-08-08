@@ -1371,7 +1371,39 @@ CodeQL failed in ~3 s, as it has on every run in this repository including on `m
 reports `no analysis found` — an account-wide billing lock, not a code finding. `main` is
 unprotected, so no required check was overridden and no `--admin` merge was used.
 
+**Amendment — the follow-up PR repeated the failure, and worse.** PR #48 carried the entry
+above into the record and was merged **while CodeRabbit's review was still running**. The bot
+reported `Review failed — The pull request is closed.` So #48 also landed unreviewed, and
+this time nothing forced it: the PR was two files, well inside the limit, and the review
+would have completed in under a minute.
+
+And PR #49 — this amendment — did not get reviewed either, for a **third distinct reason**:
+CodeRabbit's free OSS quota was exhausted (*"Review limit reached… next review available in
+57 minutes"*). Three PRs, three different causes, zero external review:
+
+| PR | Cause | Check reported |
+|---|---|---|
+| #47 | 237 files exceed the 100-file limit | `pass` — "Review skipped" |
+| #48 | merged while the review was running | `pass` — then `Review failed: the pull request is closed` |
+| #49 | free-tier review quota exhausted | **`pass`** — while no review started at all |
+
+**In all three the check reported `pass`.** A reviewer that skipped, a reviewer that was cut
+off, and a reviewer that never started are indistinguishable at the checks list from a
+reviewer that read the diff and approved it. That is this repository's own founding
+observation — a green signal from a gate that cannot fail carries no information — appearing
+in the one place the pipeline had been trusting to compensate for it. The audit counted five
+of the last six field runs where external review caught what the pipeline missed; those five
+were luck of the quota, not a control.
+
+That is also the same rule broken twice within the hour, the second time by the author of the
+sentence recording the first. Worth stating plainly because it is the more useful of the two
+data points: #47's gap was a structural consequence of a 237-file stack, which a planning
+constraint could prevent; #48's was simple impatience at a green-looking checks list, which
+no constraint prevents and only a habit does. **A rule written into a document the same day
+it is broken is not yet a control.**
+
 **Carried forward, not acted on:** the 19 unpinned validator rules tracked in
 `parity/guard-ablation-baseline.json`; `execution-report.js` as the largest unswept surface;
-archive-before-teardown as a procedure with no mechanical enforcement; and this entry's own
-finding — that the series was not reviewable by the tool most likely to catch its defects.
+archive-before-teardown as a procedure with no mechanical enforcement; that the series was
+not reviewable by the tool most likely to catch its defects; and that the repository has no
+mechanism — only prose — requiring an in-flight external review to finish before a merge.
