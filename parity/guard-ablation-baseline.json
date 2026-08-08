@@ -26,43 +26,195 @@
     "cannot drift). See the header of guard-ablation.mjs."
   ],
   "scope": {
-    "packs": [
-      "repo-context-scan",
-      "patch-compose",
-      "ship-mode-select"
-    ],
+    "packs": "all 9 validators (M-5b/B6, extended from the 3 SC-9 packs)",
     "operators": [
       "guard-off",
       "verdict"
     ],
-    "why_narrow": [
-      "These are the three packs SC-9 modifies, and two operators are enough to",
-      "reproduce the failure this mechanism exists to catch. Extending to the other six",
-      "validators and to the wider operator catalogue (guard-on, boundary flips,",
-      "constant offsets, negation, dropped pushes) is M-5b/B6's decision, to be made on",
-      "measured mutant counts and runtime rather than on estimates."
+    "why_this_scope": [
+      "M-5b/B6 extended the sweep from three packs to nine on M-5a/A2's MEASURED cost",
+      "(18 mutants / 122 calls / 6 ms for three packs), not on an estimate. Nine packs cost",
+      "109 mutants / 1,446 calls / 47 ms -- cheap enough that narrowing buys nothing.",
+      "",
+      "The wider operator catalogue (guard-on, boundary flips, constant offsets, negation,",
+      "dropped pushes) is still NOT adopted: the two shipped operators already surfaced 19",
+      "unpinned rules, and adding operators before those are closed would grow this list",
+      "faster than anyone works it down. Revisit when `accepted` is near empty.",
+      "",
+      "execution-report.js is the largest unswept surface in the repo (~1,400 lines, 24",
+      "fixture job-trees) and SC-11's own first-cut fixtures were vacuous there. It needs a",
+      "different mechanism -- mutating a report generator means rebuilding job trees, not",
+      "calling execute(input) -- so it is named as the next candidate rather than bolted on."
     ]
   },
   "measured": {
-    "as_of": "2026-08-08 (post-SC-9)",
-    "mutants": 35,
-    "execute_calls": 409,
-    "wall_clock_ms": 13,
-    "survivors": 0,
+    "as_of": "2026-08-08 (M-5b/B6, all nine packs)",
+    "packs": 9,
+    "mutants": 109,
+    "execute_calls": 1446,
+    "wall_clock_ms": 47,
+    "survivors": 19,
     "note": [
-      "Measured on this checkout, not projected. M-5a measured 18 mutants / 122 calls / 6 ms",
-      "over the same three packs before SC-9 enlarged them; SC-9 roughly doubled both the rule",
-      "count and the fixture count for ~2x the cost, still an order of magnitude under the",
-      "~5 s parity step. Recorded so M-5b/B6 extrapolates from data: ~12 mutants and ~4 ms per",
-      "pack at this size.",
-      "",
-      "SC-9 is also the first evidence that this mechanism earns its place. It went RED on",
-      "SC-9's own first cut, naming four rules the new fixtures did not pin: the empty-prefix",
-      "branch of underPrefix, both absolute-path guards, and the malformed-entry count. Three",
-      "were closed with fixtures. The fourth -- an explicit startsWith('/') test -- turned out",
-      "to be dead code, since '/etc/passwd' splits to ['','etc','passwd'] and the empty-segment",
-      "rule already rejected it; it was deleted rather than exempted."
+      "The nine-pack sweep found 19 unpinned rules across six validators no scope change had",
+      "ever swept. They are recorded rather than fixed: closing them means new fixtures in",
+      "four more packs, each requiring a version bump and a refreeze -- validator work, and",
+      "M-5b changes no validator. Recording converts 19 invisible gaps into 19 tracked ones",
+      "that CI will not let anyone forget, and the rule is bidirectional: an entry that stops",
+      "surviving fails the gate until it is deleted."
     ]
   },
-  "accepted": []
+  "accepted": [
+    {
+      "id": "criteria-to-checks:guard-off:#0",
+      "site": "criteria-to-checks.js:23",
+      "mutation": "if (typeof criterion !== 'string') \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "criteria-to-checks:guard-off:#1",
+      "site": "criteria-to-checks.js:25",
+      "mutation": "if (s.length < 10) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#0",
+      "site": "drift-sentinel.js:33",
+      "mutation": "if (!Number.isFinite(currentEntropy) || !Number.isFinite(refe\u2026) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#2",
+      "site": "drift-sentinel.js:40",
+      "mutation": "if (!Array.isArray(values) || values.length < 2) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#3",
+      "site": "drift-sentinel.js:46",
+      "mutation": "if (!Number.isFinite(v)) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#5",
+      "site": "drift-sentinel.js:93",
+      "mutation": "if (!Number.isFinite(value)) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#6",
+      "site": "drift-sentinel.js:105",
+      "mutation": "if (dTx < 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#7",
+      "site": "drift-sentinel.js:123",
+      "mutation": "if (!Array.isArray(deltaRSequence)) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#8",
+      "site": "drift-sentinel.js:131",
+      "mutation": "if (value < 0 || value > 1) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#9",
+      "site": "drift-sentinel.js:142",
+      "mutation": "if (!Array.isArray(entropySeries) || !Array.isArray(dTxSeries)) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#10",
+      "site": "drift-sentinel.js:159",
+      "mutation": "if (rates.length === 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#16",
+      "site": "drift-sentinel.js:263",
+      "mutation": "if (max === 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#20",
+      "site": "drift-sentinel.js:297",
+      "mutation": "if (!Array.isArray(entropyHistory) || entropyHistory.length <\u2026) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:guard-off:#22",
+      "site": "drift-sentinel.js:332",
+      "mutation": "if (ctm > CTM_YELLOW) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "drift-sentinel:verdict:#5",
+      "site": "drift-sentinel.js:452",
+      "mutation": "'fail' \u2192 'pass'",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "review-risk-assess:guard-off:#0",
+      "site": "review-risk-assess.js:76",
+      "mutation": "if (segments.length === 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "task-normalize:guard-off:#1",
+      "site": "task-normalize.js:43",
+      "mutation": "if (magA === 0 || magB === 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "task-normalize:guard-off:#2",
+      "site": "task-normalize.js:66",
+      "mutation": "if (problemTokens.length === 0 || solutionTokens.length === 0) \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
+      "owner": "SC-12 (unscheduled)"
+    },
+    {
+      "id": "task-normalize:guard-off:#9",
+      "site": "task-normalize.js:133",
+      "mutation": "if (syntheticRisk === 'high') \u2192 if (false)",
+      "class": "unpinned",
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
+      "owner": "SC-12 (unscheduled)"
+    }
+  ]
 }

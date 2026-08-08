@@ -50,8 +50,11 @@ const VALIDATOR_DIR = path.join(ROOT, 'adws-pipeline', 'scripts', 'validators');
 const FIXTURES_DIR = path.join(ROOT, 'parity', 'fixtures');
 const BASELINE_PATH = path.join(ROOT, 'parity', 'guard-ablation-baseline.json');
 
-// The three packs SC-9 modifies. Extending this list is B6's decision, not a default.
-const TARGET_PACKS = ['repo-context-scan', 'patch-compose', 'ship-mode-select'];
+// M-5b/B6: extended from the three SC-9 packs to all nine, on M-5a/A2's measured cost
+// (18 mutants / 122 calls / 6 ms for three packs of that size). The sweep is cheap enough
+// that narrowing it buys nothing, and the first nine-pack run immediately found unpinned
+// rules in criteria-to-checks — a pack no scope change had swept.
+const TARGET_PACKS = ['criteria-to-checks','document-coverage-map','drift-sentinel','patch-compose','repo-context-scan','review-risk-assess','ship-mode-select','task-normalize','verify-evidence-map'];
 
 const VERBOSE = process.argv.includes('--verbose');
 
@@ -248,12 +251,23 @@ function instantiate(source, filename) {
   return moduleObj.exports;
 }
 
+// The frozen `expected` baselines are produced by parity/exec-one.js, which serialises
+// `undefined` as the sentinel string "__UNDEFINED__" (JSON.stringify would otherwise drop
+// those keys and the key-count comparison would silently pass). This tool calls execute()
+// in-process, so it sees real `undefined` and must treat the two as equal — without it,
+// drift-sentinel fails the pristine sanity floor and the whole pack cannot be swept.
+const UNDEFINED_SENTINEL = '__UNDEFINED__';
+
 function deepEqual(a, b) {
+  if (a === undefined && b === UNDEFINED_SENTINEL) return true;
+  if (b === undefined && a === UNDEFINED_SENTINEL) return true;
   if (a === b) return true;
   if (typeof a !== typeof b) return false;
   if (a === null || b === null) return a === b;
   if (Array.isArray(a) !== Array.isArray(b)) return false;
   if (typeof a !== 'object') return Number.isNaN(a) && Number.isNaN(b);
+  // Keys whose value is `undefined` are present in the in-process result but serialise
+  // to the sentinel in the baseline, so compare the union rather than raw key counts.
   const ka = Object.keys(a).sort();
   const kb = Object.keys(b).sort();
   if (ka.length !== kb.length) return false;

@@ -1254,3 +1254,61 @@ This one is prose the orchestrator must follow, not code — nothing mechanicall
 durable destination. That gap is recorded rather than papered over.
 
 Gate: 13/13 steps pass.
+
+## Maintenance audit M-5b (2026-08-08) — harness improvement, F-11…F-13 backfill, F-70/F-71
+
+Plan: `docs/M5B_PLAN.md`. Independent of every other package; nothing depends on it.
+
+### Register backfill — F-11, F-12, F-13
+
+These three were recorded as `SKILL.md` troubleshooting headings and never given register
+rows, so the register jumped F-10 → F-14 and three real findings were invisible to anyone
+reading it. Backfilled here at their original dates, with their current homes.
+
+| ID | Finding | First recorded | Now lives in |
+|---|---|---|---|
+| **F-11** | `adws-*` agent types are not registered in every runtime (e.g. cloud sessions). A phase whose agent type fails to dispatch must be run by a general-purpose subagent with the agent's spec inlined VERBATIM — the fallback changes the transport, never the contract. | field run issue #103 (2026-07-18) | `references/runtimes.md` (moved from SKILL.md by SC-10/A3) |
+| **F-12** | A subagent dispatch can die on a transient API error having written no evidence at all. That is not a gate failure: re-dispatch into the same attempt directory and consume no retry budget. Confusing the two burns budget on infrastructure. | field run issue #105 (2026-07-18) | `references/troubleshooting.md` |
+| **F-13** | Host-runtime blindness — the test and verify phases run wherever the ORCHESTRATOR runs, which can differ from the target's runtime. A change can PROMOTE green in a Linux/bash-5 container and crash on macOS bash 3.2. Container-green is necessary, not sufficient. | field run issue #111 (2026-07-20) | `references/runtimes.md`; the operative sentence stays in `SKILL.md` |
+
+### F-70 / F-71 — an ID collision in the live record
+
+`docs/SC8_PLAN.md` §7 and `docs/field-runs/2026-08-07-issue22-*.md` both used **F-58** and
+**F-59** for different findings. The register definitions keep those IDs (they are cited by
+§8 and by this file); the field-run record is renumbered to **F-70** and **F-71**, with a
+note at each. No evidence tree was rewritten — SC-8 §6's precedent holds that trees are
+append-only history, so only the prose moved.
+
+F-71 is the finding M-5a/A2's `guard-ablation` sweep was built to answer, and SC-9 and
+SC-11 each hit its defect class again in their own first cuts.
+
+### The `ci-orb` claim was false
+
+`Makefile` and `.githooks/pre-push` said Tier 2 "closes F-13". It does not: F-13 is a macOS
+**bash-3.2** defect and `orb-ci.sh` varies only the **Node** version on `linux/arm64`. The
+claim is restated, and Tier 1 gains `bash32-scan`, which actually covers the axis — it
+looks for the trigger construct (a bare `"${arr[@]}"` under `set -u`) in the shell scripts
+this repo owns.
+
+It went red on its first run: three hits were its own explanatory comments (the same
+false-positive class `requires-lint` had, found the same way, so comments are now stripped
+first) and three were real sites in `gate.sh`, `orb-ci.sh` and `review.sh`. Those three were
+made safe with `${arr[@]+"${arr[@]}"}` rather than waived — all three arrays happen to be
+non-empty today, but "happens to be non-empty" is exactly what F-13 punished.
+
+### The tested-tree digest, and the version of it that was wrong
+
+33 of the first 73 recorded gate runs were `dirty: true`, so `git_commit` named a tree that
+was never under test. The gate now records `tested_tree`.
+
+The first design hashed `git diff HEAD` plus `git ls-files --others`, and it was **wrong**:
+the former omits untracked file *contents* and the latter lists untracked *filenames* only.
+Verified directly — two worktrees differing solely in an untracked file's contents produced
+**identical** digests under both. A temporary index and `git write-tree` gives a real tree
+object covering tracked modifications and untracked contents together, respects
+`.gitignore`, and never touches the real index. Verified to distinguish both the content
+change and the file's presence.
+
+That correction is recorded rather than quietly fixed, because the broken version looked
+entirely plausible and would have shipped a field that appeared to identify the tested tree
+while not doing so — the same shape as a fixture that appears to pin a rule and does not.

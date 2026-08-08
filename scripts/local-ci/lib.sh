@@ -22,6 +22,27 @@ ci_emit_jsonl() { printf '%s\n' "$2" >> "$1"; }
 # True if the working tree has any change (tracked or untracked-not-ignored).
 ci_dirty() { if git status --porcelain 2>/dev/null | grep -q .; then echo true; else echo false; fi; }
 
+# M-5b/B2: identify the tree that was actually TESTED, not just HEAD. 33 of the first 73
+# recorded gate runs were dirty, so `git_commit` alone names a tree that was never under
+# test.
+#
+# A first attempt hashed `git diff HEAD` and `git ls-files --others`. That was WRONG and is
+# recorded here so it is not retried: `git diff HEAD` omits untracked file CONTENTS, and
+# `git ls-files --others` lists untracked FILENAMES only. Verified directly — two worktrees
+# differing solely in an untracked file's contents produced identical digests under both.
+#
+# A temporary index gives a real tree object instead: `git add -A` against it stages tracked
+# modifications AND untracked contents, and `write-tree` hashes the result. It respects
+# .gitignore (so artifacts/ and ci_logs/ do not churn it) and never touches the real index.
+# When the tree is clean this equals HEAD^{tree}.
+ci_tested_tree() {
+  local idx
+  idx="$(mktemp -u "${TMPDIR:-/tmp}/adws-ci-index.XXXXXX")"
+  GIT_INDEX_FILE="$idx" git add -A >/dev/null 2>&1 || { rm -f "$idx"; echo unknown; return; }
+  GIT_INDEX_FILE="$idx" git write-tree 2>/dev/null || echo unknown
+  rm -f "$idx"
+}
+
 # Ollama server reachable? (does not check any specific model).
 ci_ollama_up() { curl -sf "${1:-http://localhost:11434}/api/version" >/dev/null 2>&1; }
 
