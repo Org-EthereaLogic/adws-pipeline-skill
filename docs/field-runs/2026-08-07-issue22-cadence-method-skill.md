@@ -111,3 +111,74 @@ override, the renames, and the permanent warning were all unnecessary.
 - **`job_20260807_0004`'s evidence tree is not rewritten.** It is append-only and it is
   history. Under SC-8 its verdict is no longer reproducible — the same tree now quarantines
   — which is the point, and is recorded here rather than repaired in place.
+
+## Post-merge addendum — 2026-08-08
+
+PR #77 did not merge as shipped. It drew five actionable review comments from CodeRabbit,
+and clearing them took **four remediation rounds, three of which an independent adversarial
+reviewer blocked** for introducing a defect worse than the one being fixed. Merged
+2026-08-08T18:18:00Z as `e7af5e2` after the fourth. The tracking sync landed as PR #80.
+
+This addendum records the part that is a PIPELINE finding, not a target-repo one.
+
+### F-58 — a fixture-scoped acceptance criterion set makes the grader structurally blind
+
+The run reported grader **12/12 criteria satisfied**, unanimous consensus at both gates, a
+red-for-the-right-reason falsifiability baseline on every criterion, and full fixture
+parity. The validator it certified had:
+
+- an unconstrained `path.resolve(process.cwd(), relPath)` that read files OUTSIDE the
+  checkout **and echoed their contents into finding messages** — an information-disclosure
+  path, reproduced verbatim after the fact; and
+- a `pass` verdict on malformed baseline input it could not actually compare — the exact
+  NFR-6 defect the validator exists to enforce against.
+
+Neither defect contradicted any of the twelve criteria, because all twelve were written in
+terms of FIXTURES ("on the pass fixture it emits pass", "the frozen pack carries the four
+cases…"). A grader grading the shipped diff against fixture-scoped criteria cannot see a
+defect that no fixture encodes. This is a sharper instance of the circularity already
+recorded for issue #23: there the fixtures were self-captured, here the CRITERIA themselves
+bounded what could be checked. The grader was not wrong; it was answering a question whose
+scope excluded the defect.
+
+No pipeline change is proposed yet. The honest statement is that **a 12/12 grader result
+certifies criterion coverage, not correctness**, and the execution report should not be
+read as more than that.
+
+### F-59 — a frozen fixture can pin nothing, and the pack looks identical either way
+
+Two fixtures added specifically to lock the security fix targeted paths that do not exist,
+so `ENOENT` produced output byte-identical to the guard refusing. Deleting the guard left
+both fixtures GREEN. The same mutation sweep found roughly a dozen further rules — regex
+anchors, heading-level assignments, lookaheads — pinned by no fixture at all.
+
+The technique that exposes this is cheap and should become routine for any fixture-pinned
+check: **break the rule the fixture names; the fixture must go red; restore it; it must go
+green.** Where a fixture cannot discriminate, make the code emit a distinguishing signal
+(here, a dedicated `stated_limits` sentence for a refused path, so refusal ≠ unreadable)
+rather than accepting a fixture that only re-records current behavior.
+
+### What the three blocked rounds have in common
+
+Every block was the same shape: a hand-rolled approximation of CommonMark inline-code
+masking. Round 1 let one stray backtick blank a declared table (fail → silent pass); round
+2 deleted the adjacent table cell; round 3 closed on the last backtick run where CommonMark
+closes on the first. Twice the accompanying `stated_limits` sentence asserted the residual
+error ran only toward over-reporting while a live under-report existed — an evidence
+sentence denying a real failure mode, which is worse than the mode itself.
+
+The fix was deletion, not a fourth patch: drop the extra masking and keep fenced-block
+masking, which is what the review asked for and what an example table actually is. The file
+shrank. **Operator heuristic worth carrying: when a parser heuristic needs a third patch,
+delete it and accept the over-report — the visible direction is the safe one for a gate.**
+
+### Carried forward
+
+- `job_20260807_0004`'s evidence tree is unchanged and remains history. It records the
+  PROMOTE-with-warnings the pipeline reached on 2026-08-08, not the four rounds of human-
+  and reviewer-driven remediation that followed in the target repo. Those rounds were not
+  pipeline phases and are deliberately not retrofitted into the tree.
+- The definition-grammar mismatch previously listed here as target-repo business is now
+  tracked as `Org-EthereaLogic/cadence-method-skill#78`, and blocks that repo's WP 5.4.
+- The same path-constraint and masking defect classes were confirmed live in three
+  already-landed sibling validators there, tracked as `#79`.
