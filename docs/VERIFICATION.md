@@ -1346,3 +1346,32 @@ attempts to make that string match exactly — at which point the repo's own rul
 harmonized message stands and the difference is recorded rather than tuned away.
 
 Gate: 14/14 steps pass.
+
+
+## Post-merge record — PR #47 (2026-08-08)
+
+The `M-5a → SC-9 → SC-10 → SC-11 → M-5b` series merged as one stacked PR at `26dbf0d`.
+Local CI green at the merged head: Tier 1 14/14, Tier 2 clean-room Node 20 and 24.
+
+**The external review did not run.** CodeRabbit skipped the PR — *"Review skipped: 237 files
+exceed the limit of 100"*. That matters more here than usual: this audit's own finding #13
+counted **five of the last six field runs** in which post-pipeline external review found what
+the pipeline missed, and `SC8_PLAN.md` §8's lesson is that the merge waits for the review bot
+to finish. On this PR there was no bot to wait for. The series therefore lands with local
+evidence only, and that is a weaker position than any of the individual packages claimed.
+
+The practical lesson is about PR size, not about the bots: a 237-file change is past the
+point where the external reviewer that has historically caught the pipeline's misses can
+help at all. Splitting the series into separately-mergeable PRs would have kept it under the
+limit — but SC-10's dependency on SC-9 (`SKILL.md`, `gate.sh`) and M-5b's on M-5a
+(`guard-ablation.mjs`) made that impossible after the fact. **Sequencing that preserves
+reviewability is a planning constraint, and this plan did not treat it as one.**
+
+CodeQL failed in ~3 s, as it has on every run in this repository including on `main`, and
+reports `no analysis found` — an account-wide billing lock, not a code finding. `main` is
+unprotected, so no required check was overridden and no `--admin` merge was used.
+
+**Carried forward, not acted on:** the 19 unpinned validator rules tracked in
+`parity/guard-ablation-baseline.json`; `execution-report.js` as the largest unswept surface;
+archive-before-teardown as a procedure with no mechanical enforcement; and this entry's own
+finding — that the series was not reviewable by the tool most likely to catch its defects.

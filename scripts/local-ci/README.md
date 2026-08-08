@@ -52,12 +52,26 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
   each fail by name); `run-parity.js` discovers from disk and so carries
   `EXPECTED_FIXTURE_TOTAL`, which must be updated in the same commit as any fixture
   addition or removal. If you change a count in prose, change the assertion behind it.
-- **This gate had never failed.** Across the 73 runs recorded in `ci_logs/local_ci.jsonl`
-  before M-5a, `overall` was `pass` every time and all 657 steps passed — and that is not a
-  logging artifact, since `gate.sh` sets `overall=fail` and emits the JSONL record before
-  the non-zero exit. Every finding in the F-register was found by a field run, a review
-  bot, or a human audit; none was ever found here. A green signal from a gate that has
-  never gone red carries less information than its volume suggests.
+- **This gate had never failed — and then it did, four times, on purpose.** Across the
+  first **73** runs recorded in `ci_logs/local_ci.jsonl` (everything before M-5a),
+  `overall` was `pass` every time and all **657** steps passed. That was never a logging
+  artifact: `gate.sh` sets `overall=fail` and emits the JSONL record *before* the non-zero
+  exit. Every finding in the F-register had been found by a field run, a review bot, or a
+  human audit; none was ever found here. A green signal from a gate that has never gone red
+  carries less information than its volume suggests.
+
+  The ledger is append-only, so a later recount will see **four red records**. None is a
+  regression, and each is worth reading as evidence that the new steps work:
+
+  | # | run_id | Step | What it caught |
+  |---|---|---|---|
+  | 78 | `20260808T211049Z` | `guard-ablation` | Four rules SC-9 had just added that no fixture pinned — one of them dead security-shaped code |
+  | 83 | `20260808T212913Z` | `requires` | A false positive in `requires-lint` itself: it matched `from "…"` inside comment prose. The lint was the defect; comments are now stripped |
+  | 86 | `20260808T213304Z` | `bash32-scan` | Its own first run — three of its explanatory comments, plus three real unguarded `"${arr[@]}"` sites under `set -u` |
+  | 88 | `20260808T213734Z` | `guard-ablation` | A deliberately stale baseline entry, proving the bidirectional rule fails in both directions |
+
+  Read the ledger with that in mind: "N passes, 0 failures" was the *problem* this series set
+  out to fix, not the achievement.
 - **`guard-ablation` is the first step that can fail for a reason nobody wrote a fixture
   for.** It mutates each target validator's `execute()` one rule at a time and reports any
   mutation the whole fixture corpus fails to notice. A surviving mutant means the rule it
