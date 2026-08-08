@@ -1,0 +1,15 @@
+{
+  "phase": "review",
+  "attempt": 2,
+  "job_id": "job-8c4a19",
+  "started_at": "2026-08-06T02:10:54Z",
+  "completed_at": "2026-08-06T02:17:53Z",
+  "agent": "adws-reviewer",
+  "model_tier": "opus",
+  "tier_input": {
+    "source": "operator-resolution",
+    "value": "review/attempt_1/consensus/advocate.json"
+  },
+  "gate_result": "pass",
+  "failure_reason": null
+}

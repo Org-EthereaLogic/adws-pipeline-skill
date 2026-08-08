@@ -255,8 +255,10 @@ asserted in prose that no test exercised.**
 | `fail-malformed-entry-no-path` | parity | an entry with `action` but no `file_path` → fail / high |
 | `pass-unknown-action-assessable` | parity | an unrecognized action and a missing action both stay assessable → pass / low |
 
-Corpus **90 → 93**, report **18 → 19**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and all six
-prose count sites moved with them.
+Corpus **90 → 93**, report **18 → 21**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and every prose
+count site moved with them — **eight lines across five files** (`README.md` ×2,
+`scripts/local-ci/gate.sh` ×3, `scripts/local-ci/README.md`, `.githooks/pre-push`,
+`Makefile`).
 
 ### What this round says about SC-8's own method
 
@@ -269,3 +271,69 @@ every assertion — was applied to the mechanism (revert the term, watch the fix
 but not to the CONTRACT (enumerate the input space, check the claim holds across it). The
 falsification that would have caught F-58 is not "does this fixture depend on my code" but
 "what inputs satisfy the antecedent of my claim, and have I covered them".
+
+---
+
+## 8. Second review round — F-60, F-61, F-62 (post-merge)
+
+SC-8 merged as PR #43 at 15:03:10Z. **CodeRabbit's final review arrived at 15:06:49Z**,
+three and a half minutes later, with three actionable comments. The merge was taken on an
+interim state in which the bot had posted only its summary — so "no findings" described a
+review that had not finished, and the decision to merge did not wait for one that was
+plainly still running. That is a process defect independent of the code defects it found,
+and it is recorded here as such.
+
+All three findings reproduced. Two are the SAME defect class as F-58: an invariant asserted
+across four documents, tested at the points the implementation suggested rather than across
+the inputs the claim quantifies over.
+
+| # | Severity | Finding | Evidence |
+|---|---|---|---|
+| F-60 | defect (invariant contradicted) | **Case-only transcription changes evaded detection.** The comparison normalized BOTH values before testing equality, so a wrapper reading `"PASS"` over an output of `"pass"` was accepted: **PROMOTE, exit 0**, no warning. Every validator prints lowercase, so a non-lowercase wrapper value cannot have been copied from stdout — it was retyped, which is precisely what "the wrapper is a transcription, never a judgment" forbids. The F-58 fix had made the *direction* of disagreement irrelevant while leaving the *equality test* too lenient to see one. | `execution-report.js` `collectSkillVerdicts` (pre-fix, `stdoutVerdict !== wrapperVerdict`); reproduced on an isolated copy |
+| F-61 | defect (invariant contradicted) | **Mismatches in superseded attempts were invisible.** `collectSkillVerdicts` receives `latestAttempts` only — correct and deliberate for ordinary scoring — so a wrapper/output disagreement written into a superseded attempt was neither gated nor warned: **PROMOTE, exit 10**. SC-6/F-38 and SC-7/F-52 keep superseded FAILURES out of the gate because a later attempt verifiably fixed them. That reasoning does not transfer: a superseded failure is a fixed defect, but a superseded forgery is still a forgery, and the append-only tree keeps it forever. A rewind cannot un-write a verdict no validator produced. | `execution-report.js` attempt collection; reproduced by inserting a disagreement into a superseded `build/attempt_1` of `promote_repaired_critic_fail` |
+| F-62 | docs defect | **A count of the count sites was wrong.** `VERIFICATION.md` and `SC8_PLAN.md` said "six prose sites" while the enumeration that followed listed seven locations, and the files actually carry **eight lines across five files** (`README.md` ×2, `gate.sh` ×3, `scripts/local-ci/README.md`, `.githooks/pre-push`, `Makefile`). | both docs, pre-fix |
+
+### Actions
+
+- **A10 (F-60)** — compare the RAW `rubric_result` strings for equality; normalization
+  continues to govern scoring only. `trace_mismatch` now reports both raw values
+  JSON-quoted, so `"PASS"` vs `"pass"` is legible in the warning rather than looking like a
+  no-op. Tolerance is unchanged: an absent or unrecognized `output.rubric_result` still
+  leaves the wrapper alone and raises nothing.
+- **A11 (F-61)** — superseded attempts are scanned for mismatches and those FAIL the gate,
+  asymmetrically with the superseded dissents and Critic fails beside them, which warn. The
+  integrity check moved above `evalSkillsClean`'s no-outcomes early return, so a job whose
+  only mismatch sits in a superseded attempt cannot slip through as `unverified`. Superseded
+  mismatches are named in Warnings with their attempt, since they carry no scored row.
+- **A12 (F-62)** — both docs corrected to "eight lines across five files", with the miscount
+  recorded rather than quietly fixed.
+
+### Fixtures added
+
+| Fixture | Pins |
+|---|---|
+| `quarantine_trace_mismatch_case` (job `job-5f1d73`) | wrapper `"PASS"` over output `"pass"` → QUARANTINE, exit 2 |
+| `quarantine_trace_mismatch_superseded` (job `job-8c4a19`) | disagreement in a SUPERSEDED `build/attempt_1`, every latest attempt clean → QUARANTINE, exit 2 |
+
+Report fixtures **19 → 21**.
+
+### The invariant, re-verified across the enlarged input space
+
+The 15-cell matrix from §7 was the right instrument pointed at too small a space: it varied
+the verdict VALUES but never their LETTERCASE, and never the attempt the trace sat in. The
+matrix is now **35 cells** — wrapper ∈ {`pass`, `warn`, `fail`, `PASS`, `Warn`, absent,
+unrecognized} × output ∈ {`pass`, `warn`, `fail`, absent, unrecognized} — plus the
+superseded-placement axis covered by its own fixture:
+
+- **18 disagreements** → exit 2 with the integrity warning, every one.
+- **3 agreements** (`pass`/`pass`, `warn`/`warn`, `fail`/`fail`) → 0 / 10 / 2, no warning.
+- **14 tolerant cells** (output absent or unrecognized) → wrapper honored, no warning.
+
+**What two rounds of this say.** F-58, F-60, and F-61 are one defect wearing three coats:
+each time, the claim was "EVERY mismatch quarantines" and the test was whichever mismatch
+the implementation made easiest to imagine. Direction, then lettercase, then location. The
+lesson §7 recorded — falsify the CONTRACT, not just the mechanism — was written down and
+then not applied, because the matrix that embodied it was built from the same mental model
+as the code. An invariant quantified over "every" needs its input space ENUMERATED along
+each axis the data actually varies on, and lettercase and attempt-position were axes the
+first enumeration did not know it had.

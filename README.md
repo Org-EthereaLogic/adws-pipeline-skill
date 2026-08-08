@@ -138,7 +138,7 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                            # 93/93 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 19/19 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 21/21 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill

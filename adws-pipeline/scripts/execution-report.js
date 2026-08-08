@@ -168,19 +168,30 @@ function collectSkillVerdicts(latestAttempts) {
       // the job QUARANTINEs on the existing path: an evidence-integrity breach, the same
       // class as MISSING_UPSTREAM_ARTIFACT. Absent or unrecognized `output.rubric_result`
       // (older traces, crashed validators) leaves the wrapper untouched.
-      const wrapperVerdict = normalizeSkillVerdict(trace.rubric_result);
+      // SC-8/F-60: compare the RAW strings, not the normalized verdicts. `rubric_result`
+      // must be what the validator printed, and every validator prints lowercase — so a
+      // wrapper reading "PASS" over an output of "pass" was retyped, not transcribed, and
+      // normalizing both before comparing hid exactly that. Normalization still governs
+      // SCORING (an unrecognized value is `unverified` as before); it just no longer
+      // decides whether the two agree.
+      const wrapperRaw = trace.rubric_result;
+      const wrapperVerdict = normalizeSkillVerdict(wrapperRaw);
       const output = trace.output;
       const stdoutRaw =
         output && typeof output === 'object' && !Array.isArray(output) ? output.rubric_result : undefined;
       const stdoutVerdict = normalizeSkillVerdict(stdoutRaw);
-      const mismatch = stdoutVerdict !== 'unverified' && stdoutVerdict !== wrapperVerdict;
+      // Tolerant reader: an absent or unrecognized `output.rubric_result` (pre-SC-8
+      // traces, a crashed validator) leaves the wrapper alone and raises nothing.
+      const mismatch = stdoutVerdict !== 'unverified' && wrapperRaw !== stdoutRaw;
       rows.push({
         skill_id: typeof trace.skill_id === 'string' ? trace.skill_id : skillId,
         phase: entry.phase,
         attempt: entry.attempt,
         rubric_result: mismatch ? stdoutVerdict : wrapperVerdict,
         error: typeof trace.error === 'string' ? trace.error : null,
-        trace_mismatch: mismatch ? { wrapper: wrapperVerdict, validator: stdoutVerdict } : null,
+        trace_mismatch: mismatch
+          ? { wrapper: JSON.stringify(wrapperRaw), validator: JSON.stringify(stdoutRaw) }
+          : null,
       });
     }
   }
@@ -656,8 +667,34 @@ function evalConsensus(consensusRows, supersededDissentRows) {
   };
 }
 
-function evalSkillsClean(skillVerdicts) {
+// SC-8/F-61: `supersededMismatches` carries trace/output disagreements found in NON-latest
+// attempts. Ordinary superseded outcomes stay out of the gate — SC-6/F-38 and SC-7/F-52
+// settled that a defect a later attempt verifiably fixed must not permanently fail the job,
+// and those surface as warnings instead. An integrity breach is the one thing that rule does
+// NOT cover: a superseded FAILURE is a fixed defect, but a superseded FORGERY is still a
+// forgery. Re-running a phase cannot un-write a verdict no validator produced, and the
+// append-only tree keeps it forever, so it fails the gate from wherever it sits.
+function evalSkillsClean(skillVerdicts, supersededMismatches) {
   const rows = skillVerdicts || [];
+  // Integrity is evaluated FIRST and independently of `rows`: a job whose only mismatch
+  // sits in a superseded attempt has nothing to score on the latest one, and the
+  // no-outcomes early return below would otherwise let it through as `unverified`.
+  const mismatches = rows.filter((r) => r.trace_mismatch).concat(supersededMismatches || []);
+  if (mismatches.length > 0) {
+    const detail = mismatches
+      .map((r) => `${r.skill_id} in ${r.phase}/attempt_${r.attempt} (trace ${r.trace_mismatch.wrapper} vs validator ${r.trace_mismatch.validator})`)
+      .join('; ');
+    const failures = rows.filter((r) => r.rubric_result === 'fail').length;
+    const warnings = rows.filter((r) => r.rubric_result === 'warn').length;
+    return {
+      key: 'skills_clean',
+      label: 'No skill failures or warnings',
+      status: GATE_STATUSES.FAIL,
+      value: `${mismatches.length} evidence-integrity mismatch(es), ${failures} fail, ${warnings} warn`,
+      threshold: '0 fail, 0 warn, 0 trace mismatches',
+      reason: `${mismatches.length} skill_trace.json verdict(s) disagree with their own validator output — ${detail}`,
+    };
+  }
   if (rows.length === 0) {
     return {
       key: 'skills_clean',
@@ -682,20 +719,6 @@ function evalSkillsClean(skillVerdicts) {
   // misstates any verdict is untrustworthy in both directions, so the disagreement itself
   // fails the gate and the job QUARANTINEs — which is what SKILL.md hard rule 3 and
   // references/artifact-layout.md have always claimed.
-  const mismatches = rows.filter((r) => r.trace_mismatch);
-  if (mismatches.length > 0) {
-    const detail = mismatches
-      .map((r) => `${r.skill_id} in ${r.phase}/attempt_${r.attempt} (trace "${r.trace_mismatch.wrapper}" vs validator "${r.trace_mismatch.validator}")`)
-      .join('; ');
-    return {
-      key: 'skills_clean',
-      label: 'No skill failures or warnings',
-      status: GATE_STATUSES.FAIL,
-      value: `${mismatches.length} evidence-integrity mismatch(es), ${failures} fail, ${warnings} warn`,
-      threshold: '0 fail, 0 warn, 0 trace mismatches',
-      reason: `${mismatches.length} skill_trace.json verdict(s) disagree with their own validator output — ${detail}`,
-    };
-  }
   if (failures > 0) {
     return {
       key: 'skills_clean',
@@ -838,7 +861,7 @@ function exitCodeFor(decision, warnFlag) {
 
 // --- Warnings (modeled on normalize.js buildOutstandingIssues) --------------
 
-function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, phaseAttemptRows, consensus, supersededDissents, shipDelegation }) {
+function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, phaseAttemptRows, consensus, supersededDissents, supersededMismatches, shipDelegation }) {
   const warnings = [];
   if (failureReason) {
     warnings.push(`Failure reason recorded: ${failureReason}`);
@@ -862,6 +885,16 @@ function buildWarnings({ failureReason, gates, skillVerdicts, phaseSummaries, ph
   for (const gate of gates) {
     if (gate.status === GATE_STATUSES.PASS) continue;
     warnings.push(`Gate "${gate.key}" evaluated to ${gate.status}${gate.reason ? `: ${gate.reason}` : ''}`);
+  }
+  // SC-8/F-61: superseded-attempt mismatches are named too. They carry no scored row, so
+  // without this they would fail the gate with nothing in Warnings pointing at the file.
+  for (const row of supersededMismatches || []) {
+    warnings.push(
+      `EVIDENCE INTEGRITY: skill_trace.json for "${row.skill_id}" in ${row.phase}/attempt_${row.attempt} ` +
+        `(SUPERSEDED attempt) records rubric_result=${row.trace_mismatch.wrapper} but its own ` +
+        `output.rubric_result is ${row.trace_mismatch.validator}. A later attempt cannot un-write a verdict ` +
+        `no validator produced, so this fails the gate from a superseded attempt.`
+    );
   }
   for (const row of skillVerdicts) {
     // SC-8/F-55: named FIRST and unconditionally — an evidence-integrity breach outranks
@@ -1211,6 +1244,11 @@ function buildReport(jobDir, options = {}) {
     }
   }
   const supersededDissents = collectSupersededConsensus(supersededAttempts);
+  // SC-8/F-61: superseded attempts are also scanned for trace/output disagreement. Unlike
+  // the dissents and Critic fails above — which warn, because a later attempt fixed them —
+  // an integrity breach FAILS the gate from wherever it sits: a rewind cannot un-write a
+  // verdict no validator produced.
+  const supersededMismatches = collectSkillVerdicts(supersededAttempts).filter((r) => r.trace_mismatch);
 
   // B2 (F-5): the ship phase's delegated-push sub-state, if any. When a `pr`-mode push
   // fails on missing credentials the attempt records delegation.status; the orchestrator
@@ -1234,7 +1272,7 @@ function buildReport(jobDir, options = {}) {
     evalGraderVerdict(phaseData),
     evalDriftVerdict(phaseData),
     evalConsensus(consensus, supersededDissents),
-    evalSkillsClean(skillVerdicts),
+    evalSkillsClean(skillVerdicts, supersededMismatches),
   ];
 
   const verdict = decideLifecycle({ status: finalStatus, failureReason, gates });
@@ -1248,6 +1286,7 @@ function buildReport(jobDir, options = {}) {
     phaseAttemptRows,
     consensus,
     supersededDissents,
+    supersededMismatches,
     shipDelegation,
   });
 

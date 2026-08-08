@@ -883,9 +883,14 @@ Every assertion was FALSIFIED before acceptance (M-3a discipline).
   **1.4.0**. A mismatch always produces QUARANTINE, so `decision` already carries the
   outcome machine-readably.
 - **Suite sizes are asserted, not narrated** (M-3a). `EXPECTED_FIXTURE_TOTAL` 88 → 93 and
-  report `CASES` 17 → 19 moved with their fixtures, along with all six prose sites
-  (`README.md` ×2, `gate.sh` ×2, `scripts/local-ci/README.md`, `.githooks/pre-push`,
-  `Makefile`). `review-risk-assess` joined `DIVERGED_PACKS` as `SC-8, v2.0.0`.
+  report `CASES` 17 → 21 moved with their fixtures, along with every prose count site:
+  **eight lines across five files** — `README.md` ×2, `scripts/local-ci/gate.sh` ×3,
+  `scripts/local-ci/README.md`, `.githooks/pre-push`, `Makefile`.
+  `review-risk-assess` joined `DIVERGED_PACKS` as `SC-8, v2.0.0`. *(This sentence read "six
+  prose sites" until F-62; the enumeration that followed it listed seven locations and the
+  files actually carry eight lines. A count of the count sites was itself wrong — which is
+  the joke M-3a keeps telling, and the reason the suite totals have a second source and
+  these do not.)*
 - **A second stale README count, found by looking rather than by a gate.** `README.md`
   claimed in two places that **8 of the 9** validators are byte-for-byte parity-verified.
   Registering `review-risk-assess` as diverged-by-design makes that **7 of 9**, and nothing
@@ -956,6 +961,48 @@ retained in full (62 gate + 33 orb = every run ever recorded), along with every 
 `.log` whose `run_id` is cited in `docs/` and the six most recent. Each deleted transcript's
 run record survives in the ledgers, verified by checking all 95 ids against them before
 pruning.
+
+### Second review round (post-merge) — F-60, F-61, F-62
+
+SC-8 merged as PR #43 at 15:03:10Z; **CodeRabbit's final review landed at 15:06:49Z** with
+three actionable comments. The merge was taken while the bot had posted only its summary, so
+the "no findings" reading described an unfinished review. Recorded as a process defect in its
+own right: a review still running is not a review that found nothing, and nothing forced the
+merge to that minute. Follow-up PR #45 carries the fixes.
+
+- **F-60 — case-only transcription changes evaded detection.** The equality test normalized
+  both values first, so wrapper `"PASS"` over output `"pass"` promoted at **exit 0** with no
+  warning. Every validator prints lowercase; a non-lowercase wrapper cannot have been copied
+  from stdout. Comparison is now on the RAW strings, with normalization governing scoring
+  only. Pinned by `quarantine_trace_mismatch_case`.
+- **F-61 — mismatches in superseded attempts were invisible.** `collectSkillVerdicts` sees
+  latest attempts only, so a disagreement written into a superseded attempt was neither
+  gated nor warned: **exit 10**. SC-6/F-38 and SC-7/F-52 deliberately keep superseded
+  FAILURES out of the gate because a later attempt fixed them — but a superseded failure is a
+  fixed defect and a superseded forgery is still a forgery, and a rewind cannot un-write a
+  verdict no validator produced. Superseded mismatches now fail the gate (asymmetrically with
+  the dissents beside them, which warn) and are named in Warnings. The check also moved above
+  the no-outcomes early return, so a mismatch with no scored row cannot pass as `unverified`.
+  Pinned by `quarantine_trace_mismatch_superseded`.
+- **F-62 — a count of the count sites was wrong.** Both docs said "six prose sites" while
+  enumerating seven locations; the files carry eight lines across five. Corrected, and the
+  miscount recorded.
+
+**The invariant re-verified across an enlarged space.** §7's 15-cell matrix varied verdict
+VALUES but never their LETTERCASE or the attempt the trace sat in. It is now **35 cells**
+(wrapper ∈ {`pass`,`warn`,`fail`,`PASS`,`Warn`,absent,unrecognized} × output ∈
+{`pass`,`warn`,`fail`,absent,unrecognized}) plus a superseded-placement fixture: **18**
+disagreements exit 2, the 3 agreements behave normally, and the 14 tolerant cells honor the
+wrapper. Report fixtures **19 → 21**.
+
+**What three rounds say about the method.** F-58, F-60, and F-61 are one defect in three
+coats: the claim was "every mismatch quarantines" and the test was whichever mismatch the
+implementation made easiest to imagine — direction, then lettercase, then location. §7 wrote
+down the lesson (falsify the CONTRACT, not the mechanism) and the next round did not apply
+it, because the matrix embodying it was built from the same mental model as the code. An
+invariant quantified over "every" needs its input space enumerated along each axis the data
+actually varies on; lettercase and attempt-position were axes the first enumeration did not
+know it had.
 
 **What this does NOT verify.** The same limit SC-7 recorded applies. The fixtures prove the
 report detects a mismatch and that the validator no longer false-positives; nothing here

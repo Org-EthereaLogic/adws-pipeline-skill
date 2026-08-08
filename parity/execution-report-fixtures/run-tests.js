@@ -134,6 +134,35 @@ const CASES = [
     expectWarning: 'EVIDENCE INTEGRITY',
   },
   {
+    name: 'quarantine_trace_mismatch_case',
+    jobId: 'job-5f1d73',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // SC-8/F-60 regression: wrapper "PASS" over an output of "pass". The verdicts AGREE
+    // semantically, so comparing normalized values let this through at exit 0 — but every
+    // validator prints lowercase, so a wrapper reading "PASS" was retyped rather than
+    // transcribed, which is the thing the rule forbids. Comparison is now on the raw
+    // strings; normalization still governs scoring only.
+    expectGate: { key: 'skills_clean', result: 'fail' },
+    expectWarning: 'EVIDENCE INTEGRITY',
+  },
+  {
+    name: 'quarantine_trace_mismatch_superseded',
+    jobId: 'job-8c4a19',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // SC-8/F-61 regression: the mismatch sits in a SUPERSEDED build/attempt_1 while every
+    // latest attempt is clean, so collectSkillVerdicts (latest-only, by design) never saw
+    // it and the job promoted at exit 10. SC-6/F-38 and SC-7/F-52 keep superseded FAILURES
+    // out of the gate because a later attempt fixed them; that reasoning does not extend to
+    // a forged verdict, which a rewind cannot un-write. Superseded mismatches now fail the
+    // gate and are named in Warnings.
+    expectGate: { key: 'skills_clean', result: 'fail' },
+    expectWarning: 'SUPERSEDED attempt',
+  },
+  {
     name: 'promote_resolved_dissent',
     jobId: 'job-1b2c3d',
     decision: 'PROMOTE',
