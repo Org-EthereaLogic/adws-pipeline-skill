@@ -1,0 +1,13 @@
+{
+  "source_attempt": "review/attempt_1",
+  "corrections": [
+    {
+      "check_id": "CHK007",
+      "criterion": "The registry/fixture agreement scan reports disagreement in BOTH directions, for every entry including the check's own.",
+      "expected": "A self-entry whose fixture_root is absent is reported as registry-entry-without-fixture, exactly as a sibling's would be.",
+      "actual": "The forward existence check iterates the self-filtered sibling list, so a broken self-entry returns pass/exit 0. Reproduced by the orchestrator before the rewind.",
+      "path": "scripts/validators/gate-self-test.js",
+      "classification": "code"
+    }
+  ]
+}

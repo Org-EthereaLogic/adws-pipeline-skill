@@ -1,0 +1,24 @@
+{
+  "skill_id": "review-risk-assess",
+  "version": "2.0.0",
+  "started_at": "2026-08-05T22:04:00Z",
+  "completed_at": "2026-08-05T22:04:01Z",
+  "rubric_result": "warn",
+  "latency_ms": 300,
+  "error": "OPERATOR_OVERRIDE: downgraded on the attempt that was later superseded by a rewind.",
+  "output": {
+    "rubric_result": "fail",
+    "files_changed": 9,
+    "malformed_entries": 0,
+    "deletes_count": 0,
+    "security_sensitive_count": 2,
+    "security_sensitive_paths": [
+      "src/auth/login.js",
+      "src/auth/session.js"
+    ],
+    "risk_level": "high",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

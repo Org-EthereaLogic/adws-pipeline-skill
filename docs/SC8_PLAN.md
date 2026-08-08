@@ -255,8 +255,10 @@ asserted in prose that no test exercised.**
 | `fail-malformed-entry-no-path` | parity | an entry with `action` but no `file_path` → fail / high |
 | `pass-unknown-action-assessable` | parity | an unrecognized action and a missing action both stay assessable → pass / low |
 
-Corpus **90 → 93**, report **18 → 19**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and all six
-prose count sites moved with them.
+Corpus **90 → 93**, report **18 → 19**; `EXPECTED_FIXTURE_TOTAL`, `CASES`, and every prose
+count site moved with them — **eight lines across five files** (`README.md` ×2,
+`scripts/local-ci/gate.sh` ×3, `scripts/local-ci/README.md`, `.githooks/pre-push`,
+`Makefile`).
 
 ### What this round says about SC-8's own method
 
@@ -269,3 +271,102 @@ every assertion — was applied to the mechanism (revert the term, watch the fix
 but not to the CONTRACT (enumerate the input space, check the claim holds across it). The
 falsification that would have caught F-58 is not "does this fixture depend on my code" but
 "what inputs satisfy the antecedent of my claim, and have I covered them".
+
+---
+
+## 8. Second review round — F-60, F-61, F-62 (post-merge)
+
+SC-8 merged as PR #43 at 15:03:10Z. **CodeRabbit's final review arrived at 15:06:49Z**,
+three and a half minutes later, with three actionable comments. The merge was taken on an
+interim state in which the bot had posted only its summary — so "no findings" described a
+review that had not finished, and the decision to merge did not wait for one that was
+plainly still running. That is a process defect independent of the code defects it found,
+and it is recorded here as such.
+
+All three findings reproduced. Two are the SAME defect class as F-58: an invariant asserted
+across four documents, tested at the points the implementation suggested rather than across
+the inputs the claim quantifies over.
+
+| # | Severity | Finding | Evidence |
+|---|---|---|---|
+| F-60 | defect (invariant contradicted) | **Case-only transcription changes evaded detection.** The comparison normalized BOTH values before testing equality, so a wrapper reading `"PASS"` over an output of `"pass"` was accepted: **PROMOTE, exit 0**, no warning. Every validator prints lowercase, so a non-lowercase wrapper value cannot have been copied from stdout — it was retyped, which is precisely what "the wrapper is a transcription, never a judgment" forbids. The F-58 fix had made the *direction* of disagreement irrelevant while leaving the *equality test* too lenient to see one. | `execution-report.js` `collectSkillVerdicts` (pre-fix, `stdoutVerdict !== wrapperVerdict`); reproduced on an isolated copy |
+| F-61 | defect (invariant contradicted) | **Mismatches in superseded attempts were invisible.** `collectSkillVerdicts` receives `latestAttempts` only — correct and deliberate for ordinary scoring — so a wrapper/output disagreement written into a superseded attempt was neither gated nor warned: **PROMOTE, exit 10**. SC-6/F-38 and SC-7/F-52 keep superseded FAILURES out of the gate because a later attempt verifiably fixed them. That reasoning does not transfer: a superseded failure is a fixed defect, but a superseded forgery is still a forgery, and the append-only tree keeps it forever. A rewind cannot un-write a verdict no validator produced. | `execution-report.js` attempt collection; reproduced by inserting a disagreement into a superseded `build/attempt_1` of `promote_repaired_critic_fail` |
+| F-62 | docs defect | **A count of the count sites was wrong.** `VERIFICATION.md` and `SC8_PLAN.md` said "six prose sites" while the enumeration that followed listed seven locations, and the files actually carry **eight lines across five files** (`README.md` ×2, `gate.sh` ×3, `scripts/local-ci/README.md`, `.githooks/pre-push`, `Makefile`). | both docs, pre-fix |
+
+### Actions
+
+- **A10 (F-60)** — compare the RAW `rubric_result` strings for equality; normalization
+  continues to govern scoring only. `trace_mismatch` now reports both raw values
+  JSON-quoted, so `"PASS"` vs `"pass"` is legible in the warning rather than looking like a
+  no-op. Tolerance is unchanged: an absent or unrecognized `output.rubric_result` still
+  leaves the wrapper alone and raises nothing.
+- **A11 (F-61)** — superseded attempts are scanned for mismatches and those FAIL the gate,
+  asymmetrically with the superseded dissents and Critic fails beside them, which warn. The
+  integrity check moved above `evalSkillsClean`'s no-outcomes early return, so a job whose
+  only mismatch sits in a superseded attempt cannot slip through as `unverified`. Superseded
+  mismatches are named in Warnings with their attempt, since they carry no scored row.
+- **A12 (F-62)** — both docs corrected to "eight lines across five files", with the miscount
+  recorded rather than quietly fixed.
+
+### Fixtures added
+
+| Fixture | Pins |
+|---|---|
+| `quarantine_trace_mismatch_case` (job `job-5f1d73`) | wrapper `"PASS"` over output `"pass"` → QUARANTINE, exit 2 |
+| `quarantine_trace_mismatch_superseded` (job `job-8c4a19`) | disagreement in a SUPERSEDED `build/attempt_1`, every latest attempt clean → QUARANTINE, exit 2 |
+
+Report fixtures **19 → 21**.
+
+### The invariant, re-verified across the enlarged input space
+
+The 15-cell matrix from §7 was the right instrument pointed at too small a space: it varied
+the verdict VALUES but never their LETTERCASE, and never the attempt the trace sat in. The
+matrix is now **35 cells** — wrapper ∈ {`pass`, `warn`, `fail`, `PASS`, `Warn`, absent,
+unrecognized} × output ∈ {`pass`, `warn`, `fail`, absent, unrecognized} — plus the
+superseded-placement axis covered by its own fixture:
+
+- **18 disagreements** → exit 2 with the integrity warning, every one.
+- **3 agreements** (`pass`/`pass`, `warn`/`warn`, `fail`/`fail`) → 0 / 10 / 2, no warning.
+- **14 tolerant cells** (output absent or unrecognized) → wrapper honored, no warning.
+
+**What two rounds of this say.** F-58, F-60, and F-61 are one defect wearing three coats:
+each time, the claim was "EVERY mismatch quarantines" and the test was whichever mismatch
+the implementation made easiest to imagine. Direction, then lettercase, then location. The
+lesson §7 recorded — falsify the CONTRACT, not just the mechanism — was written down and
+then not applied, because the matrix that embodied it was built from the same mental model
+as the code. An invariant quantified over "every" needs its input space ENUMERATED along
+each axis the data actually varies on, and lettercase and attempt-position were axes the
+first enumeration did not know it had.
+
+### Review of the follow-up itself (PR #45)
+
+This time the merge waited for the review. CodeRabbit returned five inline comments; three
+were valid and fixed on the branch, one is a false positive, one is inherited.
+
+- **Valid — double-quoted mismatch values.** `trace_mismatch` stored `JSON.stringify(raw)`,
+  and the warning template quoted it again, rendering `rubric_result=""PASS""`. The raw
+  values are now stored unencoded and every display site quotes exactly once through a
+  `quoteRaw` helper, which also renders a missing or non-string value legibly
+  (`undefined`, `null`) instead of as an empty gap.
+- **Valid — §7's report-count transition.** Correcting F-62's prose count, this document's
+  §7 had been edited to read `18 → 21`, folding two rounds into the historical sentence.
+  §7 belongs to the F-58/F-59 round and is restored to **18 → 19**; §8 carries **19 → 21**.
+- **Valid — incoherent fixture timestamps.** `quarantine_trace_mismatch_superseded` carried
+  phase manifests dated 2026-07-10 inside a job window of 2026-08-05/06, with skill traces
+  running before the phases that contained them. Twelve files were remapped into a coherent
+  timeline inside the run window.
+- **False positive — "the case fixture does not exercise the mismatch."** The comment reads
+  `build/attempt_1/skills/adws-lint/skill_trace.json`, which has no `output` by design (it
+  is inherited from `promote_clean` and is one of the tolerant-reader cases). The fixture's
+  mismatch lives in `review/attempt_1/skills/review-risk-assess/skill_trace.json`, wrapper
+  `"PASS"` over output `"pass"`, and the gate records
+  `skills_clean | fail | … (trace "PASS" vs validator "pass")`. Not changed.
+- **Observed, not changed — the source fixture has the same timestamp defect.**
+  `promote_repaired_critic_fail` (merged under SC-7) mixes two lineages: the attempt_2
+  directories it authored use the Aug 5–6 window while everything inherited from
+  `promote_clean` kept 2026-07-10, so its `run_manifest` window excludes most of its own
+  phases. My clone inherited that and is now fixed; the source is left as merged, since
+  repairing a passing fixture from another scope change is not this change's business.
+  Recorded here so the next person to clone it knows. `artifact-layout.md` rule 9 governs
+  timestamp integrity for real evidence trees; nothing asserts it for fixtures, which is
+  why this survived a merge.

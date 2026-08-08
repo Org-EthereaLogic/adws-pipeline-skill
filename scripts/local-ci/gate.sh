@@ -3,7 +3,7 @@
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 93
-# validator-parity fixtures, 19 report-verdict fixtures, 7 stability-gate fixtures,
+# validator-parity fixtures, 21 report-verdict fixtures, 7 stability-gate fixtures,
 # 3 provenance-schema fixtures, and the SC-3 contract micro-drill — plus a syntax floor,
 # shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
 # (Tier 2); local-LLM review lives in review.sh (Tier 3).
@@ -77,7 +77,7 @@ shell_lint() {
   return $rc
 }
 
-# Deterministic suites (must stay green: 93 / 19 / 7 + provenance 3 + SC-3 drill).
+# Deterministic suites (must stay green: 93 / 21 / 7 + provenance 3 + SC-3 drill).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
