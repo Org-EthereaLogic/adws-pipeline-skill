@@ -1,13 +1,17 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.6 (SC-6 scope change §16, 2026-08-06)
+**Version:** 1.11 (SC-11 scope change §20, 2026-08-08)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
 `acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
-(§13), SC-5 (§14), and SC-6 (§16) approved per R-6; maintenance audits M-1 (§12),
-M-2 (§15), and M-3 (§17) are defect fixes, not revisions. Governing version: 1.6.
+(§13), SC-5 (§14), SC-6 (§16), SC-7 (§18), SC-8 (§19), and SC-9 / SC-10 / SC-11 (§20)
+approved per R-6; maintenance audits M-1 (§12), M-2 (§15), M-3 (§17), M-4 (§18) and
+M-5a / M-5b (§20) are defect fixes, not revisions. Governing version: 1.11.
+*(This header had itself gone stale: it read "Version 1.6 / SC-6" while §18 and §19 already
+recorded SC-7 and SC-8. Brought current in §20 — a tracking document that lags its own
+sections is the documentation form of a count no consumer compares, F-41.)*
 **Companion document:** `WBS.md`
 
 ---
@@ -863,3 +867,98 @@ fixtures **17 → 19**; `review-risk-assess` v1.0.0 → **v2.0.0**, diverged-by-
 permanent warning, and the renames in the deliverable were all unnecessary. Run against a
 copy of the same evidence tree, the new report moves it from PROMOTE/exit 10 to
 **QUARANTINE/exit 2**, naming the wrapper/output disagreement first among the warnings.
+
+---
+
+## 20. Audit-driven remediation: M-5a, SC-9, SC-10, SC-11, M-5b (2026-08-08) — APPROVED
+
+Source: `docs/AUDIT_2026-08-08.md` — an audit of the skill against its own recorded
+evidence (13 field runs, 73 local-CI and 40 OrbStack records, the parity report, the
+acceptance evidence, `SKILL.md`, the 10 agent definitions, every executable in the repo).
+Package plans: `M5A_PLAN.md`, `SC9_PLAN.md`, `SC10_PLAN.md`, `SC11_PLAN.md`, `M5B_PLAN.md`.
+Verification: `VERIFICATION.md` §M-5a…§M-5b.
+
+### What the audit found
+
+The pipeline's behaviour was not the problem. Its self-knowledge was. **The Tier-1 gate had
+never gone red** in 73 recorded runs — 657/657 steps green — and every finding in the
+F-register had been located by a field run, a review bot, or a human audit, never by CI. On
+top of that, the record already contained two warnings nobody had acted on: a validator that
+took **grader 12/12 and unanimous consensus at both gates while shipping an
+information-disclosure path**, and a security fix whose two locking fixtures stayed **green
+when the guard was deleted**.
+
+Three defects were reproduced live, all sitting in the band the suite did not test —
+`run-parity.js` ran each validator's CLI exactly once per pack, happy path only.
+
+### Findings (F-63…F-71)
+
+| ID | Finding | Package |
+|---|---|---|
+| F-63 | `repo-context-scan` used `{}`; a `__proto__` path segment threw *before* the policy loop completed, so the build-phase policy gate was **skipped, not failed** | SC-9 |
+| F-64 | `branch_name` length-checked only, in **both** ship validators — the documented pre-git gate — while the value reaches `git push`. `{slug}` was undefined anywhere in the spec | SC-9 |
+| F-65 | Unbounded `Math.max(...abs)` spread; `RangeError` at 200k entries. No input-size cap existed anywhere | SC-9 |
+| F-66 | Six agents instructed to write evidence files while declaring no `Write` tool | SC-10 |
+| F-67 | Predictable `os.tmpdir()` path written with `writeFileSync` in the parity harness | M-5a |
+| F-68 | `install.sh` destroyed user edits with no backup, prompt or diff | SC-10 |
+| F-69 | `safeReadJson` conflated unreadable and malformed evidence with absent | SC-11 |
+| F-70 | Fixture-scoped acceptance criteria make the grader structurally blind *(renumbered from a colliding F-58)* | recorded |
+| F-71 | A frozen fixture can pin nothing, and the pack looks identical either way *(renumbered from a colliding F-59)* | M-5a answers |
+
+Also closed: **F-17**, open since SC-3 across five scope changes — WONTFIX-with-substitute,
+because per-subagent token and cost accounting is not obtainable from the runtime. The
+obtainable half (wall-clock, agent, requested tier) became mandatory and typed; the
+unavailable half is retained and explicitly null so a reader can tell *not captured* from
+*field dropped*. And the **grader mandate ambiguity**, open since a field run graded the same
+criterion class two defensible ways: settled as diff-only.
+
+### The sequence, and why it is a stack
+
+`main → M-5a → SC-9 → SC-10 → SC-11 → M-5b`. M-5a lands first and alone because every SC-9
+claim would otherwise be verified by a gate with no demonstrated ability to fail — the
+F-58/F-60/F-61 pattern §19 named, recurring a third time. The plan called SC-10 and M-5b
+independent; **they are not.** SC-10 and SC-9 both edit `SKILL.md` and `gate.sh`; M-5b
+extends the `guard-ablation.mjs` and `cli-contract` runner M-5a introduces. Merge in order.
+
+### What changed
+
+- **M-5a** — a CLI-contract suite over all 11 shipped CLIs (every exit-3 path, both input
+  modes; stdin had no coverage at all before), the `guard-ablation` sweep, a wrapper
+  byte-identity lint, `mkdtempSync`.
+- **SC-9** — three packs to `v2.0.0` and into `DIVERGED_PACKS`; corpus **93 → 108**; the
+  `patch-compose` undercount recorded in three runs and deferred each time, fixed.
+- **SC-10** — six `Write` grants asserted from the agent *body* (a hand-written list had
+  already missed one); agent-block drift lint; `SKILL.md` **425 → 337**; the installer.
+- **SC-11** — unreadable evidence quarantines instead of scoring clean; report fixtures
+  **21 → 24**, provenance **3 → 5**; the vocabulary mapping; archive-before-teardown.
+- **M-5b** — the false `ci-orb` "closes F-13" claim restated and the axis actually covered;
+  `tested_tree`; the F-58/F-59 collision; `guard-ablation` to all nine packs; fixture
+  baseline provenance; harness consolidation.
+
+### What this scope change says about its own method
+
+Three times the new machinery caught the new work. `guard-ablation` **failed the gate on
+SC-9's own first cut**, naming four unpinned rules — one of which was dead security-shaped
+code. SC-11's first two quarantine fixtures were **vacuous**: they tripped a different gate
+and passed with the fix fully reverted, F-71's exact class reproduced inside the remediation
+for it. And M-5b's first tested-tree digest produced **identical hashes** for trees differing
+in untracked content. Each is recorded in its plan rather than quietly fixed, because in all
+three the broken version looked entirely plausible and would have shipped green.
+
+The honest counters moved the wrong way on purpose: validator parity is now stated as **4 of
+9** byte-for-byte (down from 7 — scope changes were approved, not parity lost), and the
+parity report reports **39 original-parity fixtures and 69 frozen-baseline regression**
+instead of "108/108 identical".
+
+**Invariants held:** no `SCHEMA_VERSION` bump; the decision set (PROMOTE / RETRY /
+QUARANTINE) and exit codes unchanged; NFR-4 preserved (no shared module under
+`scripts/validators/`, `checkRequires` untouched, every validator still standalone on Node
+built-ins); NFR-3 holds (`SKILL.md` **359** < 500 — SC-10 cut it 425 → 337 and SC-11 added
+back 22 lines of mandatory archive and provenance procedure); **20 pre-existing fixtures in the three
+SC-9 packs changed zero verdicts**; no recorded evidence tree rewritten.
+
+**Still open, recorded rather than closed:** 19 unpinned rules across six validators
+(tracked bidirectionally in `parity/guard-ablation-baseline.json`); `execution-report.js` is
+the largest unswept surface and needs a different mechanism; archive-before-teardown is a
+mandated procedure with no mechanical enforcement; F-0, F-1, F-42 and F-43 are referenced
+but never defined; **R-3 remains open**.

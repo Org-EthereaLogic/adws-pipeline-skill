@@ -5,6 +5,12 @@
 **Date:** 2026-07-14
 **Companion document:** `DPPD.md` (requirement/story IDs referenced below)
 
+**Latest (2026-08-08):** audit-driven remediation `M-5a → SC-9 → SC-10 → SC-11 → M-5b`
+landed as one stacked series — see `DPPD.md` §20 and `docs/AUDIT_2026-08-08.md`. Parity
+**93 → 108**, report fixtures **21 → 24**, provenance **3 → 5**, `SKILL.md` **425 → 359** net (SC-10 cut it to 337; SC-11 added back mandatory procedure);
+gate steps 9 → 14. `SCHEMA_VERSION` unchanged. Three security defects (F-63…F-65) fixed and
+re-verified; F-17 and the grader-mandate ambiguity closed after five scope changes open.
+
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;
