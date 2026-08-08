@@ -3,25 +3,21 @@
     "build_output": {
       "files_changed": [
         {
-          "file_path": "src/a.js",
+          "file_path": "src/index.js",
           "action": "modify"
-        },
-        {
-          "file_path": "src/b.js",
-          "action": "create"
         }
       ]
     },
-    "output_mode": "direct_branch",
-    "branch_name": "feat/adws/job_009"
+    "output_mode": "pr",
+    "branch_name": "adws/job_20260808_0001/fix-the-thing"
   },
-  "note": "Authored — direct_branch mode with files and branch present: pass",
+  "note": "SC-9/A2 non-over-rejection pin: the branch shape SKILL.md actually generates must pass.",
   "expected": {
     "rubric_result": "pass",
-    "files_to_ship": 2,
-    "build_files": 2,
+    "files_to_ship": 1,
+    "build_files": 1,
     "docs_files": 0,
-    "output_mode": "direct_branch",
+    "output_mode": "pr",
     "has_branch_name": true,
     "branch_name_valid": true,
     "branch_name_problem": null,

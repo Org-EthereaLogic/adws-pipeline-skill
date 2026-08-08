@@ -1,0 +1,47 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Write outside the allowed root under a policy that contains an empty prefix.",
+      "file_change_proposal": [
+        {
+          "file_path": "vendor/thing.js",
+          "action": "create",
+          "description": "outside src/, and the policy carries a stray empty entry"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "",
+        "   ",
+        "src/"
+      ]
+    }
+  },
+  "note": "SC-9/A1(c) pin for normalizePrefixes. An empty or whitespace-only entry carries no bound. Before normalization it would have matched every path, so `allowed_paths: ['', 'src/']` would silently permit everything -- a policy that reads restrictive and behaves as none. Reverting normalizePrefixes alone flips this fixture from fail to pass.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "vendor": [
+        {
+          "file": "vendor/thing.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "vendor/thing.js",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Write outside the allowed root under a policy that contains an empty prefix.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

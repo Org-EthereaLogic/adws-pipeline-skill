@@ -13,6 +13,8 @@
     "mode_valid": true,
     "policy_consistent": true,
     "has_branch_name": true,
+    "branch_name_valid": true,
+    "branch_name_problem": null,
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

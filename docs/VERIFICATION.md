@@ -1095,3 +1095,58 @@ each in-process `execute()` call.
 per dispatch and never co-load. The 9,340 byte-identical bytes are a drift problem, not a
 token problem, so the fix is a lint rather than a refactor. `SKILL.md` is where the token
 win is (SC-10/A3).
+
+## SC-9 (2026-08-08, audit findings F-63…F-65) — hostile input is input
+
+Plan: `docs/SC9_PLAN.md`. Findings: `docs/AUDIT_2026-08-08.md` §2. Depends on M-5a.
+
+Three defects, all reproduced before the fix and all re-verified after. Each had shipped
+through every gate this repo has, because the two suites that would have caught them did
+not exist until M-5a: the CLI was covered by one happy-path assertion per pack, and nothing
+checked whether a fixture pinned anything.
+
+| Finding | Before | After |
+|---|---|---|
+| **F-63** — `{}` inherits `Object.prototype`, so a `__proto__` path segment threw *before* the policy loop completed. The build-phase policy gate was **skipped**, not failed. | `adws-validator: execute failed: groupedFiles[dir].push is not a function`, exit 3, no verdict | `rubric=fail`, violations `outside_allowed_paths + in_blocked_path`, exit 0 |
+| **F-64** — `branch_name` length-checked only, in both ship validators, which SKILL.md documents as the pre-git gate | `--upload-pack=/tmp/evil` → `pass`; `foo; rm -rf ~` → `pass` | `fail (leading_dash_reads_as_option)` and `fail (illegal_character)`, in both validators |
+| **F-65** — unbounded `Math.max(...abs)` spread | `RangeError: Maximum call stack size exceeded` at 200k entries | 500k entries → `band=SAFE` in 41 ms |
+| **undercount** — `files_to_ship` counted the build half only; recorded in three field runs and deferred each time | 2 build + 2 docs → `files_to_ship: 2` | `files_to_ship: 4` (`build_files: 2`, `docs_files: 2`) |
+
+### The invariant this package turns on
+
+**Zero pre-existing verdicts moved.** All 20 pre-existing fixtures across the three
+diverged packs were re-verified against `git show HEAD:` — every `rubric_result` is
+unchanged; only additive keys differ. Corpus 93 → 108 (15 new pins).
+`drift-sentinel` did **not** diverge: the fold returns the identical value for every input
+the spread survived, so all 16 of its fixtures are byte-identical.
+
+### What went red, and why that is the finding
+
+`guard-ablation` **failed the gate on SC-9's own first cut**, naming four rules the new
+fixtures did not pin: the empty-prefix branch of `underPrefix`, both absolute-path guards,
+and the malformed-entry count. Three were closed with fixtures. The fourth — an explicit
+`startsWith('/')` test — proved to be **dead code**: `/etc/passwd` splits to
+`['', 'etc', 'passwd']`, so the empty-segment rule already rejected it. It was deleted
+rather than exempted; a redundant guard is a rule readers will trust twice.
+
+This is the first time a check in this repository has failed for a reason nobody wrote a
+fixture for. It is also the exact scenario the issue-#22 field record described and no
+mechanism addressed: *"deleting the guard left both fixtures green."* Without it SC-9 would
+have shipped four unpinned rules and one piece of dead security-shaped code, and every
+suite would have been green.
+
+Final: 35 mutants, 409 `execute()` calls, **0 survivors**, 13 ms.
+
+### Harness change
+
+`--freeze` requires `ADWS_PRO_source/`, which is gitignored and absent, so a scope change
+that adds output keys could not land at all. Added `--freeze-diverged`: for a diverged pack
+the port **is** the reference by definition, so no original is needed. It refuses to touch
+a non-diverged pack, so it cannot launder a baseline that is supposed to come from the
+original. Refreezing all five diverged packs left `criteria-to-checks` and
+`review-risk-assess` byte-identical — independent evidence the freeze path is faithful for
+unchanged code.
+
+Validator parity is now **4 of 9** byte-for-byte against the originals, down from 7. The
+count fell because scope changes were approved, not because parity degraded, but the honest
+number is the smaller one and `README.md` states it.

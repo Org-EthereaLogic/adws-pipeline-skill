@@ -94,7 +94,9 @@ material and is not installed alongside the skill.)
 5. Build/test/review happen in an isolated git worktree. The primary checkout is
    untouched until ship (FR-8). Evidence goes to the primary checkout's `artifacts/`.
 6. Git: stage explicit paths only — never `git add -A` or `git add .`; never `--force`,
-   never `--no-verify`, never bypass hooks (NFR-5).
+   never `--no-verify`, never bypass hooks (NFR-5). Never interpolate a value into a git
+   command before the ship validators have passed on it, and where the command supports
+   it, terminate option parsing with `--` (SC-9/A2).
 7. An Advocate dissent is recorded verbatim and blocks promotion until the operator
    resolves it or the job terminates with `ADVOCATE_DISSENT` (FR-7).
 8. The final verdict comes from `scripts/execution-report.js` over the evidence tree —
@@ -129,6 +131,17 @@ unavailable, create explicitly from the primary checkout:
 ```
 git worktree add ../{repo}-adws-{jobId} -b adws/{jobId}/{slug} {target_branch}
 ```
+
+`{slug}` is derived deterministically from the contract, never improvised: lowercase
+`task.title`, replace every run of `[^a-z0-9]` with `-`, collapse repeats, strip leading
+and trailing `-`, truncate to 32 characters; if the result is empty, use `task`. The full
+`branch_name` is `adws/{jobId}/{slug}`.
+
+**Run `ship-mode-select` on `{ output_mode, branch_name }` BEFORE the first git command
+that consumes the branch name** (SC-9/A2). A `fail` there is a pre-git gate failure — do
+not create the worktree. Before SC-9 the only check was that the name was non-empty, so
+`--upload-pack=/tmp/evil` and `foo; rm -rf ~` both passed the validator that exists to be
+checked before git.
 
 Record `worktree_path` and `branch_name` in `run_manifest.json`. Never run the
 pipeline's code changes in the primary checkout.

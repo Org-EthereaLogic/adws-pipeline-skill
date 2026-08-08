@@ -8,6 +8,7 @@
     "grouped_files": {},
     "policy_violations": [],
     "underspecified": true,
+    "malformed_entries": 0,
     "plan_summary": null,
     "cost_usd": 0,
     "token_count": 0,

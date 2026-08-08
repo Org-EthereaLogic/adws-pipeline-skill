@@ -1,0 +1,22 @@
+{
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "foo; rm -rf ~",
+    "policy": {
+      "allow_direct_commit": true
+    }
+  },
+  "note": "SC-9/A2 pin. Reproduced live before SC-9: returned `pass`. Nothing in the spec constrains how the agent quotes branch_name for the shell. Reverting BRANCH_NAME_CHARSET alone flips this fixture.",
+  "expected": {
+    "rubric_result": "fail",
+    "output_mode": "pr",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "branch_name_valid": false,
+    "branch_name_problem": "illegal_character",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

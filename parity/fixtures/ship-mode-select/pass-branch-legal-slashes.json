@@ -1,0 +1,22 @@
+{
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "adws/job_20260808_0001/fix-the-thing",
+    "policy": {
+      "allow_direct_commit": true
+    }
+  },
+  "note": "SC-9/A2 non-over-rejection pin. This is the exact shape SKILL.md tells the orchestrator to generate (adws/{jobId}/{slug}). A guard that rejected slashes, digits or underscores would flip this fixture, so it bounds the guard from the permissive side.",
+  "expected": {
+    "rubric_result": "pass",
+    "output_mode": "pr",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "branch_name_valid": true,
+    "branch_name_problem": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

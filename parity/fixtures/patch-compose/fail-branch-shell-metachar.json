@@ -3,24 +3,24 @@
     "build_output": {
       "files_changed": [
         {
-          "file_path": "src/a.js",
+          "file_path": "src/index.js",
           "action": "modify"
         }
       ]
     },
-    "output_mode": "patch",
-    "branch_name": "feat/adws/job_001"
+    "output_mode": "pr",
+    "branch_name": "foo; rm -rf ~"
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when files, output mode, and branch are all valid\"",
+  "note": "SC-9/A2 pin. Reproduced live before SC-9: returned `pass`.",
   "expected": {
-    "rubric_result": "pass",
+    "rubric_result": "fail",
     "files_to_ship": 1,
     "build_files": 1,
     "docs_files": 0,
-    "output_mode": "patch",
+    "output_mode": "pr",
     "has_branch_name": true,
-    "branch_name_valid": true,
-    "branch_name_problem": null,
+    "branch_name_valid": false,
+    "branch_name_problem": "illegal_character",
     "composition_valid": true,
     "malformed_entries": 0,
     "cost_usd": 0,

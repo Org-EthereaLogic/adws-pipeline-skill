@@ -30,6 +30,7 @@
     },
     "policy_violations": [],
     "underspecified": false,
+    "malformed_entries": 0,
     "plan_summary": null,
     "cost_usd": 0,
     "token_count": 0,

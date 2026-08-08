@@ -2,7 +2,7 @@
 # gate.sh — TIER 1 local CI: the fast deterministic host gate (zero-LLM, ~seconds).
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
-# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 93
+# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 108
 # validator-parity fixtures, 21 report-verdict fixtures, 7 stability-gate fixtures,
 # 3 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
 # suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
@@ -81,14 +81,14 @@ shell_lint() {
   return $rc
 }
 
-# Deterministic suites (must stay green: 93 / 21 / 7 + provenance 3 + SC-3 drill
+# Deterministic suites (must stay green: 108 / 21 / 7 + provenance 3 + SC-3 drill
 # + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
 run_step "provenance"    node parity/provenance-fixtures/run-tests.js
 run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
-# CLI contract: the 279 duplicated wrapper lines and stdin mode, which the parity
+# CLI contract: the nine duplicated wrapper copies and stdin mode, which the parity
 # fixtures cannot reach (they call execute() directly via exec-one.js).
 run_step "cli-contract"  node parity/cli-contract/run-tests.js
 # Anti-vacuity: does the fixture corpus actually PIN the rules it appears to test?

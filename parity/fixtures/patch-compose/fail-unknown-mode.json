@@ -14,9 +14,14 @@
   "expected": {
     "rubric_result": "fail",
     "files_to_ship": 1,
+    "build_files": 1,
+    "docs_files": 0,
     "output_mode": "unknown",
     "has_branch_name": true,
+    "branch_name_valid": true,
+    "branch_name_problem": null,
     "composition_valid": false,
+    "malformed_entries": 0,
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

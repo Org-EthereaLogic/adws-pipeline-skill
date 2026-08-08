@@ -1,0 +1,68 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Two absolute-path forms that a relative prefix policy cannot bound.",
+      "file_change_proposal": [
+        {
+          "file_path": "/etc/passwd",
+          "action": "modify",
+          "description": "POSIX absolute path"
+        },
+        {
+          "file_path": "C:\\Windows\\system32\\drivers\\etc\\hosts",
+          "action": "modify",
+          "description": "Windows absolute path with a drive letter"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "SC-9/A1(c) pin for isSafeRelativePath. The POSIX absolute path is rejected by the empty-leading-segment rule ('/etc/passwd' splits to ['','etc','passwd']); the Windows drive-letter path has no empty segment and needs its own test, so both forms are exercised here. policy_violations is compared element-by-element, so weakening either path to 'outside_allowed_paths' fails the comparison. An explicit startsWith('/') guard was written alongside these and guard-ablation proved it dead — deleting it left every fixture green — so it was removed rather than exempted.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 2,
+    "directories_touched": 2,
+    "grouped_files": {
+      "/etc": [
+        {
+          "file": "/etc/passwd",
+          "action": "modify"
+        }
+      ],
+      ".": [
+        {
+          "file": "C:\\Windows\\system32\\drivers\\etc\\hosts",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "/etc/passwd",
+        "reason": "unsafe_path"
+      },
+      {
+        "file": "/etc/passwd",
+        "reason": "outside_allowed_paths"
+      },
+      {
+        "file": "C:\\Windows\\system32\\drivers\\etc\\hosts",
+        "reason": "unsafe_path"
+      },
+      {
+        "file": "C:\\Windows\\system32\\drivers\\etc\\hosts",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Two absolute-path forms that a relative prefix policy cannot bound.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

@@ -10,10 +10,12 @@ Every phase runs as a fresh subagent, every gate is backed by a standalone valid
 every decision is written to an append-only evidence tree — so job outcomes are decided by
 evidence, not by narrative.
 
-> Ported from the internal **ADWS_Pro** system; 7 of the 9 deterministic validators are
-> verified byte-for-byte against the originals — `criteria-to-checks` and
-> `review-risk-assess` are deliberately diverged (both v2.0.0) and verified against frozen
-> baselines (see [Validation](#validation)).
+> Ported from the internal **ADWS_Pro** system; 4 of the 9 deterministic validators are
+> verified byte-for-byte against the originals. Five are deliberately diverged (all
+> v2.0.0) under approved scope changes and verified against frozen baselines:
+> `criteria-to-checks` (SC-1 + SC-5), `review-risk-assess` (SC-8), and
+> `repo-context-scan` / `patch-compose` / `ship-mode-select` (SC-9)
+> (see [Validation](#validation)).
 
 ---
 
@@ -137,7 +139,7 @@ install.sh                one-command install/port helper
 Run the suites (dependency-free, plain Node):
 
 ```bash
-node parity/run-parity.js                            # 93/93 validator-parity fixtures
+node parity/run-parity.js                            # 108/108 validator-parity fixtures
 node parity/execution-report-fixtures/run-tests.js   # 21/21 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 3/3 provenance-schema fixtures
@@ -148,7 +150,7 @@ node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rul
 
 `make local-ci` runs all seven plus the static floors and skill lints.
 
-- **CLI contract:** the 31-line wrapper each validator ends with is duplicated nine times
+- **CLI contract:** the wrapper each validator ends with is duplicated nine times
   and, before M-5a, was covered by one happy-path assertion per pack. The contract suite
   exercises every input-rejection path (missing argv, unreadable path, invalid JSON,
   non-object JSON) and both input modes for all nine, plus `entropy-gate.js` and
@@ -160,11 +162,15 @@ node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rul
   pins. Accepted survivors and the measured cost live in
   `parity/guard-ablation-baseline.json`.
 
-- **Validator parity:** 7 of 9 validators are verified byte-for-byte against the ADWS_Pro
-  originals; `criteria-to-checks` (v2.0.0, see `docs/DPPD.md` §9 and §14) and
-  `review-risk-assess` (v2.0.0, see `docs/SC8_PLAN.md`) are deliberately diverged and
-  verified against frozen baselines. Parity reproduces from a fresh clone via each fixture's
-  frozen `expected` field — no access to the private original is required.
+- **Validator parity:** 4 of 9 validators are verified byte-for-byte against the ADWS_Pro
+  originals. Five are deliberately diverged under approved scope changes and verified
+  against frozen baselines: `criteria-to-checks` (v2.0.0, `docs/DPPD.md` §9 and §14),
+  `review-risk-assess` (v2.0.0, `docs/SC8_PLAN.md`), and `repo-context-scan` /
+  `patch-compose` / `ship-mode-select` (all v2.0.0, `docs/SC9_PLAN.md`). Parity reproduces
+  from a fresh clone via each fixture's frozen `expected` field — no access to the private
+  original is required. For a diverged pack the port *is* the reference, so
+  `node parity/run-parity.js --freeze-diverged` refreezes those packs without needing the
+  original; it refuses to touch a non-diverged pack.
 - The skill was exercised **live end-to-end** (real PRs, real gate-failure and rewind drills);
   see [`docs/acceptance/`](docs/acceptance/).
 

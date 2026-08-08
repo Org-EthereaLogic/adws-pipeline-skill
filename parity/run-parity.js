@@ -37,6 +37,12 @@
 //                                         original and rewrite its `expected`
 //                                         field — run this after touching
 //                                         fixtures or re-syncing the source
+//   node parity/run-parity.js --freeze-diverged
+//                                         refreeze ONLY the DIVERGED_PACKS, from
+//                                         the PORT (which is their reference by
+//                                         definition), so a scope change can land
+//                                         without ADWS_PRO_source/ present. It
+//                                         refuses to touch a non-diverged pack.
 //
 // Exit 0 when everything matches; exit 1 on any mismatch or NFR-4 failure.
 
@@ -62,6 +68,14 @@ const REPORT_PATH = path.join(PARITY_DIR, 'PARITY_REPORT.md');
 const DIVERGED_PACKS = {
   'criteria-to-checks': 'SC-1 + SC-5, v2.0.0',
   'review-risk-assess': 'SC-8, v2.0.0',
+  // SC-9. All three gained output keys, and deepEqual compares key sets exactly,
+  // so every pre-existing fixture in these packs would mismatch a live original
+  // regardless of verdict — the same situation that moved review-risk-assess under
+  // SC-8. repo-context-scan additionally CRASHED on the F-63 input, so the original
+  // cannot produce a baseline for it at all.
+  'repo-context-scan': 'SC-9, v2.0.0',
+  'patch-compose': 'SC-9, v2.0.0',
+  'ship-mode-select': 'SC-9, v2.0.0',
 };
 
 // M-3a: the declared size of the corpus. Unlike the report/entropy/provenance suites —
@@ -72,8 +86,13 @@ const DIVERGED_PACKS = {
 // Bump it when the corpus legitimately grows (84 → 88 under SC-5, four new
 // criteria-to-checks cases; 88 → 93 under SC-8, five new review-risk-assess pins: two for
 // the security-matching halves, two for unassessable entries, one for the deliberate
-// non-enforcement of an `action` enum). A mismatch is a hard failure, never a warning.
-const EXPECTED_FIXTURE_TOTAL = 93;
+// non-enforcement of an `action` enum; 93 → 108 under SC-9, fifteen new pins: six for
+// repo-context-scan (prototype-key path, traversal escape, prefix-substring evasion, empty policy
+// prefix, absolute paths, malformed entries) and
+// nine across the two ship packs — one per branch-name rule per pack, one
+// non-over-rejection pass per pack, and one for the docs_delta union). A mismatch is a
+// hard failure, never a warning.
+const EXPECTED_FIXTURE_TOTAL = 108;
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.
@@ -176,10 +195,19 @@ function checkCli(portedPath, fixturePath, fixtureEnv) {
 }
 
 function main() {
-  const freeze = process.argv.includes('--freeze');
+  const freezeAll = process.argv.includes('--freeze');
+  // --freeze-diverged: refreeze ONLY the DIVERGED_PACKS, from the port. For a
+  // diverged pack the port IS the reference by definition, so no original is
+  // needed — which matters because ADWS_PRO_source/ is gitignored and usually
+  // absent, and a scope change that adds output keys cannot land without a
+  // refreeze. It REFUSES to touch a non-diverged pack, so it cannot be used to
+  // launder a baseline that is supposed to come from the original.
+  const freezeDiverged = process.argv.includes('--freeze-diverged');
+  const freeze = freezeAll || freezeDiverged;
   const hasOriginal = fs.existsSync(ORIGINAL_DIR);
-  if (freeze && !hasOriginal) {
+  if (freezeAll && !hasOriginal) {
     console.error('--freeze requires a local ADWS_PRO_source/ checkout (not found at ' + ORIGINAL_DIR + ').');
+    console.error('To refreeze only the diverged packs (which reference the PORT, not the original), use --freeze-diverged.');
     process.exit(3);
   }
   const baselineSource = hasOriginal ? 'live-original' : 'frozen-expected';
@@ -214,6 +242,7 @@ function main() {
       const orig = hasOriginal && !diverged ? runOne(originalPath, fixturePath, fixture.env) : null;
 
       if (freeze) {
+        if (freezeDiverged && !diverged) continue; // never launder a non-diverged baseline
         // Diverged packs freeze from the PORT (the reference implementation
         // for the approved scope change); everything else from the original.
         const ref = diverged ? runOne(portedPath, fixturePath, fixture.env) : orig;
@@ -285,7 +314,12 @@ function main() {
   }
 
   if (freeze) {
-    console.log('\nFroze ' + frozen + '/' + total + ' fixtures against the live ADWS_PRO_source originals.');
+    console.log(
+      freezeDiverged
+        ? '\nFroze ' + frozen + ' fixture(s) in the ' + Object.keys(DIVERGED_PACKS).length +
+            ' diverged pack(s) against the PORT. Non-diverged packs were not touched.'
+        : '\nFroze ' + frozen + '/' + total + ' fixtures against the live ADWS_PRO_source originals.'
+    );
     process.exit(mismatches === 0 ? 0 : 1);
   }
 

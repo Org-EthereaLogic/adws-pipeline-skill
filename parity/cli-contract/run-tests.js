@@ -6,19 +6,19 @@
  * ships: the 9 validators, entropy-gate.js, and execution-report.js.
  *
  * Why this suite exists (M-5a/A1).
- * The 31-line CLI wrapper at the foot of each validator is byte-identical across
- * all nine files — 279 lines of copy-paste. Before this suite it was covered by
- * exactly one assertion per pack: parity/run-parity.js runs `checkCli` on
- * fixtureFiles[0] only, happy path only, asserting exit 0 and that
- * `rubric_result` is a string. That left EVERY input-rejection path untested:
- * missing argv, unreadable path, invalid JSON, non-object JSON, and execute()
- * throwing. It also left stdin ('-') mode — the interface SKILL.md documents —
- * with no coverage at all, because all 93 parity fixtures bypass the CLI and
- * call execute() directly through exec-one.js.
+ * The CLI wrapper at the foot of each validator is byte-identical across all nine
+ * files. Before this suite it was covered by exactly one assertion per pack:
+ * parity/run-parity.js runs `checkCli` on fixtureFiles[0] only, happy path only,
+ * asserting exit 0 and that `rubric_result` is a string. That left EVERY
+ * input-rejection path untested: missing argv, unreadable path, invalid JSON,
+ * non-object JSON, and execute() throwing. It also left stdin ('-') mode — the
+ * interface SKILL.md documents — with no coverage at all, because all the parity
+ * fixtures bypass the CLI and call execute() directly through exec-one.js.
  *
- * A confirmed prototype-pollution crash in repo-context-scan.js sits precisely
- * in that untested band. So does an unbounded Math.max spread in
- * drift-sentinel.js. Both are pinned below as `pending_sc9` hostile cases.
+ * A prototype-pollution crash in repo-context-scan.js sat precisely in that
+ * untested band, as did an unbounded Math.max spread in drift-sentinel.js. Both
+ * were pinned here as `pending_sc9` hostile cases asserting the defect, and SC-9
+ * flipped them to assert the fix. The flip was the regression pin.
  *
  * The three tools use three different stderr prefixes and two different exit
  * vocabularies. That is deliberate (they name three different things) but it was
@@ -219,13 +219,15 @@ for (const pack of VALIDATORS) {
 }
 
 // -----------------------------------------------------------------------------
-// PART 2 — hostile inputs. These are the M-5a pins for the SC-9 defects.
+// PART 2 — hostile inputs. The M-5a pins for the SC-9 defects.
 //
-// Each records TODAY's behaviour (`today`) and the behaviour SC-9 must produce
-// (`after_sc9`). While `pending_sc9` is true this suite asserts `today`, so the
-// defect is documented and frozen; SC-9's PR flips the flag and the assertion
-// moves to `after_sc9`. That flip IS the regression pin — it cannot be forgotten,
-// because leaving the flag set after fixing the defect turns the suite red.
+// Each records the pre-SC-9 behaviour (`today`) and the behaviour SC-9 produces
+// (`after_sc9`). While `pending_sc9` was true this suite asserted `today`, so each
+// defect was documented and frozen rather than merely described; SC-9 flipped the
+// flag and the assertion moved to `after_sc9`. The flip could not be forgotten:
+// leaving the flag set after fixing the defect turns the suite red, and clearing
+// it before fixing turns it red too. Both `today` and `after_sc9` are retained so
+// the record of what the defect DID survives the fix.
 // -----------------------------------------------------------------------------
 
 const GENERATED_HOSTILE = [
@@ -238,7 +240,7 @@ const GENERATED_HOSTILE = [
       'over an append-only entropy_history.jsonl that nothing truncates. Generated in memory ' +
       '(~2 MB) rather than committed, so drift-sentinel need not join DIVERGED_PACKS for a ' +
       'fix that changes no output on any input the original survives.',
-    pending_sc9: true,
+    pending_sc9: false,
     build: () => ({
       entropy_history: Array.from({ length: 200000 }, (_v, i) => ({ parseFailureScore: i % 3 })),
     }),

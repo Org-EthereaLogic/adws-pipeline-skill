@@ -3,7 +3,7 @@
     "Accepted survivors for scripts/local-ci/guard-ablation.mjs (M-5a/A2).",
     "",
     "A SURVIVOR is a mutation of a validator's execute() that leaves every fixture in",
-    "its pack producing the same frozen `expected` — i.e. the rule it touched is pinned",
+    "its pack producing the same frozen `expected` \u2014 i.e. the rule it touched is pinned",
     "by nothing. A new survivor is a HARD CI FAILURE: it means a rule shipped without a",
     "fixture that fails when the rule is reverted alone.",
     "",
@@ -17,17 +17,24 @@
     "provably cannot change behaviour. `class: unpinned` means the rule genuinely lacks a",
     "fixture and MUST carry an `owner` naming the work package that closes it.",
     "",
-    "Scope note: the 31-line CLI wrapper at the foot of each validator is NOT mutated.",
-    "The 93 parity fixtures call execute() directly via exec-one.js and never invoke the",
-    "CLI, so they pin no wrapper line by construction — the first run of this tool",
+    "Scope note: the CLI wrapper at the foot of each validator is NOT mutated.",
+    "The parity fixtures call execute() directly via exec-one.js and never invoke the",
+    "CLI, so they pin no wrapper line by construction \u2014 the first run of this tool",
     "reported nine survivors and all nine were wrapper guards. The wrapper is pinned",
     "instead by parity/cli-contract/run-tests.js (all four exit-3 paths and both input",
     "modes, per validator) and by scripts/local-ci/cli-block-lint.mjs (the nine copies",
     "cannot drift). See the header of guard-ablation.mjs."
   ],
   "scope": {
-    "packs": ["repo-context-scan", "patch-compose", "ship-mode-select"],
-    "operators": ["guard-off", "verdict"],
+    "packs": [
+      "repo-context-scan",
+      "patch-compose",
+      "ship-mode-select"
+    ],
+    "operators": [
+      "guard-off",
+      "verdict"
+    ],
     "why_narrow": [
       "These are the three packs SC-9 modifies, and two operators are enough to",
       "reproduce the failure this mechanism exists to catch. Extending to the other six",
@@ -37,15 +44,24 @@
     ]
   },
   "measured": {
-    "as_of": "2026-08-08",
-    "mutants": 18,
-    "execute_calls": 122,
-    "wall_clock_ms": 6,
+    "as_of": "2026-08-08 (post-SC-9)",
+    "mutants": 35,
+    "execute_calls": 409,
+    "wall_clock_ms": 13,
     "survivors": 0,
     "note": [
-      "Measured on this checkout, not projected. Recorded here so M-5b/B6 has a real",
-      "cost-per-pack figure to extrapolate from: ~6 mutants and ~2 ms per pack for packs",
-      "of this size. The gate as a whole runs in ~5 s, of which parity is ~4 s."
+      "Measured on this checkout, not projected. M-5a measured 18 mutants / 122 calls / 6 ms",
+      "over the same three packs before SC-9 enlarged them; SC-9 roughly doubled both the rule",
+      "count and the fixture count for ~2x the cost, still an order of magnitude under the",
+      "~5 s parity step. Recorded so M-5b/B6 extrapolates from data: ~12 mutants and ~4 ms per",
+      "pack at this size.",
+      "",
+      "SC-9 is also the first evidence that this mechanism earns its place. It went RED on",
+      "SC-9's own first cut, naming four rules the new fixtures did not pin: the empty-prefix",
+      "branch of underPrefix, both absolute-path guards, and the malformed-entry count. Three",
+      "were closed with fixtures. The fourth -- an explicit startsWith('/') test -- turned out",
+      "to be dead code, since '/etc/passwd' splits to ['','etc','passwd'] and the empty-segment",
+      "rule already rejected it; it was deleted rather than exempted."
     ]
   },
   "accepted": []
