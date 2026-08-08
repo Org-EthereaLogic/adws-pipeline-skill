@@ -1,0 +1,29 @@
+{
+  "cli": "repo-context-scan",
+  "note": "S1, reproduced live. `const groupedFiles = {}` at repo-context-scan.js:27 inherits Object.prototype, so a plan proposing a file under a directory named `__proto__` (or `constructor`, `toString`, `valueOf`, `hasOwnProperty`) makes groupedFiles[dir] truthy, the initializer is skipped, and `.push` is undefined. execute() throws and the wrapper exits 3. The consequence is not the crash: it is that the blocked_paths/allowed_paths loop in the SAME loop body never completes, so the build-phase policy gate is SKIPPED rather than returning `fail` for a proposal that is explicitly inside a blocked path. task-normalize.js:26 already uses the correct Object.create(null) pattern.",
+  "pending_sc9": false,
+  "input": {
+    "plan_output": {
+      "plan_summary": "Add a helper under a directory the policy blocks.",
+      "file_change_proposal": [
+        {
+          "file_path": "__proto__/x.js",
+          "action": "create",
+          "description": "a proposal inside a blocked path, under a prototype-key directory name"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": ["src/"],
+      "blocked_paths": ["__proto__/"]
+    }
+  },
+  "today": {
+    "exit": 3,
+    "stderrPrefix": "adws-validator: execute failed:"
+  },
+  "after_sc9": {
+    "exit": 0,
+    "rubric_result": "fail"
+  }
+}

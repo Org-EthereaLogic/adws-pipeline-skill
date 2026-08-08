@@ -1,0 +1,22 @@
+{
+  "cli": "patch-compose",
+  "note": "S2 at the second ship validator. `foo; rm -rf ~` returns `pass` from patch-compose.js, whose only branch_name check is `.trim().length > 0` (patch-compose.js:22,28). Both ship validators must reject it, so both are pinned: fixing one and not the other would leave the gate half-closed and no existing fixture would notice.",
+  "pending_sc9": false,
+  "input": {
+    "build_output": {
+      "files_changed": [
+        { "file_path": "src/index.js", "action": "modify" }
+      ]
+    },
+    "output_mode": "pr",
+    "branch_name": "foo; rm -rf ~"
+  },
+  "today": {
+    "exit": 0,
+    "rubric_result": "pass"
+  },
+  "after_sc9": {
+    "exit": 0,
+    "rubric_result": "fail"
+  }
+}

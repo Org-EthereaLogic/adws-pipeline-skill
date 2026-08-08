@@ -19,6 +19,23 @@ const problems = [];
 // Matches: require('x') / require("x") and import ... from 'x'
 const specRe = /(?:require\(\s*|from\s+)['"]([^'"]+)['"]/g;
 
+// SC-11: scan CODE, not prose. The pattern above matched a comment sentence containing
+// the words `from "never` … `written"` and reported it as an external dependency — a
+// false positive on correct code, in a gate step whose whole job is to be trusted. The
+// `from\s+['"]…['"]` half is inherently prose-prone, so comments are stripped first.
+// Deliberately simple: string literals containing `//` are rare in these two files and a
+// full tokenizer would be more machinery than the check is worth.
+function stripComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n')
+    .map((line) => {
+      const at = line.indexOf('//');
+      return at === -1 ? line : line.slice(0, at);
+    })
+    .join('\n');
+}
+
 for (const file of TARGETS) {
   let src;
   try {
@@ -29,7 +46,9 @@ for (const file of TARGETS) {
   }
   let mm;
   const spent = new Set();
-  while ((mm = specRe.exec(src)) !== null) {
+  const code = stripComments(src);
+  specRe.lastIndex = 0;
+  while ((mm = specRe.exec(code)) !== null) {
     const spec = mm[1];
     if (spent.has(spec)) continue;
     spent.add(spec);

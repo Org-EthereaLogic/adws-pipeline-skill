@@ -1,0 +1,46 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Write to a sibling directory that shares a prefix with an allowed one.",
+      "file_change_proposal": [
+        {
+          "file_path": "srcfoo/evil.js",
+          "action": "create",
+          "description": "outside src/ but startsWith('src') is true"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src"
+      ]
+    }
+  },
+  "note": "SC-9/A1(c) pin for segment-aware matching. `startsWith` is a raw substring test, so allowed_paths ['src'] admitted 'srcfoo/evil.js' as compliant. Same defect class SC-8/A2 fixed in review-risk-assess and left standing here. Reverting underPrefix alone flips this fixture to pass.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "srcfoo": [
+        {
+          "file": "srcfoo/evil.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "srcfoo/evil.js",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Write to a sibling directory that shares a prefix with an allowed one.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

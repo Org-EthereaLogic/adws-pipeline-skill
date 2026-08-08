@@ -2,10 +2,11 @@
 # gate.sh — TIER 1 local CI: the fast deterministic host gate (zero-LLM, ~seconds).
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
-# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 93
-# validator-parity fixtures, 21 report-verdict fixtures, 7 stability-gate fixtures,
-# 3 provenance-schema fixtures, and the SC-3 contract micro-drill — plus a syntax floor,
-# shell lint, and two skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
+# inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 108
+# validator-parity fixtures, 24 report-verdict fixtures, 7 stability-gate fixtures,
+# 3 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
+# suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
+# sweep, and three skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
 # (Tier 2); local-LLM review lives in review.sh (Tier 3).
 #
 # Usage:  make local-ci   (or: bash scripts/local-ci/gate.sh)
@@ -31,6 +32,7 @@ run_id="$(ci_run_id)"
 commit="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 branch="$(git branch --show-current 2>/dev/null || echo unknown)"
 dirty="$(ci_dirty)"
+tested_tree="$(ci_tested_tree)"
 log="ci_logs/${run_id}.gate.log"
 : > "$log"
 
@@ -50,7 +52,9 @@ run_step() {
 
 # The static-floor steps need a little logic, so they are functions (bash-3.2-safe).
 node_check() {
-  # node --check every *.js under adws-pipeline/ and parity/ (syntax floor).
+  # node --check every *.js under adws-pipeline/ and parity/, and every *.mjs the
+  # local-ci harness owns (syntax floor). The .mjs lints were previously unchecked —
+  # M-5a added two more of them, so the floor now covers what it is meant to cover.
   # Newline-delimited via heredoc (not `for in $(find)`) so a bad file fails the step
   # and the loop is not a subshell (rc survives). Paths here never contain spaces.
   rc=0
@@ -59,6 +63,7 @@ node_check() {
     if ! node --check "$f"; then echo "node --check FAILED: $f"; rc=1; fi
   done <<EOF
 $(find adws-pipeline parity -name '*.js')
+$(find scripts/local-ci -name '*.mjs')
 EOF
   return $rc
 }
@@ -69,7 +74,7 @@ shell_lint() {
   rc=0
   files=(install.sh .githooks/pre-push)
   for f in scripts/local-ci/*.sh; do files+=("$f"); done
-  for f in "${files[@]}"; do
+  for f in ${files[@]+"${files[@]}"}; do
     [ -f "$f" ] || continue
     if ! bash -n "$f"; then echo "bash -n FAILED: $f"; rc=1; fi
     if ! shellcheck --severity=warning -x "$f"; then echo "shellcheck FAILED: $f"; rc=1; fi
@@ -77,22 +82,59 @@ shell_lint() {
   return $rc
 }
 
-# Deterministic suites (must stay green: 93 / 21 / 7 + provenance 3 + SC-3 drill).
+bash_32_scan() {
+  # M-5b/B3. `make ci-orb` was documented as closing F-13. It does not: F-13 was a macOS
+  # bash-3.2 defect (expanding an empty array under `set -u` raises `unbound variable`,
+  # a bug fixed only in bash 4.4), and orb-ci varies only the NODE version on linux/arm64.
+  # The claim is restated there; this is the check that actually covers the axis.
+  #
+  # The trigger is `"${arr[@]}"` on a possibly-empty array under `set -u`. The safe idiom
+  # is `${arr[@]+"${arr[@]}"}`. Scanning for the bare form in the scripts we own is a
+  # heuristic, not a proof — it cannot know whether an array is empty at that point — so
+  # it reports and fails, and a deliberate exception is written using the safe idiom.
+  rc=0
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    grep -q 'set -[a-z]*u' "$f" || continue          # only files running under set -u
+    # Strip comments before matching. The first cut flagged three of its own explanatory
+    # comments -- the same false-positive class requires-lint had, found the same way.
+    if sed 's/#.*//' "$f" | grep -n '"\${[A-Za-z_][A-Za-z0-9_]*\[@\]}"' | grep -v '+"\${' ; then
+      echo "bash-3.2 hazard (F-13): unguarded \"\${arr[@]}\" under set -u in $f"
+      echo "  use \${arr[@]+\"\${arr[@]}\"} — macOS bash 3.2 raises 'unbound variable' on an empty array"
+      rc=1
+    fi
+  done <<EOF
+$(find . -name '*.sh' -not -path './.git/*')
+.githooks/pre-push
+EOF
+  return $rc
+}
+
+# Deterministic suites (must stay green: 108 / 24 / 7 + provenance 5 + SC-3 drill
+# + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
 run_step "provenance"    node parity/provenance-fixtures/run-tests.js
 run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
+# CLI contract: the nine duplicated wrapper copies and stdin mode, which the parity
+# fixtures cannot reach (they call execute() directly via exec-one.js).
+run_step "cli-contract"  node parity/cli-contract/run-tests.js
+# Anti-vacuity: does the fixture corpus actually PIN the rules it appears to test?
+run_step "guard-ablation" node scripts/local-ci/guard-ablation.mjs
 # Static floors.
 run_step "node-check"    node_check
 run_step "shell-lint"    shell_lint
+run_step "bash32-scan"   bash_32_scan
 # Skill-repo lints.
 run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
+run_step "cli-block"     node scripts/local-ci/cli-block-lint.mjs
+run_step "agent-blocks"  node scripts/local-ci/agent-blocks-lint.mjs
 
 legs_json="$(IFS=,; echo "${steps[*]}")"
-record="$(printf '{"event":"gate","run_id":"%s","git_commit":"%s","branch":"%s","dirty":%s,"overall":"%s","steps":[%s]}' \
-  "$run_id" "$commit" "$branch" "$dirty" "$overall" "$legs_json")"
+record="$(printf '{"event":"gate","run_id":"%s","git_commit":"%s","tested_tree":"%s","branch":"%s","dirty":%s,"overall":"%s","steps":[%s]}' \
+  "$run_id" "$commit" "$tested_tree" "$branch" "$dirty" "$overall" "$legs_json")"
 ci_emit_jsonl ci_logs/local_ci.jsonl "$record"
 
 echo "[gate] overall: $(ci_upper "$overall")  (full log: $log)"

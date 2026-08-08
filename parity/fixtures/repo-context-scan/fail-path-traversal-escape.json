@@ -1,0 +1,50 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Modify a file outside the checkout.",
+      "file_change_proposal": [
+        {
+          "file_path": "../../etc/shadow",
+          "action": "modify",
+          "description": "a path that escapes the repository entirely"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "SC-9/A1(c) pin. A path containing `..` cannot be bounded by a prefix policy at all -- that is a FACT about the input, so it fails (SC-8 house rule). Reverting isSafeRelativePath alone flips this fixture: without it the path is merely `outside_allowed_paths`, which is a different and weaker finding, and an absolute path would not be caught at all.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "../../etc": [
+        {
+          "file": "../../etc/shadow",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "../../etc/shadow",
+        "reason": "unsafe_path"
+      },
+      {
+        "file": "../../etc/shadow",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Modify a file outside the checkout.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

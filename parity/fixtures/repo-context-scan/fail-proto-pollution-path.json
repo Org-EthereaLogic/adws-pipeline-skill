@@ -1,0 +1,54 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Add a helper under a directory the policy blocks.",
+      "file_change_proposal": [
+        {
+          "file_path": "__proto__/x.js",
+          "action": "create",
+          "description": "a proposal inside a blocked path, under a prototype-key directory name"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": [
+        "__proto__/"
+      ]
+    }
+  },
+  "note": "SC-9/A1(a) pin for F-63. Before SC-9 this input made execute() THROW: `const groupedFiles = {}` inherits Object.prototype, so groupedFiles['__proto__'] was truthy, the initializer was skipped, and `.push` was undefined. The wrapper exited 3 and the blocked_paths loop -- in the same loop body -- never ran, so the build-phase policy gate was SKIPPED rather than returning fail. Reverting Object.create(null) alone flips this fixture.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 1,
+    "directories_touched": 1,
+    "grouped_files": {
+      "__proto__": [
+        {
+          "file": "__proto__/x.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [
+      {
+        "file": "__proto__/x.js",
+        "reason": "outside_allowed_paths"
+      },
+      {
+        "file": "__proto__/x.js",
+        "reason": "in_blocked_path",
+        "blocked_path": "__proto__/"
+      }
+    ],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Add a helper under a directory the policy blocks.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

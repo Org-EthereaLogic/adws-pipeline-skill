@@ -1,0 +1,20 @@
+{
+  "cli": "ship-mode-select",
+  "note": "S2, reproduced live. branch_name is only length-checked (ship-mode-select.js:21 / patch-compose.js:22), so `--upload-pack=/tmp/evil` returns `pass` from the validator documented as the PRE-GIT gate. The shipper then substitutes the value directly: adws-shipper.md:49,62 run `git push -u origin {branch_name}`, and SKILL.md:130 runs `git worktree add ... -b adws/{jobId}/{slug}`. A leading-dash value lands in argv option position and nothing in the spec constrains the agent's quoting. This is a command-safety validation gap, not a demonstrated injection — the validator executes no git — but the gate that exists to be checked before git should not pass a value that is unsafe where git receives it.",
+  "pending_sc9": false,
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "--upload-pack=/tmp/evil",
+    "policy": {
+      "allow_direct_commit": true
+    }
+  },
+  "today": {
+    "exit": 0,
+    "rubric_result": "pass"
+  },
+  "after_sc9": {
+    "exit": 0,
+    "rubric_result": "fail"
+  }
+}

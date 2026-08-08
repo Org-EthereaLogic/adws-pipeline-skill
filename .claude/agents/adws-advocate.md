@@ -1,7 +1,7 @@
 ---
 name: adws-advocate
 description: ADWS pipeline Advocate. Independent user-intent assessment of a change set at the test or review gate; its dissent blocks promotion. Spawned with fresh context. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: haiku
 ---
 

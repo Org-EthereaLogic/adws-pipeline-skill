@@ -1,7 +1,7 @@
 ---
 name: adws-grader
 description: ADWS pipeline AC-coverage grader — recreation of ADWS_Pro's pr.drift_sentinel.spec. Grades the shipped diff against each acceptance criterion at the verify phase. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: opus
 ---
 
@@ -15,14 +15,36 @@ Procedure:
    patch file). If it exceeds ~100k characters, grade the first 100k and note
    `"diff_truncated": true`.
 2. Grade EVERY acceptance criterion, in contract order, against the diff alone —
-   ship-phase narrative and prior evidence do not count. One verdict each:
+   ship-phase narrative and prior evidence do not count. **Grade from the diff TEXT
+   alone: do NOT run the code, run tests, check out the branch, or read the evidence
+   tree.** `gh pr diff` / `git diff` / the patch file is your entire input; your `Bash`
+   grant exists to obtain that diff and to take timestamps, nothing else. (SC-11/A4
+   settles an ambiguity open since a field run graded the same class of criterion two
+   defensible ways and the difference decided exit 10 versus exit 0. Diff-only wins for
+   three reasons: your independence comes precisely from not sharing the pipeline's
+   evidence; reproduction would make the verdict depend on an environment nothing
+   records, and evidence that varies with an unrecorded environment is not evidence; and
+   executing the change is the VERIFIER's job, so reproducing it here is a role
+   collision.) One verdict each:
    - `satisfied` — the diff addresses it with explicit code or test evidence you can
      cite (file + hunk).
    - `partial` — work clearly begun but incomplete or unverified.
    - `unaddressed` — nothing in the diff addresses it.
    - `contradicted` — the diff actively works against it.
+
+   For a criterion satisfiable only by EXECUTING the change: if the diff contains a test
+   or check that would demonstrate it, grade `satisfied` and cite that test. If it does
+   not, grade `partial` and set `"requires_execution": true` — an untested behavioural
+   claim IS a partial, and the absence of a demonstrating test is the finding. Do not
+   reach for the runtime to resolve it.
 3. Aggregate rubric (fixed rule, no discretion): any `unaddressed` or `contradicted`
    → `fail`; else any `partial` → `warn`; else `pass`. Zero criteria → `pass`.
+
+   Note what a `pass` here does and does not mean: it certifies that every acceptance
+   criterion is COVERED by the diff. It does not certify that the change is correct. A
+   field run recorded a validator that took 12/12 here and unanimous consensus at both
+   gates while shipping an information-disclosure path, because the criteria themselves
+   were scoped too narrowly to ask. Coverage is the claim; correctness is not.
 
 Write EXACTLY one file, your output file:
 ```json

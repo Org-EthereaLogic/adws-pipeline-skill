@@ -1,0 +1,33 @@
+// --- Branch-name safety (SC-9/A2) --------------------------------------------
+// These two validators are documented as the PRE-GIT gate, and branch_name is the
+// one field they hold that reaches git: SKILL.md interpolates it into
+// `git worktree add ... -b adws/{jobId}/{slug}` and adws-shipper.md:49,62 into
+// `git push -u origin {branch_name}`. Before SC-9 the only check was
+// `.trim().length > 0`, so `--upload-pack=/tmp/evil` and `foo; rm -rf ~` both
+// returned pass. The validators execute no git, so this is a validation gap
+// rather than a demonstrated injection -- but a leading-dash value lands in argv
+// option position, and nothing in the spec constrains how the agent quotes the
+// value for the shell. Whether a name is well-formed is a FACT, so a malformed
+// one fails (SC-8 house rule: heuristic -> warn, fact -> fail). An ABSENT name
+// stays `warn` -- that is the pre-existing "not chosen yet" case, unchanged.
+//
+// Three rules, deliberately: each is safety-bearing and each is pinned by a
+// fixture in both packs. Git's remaining refname niceties (dot segments, .lock
+// suffixes, slash placement) are left to git, which rejects them with a clear
+// error and no ambiguity about who decided.
+//
+// This block is duplicated verbatim in patch-compose.js and ship-mode-select.js.
+// They cannot share a module -- NFR-4 requires each validator to import only Node
+// built-ins and run standalone -- so scripts/local-ci/cli-block-lint.mjs asserts
+// the two copies are byte-identical and a fix to one is a fix to both.
+const BRANCH_NAME_MAX = 255;
+const BRANCH_NAME_CHARSET = /^[A-Za-z0-9._/-]+$/;
+
+function branchNameProblem(name) {
+  if (name === '') return null;
+  if (name.length > BRANCH_NAME_MAX) return 'too_long';
+  if (name.startsWith('-')) return 'leading_dash_reads_as_option';
+  if (!BRANCH_NAME_CHARSET.test(name)) return 'illegal_character';
+  return null;
+}
+// --- end Branch-name safety ---------------------------------------------------

@@ -37,6 +37,12 @@
 //                                         original and rewrite its `expected`
 //                                         field — run this after touching
 //                                         fixtures or re-syncing the source
+//   node parity/run-parity.js --freeze-diverged
+//                                         refreeze ONLY the DIVERGED_PACKS, from
+//                                         the PORT (which is their reference by
+//                                         definition), so a scope change can land
+//                                         without ADWS_PRO_source/ present. It
+//                                         refuses to touch a non-diverged pack.
 //
 // Exit 0 when everything matches; exit 1 on any mismatch or NFR-4 failure.
 
@@ -62,6 +68,14 @@ const REPORT_PATH = path.join(PARITY_DIR, 'PARITY_REPORT.md');
 const DIVERGED_PACKS = {
   'criteria-to-checks': 'SC-1 + SC-5, v2.0.0',
   'review-risk-assess': 'SC-8, v2.0.0',
+  // SC-9. All three gained output keys, and deepEqual compares key sets exactly,
+  // so every pre-existing fixture in these packs would mismatch a live original
+  // regardless of verdict — the same situation that moved review-risk-assess under
+  // SC-8. repo-context-scan additionally CRASHED on the F-63 input, so the original
+  // cannot produce a baseline for it at all.
+  'repo-context-scan': 'SC-9, v2.0.0',
+  'patch-compose': 'SC-9, v2.0.0',
+  'ship-mode-select': 'SC-9, v2.0.0',
 };
 
 // M-3a: the declared size of the corpus. Unlike the report/entropy/provenance suites —
@@ -72,8 +86,13 @@ const DIVERGED_PACKS = {
 // Bump it when the corpus legitimately grows (84 → 88 under SC-5, four new
 // criteria-to-checks cases; 88 → 93 under SC-8, five new review-risk-assess pins: two for
 // the security-matching halves, two for unassessable entries, one for the deliberate
-// non-enforcement of an `action` enum). A mismatch is a hard failure, never a warning.
-const EXPECTED_FIXTURE_TOTAL = 93;
+// non-enforcement of an `action` enum; 93 → 108 under SC-9, fifteen new pins: six for
+// repo-context-scan (prototype-key path, traversal escape, prefix-substring evasion, empty policy
+// prefix, absolute paths, malformed entries) and
+// nine across the two ship packs — one per branch-name rule per pack, one
+// non-over-rejection pass per pack, and one for the docs_delta union). A mismatch is a
+// hard failure, never a warning.
+const EXPECTED_FIXTURE_TOTAL = 108;
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.
@@ -141,9 +160,18 @@ function checkRequires(portedPath) {
 }
 
 // NFR-4b: CLI wrapper runs a sample fixture end-to-end.
+// (Deep coverage of the wrapper — every exit-3 path, both input modes — lives in
+// parity/cli-contract/run-tests.js. This stays a smoke check.)
 function checkCli(portedPath, fixturePath, fixtureEnv) {
   const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
-  const tmp = path.join(os.tmpdir(), 'adws-parity-cli-input-' + process.pid + '.json');
+  // M-5a/A4: mkdtempSync, never a predictable os.tmpdir() path. The previous name
+  // was 'adws-parity-cli-input-<pid>.json' — deterministic, in a world-writable
+  // directory, created with writeFileSync (which follows symlinks and does not use
+  // O_EXCL). A local attacker who pre-created that path as a symlink got an
+  // arbitrary-file overwrite and unlink at the privilege of whoever ran `make ci`.
+  // parity/sc3-micro-drill/run-tests.js:68 already used mkdtempSync correctly.
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adws-parity-cli-'));
+  const tmp = path.join(tmpDir, 'input.json');
   fs.writeFileSync(tmp, JSON.stringify(fixture.input));
   try {
     const proc = spawnSync(process.execPath, [portedPath, tmp], {
@@ -162,15 +190,24 @@ function checkCli(portedPath, fixturePath, fixtureEnv) {
       return { ok: false, detail: 'CLI printed unparseable JSON' };
     }
   } finally {
-    fs.unlinkSync(tmp);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
 function main() {
-  const freeze = process.argv.includes('--freeze');
+  const freezeAll = process.argv.includes('--freeze');
+  // --freeze-diverged: refreeze ONLY the DIVERGED_PACKS, from the port. For a
+  // diverged pack the port IS the reference by definition, so no original is
+  // needed — which matters because ADWS_PRO_source/ is gitignored and usually
+  // absent, and a scope change that adds output keys cannot land without a
+  // refreeze. It REFUSES to touch a non-diverged pack, so it cannot be used to
+  // launder a baseline that is supposed to come from the original.
+  const freezeDiverged = process.argv.includes('--freeze-diverged');
+  const freeze = freezeAll || freezeDiverged;
   const hasOriginal = fs.existsSync(ORIGINAL_DIR);
-  if (freeze && !hasOriginal) {
+  if (freezeAll && !hasOriginal) {
     console.error('--freeze requires a local ADWS_PRO_source/ checkout (not found at ' + ORIGINAL_DIR + ').');
+    console.error('To refreeze only the diverged packs (which reference the PORT, not the original), use --freeze-diverged.');
     process.exit(3);
   }
   const baselineSource = hasOriginal ? 'live-original' : 'frozen-expected';
@@ -205,6 +242,7 @@ function main() {
       const orig = hasOriginal && !diverged ? runOne(originalPath, fixturePath, fixture.env) : null;
 
       if (freeze) {
+        if (freezeDiverged && !diverged) continue; // never launder a non-diverged baseline
         // Diverged packs freeze from the PORT (the reference implementation
         // for the approved scope change); everything else from the original.
         const ref = diverged ? runOne(portedPath, fixturePath, fixture.env) : orig;
@@ -214,10 +252,27 @@ function main() {
           continue;
         }
         fixture.expected = ref.result;
+        // M-5b/B4. A fixture frozen from the port and one frozen from the original are
+        // otherwise INDISTINGUISHABLE on disk, so PARITY_REPORT.md could report "identical"
+        // for a pack whose baseline was only ever the port's own output. Stamping the
+        // source makes the difference detectable; the verify path asserts it below.
+        fixture.expected_source = diverged ? 'port@' + DIVERGED_PACKS[pack] : 'original@ADWS_PRO_source';
         fs.writeFileSync(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
         frozen += 1;
         matches += 1;
         console.log('FROZE ' + pack + '/' + caseName + (diverged ? '  (from port — diverged-by-design, ' + DIVERGED_PACKS[pack] + ')' : ''));
+        continue;
+      }
+
+      // M-5b/B4: a NON-diverged pack whose baseline came from the port is the
+      // "validated against itself" trap. It is a hard failure, not a note.
+      const src = fixture.expected_source;
+      if (typeof src === 'string' && src.startsWith('port@') && !diverged) {
+        mismatches += 1;
+        console.log(
+          'FAIL ' + pack + '/' + caseName + '  expected_source is ' + src +
+            ' but ' + pack + ' is not in DIVERGED_PACKS — a non-diverged baseline must come from the original'
+        );
         continue;
       }
 
@@ -276,7 +331,12 @@ function main() {
   }
 
   if (freeze) {
-    console.log('\nFroze ' + frozen + '/' + total + ' fixtures against the live ADWS_PRO_source originals.');
+    console.log(
+      freezeDiverged
+        ? '\nFroze ' + frozen + ' fixture(s) in the ' + Object.keys(DIVERGED_PACKS).length +
+            ' diverged pack(s) against the PORT. Non-diverged packs were not touched.'
+        : '\nFroze ' + frozen + '/' + total + ' fixtures against the live ADWS_PRO_source originals.'
+    );
     process.exit(mismatches === 0 ? 0 : 1);
   }
 
@@ -342,13 +402,29 @@ function main() {
     '- Packs: ' + (packs.length - divergedPacks.length) + ' original-parity, ' + divergedPacks.length +
       ' diverged-by-design' + (divergedPacks.length ? ' (' + divergedPacks.map((p) => p + ': ' + DIVERGED_PACKS[p]).join('; ') + ')' : '')
   );
+  // M-5b/B4: split the corpus by where each baseline actually came from. A single
+  // "N/N identical" line conflates two very different claims — "matches the original" and
+  // "matches a snapshot of itself" — and only the first is parity.
+  const originalBaselined = rows.filter((r) => !Object.prototype.hasOwnProperty.call(DIVERGED_PACKS, r.pack)).length;
+  const portBaselined = total - originalBaselined;
+  lines.push('- Baselines: ' + originalBaselined + ' fixture(s) original-parity, ' + portBaselined +
+    ' fixture(s) frozen-baseline regression (the port is its own reference under an approved scope change)');
   lines.push('- Full-object matches (and deterministic): ' + matches);
   lines.push('- Mismatches/failures (incl. NFR-4): ' + mismatches);
+  // M-5b/B4. The result line used to read "ALL N/N FIXTURES IDENTICAL — original parity
+  // holds", which conflated the two populations the Baselines line above separates and
+  // asserted original parity for fixtures that never had it. The two claims are now
+  // reported apart, and each says what it actually rests on.
   lines.push(
     '- Result: ' +
       (mismatches === 0
-        ? 'ALL ' + total + '/' + total + ' FIXTURES IDENTICAL — original parity holds' +
-          (divergedPacks.length ? '; diverged-by-design packs match their frozen baselines.' : '.')
+        ? 'ALL ' + total + '/' + total + ' fixtures match their recorded baseline. Of those, ' +
+          originalBaselined + ' are original-parity (compared against the ADWS_Pro original' +
+          (baselineSource === 'live-original' ? ', live' : ' via a frozen capture of it') + ')' +
+          (portBaselined
+            ? ' and ' + portBaselined +
+              ' are frozen-baseline regression only — the port is its own reference in the diverged packs, so those fixtures assert no original parity.'
+            : '.')
         : 'PARITY FAILED')
   );
   lines.push('');

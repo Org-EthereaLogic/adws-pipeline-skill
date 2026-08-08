@@ -26,8 +26,8 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 | `criteria-to-checks` | test | `{ acceptance_criteria: [string] }` | contract `task.acceptance_criteria`. **Runs PRE-dispatch** — see below |
 | `review-risk-assess` | review | `{ build_output: { files_changed: [{file_path, action}] } }` | build `phase_output.json` → `files_changed`; output `risk_level` re-selects model tiers for remaining phases |
 | `document-coverage-map` | document | `{ build_output: { files_changed: [...] }, doc_output: { docs_delta: [{file_path, change}], changelog_entry, documentation_summary }, acceptance_criteria: [string] }` | build + document `phase_output.json` + contract criteria |
-| `ship-mode-select` | ship | `{ output_mode, branch_name, policy: { allow_direct_commit } }` | contract `execution.output_mode` + `run_manifest.branch_name` + contract `execution.allow_direct_commit` |
-| `patch-compose` | ship | `{ build_output: { files_changed: [...] }, output_mode, branch_name }` | build `phase_output.json` + contract/manifest as above |
+| `ship-mode-select` | ship | `{ output_mode, branch_name, policy: { allow_direct_commit } }` | contract `execution.output_mode` + `run_manifest.branch_name` + contract `execution.allow_direct_commit`. Run this BEFORE the first git command that consumes `branch_name` (SC-9/A2). |
+| `patch-compose` | ship | `{ build_output: { files_changed: [...] }, document_output: { docs_delta: [...] }, output_mode, branch_name }` | build `phase_output.json` **and document `phase_output.json`** + contract/manifest as above. `files_to_ship` is the size of the UNION — that union is what the shipper stages, and passing only the build half undercounts the shipped set (recorded in three field runs before SC-9). |
 | `verify-evidence-map` | verify | `{ checks: [{check, pass}] }` | verifier `phase_output.json` → `verify_result.checks` |
 | `drift-sentinel` | verify | `{ entropy_history: [{entropy}\|{parseFailureScore}\|number] }` (env: `ADWS_UMIF_CANONICAL` on\|off\|shadow, default on) | `artifacts/{jobId}/entropy_history.jsonl` lines, MAPPED: each line's `parse_failures` becomes `parseFailureScore` (or pass the bare numbers) — drift-sentinel does NOT read the `parse_failures` key, and feeding raw lines scores every entry 0 → silent false-SAFE (entropy-gate.js does this mapping internally; at verify YOU assemble it). **File absent (zero parse failures) → pass `{ "entropy_history": [] }`, which is SAFE/`pass` by design** |
 
@@ -91,3 +91,42 @@ Validators and `execution-report.js` are tolerant readers: they evaluate the
 documented fields and ignore unknown keys. That tolerance is defense in depth,
 not permission — writers (orchestrator included) supply exactly the documented
 shapes. See `references/artifact-layout.md` rule 8.
+
+## Verdict vocabularies and exit codes (SC-11/A2)
+
+Three tools, three verdict fields, two exit vocabularies. They name genuinely different
+things and are not being unified; what follows is the mapping, which existed nowhere in
+writing before SC-11.
+
+| Tool | Verdict field | Values | Exit codes |
+|---|---|---|---|
+| `scripts/validators/*.js` (9) | `rubric_result` | `pass` / `warn` / `fail` | **0** = execute ran and the verdict is in the JSON, **including `fail`**; **3** = input rejected (unreadable, invalid JSON, not an object, over the size cap) or `execute()` threw |
+| `scripts/entropy-gate.js` | `action` | `proceed` / `escalate` / `halt` | 0 = ran; 3 = unreadable input or a malformed JSONL line |
+| `scripts/execution-report.js` | `decision` | `PROMOTE` / `RETRY` / `QUARANTINE` | 0 = PROMOTE; 10 = PROMOTE with warnings; 1 = RETRY; 2 = QUARANTINE; **3 = could not run** (missing argv, missing directory, not a directory, or the generator threw) |
+
+**A validator's `fail` is exit 0.** The verdict is data, not a process outcome — only the
+report's decision maps to an exit code. Reading a validator's exit status as its verdict is
+a category error: `if node validator.js …` treats a `fail` as success, and `if node
+execution-report.js …` treats a PROMOTE-with-warnings as failure. Read the JSON.
+
+Empty input differs by tool for a reason: it is exit 3 for a validator (no JSON object was
+supplied at all) and exit **0** for the entropy gate (zero lines means no signal, and the
+gate stands open). Both are asserted by the skill repo's CLI-contract suite.
+
+### Degenerate input: fact → fail, heuristic → warn
+
+Extending SC-8's house rule. *Nothing assessable was provided* is a fact; *something
+assessable but thin* is a heuristic.
+
+| Validator | Empty input | Why |
+|---|---|---|
+| `criteria-to-checks` | `fail` | criteria are the subject; zero of them is nothing to check |
+| `verify-evidence-map` | `fail` | checks are the subject |
+| `patch-compose` | `fail` | nothing to ship is not a shippable composition |
+| `ship-mode-select` | `fail` (empty mode) | the mode is mandatory |
+| `repo-context-scan` | `warn` | a plan with no file proposals is thin, not absent |
+| `document-coverage-map` | `warn` | an empty docs delta is a legitimate outcome |
+| `drift-sentinel` | `pass` | an empty entropy history is the normal state of a healthy run |
+
+These are documented rather than harmonized: changing any of them means a divergence, a
+version bump and a refreeze, for a symmetry no gate reads.

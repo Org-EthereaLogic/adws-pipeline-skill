@@ -89,7 +89,29 @@ for (const file of agentFiles) {
     problems.push(`${file}: frontmatter name "${name}" must equal the filename stem "${expectedName}"`);
   }
   if (!get('description')) problems.push(`${file}: frontmatter missing \`description\``);
-  if (!get('tools')) problems.push(`${file}: frontmatter missing \`tools\``);
+  const toolsRaw = get('tools');
+  if (!toolsRaw) problems.push(`${file}: frontmatter missing \`tools\``);
+
+  // SC-10/A1. An agent whose BODY instructs it to write a file must declare the Write
+  // tool. Six of ten did not: critic, advocate, grader, verifier, planner and reviewer
+  // were all told to write evidence files while holding only Read/Grep/Glob/Bash, so
+  // their sole writer was a Bash heredoc. Three field runs recorded a haiku dispatch
+  // returning its verdict in the message instead of writing the file, mitigated only by
+  // prose in SKILL.md. Whether that prose was the cause is not established — Bash can
+  // write — but an agent told to write a file should hold a write tool.
+  //
+  // This reads the BODY rather than checking a hand-maintained list, and it earned that
+  // immediately: the first pass at SC-10 listed five agents and missed the reviewer,
+  // whose instruction reads "Write to your attempt directory" rather than "Write EXACTLY
+  // one file". A list would have shipped that gap; the regex did not.
+  const tools = new Set((toolsRaw || '').split(',').map((s) => s.trim()).filter(Boolean));
+  const instructsWrite = /Write EXACTLY one file|Write to your attempt directory/i.test(body);
+  if (instructsWrite && !tools.has('Write')) {
+    problems.push(
+      `${file}: body instructs the agent to write a file, but \`tools:\` omits Write ` +
+        `(it would have to shell out via Bash) — SC-10/A1`
+    );
+  }
   const model = get('model');
   if (!model) problems.push(`${file}: frontmatter missing \`model\``);
   else if (!CANONICAL_TIERS.has(model)) {
@@ -112,6 +134,35 @@ while ((r = refRe.exec(text)) !== null) {
   if (!existsSync(full)) problems.push(`SKILL.md references \`${rel}\` but ${full} does not exist`);
 }
 
+// --- SC-10/A3: the reference index is BIDIRECTIONAL ---
+// The check above proves every path SKILL.md names exists. The converse was never
+// checked: a file could sit in references/ that SKILL.md never points at, and nothing
+// would notice. That inversion is how ~125 lines of reference-grade material — a
+// macOS bash-3.2 case study, a dispatch-fallback contingency, two recovery procedures —
+// ended up in the ALWAYS-LOADED SKILL.md instead of in a file read on demand. A
+// reference nothing points at is a reference nothing reads.
+const referencesDir = join(SKILL_DIR, 'references');
+let referenceFiles = [];
+try {
+  referenceFiles = readdirSync(referencesDir).filter((f) => f.endsWith('.md')).sort();
+} catch (e) {
+  problems.push(`cannot read ${referencesDir}: ${e.message}`);
+}
+for (const file of referenceFiles) {
+  if (!seen.has(`references/${file}`)) {
+    problems.push(
+      `${referencesDir}/${file} exists but SKILL.md never references \`references/${file}\` — ` +
+        'add it to the reference index or delete it (SC-10/A3)'
+    );
+  }
+}
+
+// --- NFR-3 advisory target (SC-10/A3) ---
+// SKILL_MD_MAX_LINES stays the hard ceiling. This is the softer target the extraction
+// aimed at: warn without failing, so the trend is visible before it reaches the ceiling
+// (357 → 367 → 379 → 412 was monotonic and nothing was watching it).
+const SKILL_MD_TARGET_LINES = 350;
+
 // --- no references to files outside the skill directory ---
 // install.sh copies ONLY adws-pipeline/ and .claude/agents/adws-*.md into a target
 // project, so a backticked `docs/…` or `parity/…` path inside the skill is a link that
@@ -133,8 +184,15 @@ if (problems.length) {
   for (const p of problems) console.error(`  - ${p}`);
   process.exit(1);
 }
+if (skillLines > SKILL_MD_TARGET_LINES) {
+  console.log(
+    `[frontmatter-lint] NOTE — SKILL.md is ${skillLines} lines, over the ${SKILL_MD_TARGET_LINES}-line ` +
+      `target (ceiling is ${SKILL_MD_MAX_LINES}). Consider moving reference-grade prose to references/.`
+  );
+}
 console.log(
   `[frontmatter-lint] OK — name matches dir, description present, ${seen.size} referenced path(s) exist, ` +
+    `${referenceFiles.length} reference file(s) all indexed, ` +
     `${skillDocs.length} skill doc(s) free of out-of-skill paths, SKILL.md ${skillLines}/${SKILL_MD_MAX_LINES} lines (NFR-3), ` +
     `${agentFiles.length} agent definition(s) well-formed`
 );

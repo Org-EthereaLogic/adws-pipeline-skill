@@ -239,9 +239,27 @@ function round5(value) {
 // Mirrors the legacy normalizeSignal contract: |v|, scaled by the max only
 // when the max exceeds 1, so the canonical trace sees the same [0,1] signal
 // the legacy entropy pipeline sees.
+// SC-9/A3. `Math.max(...abs)` spread the array into an argument list, which is
+// bounded by the call-stack frame: reproduced OK at 50k entries and
+// `RangeError: Maximum call stack size exceeded` at 200k. Reachable from
+// entropy-gate.js over an append-only entropy_history.jsonl that nothing
+// truncates, so the verify-phase gate became un-runnable rather than wrong.
+// A fold is O(n) with a constant stack and returns the identical value for every
+// input the spread survived, so no fixture output changes and drift-sentinel does
+// not join DIVERGED_PACKS. `0` is the correct identity: every element is
+// Math.abs(...) and so non-negative, matching the `abs.length ? ... : 0` fallback
+// this replaces.
+function maxOf(values) {
+  let max = 0;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] > max) max = values[i];
+  }
+  return max;
+}
+
 function normalizeSignalWindow(signalWindow) {
   const abs = signalWindow.map((v) => Math.abs(Number(v) || 0));
-  const max = abs.length ? Math.max(...abs) : 0;
+  const max = abs.length ? maxOf(abs) : 0;
   if (max === 0) return abs.map(() => 0);
   if (max <= 1) return abs;
   return abs.map((v) => v / max);
@@ -460,10 +478,21 @@ module.exports = { manifest, execute };
 if (require.main === module) {
   const fs = require('fs');
   const src = process.argv[2];
+  // SC-9/A3(b). Every wrapper read stdin and files unbounded, with no size limit
+  // anywhere in the codebase. The cap bounds the read and the parse before either
+  // can become the failure. 64 MiB is far above any evidence payload a recorded
+  // job has produced, so a legitimate input never approaches it. This is a floor,
+  // NOT the fix for F-65: a 200k-entry entropy history is only ~2 MB, well under
+  // the cap — the fix for that is the fold in drift-sentinel.js.
+  const MAX_INPUT_BYTES = 64 * 1024 * 1024;
   let raw;
   try {
     if (!src) throw new Error('missing input path (use a file path or - for stdin)');
-    raw = src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8');
+    const buf = src === '-' ? fs.readFileSync(0) : fs.readFileSync(src);
+    if (buf.length > MAX_INPUT_BYTES) {
+      throw new Error('input exceeds ' + MAX_INPUT_BYTES + ' bytes (' + buf.length + ')');
+    }
+    raw = buf.toString('utf8');
   } catch (err) {
     console.error('adws-validator: cannot read input: ' + err.message);
     process.exit(3);

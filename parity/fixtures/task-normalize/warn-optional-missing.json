@@ -47,5 +47,6 @@
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null
-  }
+  },
+  "expected_source": "original@ADWS_PRO_source"
 }

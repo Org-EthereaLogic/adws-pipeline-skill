@@ -1,0 +1,31 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/index.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "output_mode": "pr",
+    "branch_name": "feat/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "note": "SC-9/A2 pin for the length bound. All characters are inside the charset, so only BRANCH_NAME_MAX can catch it.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_to_ship": 1,
+    "build_files": 1,
+    "docs_files": 0,
+    "output_mode": "pr",
+    "has_branch_name": true,
+    "branch_name_valid": false,
+    "branch_name_problem": "too_long",
+    "composition_valid": true,
+    "malformed_entries": 0,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

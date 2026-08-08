@@ -1,7 +1,7 @@
 ---
 name: adws-reviewer
 description: ADWS pipeline review-phase agent. Reviews the change set for correctness, safety, and contract compliance. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
 

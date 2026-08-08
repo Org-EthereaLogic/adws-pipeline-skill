@@ -1,7 +1,7 @@
 ---
 name: adws-verifier
 description: ADWS pipeline verify-phase agent. Runs post-ship structural and syntax checks with zero LLM judgment calls. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
 

@@ -121,7 +121,11 @@ reviewer blocked** for introducing a defect worse than the one being fixed. Merg
 
 This addendum records the part that is a PIPELINE finding, not a target-repo one.
 
-### F-58 — a fixture-scoped acceptance criterion set makes the grader structurally blind
+### F-70 — a fixture-scoped acceptance criterion set makes the grader structurally blind
+
+*(Renumbered from F-58 under M-5b/B5: that ID was already taken by `docs/SC8_PLAN.md` §7,
+which defines a different finding and is cited by `VERIFICATION.md`. The register keeps the
+older definition; this record moves.)*
 
 The run reported grader **12/12 criteria satisfied**, unanimous consensus at both gates, a
 red-for-the-right-reason falsifiability baseline on every criterion, and full fixture
@@ -145,7 +149,10 @@ No pipeline change is proposed yet. The honest statement is that **a 12/12 grade
 certifies criterion coverage, not correctness**, and the execution report should not be
 read as more than that.
 
-### F-59 — a frozen fixture can pin nothing, and the pack looks identical either way
+### F-71 — a frozen fixture can pin nothing, and the pack looks identical either way
+
+*(Renumbered from F-59 under M-5b/B5 — see the note on F-70 above. This is the finding that
+M-5a/A2's `guard-ablation` sweep was built to answer.)*
 
 Two fixtures added specifically to lock the security fix targeted paths that do not exist,
 so `ENOENT` produced output byte-identical to the guard refusing. Deleting the guard left

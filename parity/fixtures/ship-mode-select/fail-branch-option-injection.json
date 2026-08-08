@@ -1,0 +1,23 @@
+{
+  "input": {
+    "output_mode": "pr",
+    "branch_name": "--upload-pack=/tmp/evil",
+    "policy": {
+      "allow_direct_commit": true
+    }
+  },
+  "note": "SC-9/A2 pin for F-64. Reproduced live before SC-9: this returned `pass` from the validator SKILL.md documents as the pre-git gate, and adws-shipper.md:49 then runs `git push -u origin {branch_name}` -- a leading-dash value lands in argv option position. Reverting the leading-dash rule alone flips this fixture.",
+  "expected": {
+    "rubric_result": "fail",
+    "output_mode": "pr",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "branch_name_valid": false,
+    "branch_name_problem": "leading_dash_reads_as_option",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

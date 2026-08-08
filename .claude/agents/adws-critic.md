@@ -1,7 +1,7 @@
 ---
 name: adws-critic
 description: ADWS pipeline Critic. Independent adversarial assessment of a change set at the test or review gate. Spawned with fresh context — receives only the contract and the change set. Dispatched by the adws-pipeline skill orchestrator only.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 model: sonnet
 ---
 

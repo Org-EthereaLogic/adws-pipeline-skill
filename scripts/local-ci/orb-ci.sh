@@ -41,7 +41,7 @@ overall=pass
 legs=()
 
 read -ra versions <<< "$NODE_VERSIONS"
-for v in "${versions[@]}"; do
+for v in ${versions[@]+"${versions[@]}"}; do
   img="adws-pipeline-localci:node${v}"
 
   echo "=== [orb] build $img ($platform) ===" >>"$log"

@@ -1025,3 +1025,324 @@ restating it. What remains untested is the counterfactual the operator decision 
 that removing the override leaves no case where a correct run is blocked by a wrong
 validator. The next field run is the test of that, exactly as F-45…F-51 were prose that
 three field runs falsified.
+
+## Maintenance audit M-5a (2026-08-08) — minimum trust foundation, F-63…F-69
+
+Full audit evidence: `docs/AUDIT_2026-08-08.md`. Package plan: `docs/M5A_PLAN.md`.
+
+The audit covered 13 field runs, 73 local-CI and 40 OrbStack records, the parity report,
+the acceptance evidence, `SKILL.md`, the 10 agent definitions, and every executable in the
+repo. Its headline is not about pipeline behaviour but about self-knowledge: **this gate had
+never gone red.** 73/73 runs, 657/657 steps, across its entire recorded life — and not as a
+logging artifact, since `gate.sh:45` sets `overall=fail` without exiting and `:94-96` emits
+the record before the exit. Every finding in the F-register was located by a field run, a
+review bot, or a human audit. None was ever located here.
+
+M-5a changes no validator behaviour, no fixture `expected` value, and no schema. It exists
+so that SC-9's claims are verified by something that can fail.
+
+### Findings registered
+
+| ID | Finding | Package |
+|---|---|---|
+| F-63 | A `__proto__` path segment makes `repo-context-scan.execute()` throw *before* its policy loop completes, so the build-phase policy gate is SKIPPED rather than returning `fail`. Reproduced. | SC-9 |
+| F-64 | `branch_name` is length-checked only in both ship validators; `--upload-pack=…` and `foo; rm -rf ~` both return `pass` from the documented pre-git gate. `{slug}` is undefined anywhere in the spec. Reproduced. | SC-9 |
+| F-65 | `Math.max(...abs)` over an unbounded array (`drift-sentinel.js:244`) throws at 200k entries; no input-size cap exists anywhere. Reproduced. | SC-9 |
+| F-66 | Five agents are instructed to write files and hold no `Write` tool. Causation for the three recorded haiku write-failures is likely, not established. | SC-10 |
+| F-67 | Predictable `os.tmpdir()` path written with `writeFileSync` in the parity harness — symlink overwrite/unlink at gate-runner privilege. | **M-5a (fixed)** |
+| F-68 | `install.sh` `rm -rf` + `cp` destroys user edits with no backup, prompt, or diff. | SC-10 |
+| F-69 | `safeReadJson` conflates unreadable/malformed with absent, in the tool whose purpose is tamper-evidence. | SC-11 |
+
+### What M-5a asserts that nothing asserted before
+
+- **The CLI wrapper.** 279 duplicated lines previously covered by one happy-path assertion
+  per pack. Now 332 assertions across 11 CLIs: every exit-3 path, both input modes, and the
+  documented equivalence of `-` and a file path. Falsified by deleting the object guard from
+  one validator — four cases flip **for that pack only**, all eight others stay green.
+- **Stdin mode**, which no test had ever exercised. Falsified by making one validator ignore
+  `-`: every `stdin-*` case fails, `file-happy` stays green.
+- **That the fixture corpus pins the rules it appears to test.** `guard-ablation` mutates
+  `execute()` one rule at a time and fails on any mutation the corpus does not notice.
+  Measured: 18 mutants, 122 `execute()` calls, **0 survivors, 6 ms**. Falsified by adding an
+  unpinned guard to `ship-mode-select` — **2 survivors reported, exit 1**, and they are
+  precisely the guard and verdict SC-9/A2 must add. SC-9 therefore cannot ship that rule
+  without a fixture pinning it.
+- **That the nine wrapper copies cannot drift.** Falsified by a one-character edit: the lint
+  names the file and the wrapper line.
+
+### A scope correction worth recording
+
+`guard-ablation`'s first run reported nine survivors, all in the CLI wrapper. True, but
+stated in the wrong place — the 93 parity fixtures call `execute()` directly via
+`exec-one.js` and never invoke the CLI, so they pin no wrapper line by construction. Nine
+permanent baseline entries saying so would drown any real survivor. The wrapper is scoped
+out of the sweep and pinned instead by the contract suite and the byte-identity lint, which
+narrows the tool's claim to one that is true: *the fixture corpus pins every rule in
+`execute()`.*
+
+This is the same discipline F-41 applied to suite sizes — a check that cannot fail for the
+right reason is not a check.
+
+### Two corrections to the audit's own first-pass figures
+
+**Parity costs ~4 s per gate run, not 277 s** — the larger number was the cumulative sum
+across all 73 recorded runs. So an anti-vacuity sweep has real budget, and `drift-sentinel`'s
+env-read-at-call-time impurity costs ~4 s rather than 277 and is not worth "fixing". That
+impurity is in fact load-bearing: it is what lets `guard-ablation` set and restore env around
+each in-process `execute()` call.
+
+**The duplicated agent boilerplate costs no always-loaded context** — agent definitions load
+per dispatch and never co-load. The 9,340 byte-identical bytes are a drift problem, not a
+token problem, so the fix is a lint rather than a refactor. `SKILL.md` is where the token
+win is (SC-10/A3).
+
+## SC-9 (2026-08-08, audit findings F-63…F-65) — hostile input is input
+
+Plan: `docs/SC9_PLAN.md`. Findings: `docs/AUDIT_2026-08-08.md` §2. Depends on M-5a.
+
+Three defects, all reproduced before the fix and all re-verified after. Each had shipped
+through every gate this repo has, because the two suites that would have caught them did
+not exist until M-5a: the CLI was covered by one happy-path assertion per pack, and nothing
+checked whether a fixture pinned anything.
+
+| Finding | Before | After |
+|---|---|---|
+| **F-63** — `{}` inherits `Object.prototype`, so a `__proto__` path segment threw *before* the policy loop completed. The build-phase policy gate was **skipped**, not failed. | `adws-validator: execute failed: groupedFiles[dir].push is not a function`, exit 3, no verdict | `rubric=fail`, violations `outside_allowed_paths + in_blocked_path`, exit 0 |
+| **F-64** — `branch_name` length-checked only, in both ship validators, which SKILL.md documents as the pre-git gate | `--upload-pack=/tmp/evil` → `pass`; `foo; rm -rf ~` → `pass` | `fail (leading_dash_reads_as_option)` and `fail (illegal_character)`, in both validators |
+| **F-65** — unbounded `Math.max(...abs)` spread | `RangeError: Maximum call stack size exceeded` at 200k entries | 500k entries → `band=SAFE` in 41 ms |
+| **undercount** — `files_to_ship` counted the build half only; recorded in three field runs and deferred each time | 2 build + 2 docs → `files_to_ship: 2` | `files_to_ship: 4` (`build_files: 2`, `docs_files: 2`) |
+
+### The invariant this package turns on
+
+**Zero pre-existing verdicts moved.** All 20 pre-existing fixtures across the three
+diverged packs were re-verified against `git show HEAD:` — every `rubric_result` is
+unchanged; only additive keys differ. Corpus 93 → 108 (15 new pins).
+`drift-sentinel` did **not** diverge: the fold returns the identical value for every input
+the spread survived, so all 16 of its fixtures are byte-identical.
+
+### What went red, and why that is the finding
+
+`guard-ablation` **failed the gate on SC-9's own first cut**, naming four rules the new
+fixtures did not pin: the empty-prefix branch of `underPrefix`, both absolute-path guards,
+and the malformed-entry count. Three were closed with fixtures. The fourth — an explicit
+`startsWith('/')` test — proved to be **dead code**: `/etc/passwd` splits to
+`['', 'etc', 'passwd']`, so the empty-segment rule already rejected it. It was deleted
+rather than exempted; a redundant guard is a rule readers will trust twice.
+
+This is the first time a check in this repository has failed for a reason nobody wrote a
+fixture for. It is also the exact scenario the issue-#22 field record described and no
+mechanism addressed: *"deleting the guard left both fixtures green."* Without it SC-9 would
+have shipped four unpinned rules and one piece of dead security-shaped code, and every
+suite would have been green.
+
+Final: 35 mutants, 409 `execute()` calls, **0 survivors**, 13 ms.
+
+### Harness change
+
+`--freeze` requires `ADWS_PRO_source/`, which is gitignored and absent, so a scope change
+that adds output keys could not land at all. Added `--freeze-diverged`: for a diverged pack
+the port **is** the reference by definition, so no original is needed. It refuses to touch
+a non-diverged pack, so it cannot launder a baseline that is supposed to come from the
+original. Refreezing all five diverged packs left `criteria-to-checks` and
+`review-risk-assess` byte-identical — independent evidence the freeze path is faithful for
+unchanged code.
+
+Validator parity is now **4 of 9** byte-for-byte against the originals, down from 7. The
+count fell because scope changes were approved, not because parity degraded, but the honest
+number is the smaller one and `README.md` states it.
+
+## SC-10 (2026-08-08, audit findings F-66, F-68) — the agents can write; the skill can shrink
+
+Plan: `docs/SC10_PLAN.md`. No validator changes, no fixture changes, no refreeze.
+
+**F-66 — six agents, not five.** The audit named five agents instructed to write evidence
+files while declaring no `Write` tool. Writing the lint found a sixth immediately:
+`adws-reviewer`, whose instruction reads "Write to your attempt directory" rather than
+"Write EXACTLY one file", and which writes three files. That is why the lint reads the agent
+**body** rather than checking a list of names — the list was already wrong on its first day.
+All ten agents now declare `Write`; `frontmatter-lint` fails any agent whose body instructs
+a write without it.
+
+Causation is stated as a hypothesis, not a finding: `Bash` can write those files, so the
+frontmatter alone does not prove the missing tool caused the three recorded haiku
+write-failures. The fix stands on its own merits. `adws-advocate` stays at `haiku` — fix the
+cause, keep the tier, and record why so a later audit does not "fix" it by raising cost.
+
+**Drift, not tokens.** The evidence-integrity and security paragraphs are byte-identical in
+all ten agent files. They cost no always-loaded context (agent files load per dispatch and
+never co-load), so the risk is drift: ten copies of a security rule are ten places a
+hardening can miss one, and no test reads agent prose. `agent-blocks-lint.mjs` now asserts
+both blocks against `references/agent-shared-blocks.md`, which doubles as the text the F-11
+fallback must inline verbatim.
+
+**SKILL.md 425 → 337 lines.** Moved to `references/runtimes.md` and
+`references/troubleshooting.md`: the macOS bash-3.2 case study, the agent-type fallback, and
+both recovery procedures. The failure-reason classes were a near-verbatim duplicate of
+`phase-gates.md:403` and became a pointer. What stayed is the operative sentence from each —
+a check that could not run is `NOT RUN` and never a valid falsifiability red; container-green
+is necessary, not sufficient — because those decide gates while the explanations do not.
+
+The reference index is now checked **both ways**. Previously only "every path SKILL.md names
+exists" was asserted; a file could sit in `references/` that nothing pointed at. That
+inversion is how reference-grade prose accumulates in an always-loaded file. An advisory
+350-line target now warns without failing, so the trend is visible before the 500-line
+ceiling — 357 → 367 → 379 → 412 was monotonic and nothing was watching it.
+
+**F-68 — the installer no longer destroys edits.** Stage-and-validate, back up only
+installer-owned paths (never a recursive `.claude/` snapshot), show the diff, prompt or
+hard-error, then swap by `mv` so an interruption cannot leave a half-written skill directory.
+Verified end to end: a local edit to an installed `SKILL.md` causes a non-interactive re-run
+to refuse and preserve the edit; `--force` replaces it and the edit survives in the backup.
+Backups are never auto-deleted and the output says so — auto-pruning would delete the one
+artifact a user reaches for after a bad upgrade.
+
+Gate: 13/13 steps pass.
+
+## SC-11 (2026-08-08, audit finding F-69 + four findings open since SC-3) — evidence that means something
+
+Plan: `docs/SC11_PLAN.md`. Report fixtures 21 → 24, provenance 3 → 5. No `SCHEMA_VERSION`
+bump, no new decision, no new exit code, no validator changes, no parity refreeze.
+
+**F-69.** `safeReadJson` caught every error and returned `null`, so `EACCES`, `EISDIR`, a
+truncated write and a JSON syntax error were indistinguishable from "never written" — in
+the one tool whose purpose is tamper-evident evidence. `ENOENT` is now the only benign
+absence; everything else fails the gate through the existing FAIL → QUARANTINE route. The
+term sits **above** `evalSkillsClean`'s no-outcomes early return, restating SC-8/A11: an
+integrity check underneath an early return gates nothing.
+
+Falsified two ways — restore the catch-all, or disable only the gate term — and in both the
+two new quarantine fixtures flip to **PROMOTE exit 0** while `promote_absent_optional` stays
+green. That exit 0 is the hole in one number: before SC-11 a corrupted evidence file scored
+a clean promote.
+
+**The new fixtures were vacuous on the first cut.** Both initially targeted
+`build/attempt_1/phase_manifest.json`, but missing phase evidence already fails
+`pipeline_completion`, so the job quarantined with the fix fully reverted — they pinned
+nothing. Rebuilt against files whose absence is tolerated (a `skill_trace.json`, a
+`consensus/advocate.json`) so the integrity term is the only gate that can produce the
+verdict. Same class as *"deleting the guard left both fixtures green"*, reproduced inside
+this package's own work and caught only by hand-falsification, because `guard-ablation`
+covers validators and not `execution-report.js`. That is the strongest argument for
+extending it (M-5b/B6).
+
+**F-17 closed WONTFIX-with-substitute.** Open since SC-3 across five scope changes because
+the data is not obtainable — the runtime exposes no per-subagent token or cost accounting.
+The split is now explicit: `model_id`/`cost_usd`/`tokens_in`/`tokens_out`/`tool_call_count`
+are structurally unavailable, **retained and written null**; `started_at`/`completed_at`/
+`wall_clock_s`/`agent`/`model_tier_requested` are obtainable and now **mandatory and typed**.
+A first draft proposed deleting the always-null keys; that was withdrawn — removal is a
+breaking change to every recorded evidence tree, and only the retained-and-null form lets a
+reader tell *not captured* from *field dropped*. Provenance fixtures now include the
+mandatory shape and a **rejection** of the shape thirteen field runs actually produced.
+
+**The grader mandate is settled: diff-only.** Its independence comes from not sharing the
+pipeline's evidence; reproduction would make the verdict depend on an environment nothing
+records; and executing the change is the verifier's job. A criterion satisfiable only by
+execution now grades `partial` with `requires_execution: true` when the diff carries no
+demonstrating test — the absence of that test *is* the finding. The spec also now states
+what a grader `pass` does not mean: coverage, not correctness.
+
+**Archive before teardown.** A first draft would have written `artifacts/{jobId}.tar.gz`
+and checked it non-empty; that under-reads the failure. The records show the tree was "not
+committed to the PR head and not retained locally" — the archive was not absent so much as
+written somewhere disposable, which writing beside the source tree reproduces exactly. Now
+three mandatory parts: a durable destination outside the worktree and the checkout, path
+and sha256 recorded in `run_manifest`, and **verification by extraction** rather than by
+size, since a truncated tarball is non-empty. Teardown is conditional on a verified archive.
+
+**This is a mandated procedure, not verified behaviour.** Nothing mechanically enforces the
+durable destination, the recorded digest, or the extraction check — they are instructions in
+`SKILL.md` that an orchestrator must follow, and an orchestrator that skips them fails no
+gate. The recorded `sha256` makes a later audit possible; it does not prevent the loss. The
+four runs that lost their evidence lost it while following a procedure too, which is exactly
+why this gap is recorded rather than papered over: closing it needs a script, and a script
+needs a runtime contract for where "durable" lives.
+
+Gate: 13/13 steps pass.
+
+## Maintenance audit M-5b (2026-08-08) — harness improvement, F-11…F-13 backfill, F-70/F-71
+
+Plan: `docs/M5B_PLAN.md`. Independent of every other package; nothing depends on it.
+
+### Register backfill — F-11, F-12, F-13
+
+These three were recorded as `SKILL.md` troubleshooting headings and never given register
+rows, so the register jumped F-10 → F-14 and three real findings were invisible to anyone
+reading it. Backfilled here at their original dates, with their current homes.
+
+| ID | Finding | First recorded | Now lives in |
+|---|---|---|---|
+| **F-11** | `adws-*` agent types are not registered in every runtime (e.g. cloud sessions). A phase whose agent type fails to dispatch must be run by a general-purpose subagent with the agent's spec inlined VERBATIM — the fallback changes the transport, never the contract. | field run issue #103 (2026-07-18) | `references/runtimes.md` (moved from SKILL.md by SC-10/A3) |
+| **F-12** | A subagent dispatch can die on a transient API error having written no evidence at all. That is not a gate failure: re-dispatch into the same attempt directory and consume no retry budget. Confusing the two burns budget on infrastructure. | field run issue #105 (2026-07-18) | `references/troubleshooting.md` |
+| **F-13** | Host-runtime blindness — the test and verify phases run wherever the ORCHESTRATOR runs, which can differ from the target's runtime. A change can PROMOTE green in a Linux/bash-5 container and crash on macOS bash 3.2. Container-green is necessary, not sufficient. | field run issue #111 (2026-07-20) | `references/runtimes.md`; the operative sentence stays in `SKILL.md` |
+
+### F-70 / F-71 — an ID collision in the live record
+
+`docs/SC8_PLAN.md` §7 and `docs/field-runs/2026-08-07-issue22-*.md` both used **F-58** and
+**F-59** for different findings. The register definitions keep those IDs (they are cited by
+§8 and by this file); the field-run record is renumbered to **F-70** and **F-71**, with a
+note at each. No evidence tree was rewritten — SC-8 §6's precedent holds that trees are
+append-only history, so only the prose moved.
+
+F-71 is the finding M-5a/A2's `guard-ablation` sweep was built to answer, and SC-9 and
+SC-11 each hit its defect class again in their own first cuts.
+
+### The `ci-orb` claim was false
+
+`Makefile` and `.githooks/pre-push` said Tier 2 "closes F-13". It does not: F-13 is a macOS
+**bash-3.2** defect and `orb-ci.sh` varies only the **Node** version on `linux/arm64`. The
+claim is restated, and Tier 1 gains `bash32-scan`, which actually covers the axis — it
+looks for the trigger construct (a bare `"${arr[@]}"` under `set -u`) in the shell scripts
+this repo owns.
+
+It went red on its first run: three hits were its own explanatory comments (the same
+false-positive class `requires-lint` had, found the same way, so comments are now stripped
+first) and three were real sites in `gate.sh`, `orb-ci.sh` and `review.sh`. Those three were
+made safe with `${arr[@]+"${arr[@]}"}` rather than waived — all three arrays happen to be
+non-empty today, but "happens to be non-empty" is exactly what F-13 punished.
+
+### The tested-tree digest, and the version of it that was wrong
+
+33 of the first 73 recorded gate runs were `dirty: true`, so `git_commit` named a tree that
+was never under test. The gate now records `tested_tree`.
+
+The first design hashed `git diff HEAD` plus `git ls-files --others`, and it was **wrong**:
+the former omits untracked file *contents* and the latter lists untracked *filenames* only.
+Verified directly — two worktrees differing solely in an untracked file's contents produced
+**identical** digests under both. A temporary index and `git write-tree` gives a real tree
+object covering tracked modifications and untracked contents together, respects
+`.gitignore`, and never touches the real index. Verified to distinguish both the content
+change and the file's presence.
+
+That correction is recorded rather than quietly fixed, because the broken version looked
+entirely plausible and would have shipped a field that appeared to identify the tested tree
+while not doing so — the same shape as a fixture that appears to pin a rule and does not.
+
+### M-5b/B4 — the parity headline, corrected
+
+A fixture frozen from the port and one frozen from the original were indistinguishable on
+disk, so `PARITY_REPORT.md` could report "identical" for a pack whose baseline was only ever
+the port's own output. Every fixture now carries `expected_source`, `--freeze` stamps it, and
+the verify path **fails** when a non-diverged pack carries a `port@` baseline.
+
+The report now splits the corpus instead of conflating it: **39 fixtures are original-parity;
+69 are frozen-baseline regression.** That is a materially weaker headline than "108/108
+identical" and a truer one. It does not re-derive original parity — nothing here can, without
+`ADWS_PRO_source/` — it stops the report claiming parity for fixtures that never had it.
+
+### M-5b/B1 — `parity/_harness.js`, and what was left alone
+
+Extracted what is genuinely identical: the M-3a coverage cross-check (written three times),
+the `check()` recorder, `listBySuffix`, `withScratchDir`. Left alone: the five per-suite
+epilogues and the `runCli` wrappers, which look alike but each name what they tested or
+differ in ways that matter. Extracting things that merely look alike is how a helper
+accumulates parameters until it is harder to read than the duplication was.
+
+Invariant verified by capturing all six runners' stdout before and after: **every
+pre-existing suite is byte-identical.** One line changed, in the `cli-contract` suite M-5a
+added this session, where the coverage message harmonized with the other three. It took three
+attempts to make that string match exactly — at which point the repo's own rule applies
+("when a parser heuristic needs a third patch, delete it and accept the over-report"), so the
+harmonized message stands and the difference is recorded rather than tuned away.
+
+Gate: 14/14 steps pass.

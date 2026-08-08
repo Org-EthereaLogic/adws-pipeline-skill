@@ -1,0 +1,44 @@
+{
+  "input": {
+    "build_output": {
+      "files_changed": [
+        {
+          "file_path": "src/index.js",
+          "action": "modify"
+        },
+        {
+          "file_path": "src/util.js",
+          "action": "create"
+        }
+      ]
+    },
+    "document_output": {
+      "docs_delta": [
+        "docs/usage.md",
+        "CHANGELOG.md",
+        {
+          "file_path": "src/util.js"
+        }
+      ]
+    },
+    "output_mode": "pr",
+    "branch_name": "adws/job_20260808_0002/document-it"
+  },
+  "note": "SC-9/A4 pin. adws-shipper stages the UNION of build_output.files_changed and the document phase docs_delta; patch-compose counted only the build half, so it undercounted the shipped set -- recorded in three field runs and deferred each time as a frozen validator. Here: 2 build + 3 docs with src/util.js overlapping => files_to_ship 4, build_files 2, docs_files 3. Reverting the union alone flips this fixture (files_to_ship would read 2). The docs_delta deliberately mixes bare strings and an object to pin the tolerant reader.",
+  "expected": {
+    "rubric_result": "pass",
+    "files_to_ship": 4,
+    "build_files": 2,
+    "docs_files": 3,
+    "output_mode": "pr",
+    "has_branch_name": true,
+    "branch_name_valid": true,
+    "branch_name_problem": null,
+    "composition_valid": true,
+    "malformed_entries": 0,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

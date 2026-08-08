@@ -15,66 +15,27 @@ Reference files (read when needed, not all upfront):
 - `references/phase-gates.md` — per-phase gates, retry budgets, consensus, model tiers
 - `references/artifact-layout.md` — evidence tree, file shapes, append-only rules
 - `references/validator-inputs.md` — validator input assembly table (headers stay canonical)
+- `references/runtimes.md` — honest degradation, host-runtime blindness, agent-type fallback
+- `references/troubleshooting.md` — stale `.lock` recovery, transient API errors vs gate failures
+- `references/agent-shared-blocks.md` — the evidence-integrity and security paragraphs every agent carries
 
 Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/validators/*.js` — 9 deterministic validators; CLI: `node <script> <input.json|->` → JSON verdict on stdout
-- `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2
+- `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2/3
 - `scripts/entropy-gate.js` — X-2 stability gate; CLI: `node scripts/entropy-gate.js artifacts/{jobId}/entropy_history.jsonl` → `{action: proceed|escalate|halt}`
 
-## Environment & runtimes (F-9)
+## Environment & runtimes
 
-The bundled scripts need only Node ≥ 20 (and `gh` for `pr` mode). But the TARGET
-repository's test and verify phases usually need repo-specific runtimes the pipeline
-does not ship — a PHP project needs PHP, a Python one needs Python, etc. These are the
-tester's and verifier's concern, not the orchestrator's: when a required runtime is
-absent, a check must degrade HONESTLY — record `"pass": false` with output `NOT RUN`,
-or use a documented substitute (E2E-1 ran PHP checks via php-wasm under Node) — and
-NEVER an assumed pass. A skipped or unrunnable check is evidence of a gap, not a
-green light; plan checks around the runtimes actually available and say so in the
-phase log.
+The bundled scripts need only Node ≥ 20 (and `gh` for `pr` mode). The TARGET repository's
+test and verify phases need runtimes the pipeline does not ship. **A check that could not
+run is `"pass": false` with output `NOT RUN` — never an assumed pass, and never a valid
+falsifiability red** (a pre-change check that is red only because it could not execute is
+recorded `gate_weak`, not `verified`). Container-green is NECESSARY, NOT SUFFICIENT: the
+phases run wherever the orchestrator runs, which can differ from the target's own runtime.
 
-The same honesty governs the SC-3 falsifiability baseline (A2): a pre-change check that is
-red only because it could not execute (`NOT RUN` / collection error) is NOT a valid red —
-the runtime is missing, not the feature — so its criterion is recorded `gate_weak`
-(unverified), never `verified`. See `references/phase-gates.md` "Falsifiability at the
-test gate."
-
-**Host-runtime blindness (F-13, field-validated issue #111).** The test and verify
-phases run wherever the ORCHESTRATOR runs — often a Linux / bash-5 cloud container —
-which can differ from the TARGET runtime a generated project actually executes on.
-macOS ships bash 3.2, where expanding an empty array `"${arr[@]}"` under `set -u`
-raises `unbound variable` and aborts (a bash bug fixed only in 4.4); a change can
-PROMOTE green in-container yet crash on the target host. Container-green is NECESSARY,
-NOT SUFFICIENT. When a change touches shell — or any runtime whose behavior is
-version/OS-sensitive — the tester MUST exercise it on the target runtime, or the ship
-step MUST re-validate there before merge: render a scaffold and run the affected
-scripts under the target's own interpreter, driving edge inputs (empty lists/arrays,
-embedded tabs/newlines) that trip version-specific behavior, and diff against a
-baseline render. A failure-set parity check alone misses this unless the new tests
-themselves exercise those edges under the target interpreter.
-
-### Agent-type fallback (F-11)
-
-The `adws-*` agent definitions in `.claude/agents/` register as subagent types in
-Claude Code, but other runtimes (e.g. Cowork/cloud sessions) may not load them. When a
-phase agent's type is not registered, do NOT skip the phase or run it yourself:
-dispatch a general-purpose subagent with the corresponding `adws-*.md` body inlined
-VERBATIM into its prompt (spec first, then the phase inputs), apply the model tier via
-the dispatch mechanism's model option, and record the usual `agent` name in
-`phase_manifest.json`. The inlined spec must include the agent's Security paragraph
-and evidence-integrity rules — the fallback changes the transport, never the contract.
-For the single-file writers (Critic, Advocate, Grader) — and for ANY dispatch at `haiku`
-tier, whichever agent it is — the dispatch prompt must ALSO explicitly instruct: write
-the output file with the file-writing tool at the exact given path, take timestamps from
-a live `date -u +%Y-%m-%dT%H:%M:%SZ`, and verify the file exists (e.g. `ls -l` it) before
-finishing — at haiku tier the spec text alone has not been sufficient (an agent may
-return its verdict in its final message without writing the file); the orchestrator still
-verifies the file exists and parses before deciding the gate. The hazard was first
-observed on a single-file writer, but it is a property of the tier, not of the role.
-Field-validated end to end on issue #103 of the agentic-starter-kit; the
-single-file-writer dispatch note comes from the issue-#107 run. (Both runs are recorded
-in the adws-pipeline-skill source repository's field-run log; that log is development
-material and is not installed alongside the skill.)
+See `references/runtimes.md` for honest-degradation guidance, the host-runtime blindness
+case (F-13), and the agent-type fallback for runtimes where `adws-*` types are not
+registered (F-11).
 
 ## Hard rules (never violate)
 
@@ -94,7 +55,9 @@ material and is not installed alongside the skill.)
 5. Build/test/review happen in an isolated git worktree. The primary checkout is
    untouched until ship (FR-8). Evidence goes to the primary checkout's `artifacts/`.
 6. Git: stage explicit paths only — never `git add -A` or `git add .`; never `--force`,
-   never `--no-verify`, never bypass hooks (NFR-5).
+   never `--no-verify`, never bypass hooks (NFR-5). Never interpolate a value into a git
+   command before the ship validators have passed on it, and where the command supports
+   it, terminate option parsing with `--` (SC-9/A2).
 7. An Advocate dissent is recorded verbatim and blocks promotion until the operator
    resolves it or the job terminates with `ADVOCATE_DISSENT` (FR-7).
 8. The final verdict comes from `scripts/execution-report.js` over the evidence tree —
@@ -130,6 +93,17 @@ unavailable, create explicitly from the primary checkout:
 git worktree add ../{repo}-adws-{jobId} -b adws/{jobId}/{slug} {target_branch}
 ```
 
+`{slug}` is derived deterministically from the contract, never improvised: lowercase
+`task.title`, replace every run of `[^a-z0-9]` with `-`, collapse repeats, strip leading
+and trailing `-`, truncate to 32 characters; if the result is empty, use `task`. The full
+`branch_name` is `adws/{jobId}/{slug}`.
+
+**Run `ship-mode-select` on `{ output_mode, branch_name }` BEFORE the first git command
+that consumes the branch name** (SC-9/A2). A `fail` there is a pre-git gate failure — do
+not create the worktree. Before SC-9 the only check was that the name was non-empty, so
+`--upload-pack=/tmp/evil` and `foo; rm -rf ~` both passed the validator that exists to be
+checked before git.
+
 Record `worktree_path` and `branch_name` in `run_manifest.json`. Never run the
 pipeline's code changes in the primary checkout.
 
@@ -149,8 +123,8 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    class). Record the gate output in the attempt's `phase_manifest.json` as
    `stability_gate`.
 1. **Dispatch** the phase agent (`adws-planner` … `adws-verifier`) via the Agent tool
-   at its current model tier (agent type not registered in this runtime → F-11
-   fallback in "Environment & runtimes"). Give it: the contract path, the worktree path, its
+   at its current model tier (agent type not registered in this runtime → the F-11
+   fallback in `references/runtimes.md`). Give it: the contract path, the worktree path, its
    attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
    the previous phase's `phase_output.json` path.
    **At the TEST phase only, run `criteria-to-checks` BEFORE this dispatch** (it is a
@@ -160,10 +134,12 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    `check_id` onto the checks it runs (SC-5/F-31) — it cannot do that with specs that do
    not exist yet, and ids it mints itself cannot join back to the criteria. Every other
    validator runs at step 2, on its agent's output. Phase agents write their own
-   evidence files per `references/artifact-layout.md`. Where the runtime exposes per-phase
-   telemetry (model id, cost, tokens, wall-clock, tool-call count, timeout/cancel), record
-   it in the attempt's `phase_manifest.provenance` (SC-3 B1/F-17) — ADVISORY only; absent
-   or partial telemetry never affects the gate, and `execution-report.js` ignores it.
+   evidence files per `references/artifact-layout.md`. Record `phase_manifest.provenance`
+   (SC-3 B1/F-17): `started_at`, `completed_at`, the derived `wall_clock_s`, `agent`, and
+   `model_tier_requested` are MANDATORY and come from a live `date -u`; model id, cost,
+   tokens and tool-call count are structurally unavailable in this runtime and are written
+   as `null` rather than omitted (SC-11/A3). Provenance is never a gate input: absent or
+   null telemetry never affects a gate, and `execution-report.js` ignores it.
 2. **Validate**: run the phase's validator script(s) (mapping in
    `references/phase-gates.md`) with input assembled from the contract and phase
    outputs; wrap each stdout JSON in a `skill_trace.json` under the attempt's
@@ -314,25 +290,36 @@ Post-ship, zero orchestrator judgment:
 2. Run `node scripts/execution-report.js artifacts/{jobId}`.
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
-   and the path to `execution_report.md`. Remove the worktree
-   (`git worktree remove`) only after PROMOTE; keep it for RETRY/QUARANTINE debugging.
-4. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
+   and the path to `execution_report.md`.
+4. **Archive the evidence before any teardown (SC-11/A5).** In order:
+   1. Write `artifacts/{jobId}.tar.gz` from `artifacts/{jobId}/` to a **durable
+      destination outside the worktree and outside the target checkout** —
+      `execution.evidence_archive_dir` from the contract. If the contract names no
+      durable destination, say so in the terminal report and do NOT remove anything:
+      an archive written into a disposable checkout is not an archive.
+   2. Record `evidence_archive: { path, sha256, bytes, created_at }` in
+      `run_manifest.json`. A verdict whose evidence was archived somewhere unrecorded is
+      as unverifiable as one never archived.
+   3. **Verify by EXTRACTION, not by size.** Extract to a scratch directory and confirm
+      `execution_report.json` and every phase's `phase_manifest.json` are readable from
+      the extracted copy. A truncated tarball is non-empty.
+   4. Only then remove the worktree (`git worktree remove`), and only after PROMOTE;
+      keep it for RETRY/QUARANTINE debugging. **If any step above fails, do not remove
+      the worktree — report the failure.** Teardown is conditional on a verified
+      archive, never the reverse.
+
+   Four recorded runs lost their evidence tree at teardown; one field record notes it as
+   the *third* time that cost a verifiable claim. In each case an archive was not absent
+   so much as written somewhere disposable, which is why the destination and the
+   extraction check are both mandatory rather than advisory.
+5. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
    verdict is terminal, so anything still scheduled is stale by construction (F-57).
 
 ## Failure-reason classes
 
-No-retry (terminate immediately): `CREDENTIAL_FAILURE`, `OPERATOR_CANCEL`,
-`MISSING_UPSTREAM_ARTIFACT`, `PLAN_COHERENCE_BELOW_THRESHOLD` (reserved — carried
-from the original reason set; no gate in this skill currently emits it),
-`ADVOCATE_DISSENT`, `PROTECTED_BRANCH_BLOCKED`.
-Quarantine-class: `CREDENTIAL_FAILURE`, `MISSING_UPSTREAM_ARTIFACT`,
-`ADVOCATE_DISSENT`, `PLAN_COHERENCE_BELOW_THRESHOLD`, `OPERATOR_CANCEL`, second
-`PR_DRIFT_SENTINEL_BLOCK`. `PROTECTED_BRANCH_BLOCKED` is no-retry but NOT
-quarantine-class — it maps to a RETRY verdict. `STABILITY_BUDGET_EXCEEDED` (entropy
-gate `halt`) likewise terminates immediately but maps to RETRY. Everything else
-terminating the job (budget exhaustion → `{PHASE}_GATE_FAILURE`, or a second test
-rewind → `TEST_GATE_FAILURE`) → RETRY verdict.
-
+The authoritative lists — no-retry (terminate immediately) versus quarantine-class, and
+which map to RETRY — are in `references/phase-gates.md` "Failure-reason classes". Record
+the reason verbatim from that reference; never invent one outside the documented enums.
 ## Validator → phase map
 
 | Phase | Validator script(s) |
@@ -368,45 +355,5 @@ evidence-integrity failure.
 
 ## Troubleshooting
 
-### Stale worktree / ref `.lock` files (F-10)
-
-On sandbox-mounted or overlay filesystems, `git worktree add` can leave behind
-zero-byte `*.lock` files (e.g. `.git/worktrees/{name}/HEAD.lock`, or a
-`.git/refs/.../{ref}.lock`) that git itself then refuses to remove
-(`unlink: Operation not permitted`). Every subsequent ref update on that target fails
-with `cannot lock ref … Unable to create '….lock': File exists`.
-
-Recovery — run all three checks BEFORE deleting anything:
-1. Confirm the file is a lock AND is **zero bytes** (`ls -l` shows size 0). A non-empty
-   `.lock` may be a real in-progress git transaction — do NOT delete it.
-2. Confirm **no live git process** is touching this repo (`pgrep -fl git`). If one is,
-   wait for it to finish; the lock is legitimate.
-3. Only then remove the specific stale lock file(s) by **explicit path** (never a
-   wildcard sweep), using elevated permission if the mount requires it. Re-run the
-   failed git command.
-
-Prefer the Agent tool's `isolation: "worktree"` where available — it sidesteps this by
-not manipulating the primary checkout's `.git/worktrees` under the sandbox mount.
-
-### Transient subagent API errors vs. gate failures (F-12)
-
-A phase subagent can die on a transient infrastructure error (e.g. a stream idle
-timeout, a terminal API error after retries) rather than on the merits of its work.
-This is NOT a gate failure and MUST NOT consume the phase's retry budget:
-
-1. Inspect the attempt directory. If the subagent wrote NO evidence (no
-   `phase_output.json`/`phase_manifest.json`), nothing in the append-only tree was
-   committed — re-dispatch the SAME agent into the SAME `attempt_{n}` directory. It is
-   not a new attempt (FR-4 is about attempts that produced evidence; an empty directory
-   from a dead dispatch has recorded nothing to preserve).
-2. If the subagent wrote PARTIAL/malformed evidence before dying, treat those files as
-   this attempt's record (append-only — do not edit them), count the malformed outputs
-   toward the X-2 parse-failure signal, and open a NEW `attempt_{n+1}` for the re-run
-   (which now escalates a tier as a normal retry).
-3. Only a completed dispatch whose OUTPUT fails the gate (validator `fail`, Critic
-   `fail`, checks fail, etc.) consumes the retry budget. Never record an
-   infrastructure death as a `{PHASE}_GATE_FAILURE`.
-
-Field-validated: the issue-#105 run's first planner dispatch died on a stream idle
-timeout having written nothing; re-dispatch into the same empty `plan/attempt_1/`
-proceeded cleanly with no budget consumed.
+See `references/troubleshooting.md` — stale worktree / ref `.lock` files (F-10), and
+telling transient subagent API errors apart from gate failures (F-12).

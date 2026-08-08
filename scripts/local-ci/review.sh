@@ -57,7 +57,7 @@ reviewed=0
 model_records=()
 
 read -ra model_list <<< "$MODELS"
-for MODEL in "${model_list[@]}"; do
+for MODEL in ${model_list[@]+"${model_list[@]}"}; do
   safe="$(printf '%s' "$MODEL" | tr '/:' '__')"
   mlog="ci_logs/${run_id}.${safe}.review.log"
 

@@ -1,0 +1,51 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "A proposal list carrying entries with no usable file_path.",
+      "file_change_proposal": [
+        {
+          "file_path": "src/real.js",
+          "action": "create",
+          "description": "a well-formed proposal"
+        },
+        {
+          "action": "modify",
+          "description": "no file_path at all"
+        },
+        {
+          "file_path": "   ",
+          "action": "create",
+          "description": "whitespace-only file_path"
+        },
+        null
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "SC-9/A1(b) pin for malformed_entries. An entry with no usable path is not assessable against any policy, so it is counted as a FACT and fails (SC-8/A9's rule) rather than being silently skipped -- silently skipping is how a plan could smuggle unassessable entries past the gate while the count still read clean. Reverting the malformed_entries term alone flips this fixture from fail to pass. Also pins that a null entry does not throw.",
+  "expected": {
+    "rubric_result": "fail",
+    "files_proposed": 4,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/real.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 3,
+    "plan_summary": "A proposal list carrying entries with no usable file_path.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9, v2.0.0"
+}

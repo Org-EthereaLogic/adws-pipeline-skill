@@ -170,10 +170,21 @@ module.exports = { manifest, execute };
 if (require.main === module) {
   const fs = require('fs');
   const src = process.argv[2];
+  // SC-9/A3(b). Every wrapper read stdin and files unbounded, with no size limit
+  // anywhere in the codebase. The cap bounds the read and the parse before either
+  // can become the failure. 64 MiB is far above any evidence payload a recorded
+  // job has produced, so a legitimate input never approaches it. This is a floor,
+  // NOT the fix for F-65: a 200k-entry entropy history is only ~2 MB, well under
+  // the cap — the fix for that is the fold in drift-sentinel.js.
+  const MAX_INPUT_BYTES = 64 * 1024 * 1024;
   let raw;
   try {
     if (!src) throw new Error('missing input path (use a file path or - for stdin)');
-    raw = src === '-' ? fs.readFileSync(0, 'utf8') : fs.readFileSync(src, 'utf8');
+    const buf = src === '-' ? fs.readFileSync(0) : fs.readFileSync(src);
+    if (buf.length > MAX_INPUT_BYTES) {
+      throw new Error('input exceeds ' + MAX_INPUT_BYTES + ' bytes (' + buf.length + ')');
+    }
+    raw = buf.toString('utf8');
   } catch (err) {
     console.error('adws-validator: cannot read input: ' + err.message);
     process.exit(3);

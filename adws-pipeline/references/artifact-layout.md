@@ -111,6 +111,29 @@ audit, never a gate input: **absent or partial provenance NEVER implies pass or 
 (mirrors F-9). It is not X-1 hosting telemetry — no dashboard, socket, DB, or process.
 `execution-report.js` ignores it (tolerant reader, rule 8), so the report suite is
 unchanged (SC-3 B2 leaves the report generator untouched).
+**F-17 disposition (SC-11/A3): closed WONTFIX-with-substitute.** F-17 asked for per-phase
+invocation provenance and stayed open across five scope changes because the data is not
+obtainable: the orchestrating runtime does not expose per-subagent token or cost
+accounting to a skill. Across thirteen recorded field runs, every `phase_manifest.json`
+carries `model_used=null, cost_usd=null, token_count=null`, and only three runs record
+wall-clock at all.
+
+So the split is now explicit rather than aspirational:
+
+- **Structurally unavailable in this runtime** — `model_id`, `cost_usd`, `tokens_in`,
+  `tokens_out`, `tool_call_count`. Keep the keys and write `null`. They are NOT removed:
+  removal would be a breaking change to every recorded evidence tree and every reader,
+  and an explicitly-documented-unavailable field is no less honest than an absent one.
+  A reader can tell "not captured" from "field dropped" only if the field is still there.
+- **Obtainable, and therefore MANDATORY** — `started_at` and `completed_at` from live
+  `date -u +%Y-%m-%dT%H:%M:%SZ` at dispatch and at return, the derived `wall_clock_s`,
+  the `agent` name, and `model_tier_requested` (what the orchestrator asked for, which is
+  a fact it owns even when it cannot observe what answered). Only three of thirteen runs
+  recorded wall-clock, so this changes behaviour, not just schema.
+
+The advisory rule still holds for the unavailable half: absent or null telemetry NEVER
+implies pass or fail, and `execution-report.js` still ignores the whole object.
+
 The three schema shapes (SC-3 B1 present / partial / absent) are validated by a
 deterministic harness in the source repository, without making provenance a gate input:
 - full: `{ "model_id": "opus", "cost_usd": 0.42, "tokens_in": 18000, "tokens_out": 900, "elapsed_ms": 51200, "tool_call_count": 12, "timeout": false, "cancel": false }`
