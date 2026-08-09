@@ -1208,9 +1208,12 @@ gone red **five times across four steps** — `guard-ablation` ×2, `requires`, 
 the finding produced. The mechanisms built to be falsifiable proved falsifiable on real work
 within a day of shipping. This is recorded as a closed concern, not carried forward.
 
-`parity` remains 0-for-139, which is the expected shape for a frozen-fixture regression suite
-on a mostly-docs commit stream. Its ability to fail is established by `guard-ablation`
-mutating the validators rather than by counting reds — which is exactly why F-86 matters.
+`parity` was 0-for-139 at the time of this audit (the ledgers are append-only, so that figure
+is a timestamp), which is the expected shape for a frozen-fixture regression suite on a
+mostly-docs commit stream. Its ability to fail is established by `guard-ablation` mutating
+the validators rather than by counting reds — which is exactly why F-86 matters. SC-14 then
+demonstrated it directly: deleting the legacy yellow-band rule turns
+`legacy-yellow-band-reached.json` red, so the suite now has a recorded red on a real rule.
 
 ### Findings
 
