@@ -1,0 +1,34 @@
+{
+  "input": {
+    "entropy_history": [
+      {
+        "entropy": 0.18
+      },
+      {
+        "entropy": 0.18
+      }
+    ],
+    "checks": [],
+    "build_output": {},
+    "policy": {}
+  },
+  "env": {
+    "ADWS_UMIF_CANONICAL": "off"
+  },
+  "note": "SC-14/A4b (F-86) — pins the legacy YELLOW band, which no fixture reached. ctm = COLLAPSE_ENTROPY_THRESHOLD - 0.18 = 0.15, so CTM_YELLOW (0.1) < ctm <= CTM_LOW (0.2) and computeCTM takes the `if (ctm > CTM_YELLOW)` return. The sibling legacy-yellow-zone.json is named for this band but its entropy of 0.25 gives ctm 0.08, which falls through to the RED band — so guard-ablation's `drift-sentinel:guard-off:#22` survived: deleting the yellow rule changed no frozen expectation. Entropy is held flat so gradient_alert stays false and the case pins the band alone. Reverting the rule flips zone yellow -> red and risk_level medium -> high.",
+  "expected": {
+    "rubric_result": "warn",
+    "ctm": 0.15,
+    "zone": "yellow",
+    "risk_level": "medium",
+    "d_entropy": 0,
+    "ds_dtx": 0,
+    "gradient_alert": false,
+    "current_entropy": 0.18,
+    "history_length": 2,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "adws-pipeline@SC-14"
+}

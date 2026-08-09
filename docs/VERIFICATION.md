@@ -1666,3 +1666,290 @@ carrying `main` alone until this sync branch was pushed. The repository working 
 `.adws-installs`, `.vscode/` and `ci_logs/` are gitignored-and-retained by intent, not
 oversights, and a blanket `git clean -xdf` would have destroyed the install registry that
 `make check-installs` reads.
+
+---
+
+## SC-14 (2026-08-09, audit M-6 findings F-80, F-82, F-83, F-86, F-87) — budgets and assertions
+
+Plan: `SC14_PLAN.md`. Findings: `DPPD.md` §23 (M-6). Evidence base:
+`docs/AUDIT_2026-08-09.md`. Three of the five findings are the same shape — a rule was
+decided, written down, and given nothing that asserts it.
+
+**Gate at HEAD: 16/16 steps pass** (15 existing + the new `no-eval`), parity **109/109**,
+guard-ablation **18 accepted — 2 equivalent, 16 unpinned (budget 16)**, `skill-manifest`
+version `358f7b7d28a7` → `3a92cd9c5355`.
+
+### A1 — egress destination guard (F-80)
+
+`scripts/local-ci/review.sh` is the only network egress in the repository and posted the
+full branch diff to whatever `OLLAMA_HOST` named, with nothing in the output naming it.
+Loopback is now allowed by default; anything else requires `REVIEW_ALLOW_REMOTE=1`; the
+destination prints either way. Host parsing strips scheme, userinfo, path, query and port
+by parameter expansion (bash-3.2 safe) and matches an exact allowlist.
+
+| Falsification | Result |
+|---|---|
+| `OLLAMA_HOST=http://evil.example:11434` | **exit 2**, host named, no POST |
+| same + `REVIEW_ALLOW_REMOTE=1` | proceeds; `WARNING: sending the branch diff to REMOTE host evil.example` |
+| 12 URL forms swept (7 distinct hosts) | `user:pass@evil.example`, `localhost.evil.example`, `127.0.0.1.evil.example`, `evil.example/?x=localhost`, `exfil.attacker.net`, `[2001:db8::1]` all **BLOCK**; `localhost`, `127.0.0.1`, `[::1]`, `0.0.0.0`, bare `localhost:11434` all ALLOW |
+
+No substring bypass: the allowlist matches the extracted host exactly, so a loopback name
+appearing as a subdomain, in userinfo, or in a query string does not admit it.
+
+### A2 — the no-eval rule becomes a hard rule and an assertion (F-82)
+
+SC-13 classified an agent-authored shell string as Critical and wrote the rule into
+`artifact-layout.md:344-352` alone — not a hard rule, not in the agents' security block,
+asserted by nothing. Now in all three places.
+
+- `SKILL.md` **hard rule 9** (+5 lines): a `reproduction.command` is a RECORD, never an
+  execution channel; automated replay goes through an allowlisted runner keyed by
+  `check_id`; `reproduction.files` entries resolve inside the attempt's `consensus/repro/`.
+- `references/agent-shared-blocks.md` security block extended, propagated **byte-identically
+  to all ten** `.claude/agents/adws-*.md`.
+- New `scripts/local-ci/no-eval-lint.mjs`, gate step `no-eval`. Two rules over two scopes,
+  because they are different claims: **sinks** (`child_process`, `exec*`, `spawn*`, `eval`,
+  `new Function`, `vm`) in the **shipped tree only**; **`command` reads** *everywhere*.
+
+The harness is deliberately exempt from the sink rule: `parity/` spawns `process.execPath`
+on fixed script paths and `guard-ablation.mjs` instantiates mutated validator source with
+`new Function` by design. Banning those would be a rule the project breaks on first use.
+The first cut of this lint did ban them and reported 15 findings, every one legitimate
+harness behaviour — recorded because it is the same false-positive class `requires-lint`
+and `bash32-scan` each hit on their first cut.
+
+| Falsification | Result |
+|---|---|
+| `require("child_process")` added to a shipped validator | **fails**, file + line named |
+| `repro.command` added to `parity/run-parity.js` | **fails**, file + line named |
+| `repro["command"]` (bracket spelling) | **fails**, file + line named |
+| new sentence reworded in one agent only | `agent-blocks-lint` **fails** naming file + block |
+
+### A3 — the `SKILL.md` line budget ratchet (F-83)
+
+M-3b recorded the growth as *"357, 367, 379 — monotonic"* and then asserted the **500
+ceiling**, which is the point at which the file is already too large. SC-10 cut the file to
+337 and recorded that floor as a decision; SC-11/12/13 put back all 88 lines in ~24 hours,
+because a decision with no mechanism is a measurement.
+
+`parity/skill-line-budget.json` records `budget` plus a `history` of
+`{ value, set_by, reason }`. `frontmatter-lint.mjs` now has three levels: NOTE at 350,
+**FAIL above `budget`**, FAIL at ≥ 500 regardless.
+
+**Seeded at 424** — the value audit M-6 observed — per operator decision, so the ratchet
+starts where the file actually was and forces no compression pass. **A2 then grew the file
+to 429**, and the budget was raised to 429 with the reason recorded in `history`. That is
+the mechanism exercising itself on the change that introduced it, and the cost of hard
+rule 9 is now visible in the diff rather than absorbed.
+
+| Falsification | Result |
+|---|---|
+| append one line to `SKILL.md` | **fails**, budget file named |
+| raise `budget` without appending `history` | **fails** — budget/history mismatch |
+| raise `budget` **and** append `history` | passes |
+| `budget: 600` with `SKILL.md` at 509 lines | **fails** at the NFR-3 ceiling |
+
+Lowering the budget toward SC-10's 337 floor is a separate decision with a real prose task
+attached; SC-14 deliberately did not take it.
+
+### A4 — the unpinned register is read, ratcheted, and reported (F-86)
+
+**A4a.** The baseline's `_doc` has required `reason`, `class` and — for `unpinned` — an
+`owner` since M-5a, and `guard-ablation.mjs` read none of them. M-6 found all 19 entries
+carrying `class: unpinned` and `owner: "SC-12 (unscheduled)"` long after SC-12 shipped: a
+bulk assignment nobody had to justify and nothing could contradict. The tool now validates
+the contract, caps `unpinned` at `unpinned_budget`, and reports the two populations
+separately — one is permanent and costless, the other is debt that must shrink, and merging
+them into `19 survivor(s)` was the defect.
+
+**A4b — the triage corrected the finding.** The plan proposed closing five `drift-sentinel`
+entries with five fixtures. A 931-input sweep across both gating modes, plus branch
+instrumentation that throws on entry, found **four of the five were never debt**:
+
+- `verdict:#5` (`:452`, `'fail' → 'pass'`) — **dead branch**. Every return path in
+  `computeCTM` sets `zone` to `green`/`yellow`/`red`, so its `else` is unreachable. This was
+  the plan's must-land entry and the audit's headline example; it is provably `equivalent`.
+  **The audit overstated it and the remediation found that out** — recorded in
+  `AUDIT_2026-08-09.md` §2 rather than quietly amended.
+- `guard-off:#16` (`:263`, `if (max === 0)`) — reachable but **output-identical**: when
+  `max === 0` every `abs` element is already `0`, so the mapped result and the fall-through
+  agree, and the fall-through is taken because `max <= 1` holds. Reclassified `equivalent`.
+- `guard-off:#6` and `#8` — not reached by any of 931 × 2 inputs, but their unreachability
+  rests on an invariant spanning function boundaries that a later edit could invalidate.
+  **Left `unpinned`.** Evidence is not proof; leaving them as debt fails closed.
+
+**The one real gap, and the fixture that should have caught it.** `guard-off:#22` covers the
+legacy YELLOW band. The pack already held `legacy-yellow-zone.json`, named *"returns warn
+when entropy puts CTM in yellow zone"* — but entropy `0.25` gives `ctm 0.08`, below
+`CTM_YELLOW` (0.1), so it lands in the **red** band and its own frozen expectation says
+`zone: "red"`. Deleting the yellow rule left it green. **A fixture named for the rule it does
+not pin is F-71's exact shape, inside the mechanism built to answer F-71.**
+
+Closed by `legacy-yellow-band-reached.json` (entropy `0.18` → `ctm 0.15` → yellow/medium/warn,
+entropy flat so `gradient_alert` stays false and the case pins the band alone). Parity
+**108 → 109**, `EXPECTED_FIXTURE_TOTAL` updated in the same commit. `guard-off:#22` deleted —
+the tool demanded it on its own via the stale-entry rule. Result: **18 entries — 2
+`equivalent`, 16 `unpinned`**, all 16 re-owned `SC-12 (unscheduled)` → `SC-15`,
+`unpinned_budget` seeded at 16.
+
+| Falsification | Result |
+|---|---|
+| delete the new fixture | `guard-ablation` reports `guard-off:#22` a new survivor; `run-parity` fails its total |
+| delete the yellow rule from the validator | new fixture **red** (`zone: "yellow" !== "red"`); **`legacy-yellow-zone` stays green** |
+| strip `owner` from an unpinned entry | **fails**, entry named |
+| add `owner` to an `equivalent` entry | **fails**, entry named |
+| `class: "probably-fine"` | **fails**, entry named |
+| `unpinned_budget: 15` against 16 | **fails**, counts named |
+
+**Recorded, not fixed:** the baseline's `mutation` field is **truncated with an ellipsis** for
+long conditions, so `drift-sentinel:guard-off:#0` and `#20` could not be replayed from the
+register at all. A register whose entries cannot be reconstructed from the register must be
+re-derived to audit. Left to SC-15 with the entries it affects.
+
+### A5 — reference graph hygiene (F-87)
+
+`references/validator-inputs.md` (132 lines) gained the `## Contents` block it was the only
+reference over 100 lines to lack, and it is reachable through `task-contract.md`. All seven
+references now carry a TOC, which is what makes a partial read safe.
+
+**All thirteen sibling cross-links reviewed and deliberately left alone.** The plan expected
+to redirect navigational ones at `SKILL.md`'s index; on inspection every one cites a
+*specific* rule — *"`artifact-layout.md` rule 2"*, *"`phase-gates.md` 'Consensus' rule 5"*,
+*"the accounting table in `phase-gates.md`"*. Replacing a precise citation with an index
+pointer would make the reader hunt. The circular `phase-gates.md` ↔ `artifact-layout.md`
+pair stays. **F-87 is therefore half-closed by design**, and the residue is stated rather
+than dropped: a 601-line reference reached through a sibling can still be previewed rather
+than read, mitigated by TOCs on both ends.
+
+### Invariants held
+
+No evidence-schema change, no `SCHEMA_VERSION` bump, no new terminal state / DECISION / exit
+code. **No validator source was edited** — nothing under
+`adws-pipeline/scripts/validators/` changed. One fixture added; no existing frozen
+expectation rewritten (`legacy-yellow-zone.json` gained a corrective `note`; its `expected`
+is history and stays). `cli-block-lint` unchanged (9 validators, 42-line wrapper);
+`agent-blocks-lint` still 3 blocks × 10 agents, the security paragraph extended rather than
+a fourth block added. `SKILL.md` 429 < 500 (NFR-3) and equal to its recorded budget.
+
+### What review caught — including two security defects in the security fix
+
+An independent review of the first cut returned twelve verdicts, six of them corrections.
+Recorded in full because the two most important are indictments of the change itself.
+
+- **The egress guard did not close F-80 (Critical).** `review.sh` validated that
+  `OLLAMA_HOST` named a local address — and `curl` still honoured `http_proxy` /
+  `https_proxy` / `ALL_PROXY`, which reroute a loopback URL to whatever the proxy names.
+  Reproduced: with `http_proxy` set and `NO_PROXY` empty, `curl http://localhost:11434/...`
+  exits 7 against the **proxy**, never having tried localhost. **A destination check the
+  transport can override is not a check.** Fixed with `--noproxy '*'` on all three Ollama
+  call sites (`lib.sh` ×2, `review.sh` ×1); re-verified that with every proxy variable set
+  the review now reaches the real local Ollama.
+- **The guard printed credentials (Major).** It echoed `$OLLAMA` raw, and the parser
+  immediately above it exists *because* the URL may carry `user:pass@`. That message lands
+  in `ci_logs/`. A change whose sibling finding (F-81) is *"secret redaction has no
+  mechanical enforcement"* was about to write secrets into the repository itself. Fixed:
+  output is now `http://[userinfo-redacted]@host:port`, so the presence of userinfo is still
+  reported and its value never is.
+- **`no-eval` missed two ordinary forms (Major).** `const { command } = repro` and
+  `await import('vm')` both passed, while the lint's own header claimed `command` reads were
+  caught *everywhere*. Widened to destructuring (plain and renamed) and to every module
+  spelling of `vm` / `child_process` (static, dynamic, `require`, with and without the
+  `node:` prefix). Eight forms now verified caught. The residual limit — a fully computed
+  key, `repro[k]` — is stated in the source rather than papered over.
+- **"Silent bumps are impossible" was overstated (Major).** The budget lint compares
+  `budget` to the LAST history entry, so *rewriting* that entry instead of appending one
+  passes. A file-local check cannot see prior state. Two responses: history values are now
+  **monotonic** (the budget cannot be dropped to hide growth and raised again), and the
+  claim is narrowed in the budget file's own `_doc` to what is true — growth is *recorded
+  and visible in review*, because a rewrite shows as a modified line in `git diff` where an
+  append shows as an added one. Not "the record cannot be forged".
+- **The 931-input sweep was unreproducible (Major).** It justified two `class` changes the
+  gate now enforces, and it lived in a scratch directory. **That is SC-13/F-77's own rule —
+  a reproduction that cannot be re-run is a claim, not evidence — broken by the change that
+  cites F-77 elsewhere.** The sweep is now `parity/guard-ablation-triage.mjs`, committed
+  next to the baseline it justifies. Running it reproduces the recorded classification, and
+  it is *more* honest than the scratch version: it refuses to replay `verdict:#5` at all,
+  reporting `AMBIGUOUS — 'fail' matches 3 sites`, where the scratch probe silently mutated
+  the wrong site and manufactured a false witness.
+- **`F-87` was called closed in `WBS.md` and half-closed here (Minor).** The half-closed
+  statement is the accurate one; `WBS.md` now says so.
+
+Two verdicts corrected the record rather than the code: the sweep documentation said
+"12 host forms" where 12 URL forms cover 7 distinct hosts (now stated precisely), and
+`0.0.0.0` was described as loopback when it is the unspecified address — accepted
+deliberately because connecting to it reaches a local listener, but the set is now called
+*local* rather than *loopback*.
+
+**Tier-2 evidence — resolved.** `orb-ci.sh` clones the *committed* tree, so the first
+`make ci-orb` run reported for SC-14 exercised `21b7fa0` — the pre-SC-14 commit — with 15
+steps, not the change. The reviewer caught it and confirmed 16/16 on both Node 20 and 24
+against an ephemeral snapshot. SC-14 was then committed as **`3ec8e6b`** (signed) on
+`sc14/budgets-and-assertions` and Tier 2 re-run against it:
+
+```
+[orb] node20: build=PASS run=PASS (6s)
+[orb] node24: build=PASS run=PASS (6s)
+{"event":"orb_ci","run_id":"20260809T230215Z","git_commit":"3ec8e6bfd20fbd271a34671d379b94af09b64d2a",
+ "branch":"sc14/budgets-and-assertions","platform":"linux/arm64","overall":"pass",
+ "legs":[{"node":"20","build":"pass","status":"pass","duration_s":6},
+         {"node":"24","build":"pass","status":"pass","duration_s":6}]}
+```
+
+`ci_logs/20260809T230215Z.orb.log` records **32 `-> PASS` steps — 16 per leg**, `no-eval`
+among them, so the container ran the SC-14 gate and not the pre-SC-14 one. This is the
+general hazard, worth stating once: **a Tier-2 record proves something about the commit it
+names and nothing about an uncommitted tree**, and the two are easy to confuse when the
+working tree is dirty. Tier 1 tests the working tree; Tier 2 tests `HEAD`.
+
+### CodeRabbit round (PR #57) — the egress guard was defeated a second time
+
+Eight findings: one Critical, three Major, four Minor. **Six were real.** The Critical is the
+one that matters, and it is the same guard failing a second time in the same change.
+
+- **The authority parse was ordered wrong (Critical).** The guard removed userinfo with a
+  greedy `##*@` **before** dropping the path, so any `@` later in the URL ate the real host.
+  `http://evil.example/path@localhost:11434` parsed as `localhost` and was accepted as local
+  while `curl` connected to `evil.example` — a total bypass. Reproduced on three vectors
+  (path, query, fragment). Fixed by isolating the RFC 3986 authority first (cut at the first
+  `/`, `?`, `#`) and only then stripping userinfo; re-verified that all five bypass vectors
+  block and six legitimate local forms still pass. **The same defect sat in the redaction
+  helper**, which cut the raw URL at an arbitrary `@`, so the printed destination could have
+  disagreed with the guard; it is now built from the parsed authority.
+- **Raw `$OLLAMA` survived on the failure path (Major).** The reachability error printed the
+  unredacted URL. Failure messages are the ones that get pasted into issues. Now
+  `$ollama_display` there too — every output path is redacted, not just the happy one.
+- **Agents were told to record command text and never to redact it (Major).** SC-14 added a
+  rule that a `command` is a RECORD, and said nothing about what may be inside it. A command
+  line carries tokens in flags, environment assignments and credential-bearing URLs as
+  readily as captured output does. The shared security block now says so, in all ten copies.
+- **`equivalentCount` was a subtraction (Minor).** `entries.length - unpinned.length` counted
+  an entry with a missing or misspelled `class` as `equivalent` — the summary line absorbing
+  exactly the entries the validation rejects. Now counted explicitly.
+- **A stale `113/113` (Minor)** survived in the plan from the original five-fixture proposal;
+  the triage moved the total by one, not five. Corrected, with the reason kept.
+- One untagged code fence (Minor), tagged.
+
+**Two were declined, with reasons.** The `skill-manifest.json` finding is a **false
+positive**: agent entries live in their own `agents` map with bare filenames, which is
+exactly what `skill-manifest.mjs` writes and what `skill-check.js` reads — both pass, as does
+the gate step. And linking the `validator-inputs.md` TOC entries would make it the only one
+of seven references whose Contents block uses links; the suggested diff also wrapped the
+anchors in backticks, which would not render as links at all.
+
+**What this round says about the change.** F-80's guard has now been broken twice in review
+and neither time by the check itself: once by the transport underneath it (`curl` honouring
+`http_proxy`) and once by the parse feeding it. Both times the *rule* was right and something
+beneath it was never asked to comply — the pattern already recorded in `SC14_PLAN.md`. A
+lexical URL check is a poor instrument for an egress decision, and the honest reading is that
+this guard is worth its cost only because the alternative was no check at all. If a third
+bypass appears, the answer is not a fourth patch: it is to stop parsing URLs and pin the
+destination another way.
+
+### Still open after SC-14
+
+F-81 (secret redaction unenforced, radius widened by SC-11 + SC-13), F-84 (input-dimension
+coverage has no owner) and F-85 (cross-job memory is manual) are unremediated and owned by
+SC-15 — each needs a decision before it needs code, per `SC14_PLAN.md` "Deferred". The 16
+remaining `unpinned` entries are debt with a budget and an owner for the first time, which
+is not the same as being closed. **F-87 is half-closed by design**, with the residue stated
+in A5 above.

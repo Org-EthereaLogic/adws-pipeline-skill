@@ -10,8 +10,16 @@
 # Usage:  make review   (or: bash scripts/local-ci/review.sh)
 # Env:    REVIEW_MODELS (default "gpt-oss:120b qwen3.5:9b"), REVIEW_BASE (default
 #         origin/main), OLLAMA_HOST (default http://localhost:11434), REVIEW_MAX_BYTES
-#         (default 100000).
+#         (default 100000), REVIEW_ALLOW_REMOTE (default unset — see below).
 # Evidence: ci_logs/<run_id>.<model>.review.log + a line in ci_logs/review.jsonl.
+#
+# SC-14/A1 (F-80). This script POSTs the full branch diff to $OLLAMA and is the only
+# network egress in the repository. OLLAMA_HOST was read straight into the curl target
+# with no check, so a value inherited from a dotfile, a shared profile or a poisoned CI
+# env sent the diff to an arbitrary host with nothing in the output naming it. A remote
+# Ollama is a legitimate setup, so this is an opt-in and not a block: non-loopback hosts
+# require REVIEW_ALLOW_REMOTE=1, and the destination is printed either way so a
+# redirected review is visible in the log rather than inferred from its absence.
 set -uo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -33,8 +41,63 @@ MODELS="${REVIEW_MODELS:-gpt-oss:120b qwen3.5:9b}"
 BASE="${REVIEW_BASE:-origin/main}"
 MAX_BYTES="${REVIEW_MAX_BYTES:-100000}"
 
+# --- Egress destination guard (SC-14/A1, F-80) --------------------------------
+# Isolate the URL AUTHORITY first, then strip userinfo from it. Order is the whole
+# correctness argument (review finding, Critical): the first cut removed userinfo with a
+# greedy `##*@` BEFORE dropping the path, so any `@` later in the URL ate the real host.
+# `http://evil.example/path@localhost:11434` parsed as `localhost` and was accepted as
+# local, while curl connected to evil.example — a total bypass of the guard. Per RFC 3986
+# the authority ends at the first `/`, `?` or `#`, and userinfo cannot contain those
+# unencoded, so cutting the delimiters first is both correct and sufficient.
+# Parameter expansion, not a regex, so it holds under bash 3.2.
+ollama_authority="${OLLAMA#*://}"                  # drop scheme if present
+ollama_authority="${ollama_authority%%/*}"         # drop path
+ollama_authority="${ollama_authority%%\?*}"        # drop query
+ollama_authority="${ollama_authority%%#*}"         # drop fragment
+ollama_host_only="${ollama_authority##*@}"         # NOW drop user:pass@
+case "$ollama_host_only" in
+  \[*\]*) ollama_host_only="${ollama_host_only%%\]*}]" ;;  # bracketed IPv6 keeps its brackets
+  *:*)    ollama_host_only="${ollama_host_only%%:*}" ;;    # host:port -> host
+esac
+
+# Redacted form for OUTPUT. This message lands in ci_logs/, which is committed, and the
+# parser above exists precisely because OLLAMA_HOST may carry `user:pass@` — so printing
+# $OLLAMA raw would write credentials into the repository, in the change whose sibling
+# finding (F-81) is that secret redaction has no mechanical enforcement. The presence of
+# userinfo is still reported; only its value is withheld.
+# Built from the parsed AUTHORITY, never by cutting the raw URL at an arbitrary `@` —
+# same defect class as the guard above, and a display that disagrees with the guard is
+# worse than no display.
+case "$ollama_authority" in
+  *@*) ollama_display="[userinfo-redacted]@${ollama_authority##*@}" ;;
+  *)   ollama_display="$ollama_authority" ;;
+esac
+case "$OLLAMA" in
+  *://*) ollama_display="${OLLAMA%%://*}://${ollama_display}" ;;
+esac
+
+# `0.0.0.0` is the unspecified address, not a loopback address; it is accepted because
+# connecting to it reaches a local listener on every stack this runs on, and it is a
+# routine way to name a locally-bound Ollama. Naming it "loopback" would be wrong, so the
+# set is described as local-only.
+case "$ollama_host_only" in
+  localhost|127.0.0.1|0.0.0.0|\[::1\]|::1) ;;
+  *)
+    if [ "${REVIEW_ALLOW_REMOTE:-}" != "1" ]; then
+      echo "[review] ERROR: OLLAMA_HOST names a non-local host: $ollama_host_only" >&2
+      echo "[review]   This script POSTs the full branch diff to that host." >&2
+      echo "[review]   Set REVIEW_ALLOW_REMOTE=1 to allow it deliberately." >&2
+      exit 2
+    fi
+    echo "[review] WARNING: sending the branch diff to REMOTE host $ollama_host_only (REVIEW_ALLOW_REMOTE=1)"
+    ;;
+esac
+echo "[review] destination: $ollama_display (proxies bypassed)"
+
 if ! ci_ollama_up "$OLLAMA"; then
-  echo "[review] ERROR: Ollama not reachable at $OLLAMA — start it with 'ollama serve'" >&2
+  # $ollama_display, never $OLLAMA: this is a failure path, failure paths are the ones
+  # that get pasted into issues, and it would otherwise print any user:pass@ in the URL.
+  echo "[review] ERROR: Ollama not reachable at $ollama_display — start it with 'ollama serve'" >&2
   exit 3
 fi
 
@@ -70,7 +133,9 @@ for MODEL in ${model_list[@]+"${model_list[@]}"}; do
   echo "[review] $MODEL -> reviewing ${diff_stat:-no changes} ..."
   req="$(jq -n --arg m "$MODEL" --arg c "$content" \
     '{model:$m, stream:false, messages:[{role:"user", content:$c}]}')"
-  if out="$(printf '%s' "$req" | curl -sf "$OLLAMA/api/chat" -d @- 2>/dev/null | jq -r '.message.content // empty')" \
+  # --noproxy '*': the loopback check above is defeated by http_proxy/ALL_PROXY otherwise —
+  # this is the call that carries the diff, so it is the one that must not be reroutable.
+  if out="$(printf '%s' "$req" | curl -sf --noproxy '*' "$OLLAMA/api/chat" -d @- 2>/dev/null | jq -r '.message.content // empty')" \
      && [ -n "$out" ]; then
     printf '%s\n' "$out" > "$mlog"
     echo "[review] $MODEL -> done (see $mlog)"

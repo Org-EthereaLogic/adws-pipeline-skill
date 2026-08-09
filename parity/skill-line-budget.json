@@ -1,0 +1,58 @@
+{
+  "_doc": [
+    "Line budget for adws-pipeline/SKILL.md (SC-14/A3, F-83).",
+    "",
+    "SKILL.md is the only always-resident file in the skill, so every line it carries is",
+    "paid on every load. NFR-3 caps it at 500 and frontmatter-lint has asserted that since",
+    "M-3b. What nothing asserted was the TREND. M-3b itself recorded '357 (SC-4), 367",
+    "(SC-5), 379 (SC-6) -- monotonic' and then bounded only the ceiling, which is the point",
+    "at which the file is already too large.",
+    "",
+    "The evidence for this file: SC-10 cut SKILL.md from 425 to 337 and RECORDED that floor",
+    "as a decision (SC10_PLAN.md section 5: '337 with a 350-line advisory target is where",
+    "the prose stops being reference-grade'). SC-11, SC-12 and SC-13 then put back all 88",
+    "lines in about 24 hours. Nobody overrode the decision; nobody was asked to. Over 26",
+    "commits the file grew 25 times and shrank once.",
+    "",
+    "This is a RATCHET, not a cap on growth. `budget` may be raised -- but only by editing",
+    "this file, with a reason, in the same commit that grows SKILL.md, where a reviewer",
+    "reads it. That is the whole mechanism: growth stays possible and stops being silent.",
+    "",
+    "Three levels, all in frontmatter-lint.mjs:",
+    "  NOTE  at 350   advisory target, unchanged from SC-10",
+    "  FAIL  above `budget`",
+    "  FAIL  at 500+  NFR-3, regardless of budget",
+    "",
+    "WHAT THE LINT ACTUALLY ENFORCES, stated precisely because the first write-up of this",
+    "mechanism overclaimed it (review finding, 2026-08-09):",
+    "  - SKILL.md may not exceed `budget`;",
+    "  - `budget` must equal the LAST history entry, so raising the number without",
+    "    recording anything fails;",
+    "  - every entry carries `set_by`, `reason` and an integer `value`;",
+    "  - history values are MONOTONIC, so the budget cannot be lowered to hide growth and",
+    "    raised again later.",
+    "It does NOT enforce append-only. Rewriting the last history entry in place, rather",
+    "than appending a new one, passes the lint -- a file-local check cannot see the prior",
+    "state. What catches that is `git diff`: a rewrite shows as a MODIFIED line where an",
+    "append shows as an added one, which is exactly the signal a reviewer reads. The claim",
+    "is 'growth is recorded and visible in review', not 'the record cannot be forged'.",
+    "",
+    "Lowering `budget` toward SC-10's 337 floor is a separate decision with a real prose",
+    "task attached; SC-14 deliberately did not take it. See DPPD.md section 23 (M-6)."
+  ],
+  "budget": 429,
+  "target_advisory": 350,
+  "nfr3_ceiling": 500,
+  "history": [
+    {
+      "value": 424,
+      "set_by": "SC-14 (seed)",
+      "reason": "Seeded at the value observed by audit M-6, so the ratchet starts where the file actually was and requires no compression pass. SC-10's considered floor was 337; see _doc."
+    },
+    {
+      "value": 429,
+      "set_by": "SC-14/A2",
+      "reason": "+5 for hard rule 9 (F-82): a reproduction.command is a record, never an execution channel. SC-13 shipped that rule as prose in artifact-layout.md alone, where the orchestrator that must honour it had no reason to look. Raising the budget in the same commit is this mechanism's first exercise, and the cost is now visible instead of absorbed."
+    }
+  ]
+}

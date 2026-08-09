@@ -92,7 +92,11 @@ const DIVERGED_PACKS = {
 // nine across the two ship packs — one per branch-name rule per pack, one
 // non-over-rejection pass per pack, and one for the docs_delta union). A mismatch is a
 // hard failure, never a warning.
-const EXPECTED_FIXTURE_TOTAL = 108;
+// SC-14/A4b (F-86): 108 -> 109. One drift-sentinel case added to pin the legacy YELLOW
+// band, which no fixture reached — the sibling named legacy-yellow-zone.json lands in the
+// RED band, so guard-ablation's `drift-sentinel:guard-off:#22` survived. No existing
+// expectation was rewritten.
+const EXPECTED_FIXTURE_TOTAL = 109;
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.

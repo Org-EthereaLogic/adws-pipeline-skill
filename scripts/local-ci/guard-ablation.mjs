@@ -320,6 +320,63 @@ function loadBaseline() {
   return JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
 }
 
+const VALID_CLASSES = new Set(['equivalent', 'unpinned']);
+
+/**
+ * SC-14/A4a (F-86). The baseline's own `_doc` has required `reason`, `class` and — for an
+ * unpinned entry — an `owner` since M-5a. Nothing read any of them. Audit M-6 found all 19
+ * entries carrying `class: unpinned` and `owner: "SC-12 (unscheduled)"` long after SC-12
+ * shipped: a bulk assignment nobody had to justify and nothing could contradict. A field
+ * the reader is not told to read is a field that was not written (F-75), and a count no
+ * consumer compares is not a control (F-27).
+ *
+ * The two classes need opposite treatment, which is why merging them into one number was
+ * the defect: `equivalent` is permanent and costs nothing, `unpinned` is debt and must
+ * shrink. The budget makes growth deliberate rather than silent.
+ */
+function validateBaselineShape(doc) {
+  const errors = [];
+  const entries = doc.accepted || [];
+
+  for (const entry of entries) {
+    const id = entry && entry.id ? entry.id : '<entry with no id>';
+    if (!entry || typeof entry.reason !== 'string' || entry.reason.trim() === '') {
+      errors.push(`${id}: missing \`reason\``);
+    }
+    if (!entry || !VALID_CLASSES.has(entry.class)) {
+      errors.push(
+        `${id}: \`class\` must be one of ${[...VALID_CLASSES].join(' | ')} (got ${JSON.stringify(
+          entry && entry.class
+        )})`
+      );
+    }
+    if (entry && entry.class === 'unpinned' && (typeof entry.owner !== 'string' || entry.owner.trim() === '')) {
+      errors.push(`${id}: an \`unpinned\` entry must name an \`owner\` — the work package that closes it`);
+    }
+    if (entry && entry.class === 'equivalent' && entry.owner) {
+      errors.push(`${id}: an \`equivalent\` entry is permanent and must NOT carry an \`owner\` (nothing is owed)`);
+    }
+  }
+
+  const unpinned = entries.filter((e) => e && e.class === 'unpinned');
+  const budget = doc.unpinned_budget;
+  if (!Number.isInteger(budget) || budget < 0) {
+    errors.push('baseline has no valid integer `unpinned_budget`');
+  } else if (unpinned.length > budget) {
+    errors.push(
+      `${unpinned.length} \`unpinned\` entr(ies) against a budget of ${budget}. Unpinned entries are ` +
+        'DEBT: close one with a fixture, or raise `unpinned_budget` in this commit and say why.'
+    );
+  }
+
+  // Count `equivalent` explicitly rather than as "everything that is not unpinned".
+  // Subtraction reported an entry with a missing or misspelled `class` as equivalent —
+  // i.e. the summary line would absorb exactly the entries the validation above rejects,
+  // and would keep mis-counting if a third class is ever added (review finding).
+  const equivalent = entries.filter((e) => e && e.class === 'equivalent');
+  return { errors, unpinnedCount: unpinned.length, equivalentCount: equivalent.length, budget };
+}
+
 // --- main --------------------------------------------------------------------
 
 const started = Date.now();
@@ -376,6 +433,19 @@ const elapsedMs = Date.now() - started;
 let failed = false;
 const survivorIds = new Set(survivors.map((s) => s.id));
 
+// SC-14/A4a: the baseline's own contract, finally asserted.
+const shape = validateBaselineShape(baseline);
+if (shape.errors.length) {
+  failed = true;
+  console.log('\nBASELINE CONTRACT VIOLATION(S) — parity/guard-ablation-baseline.json:');
+  for (const e of shape.errors) console.log(`  ${e}`);
+  console.log(
+    '\n  `equivalent` means the mutation provably cannot change output, and is permanent.\n' +
+      '  `unpinned` means the rule genuinely lacks a fixture: it is debt, it needs an owner,\n' +
+      '  and it counts against `unpinned_budget`.'
+  );
+}
+
 const unaccepted = survivors.filter((s) => !acceptedById.has(s.id));
 if (unaccepted.length) {
   failed = true;
@@ -406,7 +476,12 @@ console.log(
 if (failed) {
   process.exitCode = 1;
 } else {
+  // SC-14/A4a: report the two populations separately. One number merged a permanent,
+  // costless class with a debt that is supposed to shrink, so 19 unverified rules read as
+  // a clean pass.
   console.log(
-    `[guard-ablation] OK — every survivor is an accepted baseline entry (${acceptedById.size}), and every accepted entry still survives.`
+    `[guard-ablation] OK — ${shape.equivalentCount} equivalent (permanent), ` +
+      `${shape.unpinnedCount} unpinned (debt, budget ${shape.budget}); ` +
+      'every survivor is accepted and every accepted entry still survives.'
   );
 }

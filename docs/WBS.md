@@ -29,6 +29,35 @@ corpus in `consensus/repro/`; the report stops calling a phase the job never rea
 taxonomy unchanged. **F-74** (the one-rewind cap for a Critic-found code defect) closed
 WORKING-AS-DESIGNED by operator decision. See `DPPD.md` §22 and `SC13_PLAN.md`.
 
+**M-6 (2026-08-09):** maintenance audit, findings only — **F-80 … F-87**. Nothing under
+`adws-pipeline/` moves. Confirms the 2026-08-08 audit's headline concern is answered: the gate
+has now gone red **5 times across 4 steps**, three of them steps the M-5a/M-5b/SC-12 wave
+added. The open items are budgets rather than detectors — `SKILL.md` has no line budget and
+SC-10's considered 337-line floor was erased by +87 lines in ~24 hours; all 19 accepted
+guard-ablation survivors carry `class: unpinned` and an owner naming a work package that has
+shipped, in two fields the tool never reads; and SC-13's Critical no-eval rule shipped as prose
+with nothing asserting it. See `DPPD.md` §23 and `docs/AUDIT_2026-08-09.md`.
+
+**SC-14 (2026-08-09):** closes **F-80, F-82, F-83, F-86**; **F-87 half-closed** (the TOC gap
+is fixed and all seven references now carry one; the sibling cross-links were reviewed and
+deliberately kept, because every one cites a specific rule rather than serving as navigation —
+so the nested-read hazard is mitigated, not removed). Tier-3 review egress now requires a
+local host unless `REVIEW_ALLOW_REMOTE=1`, bypasses proxies, and names a userinfo-redacted
+destination; the no-eval
+rule becomes `SKILL.md` hard rule 9, joins the agents' security block in all ten copies, and is
+asserted by a new `no-eval` gate step; `SKILL.md` gets a line-budget ratchet
+(`parity/skill-line-budget.json`, seeded at the observed **424** and raised in-commit to 429
+for hard rule 9, with the reason recorded — the mechanism's first exercise is the change that
+introduced it); `guard-ablation` finally reads its own baseline's `class`/`owner`, caps
+`unpinned` entries by budget, and reports the two populations separately. **Triage corrected
+F-86 itself:** four of the five entries slated for closure were never debt (`verdict:#5` is a
+dead branch), and the one real gap — the legacy YELLOW band — had a fixture *named for it*
+that lands in the RED band, which is F-71's shape inside the mechanism built to answer F-71.
+Parity **108 → 109**, gate steps **15 → 16**, baseline 19 → 18 entries (2 equivalent, 16
+unpinned, budget 16). No validator source edited, no refreeze, no `SCHEMA_VERSION` bump; NFR-3
+holds (429 < 500). **F-81, F-84, F-85 remain open, owned by SC-15.** See `SC14_PLAN.md` and
+`VERIFICATION.md` §SC-14.
+
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;

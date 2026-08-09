@@ -13,6 +13,9 @@ const AGENTS_DIR = join('.claude', 'agents');
 // NFR-3. Asserted by hand in every scope change's "Invariants held" until M-3 (357 at
 // SC-4, 367 at SC-5, 379 at SC-6 — monotonic, and nothing was watching the trend).
 const SKILL_MD_MAX_LINES = 500;
+// SC-14/A3 (F-83). The ratchet: a recorded high-water mark that may only be raised
+// deliberately, in the same commit, with a reason. See the file's own `_doc`.
+const SKILL_LINE_BUDGET = join('parity', 'skill-line-budget.json');
 // SC-4 A2: the canonical evidence tiers. `fable` is a ceiling reachable only by
 // escalation or explicit operator override, so it is valid here but never expected as a
 // checked-in default; anything outside this set is a typo that would surface at dispatch
@@ -54,6 +57,66 @@ if (!m) {
 const skillLines = text.split('\n').length - (text.endsWith('\n') ? 1 : 0);
 if (skillLines >= SKILL_MD_MAX_LINES) {
   problems.push(`${SKILL_MD} is ${skillLines} lines; NFR-3 requires < ${SKILL_MD_MAX_LINES}`);
+}
+
+// --- SC-14/A3 (F-83): the line budget ratchet ---
+// M-3b asserted the 500 CEILING and recorded the monotonic trend in the same breath. The
+// ceiling is the point at which the file is already too large; SC-10's 337-line floor was
+// a considered decision that three scope changes then erased in ~24 hours, because a
+// decision with no mechanism is a measurement. `budget` may be raised — only by editing
+// parity/skill-line-budget.json, with a reason, in the commit that grows the file.
+let skillBudget = null;
+try {
+  const budgetDoc = JSON.parse(readFileSync(SKILL_LINE_BUDGET, 'utf8'));
+  if (!Number.isInteger(budgetDoc.budget) || budgetDoc.budget <= 0) {
+    problems.push(`${SKILL_LINE_BUDGET} has no valid integer \`budget\``);
+  } else {
+    skillBudget = budgetDoc.budget;
+    if (!Array.isArray(budgetDoc.history) || budgetDoc.history.length === 0) {
+      problems.push(`${SKILL_LINE_BUDGET} must carry a non-empty \`history\` array`);
+    } else {
+      const latest = budgetDoc.history[budgetDoc.history.length - 1];
+      if (latest.value !== skillBudget) {
+        problems.push(
+          `${SKILL_LINE_BUDGET}: \`budget\` is ${skillBudget} but the last \`history\` entry ` +
+            `records ${latest.value} — raise it by APPENDING an entry, so the reason travels with the change`
+        );
+      }
+      let prev = null;
+      for (const [i, entry] of budgetDoc.history.entries()) {
+        if (!entry || typeof entry.reason !== 'string' || entry.reason.trim() === '') {
+          problems.push(`${SKILL_LINE_BUDGET}: history[${i}] has no \`reason\``);
+        }
+        if (!entry || typeof entry.set_by !== 'string' || entry.set_by.trim() === '') {
+          problems.push(`${SKILL_LINE_BUDGET}: history[${i}] has no \`set_by\``);
+        }
+        if (!entry || !Number.isInteger(entry.value)) {
+          problems.push(`${SKILL_LINE_BUDGET}: history[${i}] has no integer \`value\``);
+        } else {
+          // Monotonic. A budget that may go down can hide growth: drop it, grow the file,
+          // raise it again, and every individual commit looks disciplined. Lowering the
+          // budget is a real and welcome act, but it belongs with a prose change that
+          // actually shrinks SKILL.md — which is a scope change, not a lint-silencing edit.
+          if (prev !== null && entry.value < prev) {
+            problems.push(
+              `${SKILL_LINE_BUDGET}: history[${i}] lowers the budget ${prev} -> ${entry.value}. ` +
+                'History is monotonic; to lower it, shrink SKILL.md in a change that says so.'
+            );
+          }
+          prev = entry.value;
+        }
+      }
+    }
+    if (skillLines > skillBudget) {
+      problems.push(
+        `${SKILL_MD} is ${skillLines} lines, over its recorded budget of ${skillBudget}. ` +
+          `Either bring it back under, or raise \`budget\` in ${SKILL_LINE_BUDGET} and append a ` +
+          `\`history\` entry saying why — in THIS commit, where a reviewer reads it (F-83).`
+      );
+    }
+  }
+} catch (e) {
+  problems.push(`cannot read ${SKILL_LINE_BUDGET}: ${e.message}`);
 }
 
 // --- agent frontmatter (M-3c) ---
@@ -193,6 +256,7 @@ if (skillLines > SKILL_MD_TARGET_LINES) {
 console.log(
   `[frontmatter-lint] OK — name matches dir, description present, ${seen.size} referenced path(s) exist, ` +
     `${referenceFiles.length} reference file(s) all indexed, ` +
-    `${skillDocs.length} skill doc(s) free of out-of-skill paths, SKILL.md ${skillLines}/${SKILL_MD_MAX_LINES} lines (NFR-3), ` +
+    `${skillDocs.length} skill doc(s) free of out-of-skill paths, ` +
+    `SKILL.md ${skillLines} lines (budget ${skillBudget ?? '?'}, NFR-3 ceiling ${SKILL_MD_MAX_LINES}), ` +
     `${agentFiles.length} agent definition(s) well-formed`
 );

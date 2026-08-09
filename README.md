@@ -139,7 +139,7 @@ install.sh                one-command install/port helper
 Run the suites (dependency-free, plain Node):
 
 ```bash
-node parity/run-parity.js                            # 108/108 validator-parity fixtures
+node parity/run-parity.js                            # 109/109 validator-parity fixtures
 node parity/execution-report-fixtures/run-tests.js   # 25/25 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 5/5 provenance-schema fixtures

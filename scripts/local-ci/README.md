@@ -14,7 +14,7 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 108 + report 24 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; skill-manifest currency. Seconds, zero-LLM. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 109 + report 25 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint **+ line-budget ratchet**; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; **no-eval scan** (no execution sink in the shipped tree, no read of the agent-authored `command` field anywhere); skill-manifest currency. Seconds, zero-LLM. |
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Varies the **Node version only**, on `linux/arm64`. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 

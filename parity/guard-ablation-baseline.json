@@ -3,27 +3,56 @@
     "Accepted survivors for scripts/local-ci/guard-ablation.mjs (M-5a/A2).",
     "",
     "A SURVIVOR is a mutation of a validator's execute() that leaves every fixture in",
-    "its pack producing the same frozen `expected` \u2014 i.e. the rule it touched is pinned",
+    "its pack producing the same frozen `expected` — i.e. the rule it touched is pinned",
     "by nothing. A new survivor is a HARD CI FAILURE: it means a rule shipped without a",
     "fixture that fails when the rule is reverted alone.",
     "",
-    "This list may only SHRINK. Two rules, both enforced by the tool:",
+    "Two classes, and the difference is the whole point of the file:",
+    "  class: equivalent  the mutation provably CANNOT change execute()'s output for any",
+    "                     input. A permanent entry. Its `reason` must carry the proof, not",
+    "                     an observation that no fixture happened to notice.",
+    "  class: unpinned    the mutation CAN change output for some input, but no fixture",
+    "                     exercises it. This is DEBT. It must carry an `owner` naming the",
+    "                     work package that closes it, and the total is capped by",
+    "                     `unpinned_budget` below.",
+    "",
+    "Rules, all enforced by the tool (SC-14/A4a — before that it enforced only the first",
+    "two, and read neither `class` nor `owner`):",
     "  1. a survivor absent from `accepted` fails the gate;",
     "  2. an `accepted` entry that is no longer a survivor ALSO fails the gate, so a",
     "     stale exemption cannot outlive the gap it excused. Delete it in the same",
-    "     commit that kills the mutant.",
+    "     commit that kills the mutant;",
+    "  3. every entry carries `reason` and a valid `class`;",
+    "  4. every `unpinned` entry carries a non-empty `owner`;",
+    "  5. the number of `unpinned` entries may not exceed `unpinned_budget`. Raising that",
+    "     number is a deliberate edit in the same commit, the same discipline as",
+    "     parity/skill-line-budget.json.",
     "",
-    "Every entry must carry `reason` and `class`. `class: equivalent` means the mutation",
-    "provably cannot change behaviour. `class: unpinned` means the rule genuinely lacks a",
-    "fixture and MUST carry an `owner` naming the work package that closes it.",
+    "SC-14/A4 history (F-86). Audit M-6 found all 19 entries carrying class `unpinned` and",
+    "owner 'SC-12 (unscheduled)' — a bulk assignment, not per-entry triage — while the tool",
+    "read neither field, so neither the debt nor the lapsed owner had any consequence. A",
+    "931-input sweep across both gating modes re-triaged the drift-sentinel entries. It found",
+    "exactly one genuinely unpinned AND reachable rule, the legacy YELLOW band: the fixture",
+    "named legacy-yellow-zone.json has entropy 0.25, giving ctm 0.08, which lands in the RED",
+    "band — a fixture named for a rule it does not pin, which is F-71's exact shape.",
+    "legacy-yellow-band-reached.json now pins it and that entry is deleted.",
+    "",
+    "Entries reclassified `equivalent` carry a structural proof. Entries left `unpinned` are",
+    "NOT thereby claimed reachable — the sweep is evidence, not proof, and an unreachability",
+    "argument that spans function boundaries can be invalidated by a later edit. Leaving them",
+    "as debt fails closed, which is the direction this register should fail in.",
     "",
     "Scope note: the CLI wrapper at the foot of each validator is NOT mutated.",
     "The parity fixtures call execute() directly via exec-one.js and never invoke the",
-    "CLI, so they pin no wrapper line by construction \u2014 the first run of this tool",
+    "CLI, so they pin no wrapper line by construction — the first run of this tool",
     "reported nine survivors and all nine were wrapper guards. The wrapper is pinned",
     "instead by parity/cli-contract/run-tests.js (all four exit-3 paths and both input",
     "modes, per validator) and by scripts/local-ci/cli-block-lint.mjs (the nine copies",
-    "cannot drift). See the header of guard-ablation.mjs."
+    "cannot drift). See the header of guard-ablation.mjs.",
+    "",
+    "Known limitation (recorded SC-14/A4): `mutation` is TRUNCATED with an ellipsis for long",
+    "conditions, so an entry cannot always be replayed from this file alone. Two entries",
+    "(drift-sentinel:guard-off:#0 and #20) could not be re-triaged for that reason."
   ],
   "scope": {
     "packs": "all 9 validators (M-5b/B6, extended from the 3 SC-9 packs)",
@@ -63,158 +92,150 @@
       "surviving fails the gate until it is deleted."
     ]
   },
+  "unpinned_budget": 16,
+  "unpinned_budget_doc": "Cap on `class: unpinned` entries (SC-14/A4a). May only be raised by a deliberate edit in the same commit, with the reason in the commit message and the new entry's `owner`. Lowering it is free and is the point.",
   "accepted": [
     {
       "id": "criteria-to-checks:guard-off:#0",
       "site": "criteria-to-checks.js:23",
-      "mutation": "if (typeof criterion !== 'string') \u2192 if (false)",
+      "mutation": "if (typeof criterion !== 'string') → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "criteria-to-checks:guard-off:#1",
       "site": "criteria-to-checks.js:25",
-      "mutation": "if (s.length < 10) \u2192 if (false)",
+      "mutation": "if (s.length < 10) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#0",
       "site": "drift-sentinel.js:33",
-      "mutation": "if (!Number.isFinite(currentEntropy) || !Number.isFinite(refe\u2026) \u2192 if (false)",
+      "mutation": "if (!Number.isFinite(currentEntropy) || !Number.isFinite(refe…) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#2",
       "site": "drift-sentinel.js:40",
-      "mutation": "if (!Array.isArray(values) || values.length < 2) \u2192 if (false)",
+      "mutation": "if (!Array.isArray(values) || values.length < 2) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#3",
       "site": "drift-sentinel.js:46",
-      "mutation": "if (!Number.isFinite(v)) \u2192 if (false)",
+      "mutation": "if (!Number.isFinite(v)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#5",
       "site": "drift-sentinel.js:93",
-      "mutation": "if (!Number.isFinite(value)) \u2192 if (false)",
+      "mutation": "if (!Number.isFinite(value)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#6",
       "site": "drift-sentinel.js:105",
-      "mutation": "if (dTx < 0) \u2192 if (false)",
+      "mutation": "if (dTx < 0) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#7",
       "site": "drift-sentinel.js:123",
-      "mutation": "if (!Array.isArray(deltaRSequence)) \u2192 if (false)",
+      "mutation": "if (!Array.isArray(deltaRSequence)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#8",
       "site": "drift-sentinel.js:131",
-      "mutation": "if (value < 0 || value > 1) \u2192 if (false)",
+      "mutation": "if (value < 0 || value > 1) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#9",
       "site": "drift-sentinel.js:142",
-      "mutation": "if (!Array.isArray(entropySeries) || !Array.isArray(dTxSeries)) \u2192 if (false)",
+      "mutation": "if (!Array.isArray(entropySeries) || !Array.isArray(dTxSeries)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#10",
       "site": "drift-sentinel.js:159",
-      "mutation": "if (rates.length === 0) \u2192 if (false)",
+      "mutation": "if (rates.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:guard-off:#16",
       "site": "drift-sentinel.js:263",
-      "mutation": "if (max === 0) \u2192 if (false)",
-      "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "mutation": "if (max === 0) → if (false)",
+      "class": "equivalent",
+      "reason": "PROVEN EQUIVALENT (SC-14/A4). Algebraic identity, not a coverage gap. The branch IS reachable (any all-zero signal window enters it), but when max === 0 every element of `abs` is already 0, so `abs.map(() => 0)` and the fall-through are the same array — and the fall-through is reached, because `max <= 1` holds for 0. Both paths return identical values, so no fixture can distinguish them and none should be written."
     },
     {
       "id": "drift-sentinel:guard-off:#20",
       "site": "drift-sentinel.js:297",
-      "mutation": "if (!Array.isArray(entropyHistory) || entropyHistory.length <\u2026) \u2192 if (false)",
+      "mutation": "if (!Array.isArray(entropyHistory) || entropyHistory.length <…) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
-    },
-    {
-      "id": "drift-sentinel:guard-off:#22",
-      "site": "drift-sentinel.js:332",
-      "mutation": "if (ctm > CTM_YELLOW) \u2192 if (false)",
-      "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "drift-sentinel:verdict:#5",
       "site": "drift-sentinel.js:452",
-      "mutation": "'fail' \u2192 'pass'",
-      "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "mutation": "'fail' → 'pass'",
+      "class": "equivalent",
+      "reason": "PROVEN EQUIVALENT (SC-14/A4). Dead branch. This `else` is reached only when `zone` is neither 'green' nor 'yellow' nor 'red', and every return path in computeCTM — the early short-history return and all four band returns — sets zone to exactly one of those three. Branch instrumentation confirmed it is entered by none of 210 probe inputs across both gating modes. The mutation therefore cannot change output for any input."
     },
     {
       "id": "review-risk-assess:guard-off:#0",
       "site": "review-risk-assess.js:76",
-      "mutation": "if (segments.length === 0) \u2192 if (false)",
+      "mutation": "if (segments.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "task-normalize:guard-off:#1",
       "site": "task-normalize.js:43",
-      "mutation": "if (magA === 0 || magB === 0) \u2192 if (false)",
+      "mutation": "if (magA === 0 || magB === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "task-normalize:guard-off:#2",
       "site": "task-normalize.js:66",
-      "mutation": "if (problemTokens.length === 0 || solutionTokens.length === 0) \u2192 if (false)",
+      "mutation": "if (problemTokens.length === 0 || solutionTokens.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     },
     {
       "id": "task-normalize:guard-off:#9",
       "site": "task-normalize.js:133",
-      "mutation": "if (syntheticRisk === 'high') \u2192 if (false)",
+      "mutation": "if (syntheticRisk === 'high') → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified.",
-      "owner": "SC-12 (unscheduled)"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
+      "owner": "SC-15"
     }
   ]
 }

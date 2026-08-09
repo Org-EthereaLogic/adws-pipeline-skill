@@ -1187,3 +1187,144 @@ leave a check behind, and does nothing about the axis nobody has varied yet. Nin
 rounds missed multi-document manifests because no artifact anywhere said manifests can name
 more than one document. And a resumed job inherits a classified worktree but not its
 predecessor's findings; cross-job memory remains manual.
+
+---
+
+## 23. Maintenance audit M-6 (2026-08-09) — the detectors are honest; the budgets are not
+
+Not a scope change: findings only. No requirement, story, acceptance criterion, verdict
+taxonomy, skill text, evidence schema, or validator moves here. Full evidence base:
+`AUDIT_2026-08-09.md`. Remediation proposed in `SC14_PLAN.md`. Findings **F-80 … F-87**.
+
+Prompted by asking what the run corpus says is worth changing next, rather than what the
+last scope change happened to touch — and read against Anthropic's skill-authoring best
+practices and SWEBOK v4 (ch. 5 *Testing*, ch. 7 *Engineering Management*).
+
+### What the evidence answered
+
+`AUDIT_2026-08-08.md` §1 rested on a gate that had never gone red in 73/73 runs. It has now
+gone red **five times across four steps** — `guard-ablation` ×2, `requires`, `bash32-scan`,
+`skill-manifest` — and three of those four were added by the M-5a / M-5b / SC-12 wave that
+the finding produced. The mechanisms built to be falsifiable proved falsifiable on real work
+within a day of shipping. This is recorded as a closed concern, not carried forward.
+
+`parity` remains 0-for-139, which is the expected shape for a frozen-fixture regression suite
+on a mostly-docs commit stream. Its ability to fail is established by `guard-ablation`
+mutating the validators rather than by counting reds — which is exactly why F-86 matters.
+
+### Findings
+
+- **F-80 — Tier-3 review egress trusts an unvalidated `OLLAMA_HOST`.**
+  `scripts/local-ci/review.sh:31` reads `OLLAMA="${OLLAMA_HOST:-http://localhost:11434}"` and
+  `:73` posts the branch diff to `"$OLLAMA/api/chat"` with nothing between them. The default
+  is loopback and `curl -d @-` keeps the diff off the process table — both correct — but any
+  environment that sets the variable ships the full branch diff to an arbitrary host, and no
+  output names the destination. The only network egress in the repository. Observed in
+  `AUDIT_2026-08-08.md` §6; no fix shipped.
+- **F-81 — secret redaction is LLM-honoured, and SC-11 + SC-13 widened its blast radius.**
+  `agent-shared-blocks.md:41-50` requires all ten agents to redact secrets;
+  `agent-blocks-lint.mjs` proves only that all ten carry the same TEXT. `SC10_PLAN.md` §6
+  already called the gap *"real and unaddressed."* What changed: SC-11/A5 writes every
+  terminal archive to a durable directory OUTSIDE the checkout, and SC-13/F-77 puts verbatim
+  target-repo file copies in `consensus/repro/` inside it — `artifact-layout.md:338`: *"so it
+  lands in the evidence tree and therefore in the terminal archive."* Unredacted material now
+  persists off-checkout by design where it used to die with the worktree. Both changes are
+  correct; neither should be reversed. The register is unkind to the control that remains:
+  F-2, F-28/F-29 and F-54 are all cases where a LEXICAL rule misjudged content, and an
+  instruction to a model is weaker than lexical.
+- **F-82 — SC-13's Critical "never evaluate `reproduction.command`" rule is prose in one
+  reference file with nothing asserting it.** The rule at `artifact-layout.md:344-352` is
+  good and complete. It is not a `SKILL.md` hard rule, it is not in the agents' security
+  block (verified — that block covers prompt injection and secret redaction only), and no
+  lint asserts it. Nothing executes the string today, which is precisely when SC-13 said to
+  write the rule; the rule was then placed where a future automation author would meet the
+  field in a schema and the rule nowhere. **F-55 (*a rule nothing asserts is a rule nothing
+  enforces*) and F-75 (*a field the reader is not told to read is a field that was not
+  written*) recurring inside the scope change that fixed both.** The `files` half of the same
+  rule — `resolveWithinRoot`, reject absolute paths / `..` / escaping symlinks — has the same
+  status.
+- **F-83 — `SKILL.md` has no line budget, and SC-10's considered floor was erased in 24
+  hours.** 172 → 425 across 20 commits; SC-10 cut it to **337** and RECORDED the floor
+  (`SC10_PLAN.md` §5: *"337 with a 350-line advisory target is where the prose stops being
+  reference-grade"*); SC-11 (+22), SC-12 (+19) and SC-13 (+46) put back all 88 lines in about
+  a day. `frontmatter-lint` NOTEs at 350 and fails at 500. **The growth was already noticed
+  once:** M-3b/F-42 recorded *"357, 367, 379, monotonic"* and asserted the 500 CEILING — the
+  point at which the file is already too large — not the trend that was the observation. Two
+  months on the trend is unchanged (25 growths, 1 reduction in 26 commits) and the lint has
+  never had anything to say. At ~+29 lines per scope change the ceiling arrives in roughly
+  three more. **This is not a proposal to compress `SKILL.md` again** — SC-10 rejected that on
+  good grounds and the rejection stands. 337 was a decision with no mechanism.
+- **F-84 — input-dimension coverage has no owner.** Carried from §22's "Still open" and
+  restated here so it has a finding ID. Nine Critic rounds never varied the manifest-count
+  axis; defect 9 was reachable only with a two-document manifest while all 24 frozen
+  fixtures, both checked-in tests and every prior round used single-document ones. Nothing in
+  the contract, in `criteria-to-checks`, or in any agent enumerates a change set's input
+  dimensions. Same class as F-70: the artifact that bounds what CAN be checked sits upstream
+  of every mechanism that does the checking.
+- **F-85 — cross-job memory is manual.** Carried from §22's "Still open". F-73 gives a
+  successor a CLASSIFIED worktree and not the predecessor's FINDINGS; job 0004 re-confirmed
+  0003's eight defects only because the operator wrote it into free-text `operator_notes` —
+  the improvisation-in-prose F-73 exists to end, surviving one layer up. `carry_over` already
+  exists and F-76 has just created the thing worth carrying (`REG-…` ids).
+- **F-86 — every accepted guard-ablation survivor is an unverified rule, owned by a shipped
+  work package, in fields the tool never reads.** The baseline's `_doc` defines the taxonomy:
+  *"`class: equivalent` means the mutation provably cannot change behaviour. `class: unpinned`
+  means the rule genuinely lacks a fixture and MUST carry an `owner` naming the work package
+  that closes it."* Against that: **(1)** all 19 accepted entries are `class: "unpinned"` and
+  **none** is `equivalent` — by the file's own definition it records nineteen rules that
+  genuinely lack a fixture; **(2)** all 19 carry `owner: "SC-12 (unscheduled)"`, and SC-12
+  shipped (§21) closing none of them; **(3)** `guard-ablation.mjs` reads neither `class` nor
+  `owner` — both are required by the `_doc` and consumed by nothing, which is F-75 and
+  recurring mode #9 inside the file built to answer F-71; **(4)** *"this list may only
+  SHRINK"* is enforced against staleness but not against growth — a new survivor added to
+  `accepted` in the same commit passes. The gate's success line prints `(19)` and reads as
+  clean. **Because nothing read the fields, the register was wrong in BOTH directions.**
+  SC-14's triage (931-input sweep, both gating modes) found `drift-sentinel:verdict:#5`
+  — which this finding's first cut called the sharpest entry — to be a **dead branch**
+  (`computeCTM` returns only `green`/`yellow`/`red`, so its `else` is unreachable), i.e.
+  provably `equivalent` and never debt at all. It found exactly one genuinely unpinned AND
+  reachable rule, the legacy YELLOW band — **and the pack already contained a fixture named
+  `legacy-yellow-zone.json` whose entropy 0.25 gives ctm 0.08, landing in the RED band**, so
+  deleting the yellow rule left it green. A fixture named for the rule it does not pin is
+  F-71's exact shape, found live inside the mechanism built to answer F-71. Separately, the
+  `mutation` field is truncated with an ellipsis for long conditions, so two entries could
+  not be replayed from the register at all.
+- **F-87 — reference cross-linking creates the nested-read hazard; one reference lacks a
+  TOC.** All seven references are indexed one level from `SKILL.md` and `frontmatter-lint`
+  checks it BIDIRECTIONALLY — better than the authoring guidance asks. But five of seven
+  cross-link each other, and the two largest are circular: `phase-gates.md` (601 lines) ↔
+  `artifact-layout.md` (473). The guidance's reason for the one-level rule is mechanical —
+  a file reached THROUGH another reference tends to be previewed (`head -100`) rather than
+  read — and for a 601-line gate reference a partial read is a correctness risk. Six of seven
+  files carry a TOC, which is what keeps this small. `validator-inputs.md` (132 lines) is the
+  only reference over 100 lines without one, and it is reachable through `task-contract.md`.
+
+### Register hygiene
+
+**F-11, F-12 and F-13 still have no register rows.** They exist only as `SKILL.md`
+troubleshooting headings and `references/runtimes.md` / `references/troubleshooting.md`
+prose; the register jumps F-10 → F-14. Flagged as M-5b/B5 in `AUDIT_2026-08-08.md` §5 and not
+closed there. Recorded again rather than fixed in passing, because assigning definitions to
+three IDs that are already cited by shipped skill text is a change to the skill's own
+vocabulary and belongs in a scope change, not an audit. The F-58/F-59 collision the same
+entry flagged **is** closed — renumbered to F-70/F-71 in the issue-#22 field record.
+
+### Disposition
+
+`SC14_PLAN.md` proposes F-80, F-82, F-83, F-86 and F-87 for SC-14 — the five whose mechanism
+is understood and whose fix touches no schema, no validator behaviour and no
+`SCHEMA_VERSION`. F-81, F-84 and F-85 are proposed for SC-15 because each needs a DECISION
+before it needs code: a scanner and a false-positive policy (F-81), a contract-schema field
+(F-84), and a first live exercise of a path that has never run (F-85).
+
+**F-83 is the highest-leverage item**, being the only one that bounds future cost rather than
+paying down past cost. **F-86 is the sharpest single defect**, because a register whose
+classifications nothing reads is wrong in both directions at once and cannot say so.
+
+**Invariants held (audit M-6 itself):** nothing under `adws-pipeline/` changed for the audit,
+so `skill-manifest.json` did not move. Parity 108/108, `SCHEMA_VERSION`, the terminal-state
+enum and exit codes 0/10/1/2/3 all untouched. NFR-3 held (`SKILL.md` 424 < 500).
+
+**SC-14 has since landed** — F-80, F-82, F-83, F-86 and F-87. See `SC14_PLAN.md` and
+`VERIFICATION.md` §SC-14 for what shipped, what the triage corrected in F-86, and the
+falsification record. F-81, F-84 and F-85 remain open, owned by SC-15.
