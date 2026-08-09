@@ -16,10 +16,11 @@
 #      --no-verify out of habit. It always exits 0.
 #
 #   2. NEVER FIRE WHEN NOTHING CHANGED. A reminder on every pull is a reminder nobody
-#      reads — the same reason `check-installs` is not a gate step. It fires only when the
-#      merge actually changed the shipped bytes, detected by a change to
-#      skill-manifest.json, which the gate guarantees moves if and only if a shipped file
-#      moved.
+#      reads — the same reason `check-installs` is not a gate step. It compares the
+#      skill_version VALUE across the merge, not whether skill-manifest.json changed:
+#      the manifest also carries `git_commit`, which moves with HEAD, so the file can
+#      differ when no shipped byte does. The first live firing of this hook proved it —
+#      it announced "904e3aa56dac -> 904e3aa56dac" on a merge that shipped nothing new.
 #
 #   3. ANSWER, DON'T NAG. It runs the check and prints the result, so the common case
 #      ("nothing installed here" / "all current") costs one quiet line instead of a chore.
@@ -30,15 +31,20 @@ if ! git rev-parse --verify --quiet ORIG_HEAD >/dev/null 2>&1; then
   exit 0
 fi
 
-# Did this merge change what gets shipped? The manifest is the exact signal: skill-manifest
-# lints it current in the gate, so it changes iff a shipped file changed.
-if git diff --quiet ORIG_HEAD HEAD -- adws-pipeline/skill-manifest.json 2>/dev/null; then
+# Did this merge change what gets SHIPPED? Compare the skill_version value on both sides,
+# not the manifest file: `git_commit` inside it moves with HEAD, so the file differs on
+# merges that ship nothing.
+read_version() {
+  sed -n 's/.*"skill_version": "\([^"]*\)".*/\1/p' 2>/dev/null | head -1
+}
+
+old_version="$(git show ORIG_HEAD:adws-pipeline/skill-manifest.json 2>/dev/null | read_version)"
+new_version="$(read_version < adws-pipeline/skill-manifest.json 2>/dev/null)"
+
+# Unchanged (or unreadable on either side) means nothing to say.
+if [ -z "$new_version" ] || [ "$old_version" = "$new_version" ]; then
   exit 0
 fi
-
-old_version="$(git show ORIG_HEAD:adws-pipeline/skill-manifest.json 2>/dev/null \
-  | sed -n 's/.*"skill_version": "\([^"]*\)".*/\1/p' | head -1)"
-new_version="$(sed -n 's/.*"skill_version": "\([^"]*\)".*/\1/p' adws-pipeline/skill-manifest.json 2>/dev/null | head -1)"
 
 echo ""
 echo "[post-merge] the skill changed: ${old_version:-none} -> ${new_version:-unknown}"

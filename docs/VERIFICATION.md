@@ -1501,6 +1501,24 @@ file was rewritten on every commit and was perpetually dirty. A file that is alw
 is a file whose diffs stop being read. `--write` now leaves it untouched when `skill_version`
 is unchanged.
 
+**The hook's first live firing found its own defect.** Pulling the merge of its own PR, it
+announced `the skill changed: 904e3aa56dac -> 904e3aa56dac` — the same version on both
+sides. The trigger keyed on whether `skill-manifest.json` *changed*, but the manifest carries
+`git_commit`, which moves with HEAD, so the file differs on merges that ship nothing. It was
+firing on exactly the "nothing changed" case its own property #2 forbids.
+
+Fixed to compare the `skill_version` **value** across the merge rather than the file.
+Falsified both ways: a merge that alters only `git_commit` is silent; a merge that changes a
+shipped file still fires.
+
+Two things worth noting about how it was found. The defect is one layer up from the churn
+already fixed in `--write` — the same root cause (`git_commit` moves with HEAD) surfacing in
+a second place, which is the pattern review caught twice in SC-12 and that this repeats a
+third time. And it was found by *running* the thing, at the first moment it could have been:
+no test in the suite would have caught it, because the suite tests the hook against branches
+it constructs, and the case only arises from a real merge where the manifest was regenerated
+on the branch.
+
 **What remains:** the hook only helps someone who ran `make install-hooks`. A fresh clone has
 none until it does. That is a narrower version of the same gap, and F-72 itself was found by
 a question, not by a check.
