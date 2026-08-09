@@ -1880,12 +1880,26 @@ Two verdicts corrected the record rather than the code: the sweep documentation 
 deliberately because connecting to it reaches a local listener, but the set is now called
 *local* rather than *loopback*.
 
-**Tier-2 evidence caveat.** `orb-ci.sh` clones the committed tree, so the ordinary
+**Tier-2 evidence — resolved.** `orb-ci.sh` clones the *committed* tree, so the first
 `make ci-orb` run reported for SC-14 exercised `21b7fa0` — the pre-SC-14 commit — with 15
-steps, not this working tree with 16. The reviewer confirmed 16/16 on both Node 20 and 24
-against an ephemeral exact snapshot. **Tier-2 evidence naming the real SC-14 commit can only
-be produced after the commit exists**, and should be re-run then; the number quoted at the
-top of this section is Tier-1, which does test the working tree.
+steps, not the change. The reviewer caught it and confirmed 16/16 on both Node 20 and 24
+against an ephemeral snapshot. SC-14 was then committed as **`3ec8e6b`** (signed) on
+`sc14/budgets-and-assertions` and Tier 2 re-run against it:
+
+```
+[orb] node20: build=PASS run=PASS (6s)
+[orb] node24: build=PASS run=PASS (6s)
+{"event":"orb_ci","run_id":"20260809T230215Z","git_commit":"3ec8e6bfd20fbd271a34671d379b94af09b64d2a",
+ "branch":"sc14/budgets-and-assertions","platform":"linux/arm64","overall":"pass",
+ "legs":[{"node":"20","build":"pass","status":"pass","duration_s":6},
+         {"node":"24","build":"pass","status":"pass","duration_s":6}]}
+```
+
+`ci_logs/20260809T230215Z.orb.log` records **32 `-> PASS` steps — 16 per leg**, `no-eval`
+among them, so the container ran the SC-14 gate and not the pre-SC-14 one. This is the
+general hazard, worth stating once: **a Tier-2 record proves something about the commit it
+names and nothing about an uncommitted tree**, and the two are easy to confuse when the
+working tree is dirty. Tier 1 tests the working tree; Tier 2 tests `HEAD`.
 
 ### Still open after SC-14
 

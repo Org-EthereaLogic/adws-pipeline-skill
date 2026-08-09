@@ -276,10 +276,11 @@ Every claim below must be demonstrated by breaking it, per the house standard.
 **Gate at HEAD (Tier 1): 16/16 steps pass** (15 existing + `no-eval`), parity **109/109**,
 guard-ablation **18 accepted — 2 equivalent, 16 unpinned (budget 16)**.
 
-**Tier-2 caveat.** `orb-ci.sh` clones the *committed* tree, so a `make ci-orb` run on an
-uncommitted working tree exercises HEAD, not the change. Tier-2 evidence naming the real
-SC-14 commit can only exist after the commit does, and must be re-run then. Tier 1 does test
-the working tree, so the 16/16 above is about this change.
+**Tier 2: PASS on Node 20 and 24 against commit `3ec8e6b`** — 32 `-> PASS` steps in
+`ci_logs/20260809T230215Z.orb.log`, 16 per leg, `no-eval` included. `orb-ci.sh` clones the
+*committed* tree, so the first run reported for SC-14 tested the pre-SC-14 `21b7fa0` with 15
+steps; review caught that, and this run names the real commit. **Tier 1 tests the working
+tree; Tier 2 tests `HEAD`** — a distinction easy to lose while the tree is dirty.
 
 ## Review round — six corrections, two of them security defects in the security fix
 
