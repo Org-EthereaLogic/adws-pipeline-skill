@@ -42,12 +42,19 @@ BASE="${REVIEW_BASE:-origin/main}"
 MAX_BYTES="${REVIEW_MAX_BYTES:-100000}"
 
 # --- Egress destination guard (SC-14/A1, F-80) --------------------------------
-# Strip scheme, then userinfo, then path/query, then port, leaving the bare host.
-# Done with parameter expansion rather than a regex so it holds under bash 3.2.
-ollama_host_only="${OLLAMA#*://}"     # drop scheme if present
-ollama_host_only="${ollama_host_only##*@}"   # drop any user:pass@
-ollama_host_only="${ollama_host_only%%/*}"   # drop path
-ollama_host_only="${ollama_host_only%%\?*}"  # drop query
+# Isolate the URL AUTHORITY first, then strip userinfo from it. Order is the whole
+# correctness argument (review finding, Critical): the first cut removed userinfo with a
+# greedy `##*@` BEFORE dropping the path, so any `@` later in the URL ate the real host.
+# `http://evil.example/path@localhost:11434` parsed as `localhost` and was accepted as
+# local, while curl connected to evil.example — a total bypass of the guard. Per RFC 3986
+# the authority ends at the first `/`, `?` or `#`, and userinfo cannot contain those
+# unencoded, so cutting the delimiters first is both correct and sufficient.
+# Parameter expansion, not a regex, so it holds under bash 3.2.
+ollama_authority="${OLLAMA#*://}"                  # drop scheme if present
+ollama_authority="${ollama_authority%%/*}"         # drop path
+ollama_authority="${ollama_authority%%\?*}"        # drop query
+ollama_authority="${ollama_authority%%#*}"         # drop fragment
+ollama_host_only="${ollama_authority##*@}"         # NOW drop user:pass@
 case "$ollama_host_only" in
   \[*\]*) ollama_host_only="${ollama_host_only%%\]*}]" ;;  # bracketed IPv6 keeps its brackets
   *:*)    ollama_host_only="${ollama_host_only%%:*}" ;;    # host:port -> host
@@ -58,10 +65,15 @@ esac
 # $OLLAMA raw would write credentials into the repository, in the change whose sibling
 # finding (F-81) is that secret redaction has no mechanical enforcement. The presence of
 # userinfo is still reported; only its value is withheld.
+# Built from the parsed AUTHORITY, never by cutting the raw URL at an arbitrary `@` —
+# same defect class as the guard above, and a display that disagrees with the guard is
+# worse than no display.
+case "$ollama_authority" in
+  *@*) ollama_display="[userinfo-redacted]@${ollama_authority##*@}" ;;
+  *)   ollama_display="$ollama_authority" ;;
+esac
 case "$OLLAMA" in
-  *://*@*) ollama_display="${OLLAMA%%://*}://[userinfo-redacted]@${OLLAMA#*@}" ;;
-  *@*)     ollama_display="[userinfo-redacted]@${OLLAMA#*@}" ;;
-  *)       ollama_display="$OLLAMA" ;;
+  *://*) ollama_display="${OLLAMA%%://*}://${ollama_display}" ;;
 esac
 
 # `0.0.0.0` is the unspecified address, not a loopback address; it is accepted because
@@ -83,7 +95,9 @@ esac
 echo "[review] destination: $ollama_display (proxies bypassed)"
 
 if ! ci_ollama_up "$OLLAMA"; then
-  echo "[review] ERROR: Ollama not reachable at $OLLAMA — start it with 'ollama serve'" >&2
+  # $ollama_display, never $OLLAMA: this is a failure path, failure paths are the ones
+  # that get pasted into issues, and it would otherwise print any user:pass@ in the URL.
+  echo "[review] ERROR: Ollama not reachable at $ollama_display — start it with 'ollama serve'" >&2
   exit 3
 fi
 

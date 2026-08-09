@@ -12,12 +12,12 @@
     "The installed copy carries this file, which is what lets scripts/skill-check.js",
     "verify an install against itself and `make check-installs` compare it to source."
   ],
-  "skill_version": "3a92cd9c5355",
+  "skill_version": "549226ba94f0",
   "file_count": 30,
-  "git_commit": "21b7fa0dd531c46e94d543e6f453c9dc44347ddb",
+  "git_commit": "8cd1cd76bec3c78fea6911657552ef6a98b24ad9",
   "skill": {
     "SKILL.md": "4684f84cf076176ad22959cf5e3210ddab215efb2208ade85d8a27440b423b68",
-    "references/agent-shared-blocks.md": "5557508c59d2d9a03300ff495905af1a66aedfae3756275c29eca202fcbd942c",
+    "references/agent-shared-blocks.md": "f63714624eea0ee6dc640804b8a3e47aee985297cded69aa7761f928d82f3478",
     "references/artifact-layout.md": "46b48b29409acf6d86a9d0c4662eadeffdf5a26175c33cb499878b2fe1f9b634",
     "references/phase-gates.md": "b71ee1a62a03abab2a9e881a342131c2dfa7f1e0c197721632f25b4520d6f468",
     "references/runtimes.md": "67c3412497969af83564d9d85f7ddd19e0b6c3ac22e31cfc07d3b6738a5d06b8",
@@ -38,15 +38,15 @@
     "scripts/validators/verify-evidence-map.js": "e1ca56942441c527ec5a558df4745c7f22f57c0cc4f6eb75530d2cb37109b0f5"
   },
   "agents": {
-    "adws-advocate.md": "d52e6c1fc95200a510be87b2688d7b30375ea49955726b734fb41138d61adc19",
-    "adws-builder.md": "c12e84fe520b5a07e0825c6ada55ac46131c28c275fcf86a14be8dd5ae51709d",
-    "adws-critic.md": "fb0d8cc4748b827a7ae206a9a4231c67d615b14590e939ed798bda542e7d27e9",
-    "adws-documenter.md": "c28af387d35eed29c9e71371bb8fe3beeceaa29f988aeaf4dd9038cc105c9f89",
-    "adws-grader.md": "83abe73678f93c4d4e14ee42b0187ae109b7b3f5f8fec725fd03983de55dbf41",
-    "adws-planner.md": "809c8a8ce2c208e498bec5e869d254d01a38453a745c238577422d70feb8eb62",
-    "adws-reviewer.md": "fdc750467bf91075782b195bb574c2c543214bb0b08b3345e563c5c1af66ae6a",
-    "adws-shipper.md": "3a7d0ecec9091ed6052e12d2310bf903fbb5a95ede727b01f7a975e1ca7027c8",
-    "adws-tester.md": "089d93ef433a12dc6c701d11a29acb1fea293ba5a22d5d2e20bb1d968f5545d2",
-    "adws-verifier.md": "a56dacdae8a338e83bbd2160f63475ffd52fc35f58e76004d797f174a2b909b5"
+    "adws-advocate.md": "a1f6805ee0e174236bfbc60914e16bb0c78fabd5226f1cd1e6be8371da0a3dc0",
+    "adws-builder.md": "12dbabbb628060a681a40e3810abb024b87e82af6c384ac821382db07758ca01",
+    "adws-critic.md": "730f03fc8e2141dd512c293c33234857a636be1c0d6a73e47e149eab396a6a2f",
+    "adws-documenter.md": "b967b7fdb3d09fef762d3831b44d324281357e3ba7b4bbb1a1d6320750ce6156",
+    "adws-grader.md": "31c652693b29349bb126ae303dc549580820f9e8477ce9b102f3ca83074fcef7",
+    "adws-planner.md": "acfc43daa91d4bcb8fb96b366779dadb8f66aab8bb90da236b4e4e66be43fb35",
+    "adws-reviewer.md": "91592590474a689ab488b522ca576a2cbb810ba4021ca71f3c72efec5038a639",
+    "adws-shipper.md": "982d3bce0b7adb30f345a2a68496ace9b7c92bb1047e71ad77c31da15ffecb7f",
+    "adws-tester.md": "2b62397171439d652d9c0d21dacb3c139f770c18c605b6425862b6983b1624d0",
+    "adws-verifier.md": "4cc99d12d28b7112b43b6da1f2224af91c4558a1ef2dd6911840050d5548828f"
   }
 }

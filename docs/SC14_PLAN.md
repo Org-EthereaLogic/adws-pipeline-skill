@@ -302,7 +302,10 @@ right and the thing underneath it was not asked to comply.** A URL check with a 
 that ignores it, a lexical scan with a claim wider than its regexes, a ratchet whose history
 nothing pinned, a proof whose evidence nobody kept.
 
-**Gate expectation at completion:** 16/16 steps (15 existing + `no-eval`), parity 113/113.
+**Gate at completion:** 16/16 steps (15 existing + `no-eval`), parity **109/109**. The
+plan's original expectation was 113/113, on the assumption that five fixtures would close
+five entries; the triage in A4b found only one entry genuinely needed one, so the total moved
+by one rather than five.
 
 ## Invariants this must not break
 

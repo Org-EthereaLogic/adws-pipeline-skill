@@ -1901,6 +1901,50 @@ general hazard, worth stating once: **a Tier-2 record proves something about the
 names and nothing about an uncommitted tree**, and the two are easy to confuse when the
 working tree is dirty. Tier 1 tests the working tree; Tier 2 tests `HEAD`.
 
+### CodeRabbit round (PR #57) — the egress guard was defeated a second time
+
+Eight findings: one Critical, three Major, four Minor. **Six were real.** The Critical is the
+one that matters, and it is the same guard failing a second time in the same change.
+
+- **The authority parse was ordered wrong (Critical).** The guard removed userinfo with a
+  greedy `##*@` **before** dropping the path, so any `@` later in the URL ate the real host.
+  `http://evil.example/path@localhost:11434` parsed as `localhost` and was accepted as local
+  while `curl` connected to `evil.example` — a total bypass. Reproduced on three vectors
+  (path, query, fragment). Fixed by isolating the RFC 3986 authority first (cut at the first
+  `/`, `?`, `#`) and only then stripping userinfo; re-verified that all five bypass vectors
+  block and six legitimate local forms still pass. **The same defect sat in the redaction
+  helper**, which cut the raw URL at an arbitrary `@`, so the printed destination could have
+  disagreed with the guard; it is now built from the parsed authority.
+- **Raw `$OLLAMA` survived on the failure path (Major).** The reachability error printed the
+  unredacted URL. Failure messages are the ones that get pasted into issues. Now
+  `$ollama_display` there too — every output path is redacted, not just the happy one.
+- **Agents were told to record command text and never to redact it (Major).** SC-14 added a
+  rule that a `command` is a RECORD, and said nothing about what may be inside it. A command
+  line carries tokens in flags, environment assignments and credential-bearing URLs as
+  readily as captured output does. The shared security block now says so, in all ten copies.
+- **`equivalentCount` was a subtraction (Minor).** `entries.length - unpinned.length` counted
+  an entry with a missing or misspelled `class` as `equivalent` — the summary line absorbing
+  exactly the entries the validation rejects. Now counted explicitly.
+- **A stale `113/113` (Minor)** survived in the plan from the original five-fixture proposal;
+  the triage moved the total by one, not five. Corrected, with the reason kept.
+- One untagged code fence (Minor), tagged.
+
+**Two were declined, with reasons.** The `skill-manifest.json` finding is a **false
+positive**: agent entries live in their own `agents` map with bare filenames, which is
+exactly what `skill-manifest.mjs` writes and what `skill-check.js` reads — both pass, as does
+the gate step. And linking the `validator-inputs.md` TOC entries would make it the only one
+of seven references whose Contents block uses links; the suggested diff also wrapped the
+anchors in backticks, which would not render as links at all.
+
+**What this round says about the change.** F-80's guard has now been broken twice in review
+and neither time by the check itself: once by the transport underneath it (`curl` honouring
+`http_proxy`) and once by the parse feeding it. Both times the *rule* was right and something
+beneath it was never asked to comply — the pattern already recorded in `SC14_PLAN.md`. A
+lexical URL check is a poor instrument for an egress decision, and the honest reading is that
+this guard is worth its cost only because the alternative was no check at all. If a third
+bypass appears, the answer is not a fourth patch: it is to stop parsing URLs and pin the
+destination another way.
+
 ### Still open after SC-14
 
 F-81 (secret redaction unenforced, radius widened by SC-11 + SC-13), F-84 (input-dimension

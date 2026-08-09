@@ -369,7 +369,12 @@ function validateBaselineShape(doc) {
     );
   }
 
-  return { errors, unpinnedCount: unpinned.length, equivalentCount: entries.length - unpinned.length, budget };
+  // Count `equivalent` explicitly rather than as "everything that is not unpinned".
+  // Subtraction reported an entry with a missing or misspelled `class` as equivalent —
+  // i.e. the summary line would absorb exactly the entries the validation above rejects,
+  // and would keep mis-counting if a third class is ever added (review finding).
+  const equivalent = entries.filter((e) => e && e.class === 'equivalent');
+  return { errors, unpinnedCount: unpinned.length, equivalentCount: equivalent.length, budget };
 }
 
 // --- main --------------------------------------------------------------------
