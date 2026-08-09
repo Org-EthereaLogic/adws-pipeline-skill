@@ -1,14 +1,14 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.11 (SC-11 scope change §20, 2026-08-08)
+**Version:** 1.12 (SC-12 scope change §21, 2026-08-09)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
 `acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
-(§13), SC-5 (§14), SC-6 (§16), SC-7 (§18), SC-8 (§19), and SC-9 / SC-10 / SC-11 (§20)
-approved per R-6; maintenance audits M-1 (§12), M-2 (§15), M-3 (§17), M-4 (§18) and
-M-5a / M-5b (§20) are defect fixes, not revisions. Governing version: 1.11.
+(§13), SC-5 (§14), SC-6 (§16), SC-7 (§18), SC-8 (§19), SC-9 / SC-10 / SC-11 (§20) and
+SC-12 (§21) approved per R-6; maintenance audits M-1 (§12), M-2 (§15), M-3 (§17), M-4 (§18)
+and M-5a / M-5b (§20) are defect fixes, not revisions. Governing version: 1.12.
 *(This header had itself gone stale: it read "Version 1.6 / SC-6" while §18 and §19 already
 recorded SC-7 and SC-8. Brought current in §20 — a tracking document that lags its own
 sections is the documentation form of a count no consumer compares, F-41.)*
@@ -969,3 +969,62 @@ live in each. The repository lints its own tree thoroughly and has no check that
 copy matches the source. Remediated by hand, no mechanism shipped, so it recurs on the next
 merge. The parity harness proves the validators in `git` are correct and says nothing about
 the validators that will run tomorrow.
+
+
+---
+
+## 21. Scope Change SC-12 (2026-08-09) — APPROVED
+
+Source: **F-72**, recorded in §20 and unremediated there. Plan: `SC12_PLAN.md`. Verification:
+`VERIFICATION.md` §SC-12.
+
+### The finding
+
+After §20 merged with a green gate, **all three installed copies of the skill were still
+pre-remediation**, and F-63, F-64 and F-65 reproduced live in every one of them — including
+in `agentic-starter-kit`, the repository nine of the thirteen field runs targeted. A merged
+fix does not reach a run until someone reinstalls, and nothing said so.
+
+The gap was structural. This repository lints its own tree exhaustively and had **no check
+that an installed copy matched its source**; nothing even knew where the skill was installed.
+The parity harness proves the validators in `git` are correct and says nothing about the
+validators that will actually run.
+
+### What shipped
+
+Two mechanisms, because they answer different questions and neither suffices alone:
+
+- **What is this?** `skill-manifest.json` (a content digest of all 30 shipped files, skill
+  tree and agent definitions) plus `scripts/skill-check.js`, which verifies an installed tree
+  against it. The orchestrator asserts it at intake and records `run_manifest.skill_version`,
+  so a stale install says so **in the evidence of every run it touches**.
+- **Is it current?** `make check-installs`, run from the source, comparing each install
+  registered by `install.sh`. It distinguishes STALE from **MODIFIED** (version matches but
+  files don't — the more dangerous case, since the version alone looks right).
+- **A6:** `.githooks/post-merge` fires the check at the one moment the answer changes.
+
+The version is derived from **content, not git**: a commit hash is chicken-and-egg and goes
+stale on a rebase. `skill-manifest` is a gate step, so a shipped file cannot change without
+the manifest being regenerated.
+
+### What this scope change says about its own method
+
+**Review found three Major defects** in the first cut — the one PR in the surrounding series
+where CodeRabbit was able to finish. Two were the same class: agent definitions held to a
+weaker standard than the skill tree, fixed in `skill-check.js` and missed in
+`check-installs.mjs`. That is precisely what a second reader catches and an author does not.
+
+**The hook's first live firing found its own defect.** Pulling the merge of its own PR it
+announced `904e3aa56dac -> 904e3aa56dac` — firing on the "nothing changed" case its own
+design forbids, because the trigger keyed on the manifest *file* rather than the
+`skill_version` value, and `git_commit` moves with HEAD. That is the same root cause as a
+churn bug already fixed one layer down in `--write`, surfacing a second time, and no test in
+the suite would have caught it: the suite tests the hook against branches it constructs, and
+the case only arises from a real merge.
+
+**Invariants held:** no validator changes, no fixture changes, no refreeze, no
+`SCHEMA_VERSION` bump. `run_manifest.skill_version` is additive evidence, never a gate input.
+NFR-3 holds (`SKILL.md` 376 < 500); NFR-4 preserved.
+
+**Still open:** the hook only helps someone who ran `make install-hooks` — a fresh clone has
+none until it does; and F-72 itself was found by a question, not by a check.

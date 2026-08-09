@@ -11,6 +11,12 @@ landed as one stacked series — see `DPPD.md` §20 and `docs/AUDIT_2026-08-08.m
 gate steps 9 → 14. `SCHEMA_VERSION` unchanged. Three security defects (F-63…F-65) fixed and
 re-verified; F-17 and the grader-mandate ambiguity closed after five scope changes open.
 
+**SC-12 (2026-08-09):** closes **F-72** — a merged fix does not reach a run until someone
+reinstalls, and all three installs were still pre-remediation after §20 merged green. The
+skill now ships a content manifest and a self-check the orchestrator asserts at intake;
+`make check-installs` and a `post-merge` hook answer the staleness half from the source.
+Gate steps 14 → 15. See `DPPD.md` §21.
+
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;
