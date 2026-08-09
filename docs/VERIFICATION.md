@@ -2011,8 +2011,57 @@ installs still carry `358f7b7d28a7`; source is now `549226ba94f0`:
   ~/Dev/agentic-starter-kit   STALE     installed 358f7b7d28a7 ≠ source 549226ba94f0
 ```
 
-This is F-72's mechanism working as designed, and it matters more than usual here: **SC-14 is
-the release that fixes two egress defects**, and until someone runs `./install.sh`, every live
-run uses a copy that has neither. F-72 was found exactly this way — a merged fix that had not
-reached a single install — so the hook firing is the good outcome, not a problem. Reinstall is
-deliberately left to the operator: it writes into three repositories outside this one.
+This is F-72's mechanism working as designed. Reinstall is deliberately left to the operator:
+it writes into three repositories outside this one.
+
+> **Correction (2026-08-09, made while performing the reinstall).** The paragraph above
+> originally read *"SC-14 is the release that fixes two egress defects, and until someone
+> runs `./install.sh`, every live run uses a copy that has neither."* **That is false.** The
+> egress fixes are in `scripts/local-ci/review.sh` and `scripts/local-ci/lib.sh` — this
+> repository's own Tier-3 CI harness. **The harness is not shipped.** `install.sh` and
+> `skill-manifest.json` cover 30 files: `adws-pipeline/` (SKILL.md, 7 references, 12 scripts)
+> and the 10 agent definitions. No install contains `review.sh` at all, verified by `find`
+> across all three. A stale install could not have carried the egress defect because it never
+> carried the file.
+>
+> What SC-14 actually delivers to an install is F-82 and F-87: `SKILL.md` hard rule 9, the
+> extended security block in all ten agents (including the `command`-redaction clause added
+> in the CodeRabbit round), and the `validator-inputs.md` TOC. F-80, F-83 and F-86 are
+> source-repo-only — harness, budget file and baseline.
+>
+> The reinstall was still correct: those three installs were four scope changes behind. But
+> the *reason* recorded here was wrong, and it was wrong in the direction that overstates
+> urgency — the F-56 failure mode, a channel firing louder than the facts support. Recorded
+> rather than silently edited, because a tracking document that quietly fixes its own false
+> claims is worth less than one that shows them.
+
+### Reinstall record — 2026-08-09
+
+All three registered installs taken from `358f7b7d28a7` to `549226ba94f0` with
+`./install.sh <target> --force`. Each was verified **intact** (matching its own manifest, so
+no local edits to lose) *before* the reinstall; `--force` was required because a
+non-interactive run refuses by design, and it backs up first regardless — SC-10/F-68.
+
+| Install | Result | Backup |
+|---|---|---|
+| `~` (`--global`) | CURRENT `549226ba94f0`, intact, 30 files | `.adws-backup-20260809T233249Z` |
+| `~/Dev/etherealogic-website` | CURRENT `549226ba94f0`, intact, 30 files | `.adws-backup-20260809T233253Z` |
+| `~/Dev/agentic-starter-kit` | CURRENT `549226ba94f0`, intact, 30 files | `.adws-backup-20260809T233253Z` |
+
+`make check-installs` → *"OK — 3 known install(s) current."* Backups are kept, never pruned
+automatically.
+
+**Content verified, not just the version.** A matching `skill_version` is the weaker half of
+F-72 — MODIFIED (version right, files wrong) is the more dangerous case — so each install was
+checked for the SC-14 changes that actually ship:
+
+| | `~` | website | starter-kit |
+|---|---|---|---|
+| `SKILL.md` hard rule 9 (F-82) | present | present | present |
+| agent `command`-redaction clause | 10/10 | 10/10 | 10/10 |
+| `validator-inputs.md` TOC (F-87) | present | present | present |
+
+**`review.sh` is absent from all three**, which is correct and is the subject of the
+correction above: F-80's egress fixes are harness-only and have never been part of an install.
+"Unregistered copies are not covered" remains true — `check-installs` knows only what
+`.adws-installs` records.
