@@ -17,6 +17,18 @@ skill now ships a content manifest and a self-check the orchestrator asserts at 
 `make check-installs` and a `post-merge` hook answer the staleness half from the source.
 Gate steps 14 → 15. See `DPPD.md` §21.
 
+**SC-13 (2026-08-09):** closes **F-73, F-75…F-79** from two consecutive RETRY runs against
+`cadence-method-skill` issue #24, which found eleven real defects, repaired ten, and shipped
+nothing. A terminal non-PROMOTE now records `carry_over` with per-file digests and a
+successor may adopt that worktree only via `execution.resume_from_job`, which classifies
+every file `gated` or `ungated-carry-over`; `corrections.json` gains the `guidance` object a
+live orchestrator had already invented; a repaired defect must leave a regression check
+behind; agents get one scratch root each (shared blocks 2 → 3) and reproductions get a
+corpus in `consensus/repro/`; the report stops calling a phase the job never reached
+"missing evidence". Report fixtures 24 → 25; parity, `SCHEMA_VERSION` and the verdict
+taxonomy unchanged. **F-74** (the one-rewind cap for a Critic-found code defect) closed
+WORKING-AS-DESIGNED by operator decision. See `DPPD.md` §22 and `SC13_PLAN.md`.
+
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;

@@ -1,0 +1,11 @@
+{
+  "phase": "plan",
+  "attempt": 1,
+  "job_id": "job-sk1p13",
+  "started_at": "2026-08-09T09:00:00Z",
+  "completed_at": "2026-08-09T09:10:00Z",
+  "agent": "adws-planner",
+  "model_tier": "opus",
+  "gate_result": "pass",
+  "failure_reason": null
+}

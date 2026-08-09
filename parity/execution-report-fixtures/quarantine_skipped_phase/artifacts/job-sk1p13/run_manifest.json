@@ -1,0 +1,12 @@
+{
+  "job_id": "job-sk1p13",
+  "task_id": "TASK-113",
+  "started_at": "2026-08-09T09:00:00Z",
+  "completed_at": "2026-08-09T10:00:00Z",
+  "final_status": "completed",
+  "failure_reason": null,
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": { "plan": "opus", "build": "sonnet", "test": "sonnet", "document": "haiku" },
+  "schema_version": "1.0.0"
+}

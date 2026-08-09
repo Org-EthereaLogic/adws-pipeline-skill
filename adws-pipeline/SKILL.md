@@ -93,7 +93,24 @@ registered (F-11).
 4. Allocate `jobId` (`job_YYYYMMDD_NNNN`, next free), create `artifacts/{jobId}/`,
    write `task_contract_snapshot.json` and initial `run_manifest.json` — including
    `skill_version` from step 3.
-5. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
+5. **Resuming a retained worktree (SC-13/F-73).** A RETRY or QUARANTINE keeps its
+   worktree (§5 step 4 below) and the work in it is the next job's starting point — but
+   only a contract naming `execution.resume_from_job` may run against an existing tree.
+   When it does: confirm the predecessor's recorded `carry_over.worktree_path` and
+   `branch_name` still exist and match; digest every file in the recorded change set and
+   classify each `gated` (digest matches the predecessor's record) or
+   `ungated-carry-over` (differs, or absent from the record — changed after that job's
+   last gate, typically a hand repair between runs); write `isolation_mode:
+   "worktree-resumed"` and both lists into this job's `run_manifest.resumed_from`.
+   KEEP the predecessor's branch and record
+   `branch_name_origin: "resumed-from:{jobId}"` rather than renaming it, so the evidence
+   matches the artifact that actually ships. Every `ungated-carry-over` file enters with
+   NO gate evidence of its own and must earn it here — name them in the terminal report.
+   Without `resume_from_job`, a job always creates its own worktree (§1). Shapes in
+   `references/artifact-layout.md`. A run that adopts a retained tree without this
+   classification cannot say which of its files were ever gated, which is exactly what
+   two consecutive RETRY jobs had to reconstruct in prose.
+6. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
    `references/phase-gates.md`; record in `run_manifest.model_tiers`. The seven phase
    agents do not share one tier — plan and review are priced above the mechanical tail.
    Honor the safety floors (ship ≥ sonnet, verify ≥ sonnet, grader ≥ opus) and never
@@ -105,7 +122,11 @@ registered (F-11).
 
 ### 1 — Worktree
 
-Prefer the Agent tool's `isolation: "worktree"` for build/test phases. Where
+If the contract names `execution.resume_from_job`, do NOT create a worktree: adopt the
+predecessor's tree and branch per §0 step 5, and skip to the phase loop. Never create a
+second worktree over a branch another job's tree already checks out.
+
+Otherwise, prefer the Agent tool's `isolation: "worktree"` for build/test phases. Where
 unavailable, create explicitly from the primary checkout:
 
 ```
@@ -310,7 +331,15 @@ Post-ship, zero orchestrator judgment:
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
    and the path to `execution_report.md`.
-4. **Archive the evidence before any teardown (SC-11/A5).** In order:
+4. **Record the carry-over on any non-PROMOTE terminal state (SC-13/F-73).** The
+   worktree is about to be RETAINED (step 5.4), so record what is in it:
+   `carry_over: { "retained": true, "worktree_path", "branch_name", "files": [{ "path",
+   "sha256" }], "gated_through": "<last phase whose gate passed>" }` in
+   `run_manifest.json`. The digests are the only thing that later lets a successor job
+   tell a file this job gated from one edited by hand afterwards. Nothing is staged or
+   committed — hard rule 6 is unchanged; this is evidence, not a commit. On PROMOTE,
+   record `carry_over: { "retained": false }` and continue to teardown.
+5. **Archive the evidence before any teardown (SC-11/A5).** In order:
    1. Write `artifacts/{jobId}.tar.gz` from `artifacts/{jobId}/` to a **durable
       destination outside the worktree and outside the target checkout** —
       `execution.evidence_archive_dir` from the contract. If the contract names no
@@ -331,7 +360,7 @@ Post-ship, zero orchestrator judgment:
    the *third* time that cost a verifiable claim. In each case an archive was not absent
    so much as written somewhere disposable, which is why the destination and the
    extraction check are both mandatory rather than advisory.
-5. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
+6. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
    verdict is terminal, so anything still scheduled is stale by construction (F-57).
 
 ## Failure-reason classes
