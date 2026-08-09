@@ -124,9 +124,26 @@ Both fixed and falsified: removing the agents directory now reports all ten miss
 exits 1; an undeclared `adws-rogue.md` is named and exits 1; a user's own non-`adws` agent
 beside them is correctly ignored, because only that namespace is ours.
 
+Two further Major findings from the same round:
+
+3. **`SKILL.md` step 3 told the orchestrator to record `skill_version` in
+   `run_manifest.json`, which step 4 creates.** A sequencing contradiction in the spec — the
+   file does not exist yet. Reworded: step 3 *keeps* the version, step 4 writes it when it
+   creates the manifest.
+4. **`check-installs` hashed only `installed.skill`**, so an edited or missing agent, or an
+   undeclared file, reached `CURRENT`. **That is the identical asymmetry as finding 1** — and
+   I had just fixed it in `skill-check.js` and not here. It now validates both surfaces
+   against the **source** manifest (not the installed one, which an edited install could have
+   trimmed to match its own omission) and reports undeclared files on both.
+
+Falsified: an edited agent, a missing agent, and an undeclared `adws-*.md` each flip the
+install to `MODIFIED` and exit 1; a user's own non-`adws` agent beside them does not.
+
 **This is the strongest available argument for waiting on review.** Of #47, #48, #49 and #51,
-this is the one PR where the bot got to finish — and it found a real defect that the gate,
-the falsification table, and the author had all passed over.
+this is the one PR where the bot got to finish — and it found **three** Major defects the
+gate, the falsification table, and the author had all passed over. Two of the three were the
+same class, fixed in one file and missed in another, which is precisely the failure a second
+reader catches and an author does not.
 
 ## 5. Rejected
 

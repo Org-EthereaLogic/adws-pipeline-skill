@@ -116,24 +116,65 @@ for (const root of unique) {
   }
 
   // Same version — but is the installed tree still what that version says it is? A
-  // matching version with edited files is the more dangerous of the two failures,
-  // because the version string alone looks correct.
+  // matching version with edited files is the more dangerous of the two failures, because
+  // the version string alone looks correct.
+  //
+  // The expected file set comes from the SOURCE manifest, not the installed one: an
+  // install whose manifest was itself edited to drop a file would otherwise validate
+  // against its own omission. And agents are checked alongside skill files — a first cut
+  // hashed only `installed.skill`, so an edited or missing agent reached CURRENT. That is
+  // the identical asymmetry review had just caught in skill-check.js, fixed there and not
+  // here; both are now held to the same standard.
   const drifted = [];
-  for (const [rel, hash] of Object.entries(installed.skill || {})) {
+  for (const [rel, hash] of Object.entries(source.skill || {})) {
     const full = path.join(skillDir, rel);
     let buf;
     try {
       buf = fs.readFileSync(full);
     } catch (_err) {
-      drifted.push(rel + ' (missing)');
+      drifted.push('skill/' + rel + ' (missing)');
       continue;
     }
-    const actual = crypto.createHash('sha256').update(buf).digest('hex');
-    if (actual !== hash) drifted.push(rel);
+    if (crypto.createHash('sha256').update(buf).digest('hex') !== hash) drifted.push('skill/' + rel);
   }
+
+  const agentsDir = path.join(root, '.claude', 'agents');
+  for (const [name, hash] of Object.entries(source.agents || {})) {
+    let buf;
+    try {
+      buf = fs.readFileSync(path.join(agentsDir, name));
+    } catch (_err) {
+      drifted.push('agent/' + name + ' (missing)');
+      continue;
+    }
+    if (crypto.createHash('sha256').update(buf).digest('hex') !== hash) drifted.push('agent/' + name);
+  }
+
+  // Undeclared files, both surfaces. A leftover staging directory or a hand-added agent in
+  // our namespace is how a broken install passes a version check.
+  (function walkInstalled(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walkInstalled(full);
+        continue;
+      }
+      if (entry.name === '.DS_Store' || entry.name === 'skill-manifest.json') continue;
+      const rel = path.relative(skillDir, full).split(path.sep).join('/');
+      if (!(rel in (source.skill || {}))) drifted.push('skill/' + rel + ' (undeclared)');
+    }
+  })(skillDir);
+  if (fs.existsSync(agentsDir)) {
+    for (const name of fs.readdirSync(agentsDir)) {
+      if (name.startsWith('adws-') && name.endsWith('.md') && !(name in (source.agents || {}))) {
+        drifted.push('agent/' + name + ' (undeclared)');
+      }
+    }
+  }
+
   if (drifted.length) {
     stale += 1;
-    rows.push({ label, state: 'MODIFIED', detail: `${drifted.length} file(s) differ from their own manifest: ${drifted.slice(0, 3).join(', ')}` });
+    rows.push({ label, state: 'MODIFIED', detail: `${drifted.length} file(s) differ from source: ${drifted.slice(0, 3).join(', ')}` });
     continue;
   }
 

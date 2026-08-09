@@ -1495,18 +1495,26 @@ class of gap as archive-before-teardown being a procedure with no enforcement �
 itself was found by a question, not by a check.
 
 **Review round.** CodeRabbit reviewed this PR — the first in the series it was able to
-finish, the two before it having been skipped for size and cut off mid-review — and found a
-**Major** defect: `skill-check.js` held agent definitions to a weaker standard than the skill
-tree. With no agents directory it skipped the checks and exited 0 on an install with zero
+finish, the two before it having been skipped for size and cut off mid-review — and found **three
+Major** defects. The first: `skill-check.js` held agent definitions to a weaker standard than
+the skill tree. With no agents directory it skipped the checks and exited 0 on an install with zero
 agents; and it ignored undeclared `adws-*.md` files while the skill tree treats an undeclared
 file as a finding, with a comment in the same file explaining why. The asymmetry was the
 tell: the rule was written down and then applied to only one of two shipped surfaces. Both
 fixed and falsified.
 
+The second: `SKILL.md` step 3 told the orchestrator to record `skill_version` in a
+`run_manifest.json` that step 4 creates — a sequencing contradiction in the spec. The third:
+`check-installs` hashed only skill files, so an edited or missing agent reached `CURRENT` —
+**the identical asymmetry as the first, fixed in one file and missed in the other.** It now
+validates both surfaces against the *source* manifest, since an install whose own manifest
+was trimmed would otherwise validate against its own omission.
+
 That is the strongest available argument for the practice this series kept failing to follow.
 Across #47, #48, #49 and #51, the one PR where the review was allowed to finish is the one
-where a real defect was found — one the gate, the falsification table, and the author had all
-passed over.
+where **three** real defects were found — all of them past the gate, the falsification table
+and the author, and two of them the same class fixed in one place and missed in another,
+which is exactly what a second reader catches and an author does not.
 
 **A process note.** While falsifying this work I ran `git checkout` on `SKILL.md` to undo a
 probe and destroyed an uncommitted edit — the intake assertion this scope change exists to
