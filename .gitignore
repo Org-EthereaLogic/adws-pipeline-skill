@@ -43,3 +43,8 @@ parity/execution-report-fixtures/*/artifacts/*/execution_report.md
 # `expected` field committed in each parity/fixtures/**/*.json — regenerate
 # this report on demand with `node parity/run-parity.js`.
 parity/PARITY_REPORT.md
+
+# F-72: install.sh records each destination it installs to, so `make check-installs` can
+# tell whether that copy is still current. Which machines have the skill installed where is
+# a local fact, not a property of the project.
+.adws-installs

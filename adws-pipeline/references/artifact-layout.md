@@ -99,6 +99,13 @@ schema.
   "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null, "provenance": null }
 ```
+`run_manifest.skill_version` (F-72) is the `skill_version` reported by
+`scripts/skill-check.js` at intake — the content digest of the installed skill that actually
+ran, or the string `"unknown"` for an install predating the manifest. It is evidence, never
+a gate input. It exists because a merged fix does not reach a run until someone reinstalls:
+three installed copies once carried already-fixed security defects into live runs while the
+source repository's own gate was green, and no artifact recorded which skill had run.
+
 `stability_gate` (X-2): the verbatim JSON printed by `scripts/entropy-gate.js` for
 this attempt, or null when no entropy history exists yet.
 `provenance` (SC-3 B1/F-17) is an OPTIONAL, ADVISORY-only object capturing per-phase

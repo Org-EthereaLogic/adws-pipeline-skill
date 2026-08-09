@@ -14,7 +14,7 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 108 + report 24 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan; CLI-wrapper byte-identity lint. Seconds, zero-LLM. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 108 + report 24 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; skill-manifest currency. Seconds, zero-LLM. |
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Varies the **Node version only**, on `linux/arm64`. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
@@ -79,6 +79,12 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
   guard left both fixtures green."* Accepted survivors live in
   `parity/guard-ablation-baseline.json`, which may only shrink, and a stale entry fails the
   gate just as loudly as a new survivor.
+- **`make check-installs` is deliberately NOT in the gate.** It reads machine-local state
+  (`.adws-installs`, gitignored) and would fail in CI, in a fresh clone, and on any machine
+  that has never installed the skill — a step that cannot pass everywhere is a step people
+  learn to ignore. Run it after a merge, which is exactly when F-72 bites. What *is* gated is
+  `skill-manifest`, which asserts the shipped manifest describes the tree it ships with, so
+  an install can never stamp itself with a version that does not match its own contents.
 - All host-side shell stays **bash-3.2-safe** (macOS stock: no assoc arrays, `${x^^}`,
   `mapfile`) — the repo's own F-13 lesson applied to its tooling.
 - Tier 1/2 suites write only gitignored side-effects (`parity/PARITY_REPORT.md`, fixture

@@ -150,6 +150,22 @@ node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rul
 
 `make local-ci` runs all seven plus the static floors and skill lints.
 
+**Is what's installed what you just merged?**
+
+```bash
+make check-installs                                   # every registered install vs. this source
+node .claude/skills/adws-pipeline/scripts/skill-check.js   # what one install actually contains
+```
+
+A merged fix does not reach a run until someone reinstalls. Three installed copies once
+carried already-fixed security defects into live runs while this repository's gate was green
+(F-72), so the skill now ships a content manifest: `skill-check.js` proves an installed copy
+matches its own manifest and reports its `skill_version` (the orchestrator records it at
+intake, so every run's evidence names the skill that ran), and `make check-installs` compares
+each install registered by `install.sh` against the current source. The first answers *what
+is this?*; the second answers *is it current?* — an install cannot answer the second, because
+it is offline with respect to its source.
+
 - **CLI contract:** the wrapper each validator ends with is duplicated nine times
   and, before M-5a, was covered by one happy-path assertion per pack. The contract suite
   exercises every input-rejection path (missing argv, unreadable path, invalid JSON,

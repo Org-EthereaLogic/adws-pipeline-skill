@@ -1450,3 +1450,75 @@ at the merge of #49. Local CI green on merged `main`: Tier 1 14/14, Tier 2 clean
 20 and 24. All three installs updated and verified. `#49` was merged at the operator's
 direction with its review gap recorded rather than closed — CodeRabbit was rate-limited and
 never started, and the check read `pass`.
+
+## SC-12 (2026-08-09) — an install knows what it is; the source knows if it's current
+
+Plan: `docs/SC12_PLAN.md`. Closes the mechanism half of **F-72**, which was recorded but
+unremediated: the three stale installs were fixed by hand and nothing shipped to stop it
+recurring on the next merge.
+
+Two mechanisms, because they answer different questions and neither is sufficient alone.
+
+**What is this?** The skill now ships `skill-manifest.json` — a content digest of all 30
+files `install.sh` copies, skill tree and agent definitions alike — and
+`scripts/skill-check.js`, which verifies an installed tree against it and reports the
+`skill_version`. The orchestrator runs it at intake and records the version in
+`run_manifest.skill_version`, so **a stale install now says so in the evidence of every run
+it touches** rather than in nobody's. An integrity mismatch stops the job; a missing manifest
+warns and continues, so installs predating this still work.
+
+**Is it current?** An install cannot answer that — it is offline with respect to its source.
+`make check-installs` runs from the repository and compares each registered install,
+distinguishing STALE (version differs) from **MODIFIED** (version matches but files don't
+match their own manifest — the more dangerous case, because the version string alone looks
+correct). `install.sh` self-registers each destination in a gitignored `.adws-installs`.
+
+The version is derived from **content, not git**: a commit hash is chicken-and-egg, since
+writing the manifest changes the tree that determines the commit, and it goes stale on a
+rebase. `skill-manifest` is a gate step, so a shipped file cannot change without the manifest
+being regenerated — otherwise an install could stamp itself with a version that does not
+describe its own contents, which is worse than no version at all.
+
+**`check-installs` is deliberately not gated.** It reads machine-local state and would fail
+in CI, in a fresh clone, and on any machine that never installed the skill. A step that
+cannot pass everywhere is a step people learn to ignore.
+
+Falsified in both directions and at both layers: the manifest goes stale on a skill *or*
+agent edit; `skill-check` catches changed, missing and **undeclared** files (a partial
+install or leftover staging directory is exactly how a broken install hides); and
+`check-installs` reports CURRENT → STALE when the source moves → MODIFIED when the install is
+edited. Gate 15/15; all three real installs re-registered at `43e9b6fded7d`.
+
+**What is still missing, and it is the same shape as before:** nothing prompts anyone to run
+`check-installs` after a merge. The mechanism exists; the habit does not. That is the same
+class of gap as archive-before-teardown being a procedure with no enforcement — and F-72
+itself was found by a question, not by a check.
+
+**Review round.** CodeRabbit reviewed this PR — the first in the series it was able to
+finish, the two before it having been skipped for size and cut off mid-review — and found **three
+Major** defects. The first: `skill-check.js` held agent definitions to a weaker standard than
+the skill tree. With no agents directory it skipped the checks and exited 0 on an install with zero
+agents; and it ignored undeclared `adws-*.md` files while the skill tree treats an undeclared
+file as a finding, with a comment in the same file explaining why. The asymmetry was the
+tell: the rule was written down and then applied to only one of two shipped surfaces. Both
+fixed and falsified.
+
+The second: `SKILL.md` step 3 told the orchestrator to record `skill_version` in a
+`run_manifest.json` that step 4 creates — a sequencing contradiction in the spec. The third:
+`check-installs` hashed only skill files, so an edited or missing agent reached `CURRENT` —
+**the identical asymmetry as the first, fixed in one file and missed in the other.** It now
+validates both surfaces against the *source* manifest, since an install whose own manifest
+was trimmed would otherwise validate against its own omission.
+
+That is the strongest available argument for the practice this series kept failing to follow.
+Across #47, #48, #49 and #51, the one PR where the review was allowed to finish is the one
+where **three** real defects were found — all of them past the gate, the falsification table
+and the author, and two of them the same class fixed in one place and missed in another,
+which is exactly what a second reader catches and an author does not.
+
+**A process note.** While falsifying this work I ran `git checkout` on `SKILL.md` to undo a
+probe and destroyed an uncommitted edit — the intake assertion this scope change exists to
+add. It was caught immediately (the assertion was simply gone) and redone from a backup
+copy, which is what the other probes in this session had used. Recorded because it is the
+identical failure mode `install.sh` was hardened against three packages ago: a destructive
+restore with no backup, applied to work that only existed in the working tree.
