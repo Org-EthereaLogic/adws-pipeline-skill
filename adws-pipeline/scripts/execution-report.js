@@ -376,12 +376,31 @@ function firstFindingText(critic) {
 // a dispatch that dies before writing anything leaves exactly that (SKILL.md
 // "Transient subagent API errors", F-12), and certifying an empty directory as a
 // produced attempt is how a phase that never ran reaches a clean PROMOTE.
+// SC-13/F-78: a phase with no attempt is two very different things wearing one sentence.
+// If a LATER phase produced evidence, a phase was SKIPPED — the serious case, and the
+// shape the missing-phase-evidence gate exists to catch. If nothing later ran, the job
+// simply terminated before reaching it, which is what every non-promoting run looks like.
+// Both still fail this gate (seven phases did not complete, and that is the question it
+// asks), but a routine RETRY that stopped at `test` was reporting four "no attempt
+// recorded" lines — the QUARANTINE signature — above the one line that said why it
+// stopped. The verdict was right and the top of the report was noise. Nothing about
+// DECISION, exit codes, or gate STATUS changes here; only the words.
 function missingPhaseEvidence(phaseData) {
   const missing = [];
-  for (const phaseName of PHASE_NAMES) {
+  let lastWithEvidence = -1;
+  PHASE_NAMES.forEach((name, i) => {
+    if (phaseData[name]) lastWithEvidence = i;
+  });
+  const terminalPhase = lastWithEvidence >= 0 ? PHASE_NAMES[lastWithEvidence] : null;
+  for (let i = 0; i < PHASE_NAMES.length; i += 1) {
+    const phaseName = PHASE_NAMES[i];
     const entry = phaseData[phaseName];
     if (!entry) {
-      missing.push(`${phaseName} (no attempt recorded)`);
+      missing.push(
+        terminalPhase && i > lastWithEvidence
+          ? `${phaseName} (not reached — job terminated at ${terminalPhase})`
+          : `${phaseName} (no attempt recorded)`
+      );
       continue;
     }
     const absent = [];

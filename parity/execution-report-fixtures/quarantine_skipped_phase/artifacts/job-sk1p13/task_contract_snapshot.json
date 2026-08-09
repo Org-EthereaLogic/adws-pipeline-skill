@@ -1,0 +1,10 @@
+{
+  "task_id": "TASK-113",
+  "task": {
+    "title": "Skipped-phase regression fixture",
+    "problem_statement": "A job whose review phase never ran while document did.",
+    "acceptance_criteria": ["AC-1"]
+  },
+  "execution": { "target_branch": "main", "output_mode": "pr", "isolation_mode": "worktree" },
+  "schema_version": "1.0.0"
+}

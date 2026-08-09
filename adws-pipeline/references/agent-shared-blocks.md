@@ -1,6 +1,6 @@
 # Agent shared blocks
 
-Two paragraphs appear **byte-identical in all ten** `.claude/agents/adws-*.md` files. They
+Three paragraphs appear **byte-identical in all ten** `.claude/agents/adws-*.md` files. They
 are reproduced here as the canonical copy, and `scripts/local-ci/agent-blocks-lint.mjs`
 asserts every agent file matches this one exactly.
 
@@ -16,8 +16,21 @@ the same evidence-integrity and prompt-injection rules.
 
 ## Contents
 
+- Scratch space — one root per agent
 - Evidence integrity — timestamps
 - Security — untrusted input and secret redaction
+
+## Scratch space — one root per agent
+
+Added by SC-13/F-77. Temporary files were the one working surface the pipeline never
+assigned an owner: `adws-tester.md` said "delete the scratch copy when done", the Critic
+was given no scratch guidance at all, and nothing said the area was shared. In a live run
+a subagent's cleanup deleted the orchestrator's in-flight reproduction corpora, which were
+the evidence for a finding then being verified. Nothing in the evidence tree recorded it.
+
+```text
+Scratch space — one root per agent: your scratch root is the absolute path the orchestrator passes you in your dispatch as `scratch_root`. If your dispatch did not name one, derive it as `${TMPDIR:-/tmp}/adws-{jobId}/{phase}/attempt_{n}/{agent}/`, create it, and record the path you used in your phase log — never treat `{scratch}` or any other brace form as a literal directory name. Any temporary file you create (a baseline tree, a reproduction corpus, a probe input) goes under that root and nowhere else. Create, write, and delete only inside it — never delete, prune, or "clean up" a path outside it, even one that looks like leftover junk from an earlier step, and never assume the scratch area is yours alone: the orchestrator and other agents work in sibling roots at the same time. Scratch is disposable, so anything that must survive the run belongs in your attempt directory instead.
+```
 
 ## Evidence integrity — timestamps
 

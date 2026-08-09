@@ -1551,3 +1551,82 @@ add. It was caught immediately (the assertion was simply gone) and redone from a
 copy, which is what the other probes in this session had used. Recorded because it is the
 identical failure mode `install.sh` was hardened against three packages ago: a destructive
 restore with no backup, applied to work that only existed in the working tree.
+
+---
+
+## SC-13 (2026-08-09) — the pipeline could not keep what it found
+
+Plan: `docs/SC13_PLAN.md`. Field record:
+`docs/field-runs/2026-08-09-issue24-cadence-method-skill.md`. Closes **F-73, F-75, F-76,
+F-77, F-78, F-79**; **F-74** closed WORKING-AS-DESIGNED by operator decision.
+
+Source: `job_20260809_0003` and `job_20260809_0004` against `cadence-method-skill` issue
+#24. Between them the pipeline found eleven real defects, repaired ten, and shipped
+nothing. Every one of five Critic `fail` verdicts reproduced as a true positive. Nothing
+below is a detection failure.
+
+**Gate.** `make local-ci` PASS, all 15 steps, run `20260809T172303Z`: parity 108/108,
+report **25/25**, entropy 7/7, provenance 5/5, SC-3 drill, CLI contract, guard-ablation,
+node-check, shell-lint, bash32-scan, frontmatter, requires, cli-block, agent-blocks,
+skill-manifest. `skill-manifest.json` regenerated: `904e3aa56dac` → `358f7b7d28a7`, 30
+files; `node adws-pipeline/scripts/skill-check.js --json` → `intact: true`.
+`make ci-orb` PASS, run `20260809T172313Z`: node20 build/run PASS, node24 build/run PASS,
+linux/arm64.
+
+**F-78 is the only change to RUNTIME behaviour, and it is pinned by a fixture that did not
+exist.** (`agent-blocks-lint.mjs` also changed, below — that is gate tooling, not anything
+a pipeline run executes.)
+`missingPhaseEvidence()` now says `not reached — job terminated at {phase}` for a phase no
+later phase followed, and keeps `no attempt recorded` for one that a later phase DID follow.
+The distinction is worth nothing unless both branches are pinned, so
+`quarantine_skipped_phase` (`job-sk1p13`) carries `review` absent while `document` has
+evidence and asserts, from one tree, `review (no attempt recorded), ship (not reached — job
+terminated at document)`. The `retry` fixture — already the exact shape of a job that
+stopped at the test gate — asserts the trailing-hole wording. Falsified by reverting the
+function: `retry` and `quarantine_skipped_phase` both fail, the other 23 pass, confirming
+the two new assertions are what pin the change and not a byproduct of the existing corpus.
+
+Verdicts, warn flags, exit codes and `SCHEMA_VERSION` (1.4.0) are unchanged across all 25
+fixtures. This was deliberate: the report's *judgement* was correct in both field runs and
+only its *wording* misled.
+
+**F-77's lint is the interesting half.** Adding a third shared agent block would have been
+worth little if it could rot out of one of ten copies, so `agent-blocks-lint.mjs` was
+extended from two blocks to three in the same change, and the block was propagated by a
+script that extracts it with the lint's own parser rather than by ten hand-edits. Falsified
+by deleting the block from one agent file: the lint fails naming that file. This is the
+mechanism SC-10/A2 built, used for the first time to land a NEW rule rather than to protect
+an existing one.
+
+**What is NOT verified here.** The F-73 resumption path is documentation and orchestrator
+procedure — there is no code to test and no fixture to pin it, exactly as the worktree
+lifecycle it extends has none. Its live drill is deferred: the next run against issue #24
+should carry `execution.resume_from_job: "job_20260809_0003"` against that job's retained
+worktree (113 files, branch `adws/job_20260809_0003/add-loose-pointer-drift-validato`) and
+produce a `resumed_from` block classifying the two hand repairs as `ungated-carry-over`.
+Until that runs, F-73 is *specified* and not *demonstrated*, and this section should not be
+read as claiming otherwise.
+
+**What this change cannot fix.** F-76 makes a REPAIRED defect leave a check behind. It does
+nothing about the axis nobody has varied yet — nine Critic rounds missed two-document
+manifests because no artifact anywhere said manifests can name more than one document, and
+`criteria-to-checks` derives checks from criteria prose, which does not enumerate input
+shapes. That gap is recorded and unremediated.
+
+**A note on F-75.** The guidance that would have prevented the eleventh defect was written
+by the orchestrator, into the right file, in the right directory, at the right moment — and
+never read, because the builder's contract enumerated six fields and that was not one of
+them. No component misbehaved. The whole defect lived in the space between two correct
+components, which is where this project keeps finding them and where no component-level test
+looks.
+
+**And then this scope change did it again.** Review found that the first cut told ten
+agents to work under `{scratch}/{jobId}/{phase}/attempt_{n}/{agent}/` and never bound
+`{scratch}` — no dispatch passed it, no reference defined it. A rule delivered to the right
+file with no one required to supply its binding: F-75, committed inside the fix for F-75,
+by an author who had just written two thousand words about that failure mode. Everything
+here passed its gate both times, because the gate reads files and this defect lived between
+them. Recorded rather than quietly corrected, because the lesson is not "be careful" — it is
+that this class survives self-review with a green suite, and the only thing that has ever
+caught it in this project is a second reader. Eight of nine findings this round were real;
+the full list is in `DPPD.md` §22.

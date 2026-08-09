@@ -103,6 +103,51 @@ continuation).
   (SC-6 F-37, `operator_directed_rewinds`) are likewise independent budgets, each capped
   at 1. The table below is the authoritative accounting.
 
+### Regression coverage for a repaired defect (SC-13/F-76)
+
+A rewind that repairs a `code` defect must leave behind a check that would catch it again.
+Otherwise the only thing between that defect and the next release is the adversarial round
+that happened to find it — and a Critic explores a different dimension every time it runs.
+Across two consecutive jobs on one deliverable, ten defects were repaired and not one
+repair was required to produce a permanent check; the eleventh defect was the ninth's
+class resurfacing through the ninth's own fix.
+
+1. **Orchestrator, writing the correction.** Set `check_id` to the `criteria-to-checks` id
+   for the criterion the finding violates. A Critic finding is not a check and has no id
+   of its own, so it is joined to the criterion it breaks. Then set the entry's
+   `regression_check_id`:
+   - a criterion covers the finding → the same criterion id, and the regression check
+     joins the criteria namespace normally;
+   - NO criterion covers it → mint `REG-{source_attempt}-{k}` and record in the entry that
+     no criterion covered the finding. Surface that: an uncovered true defect is a gap in
+     the CONTRACT and worth saying out loud. It is not, however, a reason to leave the
+     repair uncovered — which is what "record it and move on" amounted to before SC-13,
+     since `regression_check_ids` accepted criterion ids only and a Critic finding that
+     matched no criterion had no id it could legally carry.
+   Where the finding was reproduced, set `repro` to the archived corpus
+   (`{phase}/attempt_{n}/consensus/repro/`, F-77) so the builder and tester can exercise
+   the exact inputs rather than reconstruct them from prose.
+2. **Builder, on the rewind attempt.** Add or extend a permanent check that is RED without
+   the fix and green with it, inside `allowed_paths`, driven by the `repro` corpus where
+   one exists. Echo each `regression_check_id` in `phase_output.regression_check_ids` and
+   record in `phase_log.md` the reproduction's observed output BEFORE the fix was applied.
+   A regression check nobody watched fail is an assertion about the future, not evidence
+   about the present.
+3. **Tester, on the forward re-run.** For every id in `regression_check_ids` there must be
+   a check row in `phase_output.json.checks` that (a) carries that id, (b) is a NEW row
+   answering this correction — not a pre-existing row for the same criterion — and (c)
+   records real output from exercising the correction's `repro.files`. **The SC-5/F-31
+   criterion-coverage join does NOT establish this and must not be mistaken for it:** that
+   join asks whether *some* check answered each criterion, and one criterion may carry
+   several checks, so an older row would satisfy it while the new regression assertion
+   never ran at all. A criterion repaired in THIS job that comes back `gate_weak` fails
+   the gate rather than warning — `gate_weak` means unverified, and "unverified" is not an
+   acceptable answer for the defect the job just stopped to fix.
+
+No new validator, DSL, verdict, or exit code — this reuses `check_specs`, the `check_id`
+join for criteria, the `regression_check_ids` list for repairs, and the falsifiability
+baseline the test gate already runs.
+
 ### Rewind budget accounting (SC-7/F-47)
 
 Five budgets can send a job back to `build`. Two things about each were previously
@@ -148,6 +193,15 @@ operator, because the spec had no answer.
    Verification chooses the ROUTE, never the verdict: a Critic `fail` has already failed
    the gate either way. This is what keeps a wrong Critic from spending a rewind, and it
    is cheap next to the build attempt it gates.
+   Work in the orchestrator's own scratch root
+   (`${TMPDIR:-/tmp}/adws-{jobId}/orchestrator/`, the sibling of the per-agent roots you
+   pass at dispatch — see the shared scratch block in
+   `references/agent-shared-blocks.md`) and copy the corpus you ran into the failing
+   attempt's `consensus/repro/` (SC-13/F-77) so the routing decision is re-runnable from
+   the archive. Record what you ran and what you observed in the
+   attempt manifest's `gate_failure_detail.orchestrator_reproduction`. Scratch is
+   disposable and shared; a probe corpus that only ever existed there has been lost
+   mid-verification before.
 2. **Reproduced, and the defect is in the CODE** → rewind to `build`. Write the finding
    into a FRESH `build/attempt_{n}/corrections.json` with `classification: "code"` and
    `source_attempt` naming the real origin (`review/attempt_{n}` or `test/attempt_{n}` —

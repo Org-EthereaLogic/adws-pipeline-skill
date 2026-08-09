@@ -1,14 +1,15 @@
 # Detailed Project Plan Document (DPPD)
 
 **Project:** ADWS Pipeline Skill — recreate ADWS_Pro's core function as a Claude skill with agent orchestration
-**Version:** 1.12 (SC-12 scope change §21, 2026-08-09)
+**Version:** 1.13 (SC-13 scope change §22, 2026-08-09)
 **Date:** 2026-07-14
 **Owner:** Anthony
 **Status:** Approved — base plan accepted at the WBS 6.4 sign-off (2026-07-15,
 `acceptance/ACCEPTANCE.md`); scope changes SC-1 (§9), SC-2 (§10), SC-3 (§11), SC-4
-(§13), SC-5 (§14), SC-6 (§16), SC-7 (§18), SC-8 (§19), SC-9 / SC-10 / SC-11 (§20) and
-SC-12 (§21) approved per R-6; maintenance audits M-1 (§12), M-2 (§15), M-3 (§17), M-4 (§18)
-and M-5a / M-5b (§20) are defect fixes, not revisions. Governing version: 1.12.
+(§13), SC-5 (§14), SC-6 (§16), SC-7 (§18), SC-8 (§19), SC-9 / SC-10 / SC-11 (§20),
+SC-12 (§21) and SC-13 (§22) approved per R-6; maintenance audits M-1 (§12), M-2 (§15),
+M-3 (§17), M-4 (§18) and M-5a / M-5b (§20) are defect fixes, not revisions.
+Governing version: 1.13.
 *(This header had itself gone stale: it read "Version 1.6 / SC-6" while §18 and §19 already
 recorded SC-7 and SC-8. Brought current in §20 — a tracking document that lags its own
 sections is the documentation form of a count no consumer compares, F-41.)*
@@ -1028,3 +1029,161 @@ NFR-3 holds (`SKILL.md` 376 < 500); NFR-4 preserved.
 
 **Still open:** the hook only helps someone who ran `make install-hooks` — a fresh clone has
 none until it does; and F-72 itself was found by a question, not by a check.
+
+---
+
+## 22. Scope Change SC-13 (2026-08-09, field runs job_20260809_0003/0004) — APPROVED
+
+Source: **F-73 … F-79**, from two consecutive RETRY runs against `cadence-method-skill`
+issue #24. Field record: `docs/field-runs/2026-08-09-issue24-cadence-method-skill.md`.
+Plan: `SC13_PLAN.md`. Verification: `VERIFICATION.md` §SC-13.
+
+### The finding
+
+Two jobs found **eleven real defects** in one deliverable and repaired ten. Every one of
+the five Critic `fail` verdicts reproduced as a true positive; not one rewind was spent on
+a finding that did not hold up. Then both jobs terminated RETRY and shipped nothing, and
+the ten repairs ended up in a state the pipeline has no vocabulary for.
+
+Every finding below is the same shape: the pipeline detected correctly and then could not
+KEEP what it detected.
+
+- The eleventh defect was manufactured by the fix for the ninth — and the orchestrator had
+  written the warning that would have prevented it (*"do not overcorrect into a false
+  NEGATIVE … verify both directions"*) into a `corrections.json` field that exists in no
+  schema and that `adws-builder.md` never tells the builder to open.
+- Ten repairs left no regression check behind, because nothing requires one.
+- The retained worktree was adopted by the next job through invented schema
+  (`isolation_mode: "worktree-reused"`), and which of its files carried gate evidence
+  survived only as a free-text `operator_notes` paragraph.
+- A subagent's scratch cleanup deleted the orchestrator's probe corpora mid-verification.
+  Nothing owned scratch space; nothing recorded the loss.
+- The reproduction that ENDED the job exists only as prose inside `findings[].evidence`;
+  its corpus is in no archive. The most consequential claim in the run is the one claim
+  that cannot be re-run from the run's own evidence.
+
+### What shipped
+
+Six of the seven findings are remediated; all of it is procedure and schema, and **no
+validator changed**.
+
+- **F-73, the substantive one.** A terminal non-PROMOTE state now writes
+  `run_manifest.carry_over` — retained path, branch, and a per-file digest of the change
+  set. A contract may name `execution.resume_from_job`, which is the ONLY authorization to
+  run against an existing worktree, and only when the predecessor recorded
+  `resumable: true` (it never shipped). Intake then classifies every path in the tree or
+  the record as `unchanged` / `changed` / `added` / `removed` into
+  `run_manifest.resumed_from`, and `isolation_mode: "worktree-resumed"` joins the enum.
+  Only `unchanged` carries evidence forward, and only as far as `gated_through` reached —
+  a digest match proves the file has not moved, never that a gate assessed it. Hard rule 6
+  is untouched: nothing is staged or committed to produce the record.
+- **F-75.** `corrections.json` gains an optional `guidance` object —
+  `invisible_because`, `direction_of_error`, `must_not_regress`, `tie_breaking`,
+  `housekeeping` — lifted verbatim from what a live orchestrator already wrote into an
+  undocumented key. `adws-builder.md` now makes reading it mandatory and requires the
+  builder to state in `phase_log.md` how each `must_not_regress` item survived and how
+  `direction_of_error` was checked in BOTH directions.
+- **F-76.** Every `code` correction must leave a permanent check behind, carrying the
+  correction's `check_id`, recorded in `phase_output.regression_check_ids`, with the
+  pre-fix reproduction output in the builder's log. The forward test re-run answers those
+  ids through the SC-5/F-31 join that already exists — no new DSL, runner, verdict, or
+  exit code.
+- **F-77.** A third shared agent block assigns every agent its own scratch root and
+  forbids deleting outside it (`agent-blocks-lint.mjs` now pins three blocks across all
+  ten agents). `findings[]` gains a `reproduction` object, REQUIRED when the author
+  actually ran something, and the corpus is written to `consensus/repro/` so it reaches
+  the archive.
+- **F-78.** `execution-report.js` distinguishes a phase not reached from a phase that
+  wrote nothing. Detail strings only — no gate status, DECISION, exit code, or
+  `SCHEMA_VERSION` change.
+- **F-79.** `resolution` is documented on `advocate.json` alone, matching the prose that
+  already said so.
+
+### F-74 — closed WORKING-AS-DESIGNED, on the record
+
+For a Critic-found code defect the effective budget is one repair: `phase-gates.md` F-46
+step 5 terminates on the second Critic fail at a gate, and job 0004 hit it with a test
+retry still unspent. Raising it was considered and **declined by the operator**.
+
+The case for raising it is that all five Critic fails were true positives and the sixth
+would probably have been too. The case against is that nothing in the evidence
+distinguishes "the Critic keeps finding new defects" from "the deliverable is being
+patched in circles", and a budget that cannot tell those apart should fail closed.
+
+What made the terminations expensive was never the cap. It was that terminating threw ten
+gated repairs outside the evidence boundary — which is F-73, and F-73 shipped here. The
+decision is recorded so a third run can revisit it with its own evidence.
+
+### What review caught — including this change repeating the defect it was fixing
+
+**CodeRabbit returned nine actionable findings on the first cut, one Critical and five
+Major, and eight were real.** Recorded in full because the most important one is an
+indictment of the change itself:
+
+- **`{scratch}` was never bound (Major).** The new shared block told ten agents to work
+  under `{scratch}/{jobId}/{phase}/attempt_{n}/{agent}/` — and nothing in `SKILL.md`,
+  the dispatch step, or any agent input ever defined `{scratch}`. **That is F-75's exact
+  defect, committed inside the scope change that exists to fix F-75:** a rule delivered to
+  the right file whose binding nobody was required to supply. An agent could read the
+  brace form literally, and two agents guessing differently is the collision the block was
+  written to prevent. Fixed by having the orchestrator create and pass a resolved absolute
+  `scratch_root` at every dispatch, with a documented fallback.
+- **F-76 was unsatisfiable for its own motivating case (Major).** `regression_check_ids`
+  accepted `criteria-to-checks` ids only, while the rule applies to every `code`
+  correction — including a Critic finding that answers to no criterion, which is what
+  defects 9 and 11 were. Fixed with a correction-scoped `REG-…` namespace that sits
+  outside the criteria namespace and so leaves the F-31 join untouched.
+- **The corpus had no machine-readable reference (Major).** Both the tester and
+  `phase-gates` were told to exercise "the corpus the correction names", and nothing in
+  `corrections.json` let a correction name one. Fixed with a `repro { attempt, files }`
+  field.
+- **The regression join proved nothing (Major).** `artifact-layout` explicitly permits
+  several checks per `check_id`, so a pre-existing row satisfied the presence join while
+  the new assertion never ran. Fixed by requiring a NEW row carrying the id and real
+  output from the corpus, and by saying plainly that the F-31 join does not establish this.
+- **`reproduction.command` was an execution channel (Critical).** A free-form shell string
+  composed by an agent that has just read an untrusted repository — the precise thing the
+  agents' own security block exists to stop — recorded in a schema with no handling rule.
+  Nothing executes it today, which is exactly when to write the rule: never evaluate it,
+  allowlist any automated replay by `check_id`, and canonicalize `files` under
+  `consensus/repro/`.
+- **A digest match was called "gated" (Major).** It proves only that a file has not moved
+  since the record; a file written after the last passing gate matches and was never
+  assessed. Fixed by classifying `unchanged`/`changed`/`added`/`removed` and stating that
+  `unchanged` inherits evidence only as far as `gated_through` reached.
+- **The carry-over record was silent about post-ship states (Major).** Answered by
+  RESTRICTING rather than expanding: `resumable` is true only for a job that never
+  shipped. A schema that claimed authority over commit and ship state would be describing
+  things `ship/attempt_{n}/phase_output.json` already owns.
+- Two Minors: a verification sentence that called F-78 "the only executable change" while
+  the same section recorded a lint change, and fixture assertions naming one phase where
+  four needed pinning.
+
+The one finding declined: an executable end-to-end resume fixture for F-73. It is the
+right idea and it is the live drill already recorded as deferred — the resumption path is
+orchestrator procedure with no code to drive, exactly like the worktree lifecycle it
+extends, and simulating it in a fixture would pin the simulation rather than the pipeline.
+
+### What this scope change says about its own method
+
+Every one of these seven findings was already visible in the evidence tree the pipeline
+itself wrote. F-75 is the sharpest: the correct guidance was authored, delivered to the
+right directory at the right moment, and ignored — not because anyone erred, but because
+the receiving contract enumerated six fields and that guidance was not among them. **A
+field the reader is not told to read is a field that was not written.**
+
+F-78 is the mirror image at the other end of the run: the report's own words made a
+routine RETRY wear the QUARANTINE face, in a document whose entire purpose is to be the
+authoritative verdict. Both are failures of the interfaces BETWEEN correct components,
+which is the class this project keeps finding and the class no component-level test sees.
+
+**Invariants held:** no validator changes, no fixture refreeze, no `SCHEMA_VERSION` bump,
+no new terminal state / DECISION / exit code. Report fixtures 24 → 25 (the new
+`quarantine_skipped_phase` case pins both branches of the F-78 wording from one tree).
+Parity 108/108 unchanged. NFR-3 holds (`SKILL.md` 424 < 500).
+
+**Still open:** input-dimension coverage still has no owner — F-76 makes a REPAIRED defect
+leave a check behind, and does nothing about the axis nobody has varied yet. Nine Critic
+rounds missed multi-document manifests because no artifact anywhere said manifests can name
+more than one document. And a resumed job inherits a classified worktree but not its
+predecessor's findings; cross-job memory remains manual.

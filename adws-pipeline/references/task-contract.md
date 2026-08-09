@@ -43,7 +43,9 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
     "target_branch": "main",
     "allow_direct_commit": false,
     "commit_identity": null,
-    "max_runtime_minutes": 60
+    "max_runtime_minutes": 60,
+    "evidence_archive_dir": null,
+    "resume_from_job": null
   },
   "policy": {
     "allowed_paths": ["<at least one path prefix required>"],
@@ -75,6 +77,8 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
 | `execution.allow_direct_commit` | yes | boolean |
 | `execution.commit_identity` | no | Author identity for ship commits, `"Name <email>"` (C3). Default `null` = use the operator's git config (`user.name`/`user.email`); if that is also unset, the documented fallback `Claude (ADWS pipeline) <noreply@anthropic.com>` applies. Decided at intake so authorship is never a ship-time improvisation. |
 | `execution.max_runtime_minutes` | no | advisory; > 0 if present |
+| `execution.evidence_archive_dir` | no | Durable destination for the terminal evidence archive (SC-11/A5), OUTSIDE the worktree and outside the target checkout. Absent or `null` = no durable destination: the terminal report says so and nothing is torn down. It was consumed by `SKILL.md` §5 before it was ever a documented field — recorded here as of SC-13. |
+| `execution.resume_from_job` | no | (SC-13/F-73) The `job_id` whose retained worktree this job adopts. Absent or `null` = create a fresh worktree, the default. Present = the ONLY authorization to run against an existing tree; intake then performs the carry-over classification in `SKILL.md` §0 step 5. Must name a job whose `run_manifest.carry_over.retained` is `true`. |
 | `policy.allowed_paths` | yes | ≥ 1 entry |
 | `policy.blocked_paths` | yes | may be empty array |
 | `policy.test_policy` | yes | `required`, `best-effort`, or `skip` |

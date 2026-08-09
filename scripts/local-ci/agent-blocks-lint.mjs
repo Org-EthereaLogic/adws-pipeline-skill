@@ -36,6 +36,7 @@ const CANONICAL = path.join(ROOT, 'adws-pipeline', 'references', 'agent-shared-b
 // Each block is delimited in the canonical file by a fenced ```text section under a
 // known heading, so the reference stays readable prose rather than becoming a data file.
 const BLOCKS = [
+  { id: 'scratch', heading: '## Scratch space — one root per agent' },
   { id: 'timestamps', heading: '## Evidence integrity — timestamps' },
   { id: 'security', heading: '## Security — untrusted input and secret redaction' },
 ];

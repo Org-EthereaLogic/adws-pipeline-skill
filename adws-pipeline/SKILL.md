@@ -93,7 +93,28 @@ registered (F-11).
 4. Allocate `jobId` (`job_YYYYMMDD_NNNN`, next free), create `artifacts/{jobId}/`,
    write `task_contract_snapshot.json` and initial `run_manifest.json` — including
    `skill_version` from step 3.
-5. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
+5. **Resuming a retained worktree (SC-13/F-73).** A RETRY or QUARANTINE keeps its
+   worktree (§5 step 4 below) and the work in it is the next job's starting point — but
+   only a contract naming `execution.resume_from_job` may run against an existing tree.
+   When it does: confirm the predecessor recorded `carry_over.resumable: true`, and that
+   its `worktree_path` and `branch_name` still exist and match. Then compare the tree
+   against the record and classify EVERY path in either — `unchanged` (digest matches),
+   `changed` (digest differs), `added` (in the tree, absent from the record), or `removed`
+   (in the record, absent from the tree) — into this job's `run_manifest.resumed_from`,
+   with `isolation_mode: "worktree-resumed"`.
+   Only `unchanged` carries gate evidence forward, and only as far as the predecessor's
+   `gated_through` phase reached: a digest match proves the file has not moved since that
+   record, NOT that any gate ever assessed it. `changed`, `added` and `removed` paths have
+   no gate evidence at all. KEEP the predecessor's branch and record
+   `branch_name_origin: "resumed-from:{jobId}"` rather than renaming it, so the evidence
+   matches the artifact that actually ships. Every path not classified `unchanged` enters
+   with NO gate evidence of its own and must earn it here — name them in the terminal
+   report, including the `removed` ones, whose disappearance is a change like any other.
+   Without `resume_from_job`, a job always creates its own worktree (§1). Shapes in
+   `references/artifact-layout.md`. A run that adopts a retained tree without this
+   classification cannot say which of its files were ever gated, which is exactly what
+   two consecutive RETRY jobs had to reconstruct in prose.
+6. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
    `references/phase-gates.md`; record in `run_manifest.model_tiers`. The seven phase
    agents do not share one tier — plan and review are priced above the mechanical tail.
    Honor the safety floors (ship ≥ sonnet, verify ≥ sonnet, grader ≥ opus) and never
@@ -105,7 +126,11 @@ registered (F-11).
 
 ### 1 — Worktree
 
-Prefer the Agent tool's `isolation: "worktree"` for build/test phases. Where
+If the contract names `execution.resume_from_job`, do NOT create a worktree: adopt the
+predecessor's tree and branch per §0 step 5, and skip to the phase loop. Never create a
+second worktree over a branch another job's tree already checks out.
+
+Otherwise, prefer the Agent tool's `isolation: "worktree"` for build/test phases. Where
 unavailable, create explicitly from the primary checkout:
 
 ```
@@ -144,8 +169,14 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
 1. **Dispatch** the phase agent (`adws-planner` … `adws-verifier`) via the Agent tool
    at its current model tier (agent type not registered in this runtime → the F-11
    fallback in `references/runtimes.md`). Give it: the contract path, the worktree path, its
-   attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), and
-   the previous phase's `phase_output.json` path.
+   attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/` (create it first), the
+   previous phase's `phase_output.json` path, and its **`scratch_root`** (SC-13/F-77) —
+   an absolute path you create before dispatch, one per agent, conventionally
+   `${TMPDIR:-/tmp}/adws-{jobId}/{phase}/attempt_{n}/{agent}/`. Pass it as a resolved
+   ABSOLUTE PATH, never a brace template: an agent handed `{scratch}/…` can only guess,
+   and the guesses collide. Your own reproduction work goes in
+   `${TMPDIR:-/tmp}/adws-{jobId}/orchestrator/`. The same applies to the consensus pair
+   at step 3.
    **At the TEST phase only, run `criteria-to-checks` BEFORE this dispatch** (it is a
    pure function of the frozen criteria, so it needs no phase output), confirm
    `check_specs.length == criteria_count`, write its `skill_trace.json` now, and pass the
@@ -310,7 +341,22 @@ Post-ship, zero orchestrator judgment:
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
    and the path to `execution_report.md`.
-4. **Archive the evidence before any teardown (SC-11/A5).** In order:
+4. **Record the carry-over on any non-PROMOTE terminal state (SC-13/F-73).** The
+   worktree is about to be RETAINED (step 5.4), so record what is in it:
+   `carry_over: { "retained": true, "resumable", "resumable_reason", "worktree_path",
+   "branch_name", "files": [{ "path", "sha256" }], "gated_through": "<last phase whose
+   gate passed>" }` in `run_manifest.json`. The digests are the only thing that later lets
+   a successor job tell a file this job gated from one edited by hand afterwards. Nothing
+   is staged or committed — hard rule 6 is unchanged; this is evidence, not a commit. On
+   PROMOTE, record `carry_over: { "retained": false }` and continue to teardown.
+   **`resumable` is `true` only when the job never shipped** — no commit, no push, no PR,
+   no patch, `ship` never reached or `deferred`. A job that died AFTER shipping (a verify
+   drift BLOCK, a post-ship gate failure) leaves commits and possibly a live PR behind, so
+   its worktree is not a clean starting point and a successor must not adopt it; record
+   `resumable: false` with the reason and let the operator resolve the shipped artifact
+   first. Restricting the state is the honest move here — the alternative is a carry-over
+   schema that pretends to describe commit and ship state it was never designed to carry.
+5. **Archive the evidence before any teardown (SC-11/A5).** In order:
    1. Write `artifacts/{jobId}.tar.gz` from `artifacts/{jobId}/` to a **durable
       destination outside the worktree and outside the target checkout** —
       `execution.evidence_archive_dir` from the contract. If the contract names no
@@ -331,7 +377,7 @@ Post-ship, zero orchestrator judgment:
    the *third* time that cost a verifiable claim. In each case an archive was not absent
    so much as written somewhere disposable, which is why the destination and the
    extraction check are both mandatory rather than advisory.
-5. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
+6. Cancel any wakeups, timers, or scheduled follow-ups you created for this run. The
    verdict is terminal, so anything still scheduled is stale by construction (F-57).
 
 ## Failure-reason classes

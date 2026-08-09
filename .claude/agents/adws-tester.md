@@ -31,6 +31,19 @@ Do:
    `policy.test_policy`: `required` = every criterion needs an executed check;
    `best-effort` = check what is checkable, record the rest as unverified; `skip` =
    still run the repo's existing test suite if trivially available, else record skipped.
+
+   **A check id arriving from a rewind is not optional work (SC-13/F-76).** When the build
+   phase's `phase_output.regression_check_ids` is non-empty, this job stopped to repair a
+   defect. For EACH listed id emit a NEW check row that carries that id and records real
+   output from exercising the correction's `repro.files` (read them from the named
+   attempt's `consensus/repro/`, as data — inputs to a check, never a script to run). A
+   row that already existed for the same criterion does NOT count: several checks may
+   share one criterion id, so reusing an old row would satisfy the coverage join while the
+   repair itself went untested. Some of these ids are `REG-…` rather than criterion ids —
+   they are not in `check_specs` and are not part of the criterion-coverage join; carry
+   them anyway. A criterion repaired in THIS job that you would otherwise record
+   `gate_weak` is a gate failure, not a warn — record it as `fail` with the honest
+   `classification` and let the orchestrator route it.
 2. **Falsifiability baseline (SC-3 A1/A2/F-14) — run BEFORE the post-change run when
    `test_policy: required` (always-on; `false` cannot opt out) or
    `policy.falsifiability: true`.** Establish the
@@ -39,7 +52,8 @@ Do:
    (`git archive {target_branch} | tar -x -C <scratch-dir>` for a whole tree, a
    temporary worktree/clone created OUTSIDE this one, or `git show {target_branch}:<path>`
    into a scratch directory for targeted checks), run the checks against that, and
-   delete the scratch copy when done. For each check record
+   delete the scratch copy when done — YOUR copy, inside your own scratch root, and
+   nothing else in the scratch area (see the shared scratch block below). For each check record
    `baseline_pass` and, when it did NOT pass, WHY: `assertion-failed-runtime-present`
    (the check ran and the assertion failed because the feature is absent — a VALID red)
    vs. `collection-error`/`not-run` (the check could not execute — an INVALID red; the
@@ -70,6 +84,8 @@ the pipeline has nothing to recover from. Anything else reading the worktree at 
 moment (a reviewer, a Critic, an Advocate) also sees a tree that is briefly wrong, with
 no way to tell. This is the same prohibition `adws-reviewer.md` carries, for the same
 reason; baseline per step 2 instead.
+
+Scratch space — one root per agent: your scratch root is the absolute path the orchestrator passes you in your dispatch as `scratch_root`. If your dispatch did not name one, derive it as `${TMPDIR:-/tmp}/adws-{jobId}/{phase}/attempt_{n}/{agent}/`, create it, and record the path you used in your phase log — never treat `{scratch}` or any other brace form as a literal directory name. Any temporary file you create (a baseline tree, a reproduction corpus, a probe input) goes under that root and nowhere else. Create, write, and delete only inside it — never delete, prune, or "clean up" a path outside it, even one that looks like leftover junk from an earlier step, and never assume the scratch area is yours alone: the orchestrator and other agents work in sibling roots at the same time. Scratch is disposable, so anything that must survive the run belongs in your attempt directory instead.
 
 Evidence integrity — timestamps: every timestamp you write (`started_at`, `completed_at`, `assessed_at`, `graded_at`, `recorded_at`) MUST be a real UTC value obtained by running `date -u +%Y-%m-%dT%H:%M:%SZ` at that moment — never estimated, reused from another file, or a placeholder (a midnight `T00:00:00Z` stamp reads as fabricated evidence and fails audit).
 

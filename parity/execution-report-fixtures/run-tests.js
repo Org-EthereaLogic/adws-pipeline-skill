@@ -38,6 +38,18 @@ const CASES = [
     decision: 'RETRY',
     warn_flag: false,
     exit_code: 1,
+    // SC-13/F-78: this is the ordinary shape of a job that stopped at the test gate —
+    // review/document/ship/verify have no attempt because the job never got there. Those
+    // four must read "not reached", not "no attempt recorded": the latter is the SKIPPED
+    // phase shape (see quarantine_skipped_phase), and printing it four times above the one
+    // line that says why the job stopped made a routine RETRY wear the QUARANTINE face.
+    // Assert the WHOLE list, not one phase: a partial assertion would still pass if some
+    // of the four kept the old wording.
+    expectWarning:
+      'Missing phase evidence: review (not reached — job terminated at test), ' +
+      'document (not reached — job terminated at test), ' +
+      'ship (not reached — job terminated at test), ' +
+      'verify (not reached — job terminated at test)',
   },
   {
     name: 'quarantine',
@@ -269,6 +281,24 @@ const CASES = [
       { key: 'pipeline_completion', result: 'fail' },
       { key: 'phase_gates', result: 'unverified' },
     ],
+  },
+  {
+    name: 'quarantine_skipped_phase',
+    jobId: 'job-sk1p13',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // SC-13/F-78, the other half of the `retry` case: `review` has no attempt while
+    // `document` — a LATER phase — does. That is a phase genuinely skipped, and it must
+    // keep saying so. The same fixture pins both branches at once: review reads "no
+    // attempt recorded" and the trailing ship/verify read "not reached", from one tree.
+    // Without this the new wording would be free to swallow the skip it was never meant
+    // to excuse.
+    expectGate: { key: 'pipeline_completion', result: 'fail' },
+    expectWarning:
+      'Missing phase evidence: review (no attempt recorded), ' +
+      'ship (not reached — job terminated at document), ' +
+      'verify (not reached — job terminated at document)',
   },
   {
     name: 'quarantine_phase_gate_fail',
