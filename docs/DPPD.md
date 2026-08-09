@@ -1070,10 +1070,13 @@ validator changed**.
 - **F-73, the substantive one.** A terminal non-PROMOTE state now writes
   `run_manifest.carry_over` — retained path, branch, and a per-file digest of the change
   set. A contract may name `execution.resume_from_job`, which is the ONLY authorization to
-  run against an existing worktree; intake then classifies every file `gated` (digest
-  matches) or `ungated-carry-over` (changed after that job's last gate) into
+  run against an existing worktree, and only when the predecessor recorded
+  `resumable: true` (it never shipped). Intake then classifies every path in the tree or
+  the record as `unchanged` / `changed` / `added` / `removed` into
   `run_manifest.resumed_from`, and `isolation_mode: "worktree-resumed"` joins the enum.
-  Hard rule 6 is untouched: nothing is staged or committed to produce the record.
+  Only `unchanged` carries evidence forward, and only as far as `gated_through` reached —
+  a digest match proves the file has not moved, never that a gate assessed it. Hard rule 6
+  is untouched: nothing is staged or committed to produce the record.
 - **F-75.** `corrections.json` gains an optional `guidance` object —
   `invisible_because`, `direction_of_error`, `must_not_regress`, `tie_breaking`,
   `housekeeping` — lifted verbatim from what a live orchestrator already wrote into an
@@ -1111,6 +1114,56 @@ What made the terminations expensive was never the cap. It was that terminating 
 gated repairs outside the evidence boundary — which is F-73, and F-73 shipped here. The
 decision is recorded so a third run can revisit it with its own evidence.
 
+### What review caught — including this change repeating the defect it was fixing
+
+**CodeRabbit returned nine actionable findings on the first cut, one Critical and five
+Major, and eight were real.** Recorded in full because the most important one is an
+indictment of the change itself:
+
+- **`{scratch}` was never bound (Major).** The new shared block told ten agents to work
+  under `{scratch}/{jobId}/{phase}/attempt_{n}/{agent}/` — and nothing in `SKILL.md`,
+  the dispatch step, or any agent input ever defined `{scratch}`. **That is F-75's exact
+  defect, committed inside the scope change that exists to fix F-75:** a rule delivered to
+  the right file whose binding nobody was required to supply. An agent could read the
+  brace form literally, and two agents guessing differently is the collision the block was
+  written to prevent. Fixed by having the orchestrator create and pass a resolved absolute
+  `scratch_root` at every dispatch, with a documented fallback.
+- **F-76 was unsatisfiable for its own motivating case (Major).** `regression_check_ids`
+  accepted `criteria-to-checks` ids only, while the rule applies to every `code`
+  correction — including a Critic finding that answers to no criterion, which is what
+  defects 9 and 11 were. Fixed with a correction-scoped `REG-…` namespace that sits
+  outside the criteria namespace and so leaves the F-31 join untouched.
+- **The corpus had no machine-readable reference (Major).** Both the tester and
+  `phase-gates` were told to exercise "the corpus the correction names", and nothing in
+  `corrections.json` let a correction name one. Fixed with a `repro { attempt, files }`
+  field.
+- **The regression join proved nothing (Major).** `artifact-layout` explicitly permits
+  several checks per `check_id`, so a pre-existing row satisfied the presence join while
+  the new assertion never ran. Fixed by requiring a NEW row carrying the id and real
+  output from the corpus, and by saying plainly that the F-31 join does not establish this.
+- **`reproduction.command` was an execution channel (Critical).** A free-form shell string
+  composed by an agent that has just read an untrusted repository — the precise thing the
+  agents' own security block exists to stop — recorded in a schema with no handling rule.
+  Nothing executes it today, which is exactly when to write the rule: never evaluate it,
+  allowlist any automated replay by `check_id`, and canonicalize `files` under
+  `consensus/repro/`.
+- **A digest match was called "gated" (Major).** It proves only that a file has not moved
+  since the record; a file written after the last passing gate matches and was never
+  assessed. Fixed by classifying `unchanged`/`changed`/`added`/`removed` and stating that
+  `unchanged` inherits evidence only as far as `gated_through` reached.
+- **The carry-over record was silent about post-ship states (Major).** Answered by
+  RESTRICTING rather than expanding: `resumable` is true only for a job that never
+  shipped. A schema that claimed authority over commit and ship state would be describing
+  things `ship/attempt_{n}/phase_output.json` already owns.
+- Two Minors: a verification sentence that called F-78 "the only executable change" while
+  the same section recorded a lint change, and fixture assertions naming one phase where
+  four needed pinning.
+
+The one finding declined: an executable end-to-end resume fixture for F-73. It is the
+right idea and it is the live drill already recorded as deferred — the resumption path is
+orchestrator procedure with no code to drive, exactly like the worktree lifecycle it
+extends, and simulating it in a fixture would pin the simulation rather than the pipeline.
+
 ### What this scope change says about its own method
 
 Every one of these seven findings was already visible in the evidence tree the pipeline
@@ -1127,7 +1180,7 @@ which is the class this project keeps finding and the class no component-level t
 **Invariants held:** no validator changes, no fixture refreeze, no `SCHEMA_VERSION` bump,
 no new terminal state / DECISION / exit code. Report fixtures 24 → 25 (the new
 `quarantine_skipped_phase` case pins both branches of the F-78 wording from one tree).
-Parity 108/108 unchanged. NFR-3 holds (`SKILL.md` 407 < 500).
+Parity 108/108 unchanged. NFR-3 holds (`SKILL.md` 424 < 500).
 
 **Still open:** input-dimension coverage still has no owner — F-76 makes a REPAIRED defect
 leave a check behind, and does nothing about the axis nobody has varied yet. Nine Critic

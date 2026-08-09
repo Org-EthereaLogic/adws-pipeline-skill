@@ -1565,15 +1565,17 @@ Source: `job_20260809_0003` and `job_20260809_0004` against `cadence-method-skil
 nothing. Every one of five Critic `fail` verdicts reproduced as a true positive. Nothing
 below is a detection failure.
 
-**Gate.** `make local-ci` PASS, all 15 steps, run `20260809T165433Z`: parity 108/108,
+**Gate.** `make local-ci` PASS, all 15 steps, run `20260809T172303Z`: parity 108/108,
 report **25/25**, entropy 7/7, provenance 5/5, SC-3 drill, CLI contract, guard-ablation,
 node-check, shell-lint, bash32-scan, frontmatter, requires, cli-block, agent-blocks,
-skill-manifest. `skill-manifest.json` regenerated: `904e3aa56dac` → `d01d5a220664`, 30
+skill-manifest. `skill-manifest.json` regenerated: `904e3aa56dac` → `358f7b7d28a7`, 30
 files; `node adws-pipeline/scripts/skill-check.js --json` → `intact: true`.
-`make ci-orb` PASS, run `20260809T165341Z`: node20 build/run PASS, node24 build/run PASS,
+`make ci-orb` PASS, run `20260809T172313Z`: node20 build/run PASS, node24 build/run PASS,
 linux/arm64.
 
-**F-78 is the only executable change, and it is pinned by a fixture that did not exist.**
+**F-78 is the only change to RUNTIME behaviour, and it is pinned by a fixture that did not
+exist.** (`agent-blocks-lint.mjs` also changed, below — that is gate tooling, not anything
+a pipeline run executes.)
 `missingPhaseEvidence()` now says `not reached — job terminated at {phase}` for a phase no
 later phase followed, and keeps `no attempt recorded` for one that a later phase DID follow.
 The distinction is worth nothing unless both branches are pinned, so
@@ -1617,3 +1619,14 @@ never read, because the builder's contract enumerated six fields and that was no
 them. No component misbehaved. The whole defect lived in the space between two correct
 components, which is where this project keeps finding them and where no component-level test
 looks.
+
+**And then this scope change did it again.** Review found that the first cut told ten
+agents to work under `{scratch}/{jobId}/{phase}/attempt_{n}/{agent}/` and never bound
+`{scratch}` — no dispatch passed it, no reference defined it. A rule delivered to the right
+file with no one required to supply its binding: F-75, committed inside the fix for F-75,
+by an author who had just written two thousand words about that failure mode. Everything
+here passed its gate both times, because the gate reads files and this defect lived between
+them. Recorded rather than quietly corrected, because the lesson is not "be careful" — it is
+that this class survives self-review with a green suite, and the only thing that has ever
+caught it in this project is a second reader. Eight of nine findings this round were real;
+the full list is in `DPPD.md` §22.

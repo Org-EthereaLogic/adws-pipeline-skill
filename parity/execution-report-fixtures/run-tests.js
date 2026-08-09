@@ -43,7 +43,13 @@ const CASES = [
     // four must read "not reached", not "no attempt recorded": the latter is the SKIPPED
     // phase shape (see quarantine_skipped_phase), and printing it four times above the one
     // line that says why the job stopped made a routine RETRY wear the QUARANTINE face.
-    expectWarning: 'verify (not reached — job terminated at test)',
+    // Assert the WHOLE list, not one phase: a partial assertion would still pass if some
+    // of the four kept the old wording.
+    expectWarning:
+      'Missing phase evidence: review (not reached — job terminated at test), ' +
+      'document (not reached — job terminated at test), ' +
+      'ship (not reached — job terminated at test), ' +
+      'verify (not reached — job terminated at test)',
   },
   {
     name: 'quarantine',
@@ -290,7 +296,9 @@ const CASES = [
     // to excuse.
     expectGate: { key: 'pipeline_completion', result: 'fail' },
     expectWarning:
-      'review (no attempt recorded), ship (not reached — job terminated at document)',
+      'Missing phase evidence: review (no attempt recorded), ' +
+      'ship (not reached — job terminated at document), ' +
+      'verify (not reached — job terminated at document)',
   },
   {
     name: 'quarantine_phase_gate_fail',

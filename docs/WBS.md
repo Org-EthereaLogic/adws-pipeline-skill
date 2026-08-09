@@ -21,7 +21,7 @@ Gate steps 14 → 15. See `DPPD.md` §21.
 `cadence-method-skill` issue #24, which found eleven real defects, repaired ten, and shipped
 nothing. A terminal non-PROMOTE now records `carry_over` with per-file digests and a
 successor may adopt that worktree only via `execution.resume_from_job`, which classifies
-every file `gated` or `ungated-carry-over`; `corrections.json` gains the `guidance` object a
+every path `unchanged`/`changed`/`added`/`removed`; `corrections.json` gains the `guidance` object a
 live orchestrator had already invented; a repaired defect must leave a regression check
 behind; agents get one scratch root each (shared blocks 2 → 3) and reproductions get a
 corpus in `consensus/repro/`; the report stops calling a phase the job never reached

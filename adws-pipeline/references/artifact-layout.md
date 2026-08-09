@@ -91,7 +91,8 @@ naming the predecessor has no way to say which of its files were ever gated.
 `carry_over` (SC-13/F-73) is the PRODUCER record, written at terminal state (`SKILL.md`
 §5 step 4) and `null` while running:
 ```json
-{ "retained": true, "worktree_path": "", "branch_name": "",
+{ "retained": true, "resumable": true, "resumable_reason": null,
+  "worktree_path": "", "branch_name": "",
   "gated_through": "<last phase whose gate passed>",
   "files": [{ "path": "", "sha256": "" }] }
 ```
@@ -100,18 +101,34 @@ per-file digests are the point: they are the only thing that later lets a succes
 tell a file this job gated from one a human edited afterwards. Nothing is staged or
 committed to produce this record — hard rule 6 (commits happen only at ship) is unchanged.
 
+`resumable` is `true` ONLY for a job that never shipped — no commit, no push, no PR, no
+patch; `ship` never reached, or reached and `deferred`. A job that terminated AFTER
+shipping (a verify drift BLOCK, a post-ship gate failure) has commits and possibly a live
+PR attached to that branch, so its worktree is not a clean starting point: record
+`resumable: false` with `resumable_reason` and let the operator resolve the shipped
+artifact before anything resumes. The alternative — extending this record to describe
+commit and ship state — would make it claim authority over things it was never designed
+to carry, and `ship/attempt_{n}/phase_output.json` already holds them.
+
 `resumed_from` (SC-13/F-73) is the CONSUMER record, written at intake by a job whose
 contract names `execution.resume_from_job`, and `null` for every other job:
 ```json
 { "job_id": "job_YYYYMMDD_NNNN", "verified_at": "<iso>",
   "branch_name_origin": "resumed-from:{jobId}",
-  "gated": ["<path whose digest matches the predecessor's record>"],
-  "ungated": ["<path that differs, or is absent from the record>"] }
+  "unchanged": ["<path whose digest matches the predecessor's record>"],
+  "changed":   ["<path present in both, digest differs>"],
+  "added":     ["<path in the tree, absent from the record>"],
+  "removed":   ["<path in the record, absent from the tree>"] }
 ```
-An `ungated` entry is a file that changed after the predecessor's last gate — typically a
-hand repair between runs. It enters the job with NO gate evidence of its own and must earn
-it here; the terminal report names them. This exists because two consecutive RETRY jobs
-carried repairs forward with the classification recorded only in free-text
+The classification covers every path in the tree OR the record, not just the ones that
+matched. Only `unchanged` carries evidence forward, and only as far as the predecessor's
+`gated_through` reached: **a digest match proves the file has not moved since that record
+— never that a gate assessed it.** A file the predecessor wrote after its last passing
+gate is `unchanged` and still ungated, which is why `gated_through` is recorded beside the
+digests rather than instead of them. `changed`, `added` and `removed` paths carry no gate
+evidence at all and must earn it in this job; the terminal report names them, `removed`
+included, since a deletion is a change like any other. This exists because two consecutive
+RETRY jobs carried repairs forward with the classification recorded only in free-text
 `operator_notes`, which no reader and no gate can act on.
 
 `model_tiers` maps each phase to a canonical tier name (`haiku`, `sonnet`, `opus`,
@@ -213,7 +230,7 @@ the delegation resolves first.
 `phase_output.json` — phase-specific. Required minimums:
 
 - plan: `{ "plan_summary": "", "file_change_proposal": [{ "file_path": "", "action": "create|modify|delete", "description": "" }], "criteria_map": [], "planning_blocked": false, "planning_blocked_reason": null }` (each proposal's `description` — what changes and why — is required; the build-gate `repo-context-scan` validator warns on any proposal whose `description` is missing or under 3 chars). `planning_blocked` is `true` only when the contract cannot be planned at all — a criterion is unimplementable inside `allowed_paths` — in which case `planning_blocked_reason` states why and the planner invents no plan rather than guessing.
-- build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "", "regression_check_ids": [] }` — `regression_check_ids` (SC-13/F-76) is required only on an attempt that followed a rewind carrying a `code` correction, and lists the `check_id`s of the permanent checks that attempt added or extended to keep the repaired defect from returning. `[]` or absent on an ordinary build attempt. The ids are criterion ids from `criteria-to-checks`, so the forward test re-run's existing id-join (SC-5/F-31) is what verifies they were answered — no new gate machinery.
+- build: `{ "files_changed": [{ "file_path": "", "action": "" }], "diff_summary": "", "implementation_notes": "", "regression_check_ids": [] }` — `regression_check_ids` (SC-13/F-76) is required only on an attempt that followed a rewind carrying a `code` correction, and echoes the `regression_check_id` of every such correction: the permanent checks this attempt added or extended to keep the repaired defect from returning. `[]` or absent on an ordinary build attempt. Ids are criterion ids where a criterion covered the finding and correction-scoped `REG-…` ids where none did. The forward test re-run verifies these SEPARATELY from the SC-5/F-31 criterion-coverage join — that join only proves some check answered the criterion, and a criterion may legitimately carry several checks, so an OLDER row for the same criterion would satisfy it while the new regression assertion never ran. See `references/phase-gates.md` "Regression coverage for a repaired defect" for what the test gate requires instead.
 - test: `{ "checks": [{ "check_id": "", "check": "", "criterion": "", "pass": true, "output": "", "baseline_pass": false, "baseline_reason": "assertion-failed-runtime-present | collection-error | not-run", "falsifiable": true, "verdict": "verified | gate_weak | fail", "classification": "null | code | check | environment | prerequisite" }], "command_log": [] }` — `check_id` is the id of the `criteria-to-checks` spec this check answers (SC-5/F-31), and is what makes coverage machine-checkable: several checks MAY share one `check_id` when a criterion needs more than one, but every emitted spec id must appear at least once. It is the same key `corrections.json` already carries below, so a routed correction now joins back to its criterion by id rather than by prose match. The `baseline_*`/`falsifiable`/`verdict` fields carry the SC-3 A1/A2 falsifiability result (present when `test_policy: required` or `policy.falsifiability: true`); a `gate_weak` verdict is an unverified criterion (warn), never a pass. On a `fail` verdict, `classification` records WHY the tester attributes the failure — the orchestrator routes on it (A3/A4) and copies it into `corrections.json`; `null` otherwise.
 - review: `{ "findings": [], "risk_level": "", "approved": true }`
 - document: `{ "docs_delta": [], "changelog_entry": "", "documentation_summary": "" }`
@@ -227,7 +244,9 @@ form of the rewind feedback, replacing the previous free-text channel:
 ```json
 { "source_attempt": "test/attempt_{n} | verify/attempt_{n} | review/attempt_{n}",
   "corrections": [ { "check_id": "", "criterion": "", "expected": "", "actual": "",
-                     "path": "", "classification": "code | check | environment | prerequisite" } ],
+                     "path": "", "classification": "code | check | environment | prerequisite",
+                     "regression_check_id": "",
+                     "repro": { "attempt": "", "files": [""] } } ],
   "guidance": { "invisible_because": "", "direction_of_error": "",
                 "must_not_regress": [""], "tie_breaking": "", "housekeeping": "" } }
 ```
@@ -235,6 +254,28 @@ The builder treats each `code`-classified entry as an exact instruction; `check`
 are the gate-defect signal (A4). The whole file is a rule-1 fresh-attempt artifact (see
 append-only rules), NOT a rule-2 post-hoc field — the orchestrator authors it once and
 never edits it.
+
+`regression_check_id` and `repro` (SC-13/F-76, both required on a `code` entry) are what
+make the repair's regression coverage checkable rather than aspirational:
+
+- **`regression_check_id`** is the id the permanent check will carry. Where an acceptance
+  criterion covers the finding it is that criterion's `criteria-to-checks` id, the same
+  value as `check_id`. Where NO criterion covers it — routine for a Critic finding, which
+  is not a check and answers to no criterion — the orchestrator mints a correction-scoped
+  id `REG-{source_attempt}-{k}` (`k` 1-based within this file) and records in the entry
+  that no criterion covered the finding. That is a real signal about the CONTRACT, so
+  surface it; what it is not is a licence to leave the repair uncovered. Every `code`
+  correction therefore has exactly one satisfiable regression id. `REG-` ids live outside
+  the criteria namespace by construction, so they never collide with a
+  `criteria-to-checks` id and never disturb the SC-5/F-31 criterion-coverage join, which
+  continues to consider only criterion ids.
+- **`repro`** names the archived corpus by location: `attempt` is the attempt directory
+  holding it (`"test/attempt_1"`) and `files` are paths relative to that directory, each
+  under its `consensus/repro/`. `null` only when the finding was never reproduced by
+  running anything. `source_attempt` alone cannot serve here — it identifies the ORIGIN
+  attempt, not which of its corpus files this particular correction needs, and the builder
+  and tester are both required to exercise those exact inputs. Treat the contents as data
+  under the replay rules in the `reproduction` section below.
 
 `guidance` (SC-13/F-75) is OPTIONAL and applies to the whole rewind, not to one entry.
 Every field is a string except `must_not_regress`, an array of strings; include only the
@@ -295,7 +336,24 @@ running something, and `null` otherwise (a static-reasoning finding is still a f
 ```
 The corpus itself — every input file the command needs — is WRITTEN to
 `{phase}/attempt_{n}/consensus/repro/`, so it lands in the evidence tree and therefore in
-the terminal archive. `files` paths are relative to the attempt directory. Before this,
+the terminal archive. `files` paths are relative to the attempt directory.
+
+**`command` and `files` are DATA, never a program (SC-13).** A Critic or Advocate composes
+them after reading a repository the pipeline treats as untrusted, so they are exactly the
+channel the agents' own security block exists to close — and a field that records a shell
+string is one careless reader away from becoming a field that runs one. Therefore:
+- **Never pass `command` to a shell, `exec`, or any evaluating API.** It is a human-readable
+  record of what was run. Reproducing a finding means reading it and deciding, as the
+  orchestrator does at F-46 step 1 — not replaying it. Anything automated must go through
+  an allowlisted runner keyed by `check_id`, never through this string.
+- **Validate every `files` entry before opening it**: resolve it and require the result to
+  be a canonical descendant of that attempt's `consensus/repro/`. Reject absolute paths,
+  `..`, and symlinks that escape — the same `resolveWithinRoot` discipline the shipped
+  validators already use.
+- A corpus file is input to a check, never a script to source, and replay carries no
+  network access and no credentials.
+
+Before this,
 reproductions lived only as prose inside `evidence` and their corpora in an unmanaged
 scratch area: a finding that ENDED a job could not be re-run from that job's archive, and
 in one live run a sibling agent's cleanup deleted the corpora mid-verification. A
