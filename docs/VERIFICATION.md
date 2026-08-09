@@ -1489,10 +1489,21 @@ install or leftover staging directory is exactly how a broken install hides); an
 `check-installs` reports CURRENT → STALE when the source moves → MODIFIED when the install is
 edited. Gate 15/15; all three real installs re-registered at `43e9b6fded7d`.
 
-**What is still missing, and it is the same shape as before:** nothing prompts anyone to run
-`check-installs` after a merge. The mechanism exists; the habit does not. That is the same
-class of gap as archive-before-teardown being a procedure with no enforcement — and F-72
-itself was found by a question, not by a check.
+**The reminder that closes SC-12's own gap.** SC-12 §6 recorded that nothing prompted anyone
+to run `check-installs` after a merge — the mechanism existed, the habit did not.
+`.githooks/post-merge` now fires exactly when a merge changes the shipped bytes, runs the
+check, and prints the result. It never blocks (verified by deleting `check-installs.mjs` and
+confirming the merge still exits 0) and never fires when nothing changed (a reminder on every
+pull is one nobody reads — the same reasoning that keeps the check out of the gate).
+
+Building it exposed a defect in SC-12: the manifest's `git_commit` moves with HEAD, so the
+file was rewritten on every commit and was perpetually dirty. A file that is always modified
+is a file whose diffs stop being read. `--write` now leaves it untouched when `skill_version`
+is unchanged.
+
+**What remains:** the hook only helps someone who ran `make install-hooks`. A fresh clone has
+none until it does. That is a narrower version of the same gap, and F-72 itself was found by
+a question, not by a check.
 
 **Review round.** CodeRabbit reviewed this PR — the first in the series it was able to
 finish, the two before it having been skipped for size and cut off mid-review — and found **three

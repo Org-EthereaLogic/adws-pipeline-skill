@@ -1,0 +1,51 @@
+#!/bin/sh
+# post-merge — remind (and check) that installed copies are current, after a merge or pull
+# brings in a new version of the skill. Wired via core.hooksPath=.githooks; run once per
+# clone: `make install-hooks`.
+#
+# This is the F-72 moment. A merged fix does not reach a run until someone reinstalls, and
+# after the M-5/SC-9…SC-11 series merged with a green gate, all three installed copies were
+# still pre-remediation — F-63, F-64 and F-65 reproducing live in code about to run against
+# a real repository. SC-12 built `make check-installs` to answer that; this fires it at the
+# one moment the answer just changed.
+#
+# Three properties it must have, all learned the hard way in this repository:
+#
+#   1. NEVER BLOCK. A post-merge hook cannot abort the merge (it already happened), but it
+#      must also not fail loudly, corrupt a scripted pull, or make anyone reach for
+#      --no-verify out of habit. It always exits 0.
+#
+#   2. NEVER FIRE WHEN NOTHING CHANGED. A reminder on every pull is a reminder nobody
+#      reads — the same reason `check-installs` is not a gate step. It fires only when the
+#      merge actually changed the shipped bytes, detected by a change to
+#      skill-manifest.json, which the gate guarantees moves if and only if a shipped file
+#      moved.
+#
+#   3. ANSWER, DON'T NAG. It runs the check and prints the result, so the common case
+#      ("nothing installed here" / "all current") costs one quiet line instead of a chore.
+set -u
+
+# ORIG_HEAD is the pre-merge commit. Absent on the very first checkout — nothing to compare.
+if ! git rev-parse --verify --quiet ORIG_HEAD >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Did this merge change what gets shipped? The manifest is the exact signal: skill-manifest
+# lints it current in the gate, so it changes iff a shipped file changed.
+if git diff --quiet ORIG_HEAD HEAD -- adws-pipeline/skill-manifest.json 2>/dev/null; then
+  exit 0
+fi
+
+old_version="$(git show ORIG_HEAD:adws-pipeline/skill-manifest.json 2>/dev/null \
+  | sed -n 's/.*"skill_version": "\([^"]*\)".*/\1/p' | head -1)"
+new_version="$(sed -n 's/.*"skill_version": "\([^"]*\)".*/\1/p' adws-pipeline/skill-manifest.json 2>/dev/null | head -1)"
+
+echo ""
+echo "[post-merge] the skill changed: ${old_version:-none} -> ${new_version:-unknown}"
+echo "[post-merge] a merged fix does not reach a run until someone reinstalls (F-72). Checking:"
+
+# Never let a failing check fail the hook — `|| true` keeps a scripted `git pull` clean.
+/usr/bin/env node scripts/local-ci/check-installs.mjs 2>/dev/null || true
+
+echo "[post-merge] reinstall anything stale with:  ./install.sh <target>   (or --global)"
+exit 0

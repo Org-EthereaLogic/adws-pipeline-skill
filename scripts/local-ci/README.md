@@ -18,8 +18,17 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Varies the **Node version only**, on `linux/arm64`. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
-`make ci` runs Tier 1 + Tier 2 (what the pre-push hook runs). `make install-hooks` wires the
-hook once per clone; bypass a push with `git push --no-verify`.
+`make ci` runs Tier 1 + Tier 2 (what the pre-push hook runs). `make install-hooks` wires both
+hooks once per clone; bypass a push with `git push --no-verify`.
+
+| Hook | Fires | Blocks? |
+|---|---|---|
+| `pre-push` | every push | **yes** — Tier 1 then Tier 2 |
+| `post-merge` | a merge or pull that changes `skill-manifest.json` | **never** — runs `check-installs` and prints the result |
+
+`post-merge` exists because a merged fix does not reach a run until someone reinstalls
+(F-72), and it fires only when the shipped bytes actually changed: a reminder on every pull
+is a reminder nobody reads, which is the same reason `check-installs` is not a gate step.
 
 ## Prerequisites
 

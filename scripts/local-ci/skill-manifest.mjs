@@ -114,7 +114,17 @@ function buildManifest() {
 const built = buildManifest();
 
 if (WRITE) {
-  // Preserve generated_at only when nothing else changed, so a no-op rewrite is a no-op.
+  // `git_commit` is advisory provenance and moves with HEAD, so rewriting unconditionally
+  // would leave the manifest dirty after EVERY commit — a file that is always modified is
+  // a file whose diffs stop being read. Rewrite only when the shipped content actually
+  // changed; otherwise leave it byte-for-byte alone.
+  const existing = fs.existsSync(MANIFEST_PATH) ? JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8')) : null;
+  if (existing && existing.skill_version === built.skill_version) {
+    console.log(
+      `[skill-manifest] unchanged — version ${built.skill_version}, ${built.file_count} file(s); not rewritten`
+    );
+    process.exit(0);
+  }
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(built, null, 2) + '\n');
   console.log(
     `[skill-manifest] wrote ${path.relative(ROOT, MANIFEST_PATH)} — version ${built.skill_version}, ${built.file_count} file(s)`
