@@ -23,6 +23,7 @@ Bundled scripts (standalone Node ≥ 20, run with `node`):
 - `scripts/validators/*.js` — 9 deterministic validators; CLI: `node <script> <input.json|->` → JSON verdict on stdout
 - `scripts/execution-report.js` — terminal report; CLI: `node scripts/execution-report.js artifacts/{jobId}` → writes report, exits 0/10/1/2/3
 - `scripts/entropy-gate.js` — X-2 stability gate; CLI: `node scripts/entropy-gate.js artifacts/{jobId}/entropy_history.jsonl` → `{action: proceed|escalate|halt}`
+- `scripts/skill-check.js` — installed-copy integrity + version; CLI: `node scripts/skill-check.js [--json]` → exits 0 intact / 1 mismatch / 3 no manifest
 
 ## Environment & runtimes
 
@@ -72,9 +73,25 @@ registered (F-11).
    user for the missing fields; do not guess (AC-1.2).
 2. Run intake validation (hard failures in the reference). On failure, report the
    specific rule violated and ask for correction.
-3. Allocate `jobId` (`job_YYYYMMDD_NNNN`, next free), create `artifacts/{jobId}/`,
+3. **Verify the skill you are running (F-72).** Run `node scripts/skill-check.js --json`
+   and record its `skill_version` in `run_manifest.skill_version`. A merged fix does not
+   reach a run until someone reinstalls, and three installed copies once carried
+   already-fixed security defects into live runs while the source repository's gate was
+   green. Recording the version means a job shipped by a stale install says so in its own
+   evidence instead of in nobody's.
+   - exit 0 → proceed.
+   - exit 1 (integrity mismatch) → the installed tree does not match its own manifest:
+     files were edited, partially copied, or left over from a failed install. Report the
+     named files to the operator and do NOT start the job — every gate below assumes the
+     skill is the skill.
+   - exit 3 (no manifest) → an install predating F-72, or a hand-made copy. Record
+     `skill_version: "unknown"`, warn once in the terminal report, and continue.
+   This proves the copy is internally consistent. It CANNOT tell you a newer version
+   exists — an install is offline with respect to its source. `make check-installs` in the
+   source repository answers that half.
+4. Allocate `jobId` (`job_YYYYMMDD_NNNN`, next free), create `artifacts/{jobId}/`,
    write `task_contract_snapshot.json` and initial `run_manifest.json`.
-4. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
+5. Select initial model tiers from `risk.risk_level` per the PER-PHASE tier table in
    `references/phase-gates.md`; record in `run_manifest.model_tiers`. The seven phase
    agents do not share one tier — plan and review are priced above the mechanical tail.
    Honor the safety floors (ship ≥ sonnet, verify ≥ sonnet, grader ≥ opus) and never

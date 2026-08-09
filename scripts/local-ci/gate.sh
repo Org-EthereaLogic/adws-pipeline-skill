@@ -131,6 +131,9 @@ run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
 run_step "cli-block"     node scripts/local-ci/cli-block-lint.mjs
 run_step "agent-blocks"  node scripts/local-ci/agent-blocks-lint.mjs
+# F-72: the shipped manifest must describe the tree it ships with, or an install stamps
+# itself with a version that does not match its own contents.
+run_step "skill-manifest" node scripts/local-ci/skill-manifest.mjs
 
 legs_json="$(IFS=,; echo "${steps[*]}")"
 record="$(printf '{"event":"gate","run_id":"%s","git_commit":"%s","tested_tree":"%s","branch":"%s","dirty":%s,"overall":"%s","steps":[%s]}' \

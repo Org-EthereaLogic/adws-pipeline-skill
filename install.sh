@@ -63,6 +63,7 @@ find "${STAGE}" -name '.DS_Store' -delete 2>/dev/null || true
 
 VALIDATOR_COUNT=$(find "${STAGE}/scripts/validators" -name '*.js' 2>/dev/null | wc -l | tr -d ' ')
 AGENT_COUNT=$(ls -1 "${SRC}/.claude/agents/"adws-*.md 2>/dev/null | wc -l | tr -d ' ')
+SKILL_VERSION=$(node -e 'try{process.stdout.write(require(process.argv[1]).skill_version)}catch(e){process.stdout.write("unknown")}' "${STAGE}/skill-manifest.json" 2>/dev/null || echo unknown)
 if [ ! -f "${STAGE}/SKILL.md" ] || [ "${VALIDATOR_COUNT}" -lt 9 ] || [ "${AGENT_COUNT}" -lt 10 ]; then
   echo "error: staged payload looks incomplete (SKILL.md, ${VALIDATOR_COUNT} validators, ${AGENT_COUNT} agents)." >&2
   echo "       Nothing was changed in ${CLAUDE_DIR}." >&2
@@ -131,9 +132,21 @@ for a in "${SRC}/.claude/agents/"adws-*.md; do
   mv "${AGENTS_DIR}/.$(basename "$a").incoming.$$" "${AGENTS_DIR}/$(basename "$a")"
 done
 
+# F-72: record this destination in the source checkout so `make check-installs` can tell
+# whether it is still current. A merged fix does not reach a run until someone reinstalls,
+# and before this nothing knew where "someone" would have to reinstall. The registry is
+# gitignored -- it is a fact about this machine, not about the project.
+if [ -w "${SRC}" ]; then
+  REGISTRY="${SRC}/.adws-installs"
+  if ! { [ -f "${REGISTRY}" ] && grep -qxF "${DEST_ROOT}" "${REGISTRY}"; }; then
+    printf '%s\n' "${DEST_ROOT}" >> "${REGISTRY}"
+  fi
+fi
+
 echo "Installed the ADWS pipeline skill into: ${CLAUDE_DIR}"
 echo "  • skill:  ${SKILLS_DIR}/adws-pipeline (${VALIDATOR_COUNT} validators)"
 echo "  • agents: ${AGENTS_DIR} (${AGENT_COUNT} adws-* agents)"
+echo "  • version: ${SKILL_VERSION}  (verify any time: node ${SKILLS_DIR}/adws-pipeline/scripts/skill-check.js)"
 if [ "${HAD_EXISTING}" = "1" ]; then
   echo "  • backup: ${BACKUP} (kept — prune it yourself when you no longer need it)"
 fi
