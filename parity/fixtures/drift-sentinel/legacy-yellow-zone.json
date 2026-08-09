@@ -15,7 +15,7 @@
   "env": {
     "ADWS_UMIF_CANONICAL": "off"
   },
-  "note": "tests/skills/drift-sentinel.test.js — \"returns warn when entropy puts CTM in yellow zone\"",
+  "note": "tests/skills/drift-sentinel.test.js — \"returns warn when entropy puts CTM in yellow zone\". NAME IS INHERITED AND INACCURATE (recorded SC-14/A4b, F-86): entropy 0.25 gives ctm 0.08, which is below CTM_YELLOW (0.1), so this case lands in the RED band — see its own frozen `zone: red` / `risk_level: high`. It pins the red rule, not the yellow one, and the yellow rule was consequently pinned by nothing. The expectation is history and is NOT rewritten; legacy-yellow-band-reached.json pins the yellow band.",
   "expected": {
     "rubric_result": "warn",
     "ctm": 0.08,

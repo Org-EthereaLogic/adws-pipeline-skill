@@ -131,6 +131,9 @@ run_step "frontmatter"   node scripts/local-ci/frontmatter-lint.mjs
 run_step "requires"      node scripts/local-ci/requires-lint.mjs
 run_step "cli-block"     node scripts/local-ci/cli-block-lint.mjs
 run_step "agent-blocks"  node scripts/local-ci/agent-blocks-lint.mjs
+# F-82: a `reproduction.command` is a record, never an execution channel. Nothing executes
+# one today, which is exactly when the tripwire is cheap to install.
+run_step "no-eval"       node scripts/local-ci/no-eval-lint.mjs
 # F-72: the shipped manifest must describe the tree it ships with, or an install stamps
 # itself with a version that does not match its own contents.
 run_step "skill-manifest" node scripts/local-ci/skill-manifest.mjs

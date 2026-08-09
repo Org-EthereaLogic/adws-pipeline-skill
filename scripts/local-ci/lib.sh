@@ -43,11 +43,19 @@ ci_tested_tree() {
   rm -f "$idx"
 }
 
+# --noproxy '*' on every Ollama call (SC-14/A1 follow-up, F-80). review.sh validates that
+# OLLAMA_HOST names a loopback address before it sends the branch diff — but validating the
+# URL settles nothing while curl still honours http_proxy / https_proxy / ALL_PROXY, which
+# reroute a loopback URL to whatever the proxy names. Reproduced: with http_proxy set and
+# NO_PROXY empty, `curl http://localhost:11434/...` exits 7 against the PROXY, never having
+# tried localhost. A destination check that the transport can override is not a check.
+# These helpers are Ollama-only, so suppressing proxies for all of them is unconditional.
+
 # Ollama server reachable? (does not check any specific model).
-ci_ollama_up() { curl -sf "${1:-http://localhost:11434}/api/version" >/dev/null 2>&1; }
+ci_ollama_up() { curl -sf --noproxy '*' "${1:-http://localhost:11434}/api/version" >/dev/null 2>&1; }
 
 # Is a specific model pulled? ci_ollama_has_model <host> <model>
 ci_ollama_has_model() {
-  curl -sf "$1/api/tags" 2>/dev/null \
+  curl -sf --noproxy '*' "$1/api/tags" 2>/dev/null \
     | jq -e --arg m "$2" '.models[] | select(.name==$m)' >/dev/null 2>&1
 }

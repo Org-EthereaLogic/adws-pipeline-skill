@@ -17,6 +17,14 @@ unreadable/malformed input. Wrap each verdict verbatim in a `skill_trace.json`
 under the attempt's `skills/{skill_id}/` directory (shape in
 `references/artifact-layout.md`).
 
+## Contents
+
+- Per-validator assembly table
+- Outputs worth naming
+- Non-validator scripts
+- Reader/writer discipline
+- Verdict vocabularies and exit codes (SC-11/A2)
+
 ## Per-validator assembly table
 
 | Validator | Phase | Input shape | Assemble from |
