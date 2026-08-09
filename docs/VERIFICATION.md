@@ -1630,3 +1630,39 @@ them. Recorded rather than quietly corrected, because the lesson is not "be care
 that this class survives self-review with a green suite, and the only thing that has ever
 caught it in this project is a second reader. Eight of nine findings this round were real;
 the full list is in `DPPD.md` §22.
+
+### SC-13 tracking sync (2026-08-09, post-merge)
+
+SC-13 merged as PR #55 (`ca0ba53`). Three narrative counts moved with it and are corrected
+here: `README.md` and `scripts/local-ci/gate.sh` both said **24** report-verdict fixtures,
+and `Makefile` advertised the Tier-1 suite as **108/24/7** — all now **25**, matching the
+suite the gate actually runs. The historical counts in `SC3_PLAN.md`, `SC11_PLAN.md`,
+`M5B_PLAN.md`, `ACCEPTANCE.md` and the earlier DPPD sections are left alone: those state
+what was true when they were written, which is the point of them.
+
+This is the **fourth** consecutive scope change to find an unasserted prose count drifting
+(M-3a in the runners, SC-7 in `README.md`, SC-8 in the runner comment, now these three).
+The suite sizes themselves are asserted by their harnesses; these narrative restatements
+still have no second source that a gate compares them against, and the interval between a
+count changing and someone noticing continues to be "the next time a human greps for it."
+
+Gitignored `ci_logs/` pruned 98 files → 16, per the convention set in the SC-8 record
+above: both append-only JSONL ledgers retained in full (135 gate + 57 orb records **at the
+moment of the prune** — every run ever recorded), plus every per-run `.log` whose `run_id`
+is cited anywhere in `docs/` and the six most recent. All 82 deleted transcripts were
+verified present in their ledger BEFORE deletion — zero orphans — so no run lost its
+record, only its transcript. The ledgers are append-only and every subsequent gate run adds
+to them, so those two numbers are a timestamp, not a live count: the paragraph above this
+one complains about exactly that, and the first draft of this one said "135 gate + 57 orb"
+flatly and was wrong within three gate runs.
+
+Branch cleanup: the eight fully-merged stale remotes (`docs/post-merge-install-record`,
+`docs/pr48-review-correction`, `docs/sync-ci-ledger-record`, `docs/sync-sc12`,
+`feat/install-integrity`, `feat/post-merge-install-reminder`, `fix/post-merge-trigger`,
+`m5b/harness-improvement`) were each re-checked for unmerged commits against `origin/main`
+— zero in every case — and deleted along with `feat/sc13-run-disposition`, leaving `origin`
+carrying `main` alone until this sync branch was pushed. The repository working tree had
+**no** untracked files;
+`.adws-installs`, `.vscode/` and `ci_logs/` are gitignored-and-retained by intent, not
+oversights, and a blanket `git clean -xdf` would have destroyed the install registry that
+`make check-installs` reads.

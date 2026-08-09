@@ -3,7 +3,7 @@
 #
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 108
-# validator-parity fixtures, 24 report-verdict fixtures, 7 stability-gate fixtures,
+# validator-parity fixtures, 25 report-verdict fixtures, 7 stability-gate fixtures,
 # 3 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
 # suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
 # sweep, and three skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
@@ -110,7 +110,7 @@ EOF
   return $rc
 }
 
-# Deterministic suites (must stay green: 108 / 24 / 7 + provenance 5 + SC-3 drill
+# Deterministic suites (must stay green: 108 / 25 / 7 + provenance 5 + SC-3 drill
 # + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
