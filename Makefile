@@ -24,8 +24,10 @@ ci: local-ci ci-orb
 
 install-hooks:
 	git config core.hooksPath .githooks
-	chmod +x .githooks/pre-push
-	@echo "hooks installed: core.hooksPath=.githooks  (bypass a push with: git push --no-verify)"
+	chmod +x .githooks/pre-push .githooks/post-merge
+	@echo "hooks installed: core.hooksPath=.githooks"
+	@echo "  pre-push    blocks on local CI      (bypass: git push --no-verify)"
+	@echo "  post-merge  checks installed copies when a merge changes the skill (never blocks)"
 
 check-installs:
 	@node scripts/local-ci/check-installs.mjs

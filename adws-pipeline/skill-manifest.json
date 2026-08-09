@@ -14,7 +14,7 @@
   ],
   "skill_version": "904e3aa56dac",
   "file_count": 30,
-  "git_commit": "351ee94354e5833009c009f8f0f4f421b1ebd482",
+  "git_commit": "88201f20f4461bb0f74922e7c4e9128c8e984b42",
   "skill": {
     "SKILL.md": "ffe89060639629b98b9a77e781efdf2d26858f784cf97ff82d461fd6010a1542",
     "references/agent-shared-blocks.md": "6370b80ec143cdac5cff79198779bac1b6ff3edb104f11168a90fbf1d4b75913",
