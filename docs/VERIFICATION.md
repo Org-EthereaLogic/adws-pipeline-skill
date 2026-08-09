@@ -1494,6 +1494,20 @@ edited. Gate 15/15; all three real installs re-registered at `43e9b6fded7d`.
 class of gap as archive-before-teardown being a procedure with no enforcement — and F-72
 itself was found by a question, not by a check.
 
+**Review round.** CodeRabbit reviewed this PR — the first in the series it was able to
+finish, the two before it having been skipped for size and cut off mid-review — and found a
+**Major** defect: `skill-check.js` held agent definitions to a weaker standard than the skill
+tree. With no agents directory it skipped the checks and exited 0 on an install with zero
+agents; and it ignored undeclared `adws-*.md` files while the skill tree treats an undeclared
+file as a finding, with a comment in the same file explaining why. The asymmetry was the
+tell: the rule was written down and then applied to only one of two shipped surfaces. Both
+fixed and falsified.
+
+That is the strongest available argument for the practice this series kept failing to follow.
+Across #47, #48, #49 and #51, the one PR where the review was allowed to finish is the one
+where a real defect was found — one the gate, the falsification table, and the author had all
+passed over.
+
 **A process note.** While falsifying this work I ran `git checkout` on `SKILL.md` to undo a
 probe and destroyed an uncommitted edit — the intake assertion this scope change exists to
 add. It was caught immediately (the assertion was simply gone) and redone from a backup

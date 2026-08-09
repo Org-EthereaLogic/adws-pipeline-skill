@@ -12,9 +12,9 @@
     "The installed copy carries this file, which is what lets scripts/skill-check.js",
     "verify an install against itself and `make check-installs` compare it to source."
   ],
-  "skill_version": "43e9b6fded7d",
+  "skill_version": "b2b59e84c2d6",
   "file_count": 30,
-  "git_commit": "d48069c8ba228ea92baa475bf6b97f750ffd9a6f",
+  "git_commit": "62f3eb6999f11adcf4281f2d28eaba1ace8d221e",
   "skill": {
     "SKILL.md": "69d60b616e0efe50ce489a49c2d8962adf2b135918d5b3fc6f9e4ef3073b552e",
     "references/agent-shared-blocks.md": "6370b80ec143cdac5cff79198779bac1b6ff3edb104f11168a90fbf1d4b75913",
@@ -26,7 +26,7 @@
     "references/validator-inputs.md": "84f78e0acbc224a71a3355ab479c66e3d4ccba2db3aac829ad5bc775e9dc5e1d",
     "scripts/entropy-gate.js": "f5ec32f28f4a8ccee3b35c50ff843adf184789587e33cf8e645476b06e354d91",
     "scripts/execution-report.js": "f054fe103b129306c03c078dadbf96f14e558c7a901bfc65d538aca6a2b8a37c",
-    "scripts/skill-check.js": "2c725b89109f62065f0e10b7a9d3162e5a87fdb541eb65ba8debd3d20ee1fcec",
+    "scripts/skill-check.js": "e4873977cebf5e15a92cd47e16743f405a9e4f594f0c2b292a3788edefc52e5e",
     "scripts/validators/criteria-to-checks.js": "4d1aa1c73a638fddf09c396518eb018ba8303fbc4c04ab34c47df79f7ebc64d7",
     "scripts/validators/document-coverage-map.js": "c36c19eec2aaba15b3e2a44ae9457029dbe83df7eb17ec4476416e622112b152",
     "scripts/validators/drift-sentinel.js": "6081cba4e0dc610ffd7a68433bfa4859e2f638e6366b5542b1bd31d36b925280",

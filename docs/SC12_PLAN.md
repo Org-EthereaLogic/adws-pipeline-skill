@@ -103,6 +103,31 @@ the output says so rather than implying otherwise.
 
 Gate: **15/15**. All three real installs re-registered and reporting `43e9b6fded7d`.
 
+### A5 — review round: agents were held to a weaker standard than the skill tree
+
+CodeRabbit reviewed this PR (the first in this series it was able to — the two before it
+were skipped for size and cut off mid-review) and found a **Major** defect in `skill-check.js`,
+in two halves:
+
+1. **With no agents directory the checks were skipped entirely**, so an install with zero
+   agents reported `intact` and **exited 0**. I had written that as deliberate ("never
+   fatal") on the theory that a checkout might not have one — but `findAgentsDir()` already
+   handles the source layout, so finding neither means the agents this skill dispatches are
+   not there to dispatch. That is a broken install, not an unverifiable one.
+2. **Undeclared `adws-*.md` files were ignored**, while the skill tree treats an undeclared
+   file as a finding — with a comment in this very file explaining why.
+
+The asymmetry was the tell: a rule worth applying to one shipped surface is worth applying
+to the other, and I had written the rule down and then applied it to only one.
+
+Both fixed and falsified: removing the agents directory now reports all ten missing and
+exits 1; an undeclared `adws-rogue.md` is named and exits 1; a user's own non-`adws` agent
+beside them is correctly ignored, because only that namespace is ours.
+
+**This is the strongest available argument for waiting on review.** Of #47, #48, #49 and #51,
+this is the one PR where the bot got to finish — and it found a real defect that the gate,
+the falsification table, and the author had all passed over.
+
 ## 5. Rejected
 
 - **A git commit as the version.** Chicken-and-egg, and wrong after a rebase.

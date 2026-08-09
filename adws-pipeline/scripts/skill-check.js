@@ -99,11 +99,24 @@ for (const rel of Object.keys(declaredSkill)) {
 })(SKILL_DIR);
 
 // --- agent definitions -------------------------------------------------------
+// Agents are held to the SAME standard as the skill tree, in both directions.
+// A first cut skipped these checks entirely when no agents directory was found, so an
+// install with zero agents reported `intact` and exited 0 — and it only checked declared
+// names, so an undeclared `adws-*.md` slipped through even though the skill tree treats an
+// undeclared file as a finding. Both were caught in review of SC-12. The asymmetry was the
+// tell: a rule worth applying to one shipped surface is worth applying to the other.
 const declaredAgents = manifest.agents || {};
 const agentsDir = findAgentsDir();
+const declaredAgentNames = Object.keys(declaredAgents);
 let agentsChecked = 0;
-if (agentsDir) {
-  for (const name of Object.keys(declaredAgents)) {
+
+if (!agentsDir) {
+  // Every install has an agents directory beside its skills directory; so does the source
+  // checkout. Finding neither means the agents this skill dispatches are not there to
+  // dispatch, which is a broken install, not an unverifiable one.
+  for (const name of declaredAgentNames) missing.push('agent/' + name);
+} else {
+  for (const name of declaredAgentNames) {
     let buf;
     try {
       buf = fs.readFileSync(path.join(agentsDir, name));
@@ -113,6 +126,14 @@ if (agentsDir) {
     }
     agentsChecked += 1;
     if (sha256(buf) !== declaredAgents[name]) mismatched.push('agent/' + name);
+  }
+  // Only the `adws-*` namespace is ours; a user's own agents beside it are none of our
+  // business. An undeclared file INSIDE that namespace is a stale or hand-added agent that
+  // the orchestrator may dispatch believing it shipped with the skill.
+  for (const name of fs.readdirSync(agentsDir)) {
+    if (name.startsWith('adws-') && name.endsWith('.md') && !(name in declaredAgents)) {
+      unexpected.push('agent/' + name);
+    }
   }
 }
 
@@ -142,13 +163,15 @@ if (process.argv.includes('--json')) {
       '\n'
   );
   if (!agentsDir) {
-    process.stdout.write('agents:        NOT CHECKED — no agents directory found beside this install\n');
+    process.stdout.write(
+      'agents:        NO AGENTS DIRECTORY found beside this install — all ' +
+        declaredAgentNames.length +
+        ' declared agent(s) counted missing\n'
+    );
   }
   for (const f of mismatched.slice(0, 10)) process.stdout.write('  changed:    ' + f + '\n');
   for (const f of missing.slice(0, 10)) process.stdout.write('  missing:    ' + f + '\n');
   for (const f of unexpected.slice(0, 10)) process.stdout.write('  undeclared: ' + f + '\n');
 }
 
-// A missing agents directory is reported, never fatal: the skill runs from a checkout
-// during development, where the agents live somewhere this script may not find.
 process.exit(intact ? 0 : 1);
