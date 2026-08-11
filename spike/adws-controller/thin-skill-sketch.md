@@ -32,7 +32,7 @@ Reference files (read when needed, not all upfront):
    terminate on your own reading of the evidence tree. If `next` says dispatch, you
    dispatch; if it says terminal, the job is over. A disagreement between what you
    believe and what `next` returns is a defect to report, never a decision to make.
-2. **Never write into `artifacts/`.** Every file there is written by a phase agent
+2. **Never write into the evidence tree (`{job_dir}`).** Every file there is written by a phase agent
    (into the attempt directory the controller named) or by the controller. If you find
    yourself editing evidence, stop: that is the failure mode this design exists to remove.
 3. Git: stage explicit paths only — never `git add -A` or `git add .`; never `--force`,
@@ -54,30 +54,43 @@ Reference files (read when needed, not all upfront):
    user for the missing fields; do not guess (AC-1.2).
 2. Run intake validation (hard failures in the reference). On failure, report the
    specific rule violated and ask for correction.
-3. `node adws-run.js init <contract.json> <target_repo>` → prints `{jobId}`. The
-   controller verifies the installed skill, allocates the job id, creates the evidence
-   tree and the worktree, and selects the initial model tiers. A non-zero exit is a
-   pre-job failure: relay its message and stop.
+3. Create the isolation worktree yourself — `git worktree add --detach <path> HEAD` — and
+   choose an evidence root **outside it**. The two must not be the same directory: the
+   evidence tree is not part of the change set, and colocating them puts every evidence
+   file into the worktree's `git status`.
+4. `node adws-run.js init <contract.json> <evidence_root> --worktree <worktree>` → prints
+   `job_id` and **`job_dir`**. Use `job_dir` verbatim in every later command; it is the
+   evidence tree's real path. The controller verifies the installed skill, allocates the
+   job id, creates the evidence tree, and selects the initial model tiers. It does **not**
+   create the worktree — that is step 3, and `worktree_path` is echoed back from what you
+   passed. A non-zero exit is a pre-job failure: relay its message and stop.
 
 ## 1 — The loop
 
 Repeat until the controller says the job is over:
 
 ```
-node adws-run.js next artifacts/{jobId}
+node adws-run.js next {job_dir}
 ```
 
 - **`{"action":"dispatch", …}`** — dispatch the named `agent` via the Agent tool at the
-  named `model_tier`, into the named `attempt_dir`, passing every field of `inputs`
-  through verbatim (contract path, worktree path, previous phase output, `scratch_root`,
-  and at the test phase the `check_specs`). Do not re-derive, re-order, or improve any of
-  them; the payload is the controller's decision, not a suggestion. If the agent type is
-  not registered in this runtime, use the F-11 fallback in `references/runtimes.md` and
-  say so in the relay. Then:
+  named `model_tier`, into the named `attempt_dir`, passing through verbatim every field
+  the payload carries for the agent: `contract`, `worktree_path`, `prev_output`,
+  `scratch_root`, and everything under `inputs` (at the test phase that is `check_specs`;
+  at a rewind build attempt it is `corrections`). Do not re-derive, re-order, or improve
+  any of them; the payload is the controller's decision, not a suggestion. Fields you do
+  not recognise (`tier_input`, `origin`, `because`, `started_at`, `*_gate_scope`) are the
+  controller's own bookkeeping — relay them if the agent has a use for them, but never
+  act on them yourself. If the agent type is not registered in this runtime, use the F-11
+  fallback in `references/runtimes.md` and say so in the relay. Then:
 
   ```
-  node adws-run.js record artifacts/{jobId} <phase> <attempt>
+  node adws-run.js record {job_dir} <phase> <attempt>
   ```
+
+  `record` does not always decide. At a phase that owes a consensus round it returns
+  `{"recorded": null, "awaiting": …}` and decides nothing — that is the controller asking
+  for work, not an error. Run `next` for the payload, do what it names, and record again.
 
 - **`{"action":"consensus", …}`** — dispatch `adws-critic` and `adws-advocate` in
   PARALLEL (required, not merely permitted) with FRESH context: each gets only the
@@ -87,10 +100,18 @@ node adws-run.js next artifacts/{jobId}
   **pipeline-mechanics preamble** in both briefings, or they will report expected
   pipeline state as defects:
   staging and commits happen only at ship, so the change set is expected to be UNTRACKED
-  in the worktree; evidence lives in the primary checkout's `artifacts/`, never in the
-  worktree; `git diff` is EMPTY for a green-field change set, so enumerate from
+  in the worktree; the evidence tree lives at `{job_dir}`, which step 0.3 put OUTSIDE the
+  worktree — if it is inside, say so and exclude it by path, or every evidence file reads
+  as a stray untracked artifact; `git diff` is empty for a green-field change set and
+  non-empty when existing files were modified, so in either case enumerate from
   `build.files_changed` plus `git status --porcelain -uall` and read new files directly —
-  an empty diff is never grounds to assess nothing. Then `record` as above.
+  an empty diff is never grounds to assess nothing.
+
+  Give both agents the change set AND the **check results** — `phase_output.json` is the
+  tester's findings, which phase-gates.md rule 1 names as part of what they assess. What
+  they must never receive is the phase agent's *reasoning* (`phase_log.md`) or each
+  other's output. Withholding the results makes them re-derive what the tester already
+  established, which is not independence, only expense. Then `record` as above.
 
 - **`{"action":"reproduce", …}`** — a Critic returned `fail`. Reproduce the finding from
   the evidence before the controller routes it: read the cited code, construct the
@@ -114,7 +135,7 @@ node adws-run.js next artifacts/{jobId}
     unverified; it is neither a pass nor a retry.
 
 - **`{"action":"finalize"}`** — every gate has passed. Run
-  `node adws-run.js finalize artifacts/{jobId} --report scripts/execution-report.js`. Its
+  `node adws-run.js finalize {job_dir} --report scripts/execution-report.js`. Its
   EXIT CODE is the verdict; do not re-derive one from the tree.
 
 - **`{"action":"terminal", …}`** — stop. Relay the verdict (PROMOTE /

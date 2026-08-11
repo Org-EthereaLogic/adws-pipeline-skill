@@ -1032,7 +1032,7 @@ three and every route they open is asserted. Whether the sketch's PROSE for thos
 sufficient to orchestrate from is untouched by any of it — that needs a model reading the
 document, and no model was in this loop.
 
-`run-step5.sh`: **124 assertions, 0 failed.** The six earlier shell drivers and the ingest
+`run-step5.sh`: **133 assertions, 0 failed.** The six earlier shell drivers and the ingest
 matrix still pass (25 fixtures ingested, 0 MISMATCH; 10 driven end to end, the rest halted or
 refused with a recorded reason), and `git status` is clean under `parity/` and
 `adws-pipeline/`.
@@ -1273,6 +1273,151 @@ only in the wrong cases) and it should not be assumed to have found a conceptual
 - **The remaining seven rule families**, the ship-approval operator branch, resume/`carry_over`,
   and the entropy gate. Still out, per §12.7's creep guard.
 
+## STEP 5, part 2 — the run, and the answer to the question that could flip the sign
+
+One live orchestrator run of `plan → build → test` with a consensus round, from a **fresh
+Claude Code session in an isolated VM with no `adws-pipeline` skill installed**, reading
+`thin-skill-sketch.md` and nothing else from the shipped tree except the one reference the
+sketch mandates. Five dispatches of a cap of ten. The isolation is the load-bearing part: the
+skill is a USER-level install on the development machine, so every session there has the
+429-line `SKILL.md` in its skill list — the very document the after arm is measured against.
+A fresh session alone would not have been isolation.
+
+**Verdict: Z CONFIRMED.** `run-step5.sh` S9 asserts it rather than stating it.
+
+```
+Z at run time          9,700 B / 155 lines
+Z' after patching       11,400 B / 176 lines     (+1,700 B, +21 lines)
+ceiling (§12.1)         21,274 B                 -> 1.87x headroom, 9,874 B of room left
+§12.7 band              < 14,000 B               -> Z confirmed; not the kill band, not A/B-mandatory
+```
+
+**The GO's pessimistic floor holds.** The number the whole margin rested on, and the one this
+spike trusted least (finding 24), survived a real orchestrator running from it.
+
+### The affirmative result, stated precisely
+
+Zero forbidden reads. Zero blocking residue events. Three phases and a consensus round in five
+dispatches. The orchestrator never needed `SKILL.md`, `phase-gates.md`, `artifact-layout.md` or
+`validator-inputs.md`, and reported three near-misses where it *would* have (an unregistered
+agent type → `runtimes.md`; a transient subagent failure → `troubleshooting.md`; and
+`agent-shared-blocks.md`, which it judged unnecessary by inference the sketch does not state).
+
+**But sufficiency is yes-with-an-asterisk, and the asterisk is ten residue events** — one of
+which forced a knowing departure from frozen text at the consensus gate. The honest statement:
+the sketch is sufficient to RUN from, and not sufficient to run from correctly WITHOUT
+judgment. A less careful orchestrator would have relayed the false preamble.
+
+### New findings from step 5 part 2
+
+**Finding 37 — one wrong argument in one line produced four of the ten residue events.** The
+sketch said `init <contract.json> <target_repo>`; the controller's second positional is
+`evidenceRoot`. So the evidence tree landed INSIDE the worktree, and from that single
+substitution:
+
+```
+(a) artifacts/{jobId} does not exist          -> the literal command crashed
+(d) "evidence lives in the primary checkout's artifacts/, never in the worktree"
+                                              -> FALSE for this run, in a MANDATED briefing
+(e) git status --porcelain -uall              -> returns the whole evidence tree as untracked,
+                                                 poisoning the preamble's own enumeration method
+(i) hard rule 2 names artifacts/              -> a "never violate" rule naming a nonexistent path
+```
+
+(d) is the one that matters. The preamble is frozen text the run was supposed to MEASURE, and
+it measured false — so the orchestrator had to choose between relaying a statement it knew to
+be wrong into two fresh-context agents, or correcting it. Relaying would have sent both
+assessors hunting evidence that was not there and invited them to report the real evidence tree
+as a stray untracked artifact: **manufacturing false defects at the one gate whose entire value
+is independence.** It corrected the clause and flagged the correction. That was right, and the
+sketch gave it nothing to base the decision on.
+
+**The transferable lesson is about interfaces, not about this line.** The cost of one wrong
+argument in an interface is not one error — it is every downstream statement that assumed the
+argument was right, and here that included a rule labelled "never violate" and a briefing
+labelled "include or they will report expected pipeline state as defects".
+
+**Finding 38 — finding 25's named risk occurred, in the block finding 25 named.** Finding 25
+said the one place per-phase quality could degrade is "where the thin interface is thinner than
+the original on a KEPT block — **the consensus briefing above all**." That is exactly what
+happened. `phase-gates.md` rule 1 gives the consensus agents "the task contract and the change
+set (**diff + check results**)"; the sketch compressed that to "the contract and the change
+set" and separately says "never the phase agent's reasoning". The controller's payload then
+offered `prev_output` — the tester's `phase_output.json` — and the orchestrator, reading the
+two clauses together, withheld it as reasoning.
+
+It is not reasoning. `phase_output.json` is the check RESULTS, which the source document names
+as part of what they assess; `phase_log.md` is the reasoning. Both assessors re-derived what
+the tester had already established — one of them rebuilt the baseline tree and re-ran every
+check — which is not independence, only expense.
+
+**A predicted mechanism failing in its predicted location is much stronger evidence than a
+generic gap.** Finding 25 argued the controller "removes decisions from the model and adds
+none, so per-phase reasoning has no obvious mechanism by which to grow", and named this single
+exception. The exception is now observed. Treat that as the shape of the risk in the other
+KEPT blocks, not as a one-off.
+
+**Finding 39 — the documented check row cannot express the primary documented `gate_weak`
+case, and a deterministic validator found it where two fresh-context assessors did not.** The
+test gate failed on `checks[4]`: `baseline_reason: null` is not in the enum. The tester was
+being *honest* — the row is a no-regression parity guard, correctly marked `falsifiable: false`
+/ `verdict: "gate_weak"`, and a no-regression check has no red baseline by construction.
+
+The documents disagree with each other:
+
+```
+artifact-layout.md:234   baseline_reason: "assertion-failed-runtime-present | collection-error | not-run"
+phase-gates.md:248       gate_weak case 1 is "passes pre-change (no red baseline)"
+                         -> the enum has NO value for it
+```
+
+So a check that legitimately passes pre-change cannot state why in the documented vocabulary,
+and the strict reader step 2 built — which fails CLOSED on an unreadable row, correctly — gates
+the tester for candour. **This is a fourth member of the findings 16/17 family**: the reference
+documents and the recorded evidence disagree, and which is the contract is not a spike-local
+call. Filed as its own question for the skill.
+
+Two things worth keeping. First, the layered design worked exactly as argued: **a deterministic
+schema validator caught what two independent LLM assessors missed**, and the Critic had gone as
+far as rebuilding the baseline tree. Second, what it caught was a **schema gap, not a defect** —
+so the same layering that makes the gate strong also makes a vocabulary hole indistinguishable
+from a real failure, and the job's annotation was `TEST_GATE_FAILURE`: the exact blanket reason
+the contract under test exists to split. The run failed into the vocabulary it was repairing.
+
+**Finding 40 — two controller defects the mocked path could not surface.** The literal sketch
+command crashed with an **uncaught `ENOENT` stack trace** rather than a controlled error —
+notable for a component whose defining property is "the controller's word is the state", and it
+leaked five `adws-run.js` line numbers into a context explicitly instructed not to read that
+file. And `worktree_path` was emitted as `""` on all four dispatch payloads: never populated,
+never an error, **silently empty on the one field that enforces isolation**. Every driver passes
+a worktree or does not care, so neither was reachable from the harness.
+
+### Against §12.6's four criteria
+
+| | |
+|---|---|
+| 1. Sufficiency | **yes, with judgment** — 0 forbidden reads, 0 blocking events, slice completed; 10 residue events and one knowing departure from frozen text |
+| 2. Z′ measured | **11,400 B / 176 lines**, 1.87× under the ceiling — **Z CONFIRMED** |
+| 3. The after end on a measurement | **half**. Instruction mass is a measured point (17,544 B at run time: sketch + `task-contract.md`; 19,244 B patched) against a full-document before of 124,008. The live **handshake was never counted**, so finding 31's prediction stays unmeasured |
+| 4. The controller arm of the reasoning A/B | **not done** — no per-phase orchestrator token counts were captured |
+
+**The run also settled which reading applies to the after arm.** The orchestrator obeyed its one
+mandated reference read, so obeying-vs-obeying is the fair comparison and the strict
+no-reference reading is now known to be **counterfactual for the after arm** — a thing §12.2
+could only flag as a trap and this run answers.
+
+### What step 5 does not establish
+
+- **The live handshake cost.** Not counted. Finding 31 predicted a real run exceeds the replayed
+  9,146 B and that prediction is still open.
+- **The reasoning A/B**, either arm. Condition 4 is untouched and remains the highest-value
+  open item.
+- **Four phases and every rewind family.** The run stopped at the test gate by design; review,
+  document, ship and verify have still never been orchestrated from this document.
+- **That the patched sketch is now sufficient.** Z′ is a measurement of the interface after one
+  run found ten gaps in it. A second run would find more; the claim is that the FIRST run's
+  gaps cost 1,700 bytes, not that no gaps remain.
+
 ## Canonical conformance — the writer floor, not the golden
 
 The plan asked for a byte-diff against a golden tree
@@ -1411,7 +1556,7 @@ bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gat
 bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
 bash spike/adws-controller/run-step3.sh          # step 3: the live dispatch's evidence, replayed
 bash spike/adws-controller/run-step4.sh          # step 4: 42 assertions — the delta and the go/no-go
-bash spike/adws-controller/run-step5.sh          # step 5 part 1: 124 assertions — consensus, reproduce, the four resolutions
+bash spike/adws-controller/run-step5.sh          # step 5 part 1: 133 assertions — consensus, reproduce, the four resolutions
 node spike/adws-controller/measure-delta.js      # the X/Y/Z report, re-derived from the tree
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance

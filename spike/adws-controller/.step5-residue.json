@@ -1,0 +1,99 @@
+{
+  "measured_over": "one live orchestrator run of plan -> build -> test with a consensus round, from a fresh Claude Code session in an isolated VM with no adws-pipeline skill installed",
+  "run": {
+    "dispatches_used": 5,
+    "dispatch_cap": 10,
+    "phases": [
+      "plan",
+      "build",
+      "test"
+    ],
+    "verdict": "test gate FAIL / TEST_GATE_FAILURE / route retry",
+    "forbidden_reads": 0,
+    "blocking_residue_events": 0
+  },
+  "documents_read_as_instructions": {
+    "thin-skill-sketch.md": 9700,
+    "references/task-contract.md": 7844,
+    "total": 17544,
+    "excluded": "live_contract.json (task data, read by either orchestrator), one phase_output.json (evidence), directory listings"
+  },
+  "sketch_at_run": {
+    "bytes": 9700,
+    "sha256": "9f00a6c7154d30dc2651592b8765fe336020e9f86a5839c445cbc5c09361fb8f"
+  },
+  "sketch_patched": {
+    "bytes": 11400,
+    "sha256": "48265ed16b6ce106a081f439c7edbc95ef122f0b7b92e156b327ca4145f10b1c"
+  },
+  "ceiling_bytes": 21274,
+  "residue_events": [
+    {
+      "id": "a",
+      "owner": "sketch",
+      "text": "init passes the repo as evidenceRoot; job path is job_dir, not artifacts/{jobId}",
+      "root": "init-signature"
+    },
+    {
+      "id": "b",
+      "owner": "controller+sketch",
+      "text": "the controller does not create the worktree and emits worktree_path: \"\" silently"
+    },
+    {
+      "id": "c",
+      "owner": "sketch",
+      "text": "inputs is empty at plan/build; contract, worktree_path, prev_output, scratch_root are top-level"
+    },
+    {
+      "id": "d",
+      "owner": "sketch",
+      "text": "the mandated consensus preamble asserts evidence is never in the worktree; the run put it there",
+      "root": "init-signature",
+      "severity": "forced a knowing departure from frozen text"
+    },
+    {
+      "id": "e",
+      "owner": "sketch",
+      "text": "git status --porcelain -uall returns the whole evidence tree as untracked",
+      "root": "init-signature"
+    },
+    {
+      "id": "f",
+      "owner": "sketch",
+      "text": "the preamble describes an empty git diff; this change set was four modified files"
+    },
+    {
+      "id": "g",
+      "owner": "sketch",
+      "text": "consensus payload carries prev_output while fresh_context forbids the phase agents reasoning; check RESULTS are permitted by phase-gates.md rule 1",
+      "confirms": "finding 25"
+    },
+    {
+      "id": "h",
+      "owner": "sketch",
+      "text": "record can return awaiting instead of a gate",
+      "confirms": "finding 32 (predicted before the run)"
+    },
+    {
+      "id": "i",
+      "owner": "sketch",
+      "text": "hard rule 2 names artifacts/, which does not exist",
+      "root": "init-signature"
+    },
+    {
+      "id": "j",
+      "owner": "sketch",
+      "text": "unmentioned payload fields: plan_gate_scope, test_gate_scope, tier_input, origin, because, started_at, dispatch_mode, consensus_round"
+    }
+  ],
+  "not_owned_by_the_sketch": [
+    {
+      "owner": "controller",
+      "text": "the literal command crashed with an uncaught ENOENT stack trace, leaking adws-run.js line numbers into a context instructed not to read it"
+    },
+    {
+      "owner": "shipped-docs",
+      "text": "artifact-layout.md:234 fixes baseline_reason to three values; phase-gates.md:248 defines the first gate_weak case as passes-pre-change, for which the enum has NO value. The tester wrote null and the validator rejected it."
+    }
+  ]
+}

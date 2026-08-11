@@ -455,6 +455,40 @@ assert_fails "but the ask is BOUNDED, not a loop" 'dispatch the missing agent' \
   node "$CTRL" record "$J7B" test 1
 
 echo
+echo "### S9 — the residue ledger's arithmetic, and its freshness (§12.6 criterion 2)"
+# Step 5's verdict is a NUMBER against a threshold, so it is asserted here rather than stated
+# in a document. Same shape as run-step4.sh S3, and the same lesson from finding 27: the
+# ledger records a DIGEST of the sketch it measured, never a size — a same-length edit must
+# read stale.
+LEDGER="$REPO/spike/adws-controller/.step5-residue.json"
+SKETCH="$REPO/spike/adws-controller/thin-skill-sketch.md"
+lget() { node -e 'const j=require(process.argv[1]);const k=process.argv[2].split(".");let x=j;for(const p of k)x=x==null?x:x[p];process.stdout.write(String(x))' "$LEDGER" "$1"; }
+SHA_NOW="$(node -e 'const c=require("crypto"),f=require("fs");process.stdout.write(c.createHash("sha256").update(f.readFileSync(process.argv[1])).digest("hex"))' "$SKETCH")"
+BYTES_NOW="$(wc -c < "$SKETCH" | tr -d ' ')"
+assert "the ledger's patched digest matches the sketch on disk" "$(lget sketch_patched.sha256)" "$SHA_NOW"
+assert "and its byte count does too"                            "$(lget sketch_patched.bytes)"  "$BYTES_NOW"
+CEIL="$(lget ceiling_bytes)"
+assert "the ceiling is the one §12.1 computed"                  "$CEIL" "21274"
+# Z' UNDER the ceiling is what keeps the GO's pessimistic floor. Above it, the no-reference
+# reading stops being a reduction at all and §12.7's first row fires.
+if [ "$BYTES_NOW" -lt "$CEIL" ]; then
+  printf '  PASS  Z prime is under the ceiling (%s < %s)\n' "$BYTES_NOW" "$CEIL"; PASSES=$((PASSES+1))
+else
+  printf '  FAIL  Z prime %s has reached the ceiling %s — §12.7 row 1 fires\n' "$BYTES_NOW" "$CEIL"; FAILS=$((FAILS+1))
+fi
+# The band, which is the verdict: <14000 confirms Z; 14000..ceiling makes the reasoning A/B
+# mandatory before any real build; over the ceiling is a kill.
+BAND="$(node -e 'const b=Number(process.argv[1]),c=Number(process.argv[2]);process.stdout.write(b>c?"KILL":(b>=14000?"AB_MANDATORY":"Z_CONFIRMED"))' "$BYTES_NOW" "$CEIL")"
+assert "§12.7 band" "$BAND" "Z_CONFIRMED"
+assert "the run used no forbidden read"        "$(lget run.forbidden_reads)"          "0"
+assert "and hit no blocking residue event"     "$(lget run.blocking_residue_events)"  "0"
+assert "within the dispatch cap"               "$(lget run.dispatches_used)"          "5"
+# Every residue event the run found is patched INTO the sketch, so the delta is real work and
+# not a tally. A ledger listing events against an unchanged sketch would measure nothing.
+assert "the patched sketch is larger than the one measured" \
+  "$(node -e 'process.stdout.write(String(Number(process.argv[1])>Number(process.argv[2])))' "$BYTES_NOW" "$(lget sketch_at_run.bytes)")" "true"
+
+echo
 echo "### S8 — syntax + NUL sweep (finding 15)"
 BAD=0
 for f in "$REPO"/spike/adws-controller/*.js; do node --check "$f" >/dev/null 2>&1 || BAD=$((BAD+1)); done
