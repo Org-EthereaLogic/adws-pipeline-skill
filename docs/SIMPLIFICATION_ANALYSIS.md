@@ -248,6 +248,21 @@ holds, but that it must *execute* it by hand every run.
 > qualifying, and is the highest-value experiment left. This recommendation is left as
 > written below; the spike is the test of it, not a revision to it.
 >
+> **Update (2026-08-11, PR #70 — step 5's prerequisite, `8adb0f8`).** The GO and its four
+> conditions are unchanged; nothing in that PR bears on Q1–Q5. It moved one number and added an
+> instance to two of the four results below. The number: the replayed handshake grew
+> 8,738 → 9,146 bytes and the thin interface 9,362 → 9,700, taking the pessimistic headroom
+> from **2.36× to 2.22×** — small, well short of §9's bar, and in the direction condition 2
+> warns about, for a prerequisite that adds no capability to the run being measured.
+> **Result 2 gains a second instance**: `resolution` inside `consensus/advocate.json` is a
+> second orchestrator-owned field living in an agent-written file — and unlike `gate_result`,
+> the SCORER reads this one, so an Advocate that wrote its own `resolution: "override"` would
+> clear its own dissent through `evalConsensus` with no operator involved (`FINDINGS.md`
+> finding 28). Two of two, with no permission behind either. **Result 1 gains a third silence**:
+> `execution-report.js` builds a consensus row from *either* `critic.json` or `advocate.json`,
+> so a one-voter round scores like a unanimous one (finding 35) — joining findings 16 and 17 as
+> a question about whether the reference documents or the recorded evidence is the contract.
+>
 > Four results cut against the section's own framing and belong here rather than only in the
 > spike.
 >

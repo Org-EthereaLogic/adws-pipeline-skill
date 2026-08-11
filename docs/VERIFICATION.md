@@ -2555,3 +2555,114 @@ findings 16/17 question of whether the reference documents or the recorded evide
 contract, and — before any real build — one contract run end to end from
 `thin-skill-sketch.md`, which is the assumption everything else rests on and the least
 trustworthy number in step 4 (finding 24).
+
+---
+
+## Post-merge sync — PR #70 / §6.2 controller spike, step 5 part 1 (2026-08-11)
+
+Step 5's **prerequisite** — the `consensus` and `reproduce` actions, and the operator
+dissent-resolution branch they enable — merged as `8adb0f8` (squash of one commit on
+`spike/controller-step5-consensus`). Same shape as the #60/#62/#64/#68 entries: throwaway
+code under `spike/`, **nothing shipped**.
+
+This is the prerequisite named in [SPIKE_CONTROLLER_PLAN.md §12.3](SPIKE_CONTROLLER_PLAN.md)
+and not step 5 itself. Step 5 asks whether an orchestrator can RUN from
+`thin-skill-sketch.md`; three of that document's five branches described a controller that did
+not exist, so they could not be exercised. They can now. **Nobody has run one yet.**
+
+### What an install carries from this PR: nothing
+
+`git diff --stat 4bca0db..8adb0f8 -- adws-pipeline/ parity/` is empty, so `skill-manifest` —
+which digests only `adws-pipeline/` — is unchanged at `549226ba94f0` and `make check-installs`
+reports all three known installs still CURRENT. No reinstall is required or implied.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T195705Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T195715Z` |
+| all seven drivers | exit 0; `run-step5.sh` 112 assertions |
+| `run-ingest-matrix.js` | exit 0 — 25 fixtures ingested, MISMATCH 0, LIMIT 0 (10 driven end to end; the rest halted or refused with a recorded reason) |
+| CodeQL | fail in 2s, **zero steps executed** — [[codeql-billing-lock]], not a code result |
+| `git status --porcelain` after a full driver run | clean |
+
+The #62 limit still holds and is why the driver count is the claim that matters: `make ci`
+validates the shipped paths only and **says nothing about `spike/`**.
+
+**Two `orb_ci` failures in today's ledger are mine and are environmental.** The first two
+attempts ran with the OrbStack daemon stopped, so both legs failed at `build` with a docker
+socket error before any test executed. The daemon was started and the same commit then passed
+both legs. Recorded here so the ledger's fail count is not mistaken for a code result.
+
+### Review coverage on this PR: none — and the review that mattered happened before it
+
+CodeRabbit filed **no review and no comments** on #70, and the only check run on the head is
+the billing-locked CodeQL job. By the standard this file has applied since the
+[[coderabbit-rate-limit-false-pass]] entry, that is an unreviewed merge and is recorded as one.
+
+What replaced it happened earlier: an **independent audit of the pre-commit working tree**
+contradicted the branch's own central claim ("the new consensus routes work correctly") and
+found two fail-OPEN defects, both fixed before the commit was made — findings 33 and 34, with
+35 following from the same pass. So the fifth consecutive round's decisive catch again came
+from outside, but from a pre-commit audit rather than from PR review, and the PR itself went
+in with neither.
+
+**That is a gap worth naming rather than smoothing over.** The pre-commit audit is not a
+substitute for review of what was actually merged: it read the tree *before* the fixes for
+33–35 existed, so the code that landed carries three changes no second party has looked at.
+
+### What step 5 part 1 established, and what it did not
+
+**Established.** The controller emits all three actions with the F-3/F-6/F-37/F-46 routes
+behind them; the two documented attempt annotations `CRITIC_FAIL_REPAIRED` and
+`ADVOCATE_DISSENT_REPAIRED` are written for the first time; the terminal severity for an upheld
+dissent is **sourced** from the scorer's exported `NO_RETRY_REASONS` rather than re-derived,
+which is what the open `failure_reason` item asks of any fix; replay behaviour is unchanged.
+
+**Not established.** That the sketch's *prose* for those branches is sufficient to orchestrate
+from — no model was in the loop, and every "live" arm in `run-step5.sh` means the live-mode
+code path with staged files, not a dispatched subagent. Condition 3 is untouched.
+
+### The three findings a reviewer should carry forward
+
+- **Finding 28** — `resolution` is finding 19 one file over, and **the scorer reads this one**.
+  An Advocate writing its own `resolution: override` clears its own dissent through
+  `evalConsensus`, gate passes, no operator involved. That makes it two of two
+  orchestrator-owned fields living inside agent-written files, with no permission behind
+  either. A second data point for the boundary argument in
+  [SIMPLIFICATION_ANALYSIS §6.2](SIMPLIFICATION_ANALYSIS.md).
+- **Finding 34** — the **fifth** instance of one cause: two places answering one question,
+  agreeing until a new case makes them differ (cf. findings 22 and 29). `route: 'terminal'`
+  never terminated because `expectedNext` reads the annotation, not the route. The terminal
+  routes that existed before step 5 were correct by coincidence of vocabulary.
+- **Finding 35** — a **third** scorer silence, joining 16 and 17: `collectConsensus` builds a
+  consensus row from *either* file, so a one-voter round scores like a unanimous one. Whether
+  `execution-report.js` should require both roles is not a spike-local call.
+
+### Where §6.2 stands
+
+**Unchanged: decided, GO, four conditions.** Nothing in this PR bears on Q1–Q5. What it moves
+is the *next* experiment: §12's live run is now runnable, and its stopping rule (§12.7) is in
+force — the sketch is frozen, and finding 32 records a residue event predicted **before** the
+run that should find it.
+
+One number moved the wrong way and is recorded rather than buried: the replayed seven-phase
+handshake grew 8,738 → 9,146 bytes and Z grew 9,362 → 9,700, taking no-reference headroom from
+**2.36× to 2.22×**. Small, nowhere near §9's bar, and it moved for a prerequisite that adds no
+capability to the run being measured. The live run's cost remains unmeasured.
+
+### ci_logs ledger (a timestamp, not a live claim)
+
+| file | lines | verdicts | last run_id |
+|---|---|---|---|
+| `ci_logs/local_ci.jsonl` | 196 | 190 pass, **6 fail** | `20260811T195705Z` |
+| `ci_logs/orb_ci.jsonl` | 102 | 100 pass, **2 fail** | `20260811T195715Z` |
+
+Both counts are true through the run_ids named; a later run moves them. The 6 local failures
+pre-date this PR; the 2 orb failures are the daemon-down runs described above.
+
+**Branches.** `origin` carries **`main` alone** — `spike/controller-step5-consensus` was
+deleted at merge and the stale remote-tracking ref pruned locally. No worktrees.
+**Untracked files: none.** `.adws-installs`, `.vscode/`, `ci_logs/`,
+`parity/PARITY_REPORT.md` remain gitignored.
