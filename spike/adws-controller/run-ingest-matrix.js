@@ -187,8 +187,19 @@ const CASES = officialCases();
 {
   const onDisk = fs.readdirSync(FIXROOT, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort();
   const declared = CASES.map((c) => c.name).sort();
+  // FAIL, not warn. The extractor counts brackets over raw source, so a `[` added inside a
+  // future string or comment in the CASES literal would truncate the parse — and a truncated
+  // CASES is a SMALLER matrix that still prints PASS. Cross-checking the extracted names
+  // against the fixture dirs in both directions is the control that catches it, and a
+  // control nothing acts on is not a control (the same reasoning as M-3a/F-27 in the
+  // official harness, which fails on exactly this disagreement).
   if (onDisk.join(',') !== declared.join(',')) {
-    console.log(`WARNING: fixture dirs and official CASES disagree.\n  on disk : ${onDisk}\n  declared: ${declared}\n`);
+    console.log('### INGEST MATRIX FAIL — extracted CASES and the fixture dirs on disk disagree.');
+    console.log(`  on disk (${onDisk.length}) : ${onDisk.join(', ')}`);
+    console.log(`  extracted (${declared.length}): ${declared.join(', ')}`);
+    console.log('  Either a fixture changed upstream, or the CASES extraction was truncated by a');
+    console.log('  bracket inside a string or comment. Both are reasons to stop, not to warn.');
+    process.exit(1);
   }
 }
 

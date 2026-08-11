@@ -75,11 +75,21 @@ node -e '
 ' "$JOBDIR"
 
 echo "### 6) writer-floor conformance of the controller-generated tree:"
-node "$REPO/spike/adws-controller/verify-canonical.js" "$JOBDIR" | sed 's/^/    /'
+# verify-canonical.js exits 1 on a violation, and under `set -euo pipefail` that status
+# propagates through the pipe and kills the driver before it prints anything — losing the
+# summary in the one case where it matters most. Capture the status instead, and make the
+# RESULT depend on it: a tree the scorer promotes but the writer floor rejects is not a pass.
+set +e
+CANON_OUT="$(node "$REPO/spike/adws-controller/verify-canonical.js" "$JOBDIR" 2>&1)"; CANON=$?
+set -e
+printf '%s\n' "$CANON_OUT" | sed 's/^/    /'
 
 echo
-if [ "$EXIT" -eq 0 ]; then
-  echo "### RESULT: PASS — controller-generated evidence scored PROMOTE (exit 0) by the untouched scorer."
+if [ "$EXIT" -eq 0 ] && [ "$CANON" -eq 0 ]; then
+  echo "### RESULT: PASS — controller-generated evidence scored PROMOTE (exit 0) by the untouched"
+  echo "###   scorer, and conforms to the artifact-layout.md writer floor."
+elif [ "$EXIT" -eq 0 ]; then
+  echo "### RESULT: FAIL — scorer promoted (exit 0) but the tree violates the writer floor (see above)."
 else
   echo "### RESULT: exit $EXIT — see $SCRATCH/{out,err}.txt"
 fi
