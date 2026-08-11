@@ -1,0 +1,8 @@
+{
+  "total_bytes": 8738,
+  "messages": 16,
+  "phases": 7,
+  "model_turns": 16,
+  "controller_bytes": 88913,
+  "measured_over": "one complete seven-phase green run, all controller stdout concatenated"
+}

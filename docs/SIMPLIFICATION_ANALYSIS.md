@@ -227,20 +227,25 @@ holds, but that it must *execute* it by hand every run.
 
 ### 6.2 Move orchestration into code — a `adws-run.js` controller *(structural; largest confusion win)*
 
-> **Status (2026-08-11, after step 3).** A time-boxed feasibility spike is under way —
-> [`SPIKE_CONTROLLER_PLAN.md` §11](SPIKE_CONTROLLER_PLAN.md) for where it stands,
-> `spike/adws-controller/FINDINGS.md` for the evidence. **Steps 1–3 of 4 are done.** Evidence
-> compatibility holds against the unmodified `execution-report.js` without editing it (Q2);
-> the budget/rewind bookkeeping this section calls "hand-run" is code with the accounting
-> asserted (Q3, Q4); and one real `adws-planner` subagent has now been dispatched through the
-> handshake and its evidence gated (Q1). The go/no-go below is **still open**: Q5 is *half*
-> measured — 2 model turns per phase and ~1.1 KB of handshake against the 170k tokens the
-> dispatch it carried cost, both inside the bar — but the SKILL.md line-delta and the
-> token-behaviour half are unmeasured, and they are what this recommendation turns on. **Step
-> 4 decides.** This recommendation is left as written; the spike is the test of it, not a
-> revision to it.
+> **Status (2026-08-11, after step 4 — the spike is complete). Verdict: GO.** The time-boxed
+> feasibility spike is finished — [`SPIKE_CONTROLLER_PLAN.md` §11](SPIKE_CONTROLLER_PLAN.md)
+> for the summary, `spike/adws-controller/FINDINGS.md` for the evidence. All five questions
+> are answered. Evidence compatibility holds against the unmodified `execution-report.js`
+> (Q2); the budget/rewind bookkeeping this section calls "hand-run" is code with the
+> accounting asserted (Q3, Q4); one real `adws-planner` subagent was dispatched through the
+> handshake and its evidence gated (Q1); and the win is measured (Q5): the orchestrator's
+> instruction mass falls from **124,008 bytes per run to 17,206**, 25,944 with the handshake
+> added back, against a break-even of 106,802 — **12.2× headroom** on the kill criterion, at
+> 2 model turns per phase.
 >
-> Two results cut against the section's own framing and belong here rather than only in the
+> **The GO carries three conditions**, in the plan's §11: the win is a relocation of the
+> interpretation burden and not a reduction in artifact size; a go on the architecture is not
+> a clearance to skip live validation of the six phases that have never run; and whether the
+> model's per-phase *reasoning* shrinks is unmeasured, which bounds the size of the win and
+> not its sign. This recommendation is left as written below; the spike is the test of it,
+> not a revision to it.
+>
+> Four results cut against the section's own framing and belong here rather than only in the
 > spike.
 >
 > **1. Moving a gate into code does not by itself make it stronger.** Step 2 had to implement
@@ -268,6 +273,16 @@ holds, but that it must *execute* it by hand every run.
 > cannot contain an agent-written manifest. Two adversarial rounds had read that code. This is
 > the strongest single data point the spike has produced about how much of §6.2 can be
 > validated without live dispatches, and the answer is: less than it looks.
+>
+> **4. "Largest confusion win" is right; "simplification" is not.** Step 4 counted it. 1,300
+> of the 1,643 lines in the four orchestrator-facing documents (79%) are deterministic machine
+> work — and `references/validator-inputs.md` is 140 of 140, an entire shipped reference whose
+> only content is telling a probabilistic model how to assemble nine deterministic function
+> calls. But those 1,643 lines of prose become roughly 1,704 lines of controller code plus a
+> 151-line interface plus the 343 lines that stay: **the repository gets bigger.** This
+> section sits in a document about simplification, and on a line count §6.2 is the opposite of
+> one. What it removes is the mass a probabilistic model must load and *interpret* every run,
+> which is the §6.1 problem — a different claim, and the only one the measurement supports.
 
 Create a dependency-light Node controller owning profile/phase selection, worktree lifecycle,
 attempt counters and rewind budgets, validator invocation, model-dispatch accounting, evidence-file

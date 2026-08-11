@@ -228,12 +228,19 @@ spike outcome, not a failure.
 
 ---
 
-## 11. Status (2026-08-11, after the step-3 branch)
+## 11. Status (2026-08-11, after step 4 — the spike is complete)
 
-Steps 1, 2 and 3 of §10 are done; **step 4 is not, and step 4 is the one that decides.** The
-§6.2 go/no-go is still not callable, but the reason has narrowed: Q1–Q4 are answered, and Q5
-is now *half* measured rather than untouched — round trips and handshake payload are real
-numbers inside the bar, the line-delta and token-behaviour half is still zero.
+All four steps of §10 are done. **The §6.2 go/no-go is GO**, with three conditions stated
+below and in `FINDINGS.md`. Q1–Q5 are answered; the spike's remaining open items are named
+questions for the skill and for whoever builds the real controller, not gaps in the decision.
+
+**The number that decides:** the orchestrator's instruction mass falls from **124,008 bytes
+per run to 17,206** (13.9%), or 25,944 with the handshake added back (20.9%), against a
+break-even of 106,802 — **12.2× headroom** on §9's kill criterion. The *line* delta, which is
+what Q5 literally asks for, goes the other way: 1,643 lines of prose become ~1,704 lines of
+code plus 151 of interface. Both numbers are real and they point in opposite directions,
+which is finding 23 and the single most important thing to carry out of step 4: **§6.2 is a
+relocation of the interpretation burden, not a reduction in artifact size.**
 
 Step 1 went through three adversarial rounds; step 2 had two, which between them found four
 fail-OPEN defects in the one gate the controller owns outright. **Step 3 found three more —
@@ -260,7 +267,7 @@ step-3 result is re-checkable without spending another subagent run.
 | 2. Evidence is compatible | **yes, with the oracle changed** | the controller-generated tree is scored by the unmodified `execution-report.js` at the expected exit code, and for the 25-fixture corpus driven through `init → record → finalize` (MISMATCH: 0, and step 2 removed all three declared limits). See the note on the byte-diff below |
 | 3. Budget-as-code is correct | **yes** | one test→build rewind with the prescribed counters, `corrections.json` and tier escalation; a second code failure terminates `TEST_GATE_FAILURE`; the rewind and check-defect budgets are independent and neither consumes a build retry; the F-47 three-build-attempt tree is reproduced with the accounting intact; the retry ladder escalates sonnet→opus→fable and exhausts, matching the `retry` fixture's recorded ladder |
 | 4. Idempotent | **yes** | `next` is byte-identical on an unchanged tree (this required a fix — step 1's dispatch stamp moved), a recorded attempt cannot be re-recorded, and a second `finalize` is a no-op. Resume / `carry_over` remain unproven |
-| 5. The win is real and measured | **half** — and the half that decides is the missing one | MEASURED: 2 model turns/phase in steady state (`next`→dispatch→`record`, with `record` batching into the following `next`), against this section's "≤ ~2" bar; handshake payload 173/740/400 bytes for `init`/`next`/`record` ≈ 1.1 KB ≈ ~300 tokens per phase, against the 170,249 tokens the plan dispatch it carried cost — ~0.2%, so no token regression at the margin. That denominator is the Agent tool's own `subagent_tokens` report, NOT recoverable from the evidence tree (the controller writes token fields as `null` per SC-11/A3), so it is a single observed measurement rather than a reproducible one. NOT MEASURED: the SKILL.md + phase-gates line-delta, and whether the model's per-phase reasoning shrinks once it stops hand-executing counters. **No go/no-go** |
+| 5. The win is real and measured | **yes** — and the answer depends on which measurement | X = 705 of 1,030 lines in Q5's own scope (68.4%), 1,300 of 1,643 across all four orchestrator documents (79.1%); Y = 1,526 lines covering 11 of 20 rule families, floor 1,704 for the finished controller; Z = 151. As a LINE delta that is a net increase. As the thing that bears on §9 it is a 7× reduction: 124,008 → 17,206 instruction bytes per run, 25,944 with the handshake, 31.2% even if the model never opens a reference. Handshake: 8,738 bytes over a complete seven-phase run, 16 controller messages, **2 model turns per phase** — the bar met exactly, with 12.2× headroom to break-even. NOT MEASURED: whether per-phase *reasoning* shrinks (finding 25 — bounds the size of the win, not its sign). **GO** |
 
 ### Where this plan was not followed, and why
 
@@ -292,24 +299,37 @@ step-3 result is re-checkable without spending another subagent run.
   is reported on every handshake message. `FINDINGS.md` states this before anything else,
   because concealing it is how round two happened.
 
-### The kill-criteria have not fired
+### The kill-criteria did not fire
 
-§9 names two conditions that would kill §6.2. Neither has, and step 3 moved the second from
-"unmeasured" to "measured and favourable at the margin": the evidence schema was matched
-**without editing `execution-report.js`** (the controller `require()`s it and consults its
-exported `buildReport()` as a read-only oracle), and the handshake costs ~1.1 KB per phase
-against a dispatch that cost 170k tokens. §9's "spike creep" risk is now the *only* live one.
-**Step 4 is the entire remaining scope. Do not add rewind families, validators, phases, or
-resume logic before the line-delta is counted**: none of them can change the go/no-go, and
-Q5's missing half can still kill the whole thing.
+§9 names two conditions that would kill §6.2, and step 4 measured both to a number.
 
-The one thing that would justify more live work before step 4 is in `FINDINGS.md` under
-step 3's lesson: the mocked path was not a weak test of the two defects step 3 found, it was
-**no test of them at all**, and the six phases that have never run live are in exactly the
-position the plan phase was in before it ran. That is an argument about *risk*, not about the
-go/no-go — it does not override the ordering above.
+- **Evidence schema drift** — the schema was matched **without editing
+  `execution-report.js`** (the controller `require()`s it and consults its exported
+  `buildReport()` as a read-only oracle), across the 25-fixture corpus at MISMATCH 0.
+- **Chatty handshake** — 8,738 bytes for a complete seven-phase run at 2 model turns per
+  phase, against a break-even of 106,802 bytes. It would have to be **12× more expensive**
+  to erase the reduction it buys.
 
-### Open before any step-4 claim
+§9's "spike creep" risk was the live one throughout, and the time-box held: the spike ends
+here, with the box shut on the nine unimplemented rule families.
+
+### The three conditions on the GO
+
+1. **The win is relocation, not reduction.** The repository gets bigger. What shrinks by
+   ~86% is the instruction mass a probabilistic model must load and interpret per run. That
+   is the §6.1 "prose engine" problem, and it is the only thing this measurement establishes.
+2. **A go on the architecture is not a clearance to skip live validation.** Six of seven
+   phases have never run live, and both defects step 3 found were structurally unreachable
+   from the mocked path — the mock was not a weak test of them, it was no test of them at
+   all. The nine unimplemented rule families are in exactly the position the plan phase was
+   in before it ran. Whoever builds the real controller should expect that class of defect
+   in each of them, and should not expect a mocked suite to find it.
+3. **Q5's reasoning half is unmeasured.** Whether the model's per-phase reasoning shrinks
+   needs two live runs of the same contract, one under each orchestrator. Not done. It
+   bounds the size of the win, not its sign — the controller removes decisions from the
+   model and adds none (`FINDINGS.md` finding 25).
+
+### Open after the GO — none of these are decided by it
 
 - The terminal `failure_reason` vocabulary flattens `ADVOCATE_DISSENT` and evidence-integrity
   breaches — which `execution-report.js` itself classifies as non-retriable — into a blanket
@@ -376,3 +396,13 @@ go/no-go — it does not override the ordering above.
   and it is the largest unresolved question the spike has surfaced. Both gates report a scope
   string on every handshake message meanwhile, which makes the reduction loud but does not
   settle it.
+- **Z is the least trustworthy number in the GO (finding 24).** `thin-skill-sketch.md` is 151
+  lines and nobody has run an orchestrator from it. Three of its branches — `consensus`,
+  `reproduce`, and the dissent-resolution half of `operator` — are extrapolated from prose the
+  spike's controller has not implemented; the first cut of the sketch handled two actions the
+  controller never emits and omitted `finalize`, which it does. `run-step4.sh` asserts the
+  decidable direction (every emitted action has a branch) and the presence of every named
+  human-decision boundary, which is a presence check and not a sufficiency proof. **The first
+  thing a real §6.2 build should do is run one contract end to end from that document** — it
+  is cheaper than any of the nine unimplemented families and it is the assumption everything
+  else rests on.
