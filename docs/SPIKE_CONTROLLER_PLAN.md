@@ -236,8 +236,9 @@ is now *half* measured rather than untouched — round trips and handshake paylo
 numbers inside the bar, the line-delta and token-behaviour half is still zero.
 
 Step 1 went through three adversarial rounds; step 2 had two, which between them found four
-fail-OPEN defects in the one gate the controller owns outright. **Step 3 found two more in
-twenty minutes, and it found them by running a real subagent rather than by reading harder.**
+fail-OPEN defects in the one gate the controller owns outright. **Step 3 found three more —
+two in twenty minutes by running a real subagent rather than by reading harder, and a third
+in a post-merge audit.**
 Both had one cause — the controller and the phase agent write the *same file* by instruction,
 and the controller read that file's existence as its own act — and neither was reachable from
 the mocked path at all: `NEVER_INGEST` means a replayed attempt structurally cannot contain
@@ -259,7 +260,7 @@ step-3 result is re-checkable without spending another subagent run.
 | 2. Evidence is compatible | **yes, with the oracle changed** | the controller-generated tree is scored by the unmodified `execution-report.js` at the expected exit code, and for the 25-fixture corpus driven through `init → record → finalize` (MISMATCH: 0, and step 2 removed all three declared limits). See the note on the byte-diff below |
 | 3. Budget-as-code is correct | **yes** | one test→build rewind with the prescribed counters, `corrections.json` and tier escalation; a second code failure terminates `TEST_GATE_FAILURE`; the rewind and check-defect budgets are independent and neither consumes a build retry; the F-47 three-build-attempt tree is reproduced with the accounting intact; the retry ladder escalates sonnet→opus→fable and exhausts, matching the `retry` fixture's recorded ladder |
 | 4. Idempotent | **yes** | `next` is byte-identical on an unchanged tree (this required a fix — step 1's dispatch stamp moved), a recorded attempt cannot be re-recorded, and a second `finalize` is a no-op. Resume / `carry_over` remain unproven |
-| 5. The win is real and measured | **half** — and the half that decides is the missing one | MEASURED: 2 model turns/phase in steady state (`next`→dispatch→`record`, with `record` batching into the following `next`), against this section's "≤ ~2" bar; handshake payload 173/740/400 bytes for `init`/`next`/`record` ≈ 1.1 KB ≈ ~300 tokens per phase, against the 170,249 tokens the plan dispatch it carried actually cost — ~0.2%, so no token regression at the margin. NOT MEASURED: the SKILL.md + phase-gates line-delta, and whether the model's per-phase reasoning shrinks once it stops hand-executing counters. **No go/no-go** |
+| 5. The win is real and measured | **half** — and the half that decides is the missing one | MEASURED: 2 model turns/phase in steady state (`next`→dispatch→`record`, with `record` batching into the following `next`), against this section's "≤ ~2" bar; handshake payload 173/740/400 bytes for `init`/`next`/`record` ≈ 1.1 KB ≈ ~300 tokens per phase, against the 170,249 tokens the plan dispatch it carried cost — ~0.2%, so no token regression at the margin. That denominator is the Agent tool's own `subagent_tokens` report, NOT recoverable from the evidence tree (the controller writes token fields as `null` per SC-11/A3), so it is a single observed measurement rather than a reproducible one. NOT MEASURED: the SKILL.md + phase-gates line-delta, and whether the model's per-phase reasoning shrinks once it stops hand-executing counters. **No go/no-go** |
 
 ### Where this plan was not followed, and why
 
@@ -354,6 +355,16 @@ go/no-go — it does not override the ordering above.
   orchestrator's designated field inside the agent's file, so every orchestrator — this
   controller or the prose one — needs a record outside it to know its own decisions. That is
   a gap in the shipped artifact layout, and no code in `spike/` can close it.
+- **The ledger above did not govern `finalize` when it merged (finding 22).** A post-merge
+  audit found `cmdFinalize` still deciding terminal readiness by walking the manifests itself,
+  so the ledger was bypassable by calling one verb instead of another: on a clean seven-phase
+  tree, deleting `.decisions.json` and finalizing directly returned exit 0 with
+  `final_status: completed` and a scorer PROMOTE; with a *mismatched* ledger, `next` said
+  terminal/QUARANTINE and `finalize` wrote `completed` anyway. The root cause is stated in
+  §7's own design note and was never enforced: **sequencing is one oracle, and only two of the
+  three verbs were on it.** `finalize` now asks `expectedNext()` and nothing else. Anyone
+  extending this controller should check that a new verb consults the oracle before it
+  consults the tree — that is now three defects from the same omission.
 - **Two silences the spike has now found in the same shape, one phase apart (findings 16, 17).**
   `execution-report.js` does not evaluate the test gate's `checks[]` (step 2) and does not
   evaluate the plan gate's "per-criterion file-change proposal" (step 3). In both cases the

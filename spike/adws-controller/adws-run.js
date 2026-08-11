@@ -1381,17 +1381,38 @@ function terminalReasonFrom(jobDir) {
 function cmdFinalize(jobDir, reportScript) {
   const runP = path.join(jobDir, 'run_manifest.json');
   const run = readJson(runP);
-  const allPass = PHASES.every((p) => {
-    const n = latestAttempt(jobDir, p);
-    const man = n ? manifestOf(jobDir, p, n) : null;
-    return !!man && man.gate_result === 'pass';
-  });
+  // THE THIRD VERB GOES ON THE ORACLE. This walked the manifests itself — `PHASES.every(...
+  // man.gate_result === 'pass')` — which was step 1's shape and survived every round since,
+  // because `next` and `record` were both on `expectedNext()` and nothing asked whether
+  // `finalize` was. It was not, and that made `.decisions.json` bypassable by calling one
+  // verb instead of another: an independent audit deleted the ledger and finalized directly,
+  // and got `final_status: completed` and a PROMOTE. Worse with a MISMATCHED ledger — `next`
+  // said terminal/QUARANTINE and `finalize` still wrote `completed`.
+  //
+  // Reading the manifests directly is exactly the authorship mistake findings 18 and 19 were
+  // about, one verb over: `phase_manifest.json` is agent-writable, so "every phase's latest
+  // manifest says pass" is a claim, not a decision. `expectedNext()` is the one place that
+  // knows the difference, so the terminal question is asked THERE and nowhere else.
+  const nx = expectedNext(jobDir);
+  if (nx.action === 'dispatch') {
+    fail(
+      `finalize refused: ${nx.phase}/attempt_${nx.attempt} has not been recorded by this controller, ` +
+      'so the job is not at a terminal state. If the evidence tree looks complete, the controller ' +
+      'did not decide it — a missing or unmatched .decisions.json entry means the verdicts on disk ' +
+      'are claims this controller cannot vouch for. Writing `failed` here would report an ' +
+      'unfinished job as a failed one; writing `completed` would promote evidence nothing gated.'
+    );
+  }
+  const allPass = nx.action === 'finalize';
   if (!run.completed_at) run.completed_at = nowUtc(); // written once — a re-finalize is a no-op
   let retracted = null;
   if (!allPass) {
     const t = terminalReasonFrom(jobDir);
-    run.final_status = 'failed';
-    run.failure_reason = t.reason;
+    // The oracle's own verdict when it has one, so an evidence-integrity halt terminates in
+    // the QUARANTINE class rather than being flattened to a retriable `failed`.
+    const quarantine = nx.action === 'terminal' && nx.verdict === 'QUARANTINE';
+    run.final_status = quarantine ? 'quarantined' : 'failed';
+    run.failure_reason = (nx.action === 'terminal' && nx.failure_reason) ? nx.failure_reason : t.reason;
   } else {
     run.final_status = 'completed';
     run.failure_reason = null;

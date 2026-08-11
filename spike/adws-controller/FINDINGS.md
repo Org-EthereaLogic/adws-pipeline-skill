@@ -742,6 +742,37 @@ and the run genuinely spent. `provenance.started_at` is the dispatch stamp becau
 requires a live clock **at dispatch**, which is a fact only the dispatcher holds. Worth
 recording because a reader comparing the two files will otherwise read it as a discrepancy.
 
+**22. None of finding 19's ledger governed `finalize` — the third verb was never on the
+oracle.**
+
+Found by an independent audit after the ledger merged, and it is the same mistake one verb
+over. `cmdFinalize` decided terminal readiness by walking the manifests itself —
+`PHASES.every(p => man.gate_result === 'pass')` — which is step 1's shape and survived every
+round since, because `next` and `record` were both on `expectedNext()` and **nobody asked
+whether `finalize` was.** It was not. So the ledger was bypassable by calling one verb
+instead of another:
+
+| tree | `next` said | `finalize` did |
+|---|---|---|
+| seven clean phases, `.decisions.json` **deleted** | `dispatch plan/attempt_1` | exit **0**, `final_status: completed`, scorer **PROMOTE** |
+| seven clean phases, ledger says test **failed** | `terminal` / **QUARANTINE** | exit 0, `final_status: **completed**` |
+
+Reading the manifests directly is precisely the authorship error of findings 18 and 19:
+`phase_manifest.json` is agent-writable, so "every phase's latest manifest says `pass`" is a
+**claim**, not a decision. `finalize` now asks `expectedNext()` and nothing else — it refuses
+outright when the oracle still wants a dispatch (writing `failed` there would report an
+unfinished job as a failed one, and `completed` would promote evidence nothing gated), and it
+takes the oracle's own verdict when there is one, so an integrity halt terminates in the
+QUARANTINE class instead of being flattened to a retriable `failed`. `run-step3.sh` S5b drives
+a real seven-phase job and asserts both rows above.
+
+**The pattern is now four for four.** Findings 12, 14, 15 (step 2), 18, 19 and this one are
+all the same error in different clothes: a check that establishes *something else* and gets
+read as establishing the thing that matters. "No failure detected" for "a success was
+established"; a manifest's existence for the controller's own act; two verbs on the oracle
+for all three. **The recurring defect in this spike is not any particular gate — it is
+trusting a proxy for the property.**
+
 ### Q5 — half measured, and the half that is measured passes
 
 §6 Q5 is two claims. The round-trip half is now a real number; the token/line half is not.
@@ -760,9 +791,20 @@ one turn to dispatch and one turn to record-and-advance. Plus one turn for `init
 | `next` (plan dispatch) | 740 |
 | `record` (plan) | 400 |
 
-≈ 1.1 KB per phase, ~300 tokens. The planner dispatch it carried cost **170,249 tokens**. So
-the handshake is not a token regression *at the margin* — it is ~0.2% of the work it
-sequences.
+≈ 1.1 KB per phase, ~300 tokens. The planner dispatch it carried cost **170,249 tokens**.
+
+**Where that denominator comes from, since it is not in the evidence tree.** It is the Agent
+tool's own `subagent_tokens` report for the live dispatch, read from the harness at the time.
+It is deliberately **not** recoverable from the archived artifacts: the controller writes
+`tokens_in` / `tokens_out` / `cost_usd` as `null` (SC-11/A3 — those are structurally
+unavailable to an orchestrator in this runtime and are written as null rather than omitted so
+a reader can tell "not captured" from "field dropped"). So the ratio below is a **single
+observed measurement, not a reproducible one**, and an audit that checks the archived manifest
+will correctly find nulls there. Treating it as anything firmer than an order-of-magnitude
+bound would be overreading one dispatch.
+
+On that basis the handshake is not a token regression *at the margin* — it is ~0.2% of the
+work it sequences.
 
 **That is not Q5.** Q5 asks whether "X lines of SKILL.md + phase-gates prose are replaced by
 Y lines of controller code + Z lines of thin interface" — a line-delta nobody has counted —
