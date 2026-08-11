@@ -677,14 +677,44 @@ Authorship now comes from `.decisions.json`, a controller-owned ledger at the **
 a file the agent contracts never mention, at a path they explicitly forbid writing to ("never
 write outside your attempt directory"). It answers exactly one question, "did I decide this
 attempt?". It is deliberately **not** a cursor: *where* the job is stays derived from the
-tree, the verdict is still read from the manifest, and a tree that arrives without its ledger
-reads as wholly undecided and re-runs — the safe direction. `run-step3.sh` S5 forges a
-complete, well-formed provenance block beside a self-granted `pass` and asserts it is still
-not believed.
+tree, and a tree that arrives without its ledger reads as wholly undecided and re-runs — the
+safe direction.
 
-The residual is smaller and stated plainly: an agent that writes outside its attempt
-directory, in violation of an explicit prohibition, can forge a ledger too. Nothing inside
-one filesystem tree fixes that.
+**The ledger's verdict and the manifest's are BOUND, which the first version of it was not.**
+A second review pass caught that: the ledger stored `gate_result` and nothing compared it, so
+an agent could flip a recorded `fail` to `pass` in its writable `phase_manifest.json` *after*
+recording and `expectedNext` would advance. Reading the verdict from the ledger instead would
+be worse — the controller would then promote a tree whose own evidence disagrees — so the two
+are compared, and a disagreement is an **evidence-integrity breach**: terminal QUARANTINE, the
+same class `evalSkillsClean` gives a trace that contradicts its own validator output.
+
+### The invariant, stated as what it actually is
+
+A review asked for "the concrete permission or process invariant" protecting the ledger.
+**There is no permission to give, and that is the finding.** In this runtime the orchestrator
+and its subagents are the **same OS principal**. No `chmod` separates them. `.decisions.json`
+is defended by a *contract* — the agent specs' "never write outside your attempt directory" —
+and a contract is the strongest boundary available to **any** orchestrator here, the prose one
+included.
+
+So the ledger does not buy tamper-proofing, and should not be described as if it did. What it
+buys is that forging a decision now requires **violating an explicit prohibition** rather than
+**following an instruction**. Both defects step 3 found were the latter — an agent doing
+exactly as told. That is the class the ledger closes, and it is the class that actually
+occurred.
+
+`run-step3.sh` S5 asserts three points on this and declares the fourth:
+
+| | |
+|---|---|
+| a self-granted `gate_result: "pass"` | not believed |
+| the same, plus a complete forged `provenance` block | not believed |
+| a recorded `fail` flipped to `pass` post-record | terminal QUARANTINE, naming the disagreement |
+| **a consistent forgery of the ledger AND the manifest together** | **not detected — DECLARED LIMIT** |
+
+The fourth is asserted *as a limit* rather than left unstated, because a test claiming
+otherwise would be asserting something false. Nothing inside one filesystem tree, written by
+one principal, detects a forgery that is internally consistent.
 
 **This is still the second question step 3 raises FOR the skill** (the first being F-76's row
 identity), and the spike-local fix does not answer it: the orchestrator's designated field

@@ -331,14 +331,35 @@ function stampDecision(jobDir, phase, attempt, gate) {
   d[decisionKey(phase, attempt)] = { gate_result: gate, decided_at: nowUtc() };
   writeJson(p, d);
 }
-function attemptRecorded(jobDir, phase, attempt, man) {
-  // (a) did THIS controller decide this attempt? Nothing an agent writes can answer yes.
+//
+// THE INVARIANT, stated plainly because a review asked for the "concrete permission" and
+// there is none to give: in this runtime the orchestrator and its subagents are the SAME OS
+// PRINCIPAL. No chmod separates them, so no orchestrator-owned file is protected by anything
+// stronger than the agent's own instructions. `.decisions.json` is defended by a CONTRACT
+// ("never write outside your attempt directory"), not by a permission — and that is the
+// strongest boundary available to any orchestrator here, prose or code. What the ledger buys
+// is not tamper-proofing; it is that forging a decision now requires VIOLATING an explicit
+// prohibition rather than FOLLOWING an instruction. Both defects step 3 found were the
+// latter. See FINDINGS.md finding 19.
+//
+// Returns one of:
+//   'unrecorded'  the controller has not decided this attempt — run it
+//   'recorded'    the ledger and the evidence agree
+//   'tampered'    they disagree: the tree misreports a verdict the controller made
+function decisionState(jobDir, phase, attempt, man) {
+  // (a) did THIS controller decide this attempt? Nothing inside the attempt dir answers yes.
   const d = readJsonSafe(decisionsPath(jobDir));
-  if (!d || !d[decisionKey(phase, attempt)]) return false;
-  // (b) the verdict itself is still read from the evidence, never from the ledger. An
-  // interrupted `record` — ledger written, manifest not, or the reverse — re-runs.
-  if (!man) return false;
-  return man.gate_result !== null && man.gate_result !== undefined;
+  const decided = d && d[decisionKey(phase, attempt)];
+  if (!decided) return 'unrecorded';
+  // (b) an interrupted `record` — ledger written, manifest not, or the reverse — re-runs.
+  if (!man || man.gate_result === null || man.gate_result === undefined) return 'unrecorded';
+  // (c) BIND the two. The ledger records what the gate decided; `phase_manifest.json` is
+  // agent-writable, so without this an agent could flip a recorded `fail` to `pass` AFTER
+  // recording and `expectedNext` would advance. Reading the verdict from the ledger instead
+  // would be worse — it would let the controller promote a tree whose own evidence says
+  // otherwise — so the two are compared and a disagreement is an integrity breach, the same
+  // class `evalSkillsClean` gives a trace that contradicts its own validator output.
+  return decided.gate_result === man.gate_result ? 'recorded' : 'tampered';
 }
 
 // The build attempt a rewind opened FROM `{phase}/attempt_{n}`, or null. corrections.json is
@@ -956,7 +977,15 @@ function expectedNext(jobDir) {
     // a dispatch that died, a live dispatch waiting for `record`, or an agent's own manifest
     // (see attemptRecorded, which is where step 3's second defect is explained). Either way
     // the next action is to run it, not to read a verdict off it.
-    if (!attemptRecorded(jobDir, phase, n, man)) {
+    const state = decisionState(jobDir, phase, n, man);
+    if (state === 'tampered') {
+      const led = (readJsonSafe(decisionsPath(jobDir)) || {})[decisionKey(phase, n)] || {};
+      return {
+        action: 'terminal', verdict: 'QUARANTINE', phase, failure_reason: 'MISSING_UPSTREAM_ARTIFACT',
+        note: `EVIDENCE INTEGRITY: ${phase}/attempt_${n} records gate_result=${JSON.stringify(man.gate_result)} but the controller decided ${JSON.stringify(led.gate_result)} at ${led.decided_at}. A tree that misstates a verdict the controller made is untrustworthy whichever way it points.`,
+      };
+    }
+    if (state === 'unrecorded') {
       return { action: 'dispatch', phase, attempt: n, origin: attemptOrigin(jobDir, phase, n) };
     }
     const gate = man.gate_result;

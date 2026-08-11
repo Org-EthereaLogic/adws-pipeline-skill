@@ -182,6 +182,30 @@ node -e '
 assert "a FORGED provenance block is not believed either" "$(node "$CTRL" next "$JOB5F" | jget phase)" "plan"
 assert "…and the ledger, not the manifest, is what says so" \
   "$([ -f "$JOB5F/.decisions.json" ] && echo present || echo absent)" "absent"
+# Post-record tampering: the ledger stores the verdict the gate decided, so flipping the
+# agent-writable manifest from a recorded `fail` to `pass` must not advance the job. Reading
+# the verdict from the ledger instead would be worse — it would promote a tree whose own
+# evidence disagrees — so the two are BOUND and a disagreement is an integrity breach.
+JOB5T="$(newjob "$SCRATCH/s5t" "$GOLDEN/task_contract_snapshot.json")"
+node "$CTRL" next "$JOB5T" >/dev/null
+stage_live "$JOB5T"
+assert "recorded verdict (golden contract -> validator fail)" "$(node "$CTRL" record "$JOB5T" plan 1 | jget gate_result)" "fail"
+node -e 'const fs=require("fs"),p=process.argv[1];const m=JSON.parse(fs.readFileSync(p));m.gate_result="pass";m.failure_reason=null;fs.writeFileSync(p,JSON.stringify(m,null,2))' "$JOB5T/plan/attempt_1/phase_manifest.json"
+N5T="$(node "$CTRL" next "$JOB5T")"
+assert       "fail flipped to pass after recording -> terminal" "$(printf '%s' "$N5T" | jget action)"  "terminal"
+assert       "…as QUARANTINE, not a re-run"                     "$(printf '%s' "$N5T" | jget verdict)" "QUARANTINE"
+assert_match "…naming the disagreement"                         "$(printf '%s' "$N5T" | jget note)"    "EVIDENCE INTEGRITY"
+# DECLARED LIMIT, and the reason the assertion above is the strongest one available: the
+# orchestrator and its subagents are the same OS principal, so an agent that violates its
+# explicit "never write outside your attempt directory" prohibition can forge a CONSISTENT
+# ledger entry and manifest together. Nothing inside one filesystem tree detects that. What
+# the ledger buys is that forging now requires breaking a rule rather than following one.
+node -e '
+ const fs=require("fs"),p=process.argv[1];const d=JSON.parse(fs.readFileSync(p));
+ d["plan/attempt_1"].gate_result="pass";fs.writeFileSync(p,JSON.stringify(d,null,2));
+' "$JOB5T/.decisions.json"
+assert "DECLARED LIMIT: a CONSISTENT forgery of both files is not detected (finding 19)" \
+  "$(node "$CTRL" next "$JOB5T" | jget phase)" "build"
 node "$CTRL" record "$JOB5" plan 1 >/dev/null 2>"$SCRATCH/e5.txt"; RC5=$?
 assert       "agent-written gate_result refused (exit 65)" "$RC5" "65"
 assert_match "and the refusal says why"                    "$(cat "$SCRATCH/e5.txt")" "grading itself|designated post-hoc"
