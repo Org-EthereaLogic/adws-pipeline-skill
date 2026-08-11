@@ -228,28 +228,38 @@ spike outcome, not a failure.
 
 ---
 
-## 11. Status (2026-08-11, after PR #60 and the step-2 branch)
+## 11. Status (2026-08-11, after the step-3 branch)
 
-Steps 1 and 2 of §10 are done; steps 3 and 4 are not started. The §6.2 go/no-go is **still
-not callable** — Q1 and Q5 are untouched, and **Q5 is the one that decides**. Step 1 went
-through three adversarial rounds; step 2 has had two (an automated review and an independent
-verification pass), which between them found four defects in the one gate the controller owns
-outright — every one of them a fail-OPEN, and every one of them the same error: treating "no
-failure detected" as "a success was established". See `FINDINGS.md` findings 12, 14 and 15.
+Steps 1, 2 and 3 of §10 are done; **step 4 is not, and step 4 is the one that decides.** The
+§6.2 go/no-go is still not callable, but the reason has narrowed: Q1–Q4 are answered, and Q5
+is now *half* measured rather than untouched — round trips and handshake payload are real
+numbers inside the bar, the line-delta and token-behaviour half is still zero.
+
+Step 1 went through three adversarial rounds; step 2 had two, which between them found four
+fail-OPEN defects in the one gate the controller owns outright. **Step 3 found two more in
+twenty minutes, and it found them by running a real subagent rather than by reading harder.**
+Both had one cause — the controller and the phase agent write the *same file* by instruction,
+and the controller read that file's existence as its own act — and neither was reachable from
+the mocked path at all: `NEVER_INGEST` means a replayed attempt structurally cannot contain
+an agent-written `phase_manifest.json`. One of them meant a live run went terminal with the
+planner's output unread; the other meant an agent could grant itself its own gate and the
+controller would dispatch the next phase against it. See `FINDINGS.md` findings 18 and 19.
 
 Code and evidence: `spike/adws-controller/` (`adws-run.js`, `verify-canonical.js`,
-`mk-risk-trace.js`, `fixtures/`, four drivers, the ingest matrix) and `FINDINGS.md`, which is
-the deliverable and carries the detail this section summarises.
+`mk-risk-trace.js`, `fixtures/`, five drivers, the ingest matrix) and `FINDINGS.md`, which is
+the deliverable and carries the detail this section summarises. The one live dispatch's
+evidence is archived at `fixtures/live_plan_attempt/` and replayed by `run-step3.sh`, so the
+step-3 result is re-checkable without spending another subagent run.
 
 ### Against the five questions of §6
 
 | Q | Status | What is actually established |
 |---|---|---|
-| 1. Handshake works in-harness | **not started** | every dispatch is still MOCKED via `record --from <dir>`; no live `adws-planner` has run |
+| 1. Handshake works in-harness | **yes**, for one phase | one real `adws-planner` subagent dispatched through `next → dispatch → record` at the tier the controller advertised, into the directory it named, writing a genuine plan (3 files inside `allowed_paths`, 4 criteria mapped); gated `pass` by a `task-normalize` run the controller really performed, on a tree that is CANONICAL OK. Six of the seven phases have still never run live |
 | 2. Evidence is compatible | **yes, with the oracle changed** | the controller-generated tree is scored by the unmodified `execution-report.js` at the expected exit code, and for the 25-fixture corpus driven through `init → record → finalize` (MISMATCH: 0, and step 2 removed all three declared limits). See the note on the byte-diff below |
 | 3. Budget-as-code is correct | **yes** | one test→build rewind with the prescribed counters, `corrections.json` and tier escalation; a second code failure terminates `TEST_GATE_FAILURE`; the rewind and check-defect budgets are independent and neither consumes a build retry; the F-47 three-build-attempt tree is reproduced with the accounting intact; the retry ladder escalates sonnet→opus→fable and exhausts, matching the `retry` fixture's recorded ladder |
 | 4. Idempotent | **yes** | `next` is byte-identical on an unchanged tree (this required a fix — step 1's dispatch stamp moved), a recorded attempt cannot be re-recorded, and a second `finalize` is a no-op. Resume / `carry_over` remain unproven |
-| 5. The win is real and measured | **not started** | no line-delta, no round-trip count, no token estimate — so no go/no-go |
+| 5. The win is real and measured | **half** — and the half that decides is the missing one | MEASURED: 2 model turns/phase in steady state (`next`→dispatch→`record`, with `record` batching into the following `next`), against this section's "≤ ~2" bar; handshake payload 173/740/400 bytes for `init`/`next`/`record` ≈ 1.1 KB ≈ ~300 tokens per phase, against the 170,249 tokens the plan dispatch it carried actually cost — ~0.2%, so no token regression at the margin. NOT MEASURED: the SKILL.md + phase-gates line-delta, and whether the model's per-phase reasoning shrinks once it stops hand-executing counters. **No go/no-go** |
 
 ### Where this plan was not followed, and why
 
@@ -283,15 +293,22 @@ the deliverable and carries the detail this section summarises.
 
 ### The kill-criteria have not fired
 
-§9 names two conditions that would kill §6.2. Neither has: the evidence schema was matched
+§9 names two conditions that would kill §6.2. Neither has, and step 3 moved the second from
+"unmeasured" to "measured and favourable at the margin": the evidence schema was matched
 **without editing `execution-report.js`** (the controller `require()`s it and consults its
-exported `buildReport()` as a read-only oracle), and the handshake cost is unmeasured rather
-than adverse. §9's "spike creep" risk is the live one — steps 3 and 4 are the whole remaining
-scope, and step 3 (one live dispatch) is what Q1 and Q5 need. **Do not add rewind families,
-validators, or resume logic before Q5 is measured**: they cannot change the go/no-go, and Q5
-can kill the whole thing.
+exported `buildReport()` as a read-only oracle), and the handshake costs ~1.1 KB per phase
+against a dispatch that cost 170k tokens. §9's "spike creep" risk is now the *only* live one.
+**Step 4 is the entire remaining scope. Do not add rewind families, validators, phases, or
+resume logic before the line-delta is counted**: none of them can change the go/no-go, and
+Q5's missing half can still kill the whole thing.
 
-### Open before any step-3 claim
+The one thing that would justify more live work before step 4 is in `FINDINGS.md` under
+step 3's lesson: the mocked path was not a weak test of the two defects step 3 found, it was
+**no test of them at all**, and the six phases that have never run live are in exactly the
+position the plan phase was in before it ran. That is an argument about *risk*, not about the
+go/no-go — it does not override the ordering above.
+
+### Open before any step-4 claim
 
 - The terminal `failure_reason` vocabulary flattens `ADVOCATE_DISSENT` and evidence-integrity
   breaches — which `execution-report.js` itself classifies as non-retriable — into a blanket
@@ -313,5 +330,38 @@ can kill the whole thing.
   schema needs an assertion-level identity; this is not a spike-local choice.
 - **`make ci` is not evidence about this code.** `scripts/local-ci/gate.sh` validates the
   shipped paths only — correctly, since the spike must not be able to affect them — so a green
-  gate says nothing about `spike/`. `run-step2.sh` carries its own syntax and NUL-byte sweep
-  (finding 15). Any step-3 validation claim has to say which of the two it rests on.
+  gate says nothing about `spike/`. `run-step2.sh` and `run-step3.sh` each carry their own
+  syntax and NUL-byte sweep (finding 15). Every validation claim below rests on the drivers,
+  not on `make ci`.
+- **A second deviation that is a question FOR the skill, from step 3 (finding 19).**
+  `phase_manifest.json` carries `gate_result`, which the agent specs call "the ORCHESTRATOR'S
+  designated post-hoc field, never yours" — in a file those same specs instruct the agent to
+  write. So the orchestrator's field lives in the agent's file, and nothing about the file
+  distinguishes the two authors. An agent that writes `gate_result: "pass"` into its own
+  manifest was believed by the controller's sequencing oracle, which then dispatched the next
+  phase against a gate the agent granted itself. The spike closes it with `.decisions.json`,
+  a controller-owned ledger at the job root, whose verdict is BOUND to the manifest's — a
+  disagreement is an evidence-integrity breach, not a re-run. (Two review passes shaped this:
+  the first cut keyed authorship to the `provenance` floor *inside* the manifest, which sits
+  in the file the agent is told to write; the second stored the verdict in the ledger without
+  comparing it, so a recorded `fail` could still be flipped to `pass` after recording.)
+  **There is no permission behind the ledger, and that is the deeper finding**: the
+  orchestrator and its subagents are the same OS principal, so no orchestrator-owned file is
+  protected by anything stronger than the agent's instructions. The ledger does not make
+  forgery impossible; it makes forgery require *violating* a prohibition rather than
+  *following* an instruction — and both defects step 3 found were agents doing exactly as
+  told. **The question for the skill is unchanged by the fix**: `gate_result` is the
+  orchestrator's designated field inside the agent's file, so every orchestrator — this
+  controller or the prose one — needs a record outside it to know its own decisions. That is
+  a gap in the shipped artifact layout, and no code in `spike/` can close it.
+- **Two silences the spike has now found in the same shape, one phase apart (findings 16, 17).**
+  `execution-report.js` does not evaluate the test gate's `checks[]` (step 2) and does not
+  evaluate the plan gate's "per-criterion file-change proposal" (step 3). In both cases the
+  recorded corpus cannot satisfy the documented exit criterion — 24 of 25 test outputs carry
+  no `checks`, and 0 of 25 plan outputs carry `file_change_proposal`. Separately, all 25
+  fixtures record a `plan-coherence` verdict of `pass` over contracts that `task-normalize`
+  scores `fail`, with no `output` key for SC-8/F-55's mismatch check to read. **Whether the
+  reference documents or the recorded evidence is the contract is not a spike-local call**,
+  and it is the largest unresolved question the spike has surfaced. Both gates report a scope
+  string on every handshake message meanwhile, which makes the reduction loud but does not
+  settle it.

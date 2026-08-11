@@ -106,3 +106,19 @@ The second is why `regression_check_id` is now a controller-MINTED `REG-{source_
 rather than the criterion id: three successive identities all failed because each was a field
 the TESTER writes, and the tester is the party the check constrains. See FINDINGS.md finding 14
 for the deviation from the letter of SC-13/F-76 and why it is deliberate.
+
+## Step 3 — one directory here is not a fixture
+
+- **`live_contract.json`** — the contract driven through the live handshake. Unlike
+  `contract.json` it names a real open item in this repo, and `task-normalize` scores it
+  `pass` (`delta_r` 0.1883), which is what makes it usable as a positive control for a gate
+  that really runs the validator.
+- **`live_plan_attempt/`** — **recorded output, not authored evidence.** It is what a real
+  `adws-planner` subagent wrote on 2026-08-11 through the controller's own handshake. Its
+  README carries the provenance. `run-step3.sh` replays it so the step-3 result is
+  re-checkable without spending another dispatch.
+
+The negative control for the plan gate is not in this directory at all: it is the **golden
+fixture's own contract**, which `task-normalize` scores `fail` because it has no
+`requested_change`. Using real recorded evidence as the counterexample beats authoring one,
+and it is finding 16 in miniature.
