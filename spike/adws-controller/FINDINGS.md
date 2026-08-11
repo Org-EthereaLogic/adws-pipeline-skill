@@ -1021,6 +1021,229 @@ live argument in [SIMPLIFICATION_ANALYSIS](../../docs/SIMPLIFICATION_ANALYSIS.md
 the second independent look, now with a data point where the author had just finished writing
 the rule he broke.
 
+## STEP 5, part 1 — the two actions (the prerequisite)
+
+Step 5 asks whether an orchestrator can RUN from `thin-skill-sketch.md`
+([SPIKE_CONTROLLER_PLAN.md §12](../../docs/SPIKE_CONTROLLER_PLAN.md)). Three of the sketch's
+five branches — `consensus`, `reproduce`, and the dissent-resolution half of `operator` —
+described a controller that did not exist, so they could not be exercised at all. This section
+covers the prerequisite (§12.3), and **only** the prerequisite: the controller now emits all
+three and every route they open is asserted. Whether the sketch's PROSE for those branches is
+sufficient to orchestrate from is untouched by any of it — that needs a model reading the
+document, and no model was in this loop.
+
+`run-step5.sh`: **112 assertions, 0 failed.** The six earlier shell drivers and the ingest
+matrix still pass (25 fixtures ingested, 0 MISMATCH; 10 driven end to end, the rest halted or
+refused with a recorded reason), and `git status` is clean under `parity/` and
+`adws-pipeline/`.
+
+**The first cut of this section claimed the routes worked. An independent audit found two
+fail-OPEN defects in them within a day, and findings 33 and 34 are those.** The claim is now
+narrower and the regressions are in the driver.
+
+### What was implemented, against which rule
+
+| Rule | What the controller now does |
+|---|---|
+| FR-7 / F-35 | emits `consensus` at test and review: the pair as ONE parallel set, `parallel: "required"`, fresh-context terms stated, the barrier named, an output path and scratch root per role |
+| F-46 rules 1–5 | a Critic `fail` emits `reproduce` before it routes; reproduced+code rewinds with `CRITIC_FAIL_REPAIRED` and `cross_phase_rewinds.{phase}`; reproduced+check/environment takes the tester's own routes; **not** reproduced takes the ordinary retry and records what was run; the cap terminates |
+| F-3 | `override` writes the resolution the scorer reads, creates no attempt, burns no retry |
+| rule 2 / rule 5 | `uphold` terminates on `ADVOCATE_DISSENT` — quarantine class, not the phase's blanket gate failure |
+| F-6 | `re-review` opens a fresh attempt at the escalated tier recording `operator-resolution`, and burns the phase's retry |
+| F-37 | `repair` rewinds with `ADVOCATE_DISSENT_REPAIRED` on its own `operator_directed_rewinds` budget — and is the one rewind that also consumes a build retry |
+
+Two of these are the DOCUMENTED attempt annotations `CRITIC_FAIL_REPAIRED` and
+`ADVOCATE_DISSENT_REPAIRED`, which no earlier step could write because no earlier step ran a
+round. Both are asserted to stay attempt-level, by the same `finalize` invariant that already
+guarded the other four.
+
+### The severity split, taken where it was cheap and sourced rather than derived
+
+The open item at the head of this file says the terminal `failure_reason` vocabulary flattens
+`ADVOCATE_DISSENT` into a blanket gate failure, and that fixing it "needs a classification the
+controller can *source* from the scorer, not re-derive by parsing gate detail strings". An
+upheld dissent is the one case step 5 makes reachable, and `execution-report.js` **exports**
+`NO_RETRY_REASONS`. So the controller `require()`s it and asserts at load that
+`ADVOCATE_DISSENT` is in it — if the scorer ever reclassifies, this controller refuses to
+start rather than asserting a severity the authority does not hold. The rest of the vocabulary
+is untouched: this is one reason, sourced, not a rewrite of the enum.
+
+### Where the design refused a proxy, and what it cost
+
+`expectedNext` now has to tell four states of one unrecorded attempt apart — the phase agent
+has not run, a round is owed, a reproduction is owed, a resolution is owed. The obvious
+discriminator is "does `phase_output.json` exist yet", and it is wrong twice over: it is a
+proxy for "the agent finished" (findings 12, 14, 15, 18, 19, 22, 23, 27 in eight costumes), and
+it is the *specific* proxy F-35 forbids — the consensus agents read a worktree the phase agent
+may still be writing, and "the failure is silent by construction".
+
+So the controller does not guess. **The model declares the phase agent finished by calling
+`record`**, and `record` writes the round request into `.rounds.json`, the second
+controller-owned file. The cost is one extra handshake message per consensus phase: the first
+`record` decides nothing — no manifest, no gate, no ledger entry — and an attempt with an
+outstanding round is indistinguishable from one never recorded, which is exactly what it is.
+
+### New findings from step 5
+
+**Finding 28 — `resolution` is finding 19 one file over, and this time the SCORER believes
+it.** `advocate.json` is written by the Advocate; `resolution` inside it is the orchestrator's
+designated post-hoc field, and artifact-layout.md says outright that "the Advocate never writes
+it". That is the same shape as `gate_result` inside `phase_manifest.json` — and it is strictly
+worse, because `evalConsensus` **reads this field**: `action: "override"` downgrades a blocking
+dissent to a WARN. An Advocate that wrote its own resolution would clear its own dissent,
+through the scorer, and the gate would pass with no operator ever seeing it.
+
+`run-step5.sh` S5(a) asserts both halves: the controller refuses such an attempt, **and** that
+the scorer would have returned `warn` on the very same tree — the refusal is shown to be
+load-bearing rather than asserted to be. The fix is the same one finding 19 reached: the
+controller's own ledger is authoritative for routing, the file carries the copy the scorer
+reads, and a disagreement between them is an evidence-integrity breach rather than a choice
+between two readings.
+
+**The generalisation is now a pattern with two instances and no permission behind either.**
+Every orchestrator-owned field the shipped layout places inside an agent-written file has this
+hole, and the count is two of two — `gate_result` and `resolution` — with the second found by
+implementing it rather than by reading harder. **This is a gap in the shipped artifact layout,
+not in this controller**, and it is the same question for the skill that finding 19 raised,
+now with a second data point and a scorer that acts on the forged value.
+
+**Finding 29 — the origin oracle disagreed with itself, and only a new route made it
+visible.** `expectedNext` returned `origin: 'retry'` as a LITERAL in its retry branch, while
+`tierFor` asked `attemptOrigin`. For every route that existed before step 5 the two agreed, so
+nothing could tell them apart. An F-6 operator re-review is opened by that same retry branch —
+it does burn the phase's retry — but its origin is `operator-rereview`, and the result was a
+dispatch payload advertising `origin: "retry"` with `tier_input.source: "operator-resolution"`
+in the same message. Both from the same controller, about the same attempt.
+
+That is finding 22's shape exactly (`finalize` deciding the terminal question by walking the
+tree while `next` and `record` asked the oracle), one question over: **a second answerer for a
+question that already had an oracle, harmless until something made the two answers differ.**
+`expectedNext` now asks `attemptOrigin` in both branches. Anyone extending this controller
+should treat a hardcoded value that "obviously" matches a derived one as the same defect
+waiting for a new case — that is now four from this cause.
+
+**Finding 30 — an absent consensus round was never neutral, and every live attempt before
+step 5 was in it.** `evalConsensus` scores a phase with no `consensus/` files `UNVERIFIED`, and
+`decideLifecycle` promotes an UNVERIFIED gate **with warnings** — exit 10, never a clean
+promote. So the controller's real position before step 5 was not "consensus is out of scope"
+but "every live run silently promotes with a warning it never reported". The mocked runs hid
+it completely: every fixture ships its own consensus files, so the replayed path scored clean
+and the state was unreachable from it — the third time the mock has been *no* test of a thing
+rather than a weak one. `consensus_round` (`ran` | `ingested` | `incomplete` | `none`) is now on
+every handshake message of a consensus phase, on the same principle as `test_gate_scope`: a
+reduced gate is loud, or it is invisible.
+
+**Finding 31 — the margin moved the wrong way before a single consensus message was counted.**
+Two things grew, by almost exactly the same amount, and both eat the same margin:
+
+```
+handshake, replayed seven-phase run   8,738 -> 9,146 B   (+408, the fields added to `record`)
+Z, the thin interface                 9,362 -> 9,700 B   (+338, the status table only)
+no-reference headroom                  2.36x -> 2.22x    (11.64x on the full-document reading)
+of before                              60.3% -> 62.8%
+```
+
+Isolated, each costs about the same: the handshake alone would give 2.33×, the sketch alone
+2.32×. Neither is close to §9's bar and the reduction holds on both readings — but the
+direction is the one condition 2 warns about, and it moved for a prerequisite that added no
+capability to the run being measured.
+
+**The number that matters is not this one.** The replayed path emits no `consensus`,
+`reproduce` or `operator` message at all, so 9,146 is the cost of a run with the round
+*implemented* and not *taken*. A run that actually takes it costs more, and **nobody has
+measured that**. It is part of §12.4's live run, recorded here as a prediction rather than
+offered afterwards as an estimate.
+
+**Finding 32 — a residue event, predicted BEFORE the run that is supposed to find it.**
+`thin-skill-sketch.md` tells the orchestrator to dispatch and then `record`, and describes
+`consensus` as an action `next` returns. It does **not** say that `record` may come back with
+`awaiting` instead of a gate result — which is what the deferral above makes it do. A model
+following the sketch literally will still converge, because its loop calls `next` every
+iteration and `next` does say `consensus`; but it will meet one message the document did not
+prepare it for.
+
+This is recorded here, now, and **the sketch is deliberately not patched** — §12.7 freezes it,
+and patching a gap I found by writing the code would convert the sufficiency test into a
+drafting exercise and destroy the measurement. The prediction is falsifiable in both
+directions: if the live run trips on it, finding 32 is a residue event with a known byte cost;
+if the orchestrator absorbs it without asking, that is evidence the sketch is more robust than
+its author expected. Either way it was written down first.
+
+**Finding 33 — the precedence comment was a claim about code three lines away that I had not
+read closely enough to copy.** `consensusRoute` and `consensusPending` both said they followed
+`evalConsensus`'s precedence and both tested `dissent`. The scorer tests `dissent && NOT
+overridden` — it has a separate, LATER case for an overridden one. So an attempt carrying BOTH
+an Advocate dissent and a Critic fail, with the dissent overridden, behaved like this:
+
+```
+scorer:      dissent overridden -> moves on -> FAILS on the Critic
+controller:  "there is a dissent" -> answers the dissent -> sees the ledger and file agree
+             -> "the scorer still fails, so the override did not register" -> integrity breach
+reproduce:   never requested. The Critic finding was never reproduced, never routed.
+```
+
+The route the Critic was owed does not exist for that tree, and the failure presents as an
+accusation against the operator's own override. **The fail-open direction:** an evidence-
+integrity annotation the job then RETRIED (finding 34), so a Critic fail plus an overridden
+dissent produced an ordinary test retry — the exact outcome F-46 was written to remove.
+
+Worth keeping: I asserted the precedence in a comment, in the same commit, next to the code
+that disagreed with it — and `run-step5.sh` had 98 assertions across every single-finding case
+without one MIXED case among them. **A per-branch test suite written by the author of the
+branches tests the branches he thought of.**
+
+**Finding 34 — `route: 'terminal'` never terminated, and it is the same cause as findings 22
+and 29.** `gateFail(..., 'terminal')` sets a route, but `expectedNext` does not read `route` —
+it reads the ANNOTATION. Three of step 5's integrity breaches returned
+`route: 'terminal'` with a plain `{PHASE}_GATE_FAILURE` annotation, fell past every annotation
+branch, and landed in the ordinary retry. The `record` message said `"route":"terminal"` and
+the next `next` dispatched a retry, from the same controller, about the same attempt.
+
+`ROUTE_SPENT` and `ADVOCATE_DISSENT` worked only because they happen to be annotations
+`expectedNext` matches. So the terminal routes that existed before step 5 were correct by
+coincidence of vocabulary, not by mechanism. The fix reuses `MISSING_UPSTREAM_ARTIFACT` — the
+QUARANTINE-class reason the tampered-ledger path already terminates on, asked of the scorer's
+exported `QUARANTINE_REASONS` rather than assumed.
+
+**This is the fifth instance of one cause**: two places answering one question, agreeing until
+a new case makes them differ. Findings 22 (`finalize` walked the tree while `next` and `record`
+asked the oracle), 29 (`expectedNext`'s literal origin vs `attemptOrigin`), and now the route
+field vs the annotation field. The rule that would have caught all three: **if a value is
+derivable, never also state it — and if two fields can express the same decision, only one of
+them may be read.**
+
+**Finding 35 — a third scorer silence, in the shape of findings 16 and 17.**
+`collectConsensus` builds a consensus row from EITHER `critic.json` or `advocate.json`, and
+`evalConsensus` never asks whether both roles reported. So a one-voter round scores exactly
+like a unanimous one, and a replayed attempt carrying only `critic.json` gated `pass` while the
+controller's own message read `consensus_round: "incomplete: missing advocate"` — **naming the
+defect and promoting anyway**, which is the one behaviour the rest of this file exists to
+refuse. FR-7 rule 1 is explicit that the parallel set is exactly {Critic, Advocate}.
+
+The controller now gates completeness in BOTH modes, because completeness is a property of the
+evidence rather than of who produced it — unlike the round REQUEST, which stays live-only since
+a replay has no one to dispatch. All 56 consensus directories in the 25-fixture corpus carry
+both roles, so no recorded evidence disagrees and the matrix is unchanged.
+
+**It deliberately does not fire on a wholly ABSENT round**, and the asymmetry is the finding: an
+absent round scores UNVERIFIED and promotes with a warning (finding 30) — a gap that announces
+itself. A one-voter round scores as a clean round. The first is honest; the second is a false
+unanimity. Whether the SCORER should require both roles is not a spike-local call and belongs
+with findings 16 and 17 as a question for the skill.
+
+### What step 5 part 1 does NOT establish
+
+- **That the sketch is sufficient.** Unchanged from finding 24. The branch prose for
+  `consensus`, `reproduce` and dissent resolution is exactly as it was when it was written
+  against an imagined controller; all step 5 has done is make it possible to test.
+- **That any of this works live.** Every assertion above runs against staged files. A "live"
+  arm in `run-step5.sh` means the controller's live-mode code path with no `--from`, not a
+  dispatched subagent. Six of seven phases have still never run live and the consensus pair has
+  never run at all — condition 3 is untouched, and step 3's lesson says the defects that matter
+  here are the ones this harness structurally cannot reach.
+- **The remaining seven rule families**, the ship-approval operator branch, resume/`carry_over`,
+  and the entropy gate. Still out, per §12.7's creep guard.
+
 ## Canonical conformance — the writer floor, not the golden
 
 The plan asked for a byte-diff against a golden tree
@@ -1158,13 +1381,14 @@ bash spike/adws-controller/run-step1-negative.sh # failing critic -> retry ladde
 bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gate mutation, asserted
 bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
 bash spike/adws-controller/run-step3.sh          # step 3: the live dispatch's evidence, replayed
-bash spike/adws-controller/run-step4.sh          # step 4: 40 assertions — the delta and the go/no-go
+bash spike/adws-controller/run-step4.sh          # step 4: 42 assertions — the delta and the go/no-go
+bash spike/adws-controller/run-step5.sh          # step 5 part 1: 112 assertions — consensus, reproduce, the four resolutions
 node spike/adws-controller/measure-delta.js      # the X/Y/Z report, re-derived from the tree
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance
 ```
 
-All eight exit 0. The committed fixtures are read-only throughout (`git status` clean under
+All nine exit 0. The committed fixtures are read-only throughout (`git status` clean under
 `parity/` and `adws-pipeline/` after a full run).
 
 `measure-delta.js` is a pure function of the shipped tree plus

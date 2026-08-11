@@ -130,15 +130,19 @@ what §6.2 buys. Against `spike/adws-controller/adws-run.js` as it stands:
 
 | Branch | Status |
 |---|---|
-| `dispatch`, `finalize`, `terminal` | emitted today |
-| `operator` | emitted today, but only `kind: environment_gap` and `kind: ship_delegation` |
-| `operator` / dissent resolution, ship approval | extrapolated — consensus is not implemented |
-| `consensus`, `reproduce` | extrapolated — no such action exists yet |
+| `dispatch`, `consensus`, `reproduce`, `finalize`, `terminal` | emitted today |
+| `operator` | emitted today: `advocate_dissent` (all four resolutions), `environment_gap`, `ship_delegation` |
+| `operator` / ship approval | extrapolated — `requires_human_approval_before_ship` is not implemented |
 
-The extrapolated branches are why Z is a measurement of the interface and not yet a
-measurement of a working orchestrator. `run-step4.sh` asserts the checkable half: every
-action the controller CAN emit has a branch here. The other half — that these branches
-say enough to run on — is the declared limit in FINDINGS.md finding 24.
+**Step 5 changed this table and nothing else in this document.** Three of the five branches
+above were extrapolated when finding 24 was written, and the prose describing them was
+written against a controller that did not exist. That prose is now FROZEN
+(`SPIKE_CONTROLLER_PLAN.md` §12.7): the branches stand exactly as they were, so the live run
+measures whether they were right, not whether they were later corrected into being right.
+
+`run-step4.sh` asserts the checkable half: every action the controller CAN emit has a branch
+here. The other half — that these branches say enough to run on — is still the declared limit
+in FINDINGS.md finding 24, and it is what §12 exists to settle.
 
 ## 2 — When the controller and reality disagree
 

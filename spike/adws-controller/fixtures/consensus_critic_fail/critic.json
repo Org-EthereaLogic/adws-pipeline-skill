@@ -1,0 +1,19 @@
+{
+  "role": "critic",
+  "verdict": "fail",
+  "dissent": null,
+  "findings": [
+    {
+      "issue": "The retry counter is incremented before the attempt directory is created, so a dispatch that dies leaves the budget spent and the attempt absent",
+      "evidence": "src/controller.js:212 increments `retries` and src/controller.js:227 creates the directory; nothing between them is guarded, and the intervening call can throw.",
+      "reproduction": {
+        "command": "node -e \"require('./src/controller').advance({fail_at:'mkdir'})\" && cat state.json",
+        "files": ["consensus/repro/state.json"],
+        "expected": "retries unchanged when the attempt directory was never created",
+        "observed": "retries: 1 with no attempt_2/ on disk"
+      }
+    }
+  ],
+  "model_tier": "sonnet",
+  "assessed_at": "2026-08-11T14:22:07Z"
+}
