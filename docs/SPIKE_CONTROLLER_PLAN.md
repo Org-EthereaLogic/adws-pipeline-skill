@@ -433,9 +433,25 @@ here, with the box shut on the nine unimplemented rule families.
 
 ## 12. Step 5 — run one contract from the thin interface alone
 
-**Status:** scoped, not started. **Type:** a separately time-boxed experiment against an
-already-issued GO, not a fifth step of §10's box. **Time-box:** one focused session.
-**Touches:** `spike/adws-controller/` only, same as steps 1–4.
+**Status (2026-08-11): §12.3's prerequisite is DONE and merged (PR #70, `8adb0f8`); the run
+itself has not started.** `consensus`, `reproduce` and the operator dissent-resolution action
+are emitted, with the F-3/F-6/F-37/F-46 routes behind them, asserted by `run-step5.sh` (112
+assertions). An independent audit of the pre-commit tree found two fail-OPEN defects in those
+routes — `FINDINGS.md` findings 33 and 34 — both fixed before the commit.
+
+Three consequences for the run that follows, all already in force:
+
+- **The sketch is frozen** (§12.7). Its status table was corrected to stop misdescribing the
+  code; **no branch prose changed**. Z is now **9,700 bytes / 155 lines**, against the
+  21,274-byte ceiling — 2.19× headroom.
+- **Finding 32 is a residue event recorded BEFORE the run that should find it**: the sketch
+  never says `record` may return `awaiting` instead of a gate. Deliberately not patched.
+- **The margin moved the wrong way**: handshake 8,738 → 9,146 B, no-reference headroom
+  2.36× → 2.22×, for a prerequisite that adds no capability to the run being measured.
+
+**Type:** a separately time-boxed experiment against an already-issued GO, not a fifth step of
+§10's box. **Time-box:** one focused session. **Touches:** `spike/adws-controller/` only, same
+as steps 1–4.
 
 Step 5 exists because the GO is argued from the pessimistic end of a bracket, and Z — the 151
 lines of `thin-skill-sketch.md` — is the number holding up that end while being the one the
@@ -481,7 +497,7 @@ consistent (both arms disobey, or both obey); the hybrid is not. **Do not report
 result.** Report the measured after against both consistent befores, and say which of the two
 the run's own read behaviour resembles.
 
-### 12.3 Prerequisite — two of the nine families
+### 12.3 Prerequisite — two of the nine families *(DONE — PR #70)*
 
 `consensus` and `reproduce` must exist as emitted actions before the sketch can be exercised;
 they are two of its three extrapolated branches, and the third (the dissent-resolution half of
