@@ -2430,3 +2430,128 @@ checking before reading a green CodeRabbit status as coverage.
 
 Q1–Q4 answered; **Q5 half measured and still undecided**; step 4 decides. This PR fixed a
 defect in step 3's implementation and corrected two published numbers. It moved no question.
+
+## Post-merge sync — PR #68 / §6.2 spike, step 4 — the go/no-go (2026-08-11)
+
+Merged as `7d50b2c`, squashed, branch `spike/step4-line-delta` deleted. **This closes the
+§6.2 controller spike**: all four steps of `SPIKE_CONTROLLER_PLAN.md` §10 are done and all
+five questions are answered. Throwaway code under `spike/`, **nothing shipped**
+(`git diff --stat -- adws-pipeline/ parity/` empty throughout; installs unaffected).
+
+### What an install carries from this PR: nothing
+
+Same as #60/#62/#64/#66. `skill-manifest` digests only `adws-pipeline/`, and nothing there
+changed. An install made before this merge and one made after are byte-identical.
+
+### The verdict, and the two numbers that disagree
+
+Q5 asks whether "X lines of prose are replaced by Y lines of code + Z lines of interface".
+Measured:
+
+| | |
+|---|---|
+| **X** | 705 of 1,030 lines in Q5's own scope (68.4%); **1,300 of 1,643** across all four orchestrator-facing documents (79.1%) |
+| **Y** | **1,526** lines covering 11 of 20 rule families; **~1,704** projected (linear, not a floor) |
+| **Z** | **151** |
+
+As a **line** delta that is a net **increase of ~212 lines** — the kept prose lives inside the
+151-line interface, not beside it. As **instruction mass the orchestrator must load and
+interpret per run**, it is a reduction on both ends of a bracket nobody has instrumented,
+with the measured handshake included in each:
+
+| scenario | before | after + handshake | of before | headroom |
+|---|---|---|---|---|
+| full-document — each reference read once | 124,008 | 25,944 | **20.9%** | **12.22×** |
+| no-reference — `SKILL.md` only, ever | 30,012 | 18,100 | **60.3%** | **2.36×** |
+
+Handshake: **8,738 bytes** over a complete seven-phase run, **16 controller messages
+measured**; 2 model turns per phase **inferred** from step 3's live dispatch — step 4's run
+was shell-driven over canned outputs with no model in the loop.
+
+**GO on the architecture, argued from 2.36×**, under four conditions recorded in the plan's
+§11: the win is relocation and not reduction; the margin is a bracket whose low end sits near
+§9's own "~2–3 round trips" bar rather than far above it; a go is not a clearance to skip live
+validation of the six phases that have never run; and Q5's unmeasured reasoning half is
+**load-bearing at 2.36×** rather than merely qualifying, which makes it the highest-value
+experiment left — ahead of any unimplemented rule family.
+
+### The finding that matters most, because it is about this document's own genre
+
+**Finding 23: the plan's own success criterion asks for the wrong measurement.** Lines are a
+proxy; instruction mass is the property. That is the *seventh* appearance of the error
+findings 12/14/15/18/19/22 named, and it had been sitting in `SPIKE_CONTROLLER_PLAN.md` since
+the plan was written. A reader who takes Q5 literally reads this spike's own numbers as a
+**no-go**.
+
+**Finding 26** is the cleanest single datum for §6.1: `references/validator-inputs.md` is
+**140 of 140 lines machine work** — an entire shipped reference whose only content is telling
+a probabilistic model how to assemble nine deterministic function calls.
+
+### The defect this PR shipped and then fixed (finding 27)
+
+The first cut stamped `controller_bytes` into `.step4-handshake.json` and compared it, and
+the commit message called that "self-invalidating". It was not:
+
+```
+action: 'finalize'  ->  action: 'terminal'      # same length, byte-for-byte
+```
+
+Size unchanged at 88,913, the check passed, and a stale 8,738 was reported for a controller
+that no longer produced it. **File size is a proxy for file content — finding 23's error,
+committed in the commit that named finding 23.** Now SHA-256, an absent digest reads stale,
+and `run-step4.sh` S5 runs that exact probe as a regression.
+
+Worth recording for the same reason the #62 entry recorded its round: **CodeRabbit and an
+independent audit found this defect separately, on the same day, and neither was the author
+who had just finished writing the rule he broke.**
+
+### Four reporting overstatements, retracted in place
+
+The same audit found four. All are corrected in the documents rather than quietly edited out,
+because the retraction is the useful part:
+
+| claim | correction |
+|---|---|
+| 12.2× headroom beside a 31.2% reduction | Took the favourable half of two different scenarios. Both now carry the handshake; the verdict is argued from 2.36×, and `run-step4.sh` S3 asserts **both** ends so the flattering pairing cannot come back. |
+| "1,704 + 151 + the 343 lines that stay" | Double count — the 307 kept lines are **inside** the 151. Increase is ~212 lines, not ~555. |
+| "floor on the finished controller" | **Linear projection.** Fixed plumbing pushes it up; shared prose and the branching of the absent families push it down; which dominates is unknown. |
+| "tokenizer-independent, both sides divide by the same constant" | Removed. JSON and English prose do not share a bytes-per-token ratio, and no tokenizer was run. |
+| 124,008 as observed per-run context | A full-document **scenario**. The directive counts show `SKILL.md` points into each reference by name; they do not show a directive is followed or that a whole file enters context. |
+| finding 25's "cannot flip the sign" | Overstated a mechanism argument as a result. Now condition 4. |
+
+### Review coverage on this PR
+
+CodeRabbit **did** review (`0dd61d5`) and filed finding 27 as a major comment, now addressed
+and the thread resolved. It did **not** review the two later commits — the head shows `pass`
+with `Review rate limited`, which is the [[coderabbit-rate-limit-false-pass]] pattern.
+
+**A correction to a claim made on this PR:** it was first reported here as "unreviewed"
+because the head commit carried no CodeRabbit check run. That applied the rule by half — a
+green tick does not mean the head was reviewed, but a rate-limited head does not mean nothing
+was. The corrected form: `0dd61d5` reviewed, `b4b75fb` and `8fd9c54` not.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T165525Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T165535Z` |
+| all eight drivers | exit 0; `run-step4.sh` 40 assertions |
+| `run-ingest-matrix.js` | exit 0 — 25 fixtures, MISMATCH 0, LIMIT 0 |
+| CodeQL | fail in 8s, zero steps executed — billing lock, not a code result |
+| `git status --porcelain` after a full driver run | clean |
+
+The limit recorded in the #62 entry still holds and is why the driver count matters:
+`make ci` validates the shipped paths only and **says nothing about `spike/`**. Every
+validation claim above rests on the drivers, which carry their own syntax and NUL sweep.
+
+### Where §6.2 stands
+
+**Decided.** Q1–Q5 answered; the recommendation in
+[SIMPLIFICATION_ANALYSIS §6.2](SIMPLIFICATION_ANALYSIS.md) now carries the GO and its four
+conditions. What remains open is not the decision: the two questions the spike raised **for
+the skill** (SC-13/F-76 row identity, and `gate_result` living in the agent's file), the
+findings 16/17 question of whether the reference documents or the recorded evidence is the
+contract, and — before any real build — one contract run end to end from
+`thin-skill-sketch.md`, which is the assumption everything else rests on and the least
+trustworthy number in step 4 (finding 24).
