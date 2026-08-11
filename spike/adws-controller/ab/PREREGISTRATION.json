@@ -3,11 +3,17 @@
   "protocol": "spike/adws-controller/ab/PROTOCOL.md",
   "registered_at": "2026-08-11",
   "arm_a_status": "NOT RUN — the VM is prepared and the prompt is frozen",
+  "refrozen": {
+    "when": "2026-08-11, after a post-commit audit and while arm A had still not run",
+    "why": "three corrections that do not move any result: a chars-vs-bytes comparison in run-ab.sh (amendment A6 — inside the driver that asserts the units rule), an overstated uniqueness claim about the max-per-message-id rule (A7), and a miscount of the rejected-metric table (A8).",
+    "what_changed": "PROTOCOL.md digest below is the re-frozen one. The previous digest was da8adbca0948aa2647d9ea5a2a6294c17f90133208ab05964bd49bd0a5db1c92.",
+    "note": "The freeze worked as designed: editing PROTOCOL.md broke run-ab.sh's digest assertion, so the edit could not be silent. Re-freezing before arm A exists is a correction; re-freezing after would be a rationalization."
+  },
 
   "digests": {
     "note": "SHA-256, never a size. Finding 27 is why: 'finalize' -> 'terminal' was the same byte length and walked straight through a size stamp.",
     "measure_ab_js": "144a65873ea1102b560d5f9a0d7e853373a74fc83f8fed963de2f0477f25ee90",
-    "PROTOCOL_md": "da8adbca0948aa2647d9ea5a2a6294c17f90133208ab05964bd49bd0a5db1c92",
+    "PROTOCOL_md": "501cb5bab06a920d3c8bf33aa5f4936a3c837c632020a2fda9747a71043ccd22",
     "armA_launch_prompt_md": "8064497295f509c5a73856655ef3bd367e04dd80db9862afd283f76e70bad5c1",
     "armB_launch_prompt_md": "4ebeda4a6883acf6e76a8d776260b3b346f1597a0616ce4ac554a49a1e8d7973",
     "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
@@ -54,7 +60,7 @@
     },
     "handshake": {
       "as_run": { "calls": 11, "inbound_bytes": 12695, "inbound_chars": 12687, "outbound_bytes": 2708 },
-      "pure": { "calls": 9, "inbound_chars": 7493, "note": "2 of the 11 calls bundle non-handshake work; see amendment A4" },
+      "pure": { "calls": 9, "inbound_bytes": 7497, "inbound_chars": 7493, "note": "2 of the 11 calls bundle non-handshake work; see amendment A4. Bytes are the figure compared against step4_replayed_seven_phase_bytes; the driver compared chars until amendment A6." },
       "step4_replayed_seven_phase_bytes": 9146
     },
     "subagents": {

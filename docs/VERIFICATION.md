@@ -2845,9 +2845,14 @@ An assistant JSONL row is not a model turn. The transcript writes one row per co
 repeats the same `usage` object on each — 61 rows are **26** turns, and summing per row inflates
 output tokens **2.71×**. The obvious fix (first row per `message.id`) is wrong in the *other*
 direction on the subagent transcripts, where the rows of a turn carry partial streaming usage:
-first-wins undercounts the advocate **10×**. One rule is correct on both files — the maximum-output
-record per `message.id`. Three independent computations were run before any number was published
-and all three agree. Finding 41.
+first-wins undercounts the advocate **10×**. The rule used is the **maximum-output record per
+`message.id`** — chosen for order-independence, not uniqueness: last-record-per-id returns the same
+total on all six observed transcripts. Finding 41.
+
+What is checkable from this repository is that `run-ab.sh` re-derives every published figure from
+the committed transcript. The cross-checking that happened before publication — three separate
+computations of arm B's totals, which agreed — is a **process note, not repository evidence**; the
+working files were not committed, and an earlier draft of this entry stated it as though it were.
 
 ### The setup defect, predicted and then confirmed
 
@@ -2878,3 +2883,32 @@ The two VMs differ in the presence of the installed skill and in nothing else ei
 
 **Also closed here:** §12.8 deliverable 3, the step 5 evidence archive, which was never delivered.
 It is now at `spike/adws-controller/fixtures/live_step5_run/`.
+
+### Re-frozen after a post-commit audit, before arm A ran (PR #78)
+
+An independent audit confirmed the arm-B measurements by recomputing them from the raw JSONL —
+including all five subagent transcripts — and re-ran all eight drivers and the matrix. It found
+three things wrong in the supporting material, none of which moves a result:
+
+| Correction | Where |
+|---|---|
+| The pure-handshake assertion compared **7,493 chars against a byte-denominated 9,146** — the exact unit mix amendment A3 exists to forbid, **in the driver that asserts A3**. Bytes are 7,497 and still under 9,146. | `run-ab.sh`, amendment A6 |
+| "One rule is right on both files" claimed uniqueness. **Last-record-per-`message.id` returns the identical total on all six observed transcripts**, zero non-monotonic rows. Max is chosen for order-independence, not because it is the only rule that works. | `FINDINGS.md` finding 41, amendment A7 |
+| "the three alternatives" heads a table of **four**. | `PROTOCOL.md` §2, amendment A8 |
+
+One claim in the entry above was also scoped down: the three independent computations of arm B's
+totals did happen and did agree, but the working files were not committed, so that is a **process
+note and not repository evidence**. What the repository can show is that `run-ab.sh` re-derives
+every published figure from the committed transcript.
+
+**The freeze behaved as designed.** Editing `PROTOCOL.md` broke `run-ab.sh`'s digest assertion
+immediately, so the edit could not be silent; `PREREGISTRATION.json` now carries the new digest, the
+old one, and a `refrozen` block naming the reason. Re-freezing while arm A does not yet exist is a
+correction. The same edit after arm A ran would be a rationalization, and `PROTOCOL.md` §10 already
+says so.
+
+| Check | Result |
+|---|---|
+| `run-ab.sh` | **43 assertions**, 0 failed |
+| `run-step5.sh` | 135 assertions, 0 failed |
+| `make ci` gate / orb | PASS — run_ids `20260811T234939Z` / `20260811T234949Z` |

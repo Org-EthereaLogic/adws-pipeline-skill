@@ -25,6 +25,18 @@ not a rationalization.
 | A4 | §2, "12,687 B … exceeds step 4's replayed seven-phase 9,146 B (finding 31's prediction, now confirmed)" | **Only on the impure total.** 2 of the 11 calls bundle non-handshake work (T8 bundles `git worktree list` + `find` with the ENOENT probe; T23 bundles a `node -e` dump of `checks[4]`). Pure handshake is **9 calls / 7,493 chars**, which is *under* 9,146. | **The claim is downgraded and split.** Finding 31's prediction is confirmed on the as-run figure and **not** confirmed on the pure-handshake figure. Both are published; the pure figure is the one that describes the interface, and it says the live handshake for three phases costs less than step 4's replayed estimate for seven. |
 | A5 | §7.12 contamination grep on the literal `job_20260811_0001` | **False-VOID pathway.** Arm A's clean clone mints the same id from the same date via SKILL.md §0.4's "next free" allocation. | Arm A's **own** `run_manifest.jobId` is excluded from the grep before it runs, not after a hit is seen. |
 
+**Amendments A6–A8, from a post-commit audit, made while arm A had still not run.** The
+pre-registration was re-frozen for these: `PREREGISTRATION.json` carries a new `PROTOCOL.md`
+digest and a `refrozen` block naming the reason. Re-freezing in the open is the behaviour the
+digest exists to force — a silent edit would have shown up as a `run-ab.sh` failure, which is
+the point.
+
+| # | Clause | What the audit found | Amendment |
+|---|---|---|---|
+| A6 | `run-ab.sh`'s pure-handshake assertion | It compared `inbound_chars_pure` (7,493) against a **byte**-denominated 9,146 — **the exact chars/bytes mix A3 was written to stop, inside the driver that asserts A3**. | Compares **7,497 B against 9,146 B**. The conclusion does not change, which is why it is recorded rather than quietly fixed: a unit error that does not move the answer is the kind that survives review. |
+| A7 | §2's "one rule is right on both files" | Overstated as uniqueness. **Last-record-per-`message.id` equals max on all six observed transcripts**, with zero non-monotonic rows. Max is not the only rule that works here; it is the one that stays correct if a row ever arrives out of order. | The rule stands as **max-per-`message.id`**, chosen for order-independence, not because it is the only rule that reproduces these numbers. Claimed accordingly. |
+| A8 | "the three alternatives the designers proposed" | The table beneath it lists **four**. | Corrected to four. |
+
 One further change, made by the prompt judge and recorded here because it altered the run's
 setup: the contract fixture is copied to `~/step5/live_contract.json` and arm A's prompt names
 *that* path. Naming `spike/adws-controller/fixtures/…` would have put the string `adws-controller`
@@ -65,7 +77,7 @@ Computed from each arm's session JSONL, one code path for both arms:
 
 **ARM B, FROZEN: P_B = 5,589 tokens/phase (5,605 / 5,485 / 5,676; spread 3.5%).**
 
-### Why this and not the three alternatives the designers proposed
+### Why this and not the four alternatives the designers proposed
 
 | Rejected | Why it lost |
 |---|---|
