@@ -1,0 +1,8 @@
+{
+  "files_changed": [
+    { "file_path": "tests/test_ledger_uniqueness.py", "action": "modify" }
+  ],
+  "diff_summary": "Corrected the check: it asserted against a table name the frozen criterion never mentions.",
+  "implementation_notes": "SC-3 A4 repair — only the executable check changed. The criterion text and the criterion the check targets are untouched.",
+  "regression_check_ids": []
+}

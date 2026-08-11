@@ -1,0 +1,7 @@
+{
+  "docs_delta": [
+    { "file_path": "docs/retry-worker.md", "change": "Documented the idempotency guard and the duplicate-delivery contract." }
+  ],
+  "changelog_entry": "fix(retry-worker): reject duplicate job ids instead of re-executing them",
+  "documentation_summary": "One docs delta covering all three acceptance criteria."
+}

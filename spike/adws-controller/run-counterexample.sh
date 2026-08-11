@@ -51,12 +51,26 @@ AOUT="$(node "$CTRL" record "$JOB_A" plan 1 --from "$EMPTY")"
 assert       "plan gate_result"          "$(printf '%s' "$AOUT" | jget gate_result)" "fail"
 assert_match "reason names the missing output" "$(printf '%s' "$AOUT" | jget reason)" "wrote no readable phase_output.json"
 
+# STEP 2 changed the shape of this control, and it is worth being explicit about how. Under
+# step 1 a failed gate was terminal, so `next` said terminal here. Rule 4 says a failed gate
+# with retries remaining opens a fresh attempt at the escalated tier — so the empty dispatch
+# is now RETRIED once (plan's budget is 1) and only then terminates. What is unchanged, and
+# what this control exists for, is that neither route reaches `completed`.
 NOUT="$(node "$CTRL" next "$JOB_A")"
-assert "next action"  "$(printf '%s' "$NOUT" | jget action)"  "terminal"
-assert "next verdict" "$(printf '%s' "$NOUT" | jget verdict)" "RETRY"
+assert "next retries the empty dispatch" "$(printf '%s' "$NOUT" | jget action)"  "dispatch"
+assert "at plan/attempt_2"               "$(printf '%s' "$NOUT" | jget attempt)" "2"
+assert "escalated one tier (opus -> fable)" "$(printf '%s' "$NOUT" | jget model_tier)" "fable"
 
 node "$CTRL" record "$JOB_A" build 1 --from "$GOLDEN/build/attempt_1" 2>/dev/null; RC=$?
 assert "record build refused (exit 65)" "$RC" "65"
+
+A2OUT="$(node "$CTRL" record "$JOB_A" plan 2 --from "$EMPTY")"
+assert "the retry is also empty -> fail" "$(printf '%s' "$A2OUT" | jget gate_result)" "fail"
+assert "plan retry budget now spent"     "$(printf '%s' "$A2OUT" | jget retries_used)" "1/1"
+NOUT2="$(node "$CTRL" next "$JOB_A")"
+assert "budget exhausted -> terminal" "$(printf '%s' "$NOUT2" | jget action)"         "terminal"
+assert "verdict"                      "$(printf '%s' "$NOUT2" | jget verdict)"        "RETRY"
+assert "terminal reason"              "$(printf '%s' "$NOUT2" | jget failure_reason)" "PLAN_GATE_FAILURE"
 
 node "$CTRL" finalize "$JOB_A" --report "$SCORER" >/dev/null 2>&1; EXIT_A=$?
 STATUS_A="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1]+"/run_manifest.json")).final_status)' "$JOB_A")"

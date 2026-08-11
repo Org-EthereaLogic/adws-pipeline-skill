@@ -1,0 +1,9 @@
+{
+  "rubric_result": "pass",
+  "criteria_results": [
+    { "criterion": "The retry worker must reject a duplicate job id and return the result already recorded for it.", "verdict": "satisfied" },
+    { "criterion": "The idempotency guard records each job id exactly once in the ledger.", "verdict": "satisfied" },
+    { "criterion": "A replayed request produces no second side effect and logs a skip.", "verdict": "satisfied" }
+  ],
+  "summary": "All three criteria are addressed by the shipped diff."
+}

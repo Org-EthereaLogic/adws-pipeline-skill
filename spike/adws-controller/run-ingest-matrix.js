@@ -19,10 +19,11 @@
  *   HALTED   a phase gate failed mid-run; the controller stopped and never claimed
  *            completion. Compared for agreement in DIRECTION (both non-promote) and, where
  *            the official case names one gate, that the controller halted on that gate.
- *   REFUSED  the tree cannot be ingested at all. Three distinct causes, all reported:
- *            multi-attempt (retries are step 2); a phase with no attempt; a defect that
- *            lives in a recorded `gate_result` — a field the controller DERIVES rather than
- *            ingests, so replaying the raw evidence cannot reproduce it.
+ *   REFUSED  the replay cannot continue. Three causes, all reported: a phase with no
+ *            attempt; the controller opened an attempt the recorded run never took (a rewind
+ *            or retry this fixture has no evidence for); or the fixture's defect lives in a
+ *            recorded `gate_result` the raw evidence does not support — a field the
+ *            controller DERIVES rather than ingests.
  *
  * Global invariants — the counterexample class, generalised:
  *   I1  No fixture the harness says is NOT a promote may come out of the controller as one.
@@ -54,7 +55,6 @@ const MKTRACE = path.join(REPO, 'spike/adws-controller/mk-risk-trace.js');
 const SCORER = path.join(REPO, 'adws-pipeline/scripts/execution-report.js');
 const FIXROOT = path.join(REPO, 'parity/execution-report-fixtures');
 const PHASES = ['plan', 'build', 'test', 'review', 'document', 'ship', 'verify'];
-const RISK_TRACE = 'review/attempt_1/skills/review-risk-assess/skill_trace.json';
 const IS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
 const UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
@@ -85,24 +85,15 @@ function officialCases() {
 }
 
 // --- ingestibility --------------------------------------------------------------
-// Why a fixture cannot be driven, in the controller's own terms. null = it can.
-function refusalReason(jobDir) {
-  for (const phase of PHASES) {
-    const attempts = listAttempts(path.join(jobDir, phase));
-    if (attempts.length === 0) return `${phase} has no attempt (step-1 records all seven)`;
-    if (attempts.length > 1) return `${phase} has ${attempts.length} attempts (retries are step 2)`;
-  }
-  // A defect recorded in `gate_result` is not ingestible EVIDENCE: the controller computes
-  // that field from the raw evidence and writes it itself, so replaying the same raw
-  // evidence can only ever reproduce the verdict the evidence supports.
-  for (const phase of PHASES) {
-    const m = readJsonSafe(path.join(jobDir, phase, 'attempt_1', 'phase_manifest.json'));
-    if (m && m.gate_result !== 'pass') {
-      return `the defect is a recorded ${phase} gate_result=${m.gate_result} — a field the controller derives, not ingests`;
-    }
-  }
-  return null;
-}
+// STEP 2 removed BOTH pre-emptive refusals. The multi-attempt one is obsolete (retries and
+// rewinds are implemented). The other two were PREDICTIONS — "a phase has no attempt" and
+// "attempt_1 records a non-pass gate_result" — and between them they refused `retry` and
+// `promote_retry_recovered` sight-unseen, whose recorded ladders the controller can replay
+// exactly. Everything is now discovered by DRIVING (see driveFixture):
+//   - the controller asks for an attempt the fixture does not record -> stop, and say which;
+//   - the controller derives `pass` where the fixture recorded a non-pass -> stop, because
+//     that defect lives in a field the controller computes and continuing is the I1 exposure.
+// Both stop before finalize, so a refused row can never reach a promote.
 
 // Score a throwaway copy of the fixture with the scorer CLI, optionally after the driver's
 // own injection, with the fixture's declared runtime chmod applied to the copy.
@@ -129,29 +120,81 @@ function scoreCopy(jobDir, dst, testCase, inject) {
 }
 
 // --- driving --------------------------------------------------------------------
-function driveFixture(testCase, jobDir, tmp, reviewSrc) {
+// STEP 2: the loop is driven by `next`, not by a fixed walk over the seven phases. A retry
+// or a rewind means the controller decides which phase and which attempt comes next, and the
+// driver's job is to hand it the recorded evidence for exactly that attempt — or to stop and
+// say the fixture has none.
+const DRIVE_GUARD = 40; // more steps than any fixture's attempts can justify
+
+function driveFixture(testCase, jobDir, tmp, mkReviewSrc) {
   const init = run('node', [CTRL, 'init', path.join(jobDir, 'task_contract_snapshot.json'), path.join(tmp, 'artifacts')]);
   const initJson = parseJson(init.stdout);
   if (!initJson) return { error: `init failed: ${init.stderr || init.stdout}` };
   const ingested = initJson.job_dir;
 
-  let halt = null;
-  for (const phase of PHASES) {
-    const src = phase === 'review' ? reviewSrc : path.join(jobDir, phase, 'attempt_1');
-    const fixtureManifest = readJsonSafe(path.join(jobDir, phase, 'attempt_1', 'phase_manifest.json')) || {};
-    const args = [CTRL, 'record', ingested, phase, '1', '--from', src];
+  let halt = null, derivedMismatch = null, missingAttempt = null, lastFail = null, steps = 0;
+  const stricter = [];
+  const tierDiff = [];
+  const consumed = {};
+  for (;;) {
+    if (++steps > DRIVE_GUARD) return { ingested, error: `drive guard: more than ${DRIVE_GUARD} next/record steps` };
+    const nx = parseJson(run('node', [CTRL, 'next', ingested]).stdout);
+    if (!nx) return { ingested, error: 'next produced unparseable output' };
+    if (nx.action === 'finalize') break;
+    if (nx.action !== 'dispatch') { halt = { phase: nx.phase, attempt: nx.attempt, action: nx.action, reason: lastFail ? lastFail.reason : nx.note }; break; }
+
+    const { phase, attempt } = nx;
+    const recorded = listAttempts(path.join(jobDir, phase));
+    if (!recorded.includes(`attempt_${attempt}`)) {
+      // The controller opened an attempt the recorded run never took — a rewind or a retry
+      // this fixture has no evidence for. Not a mismatch: a declared boundary of the replay.
+      missingAttempt = `the controller asked for ${phase}/attempt_${attempt}; the fixture records ${recorded.length} ${phase} attempt(s)`;
+      break;
+    }
+    const src = phase === 'review' ? mkReviewSrc(attempt) : path.join(jobDir, phase, `attempt_${attempt}`);
+    if (!src) { missingAttempt = `review/attempt_${attempt} cannot be given an FR-12 risk trace`; break; }
+    const fixtureManifest = readJsonSafe(path.join(jobDir, phase, `attempt_${attempt}`, 'phase_manifest.json')) || {};
+    const args = [CTRL, 'record', ingested, phase, String(attempt), '--from', src];
     // Replay the recorded run's OWN timings where it recorded them: this is replaying
     // evidence, not dispatching, so a live clock here would be the fabricated duration the
     // provenance rule exists to prevent. Fixtures without usable stamps fall back to the
     // controller's live-clock default.
     const s = fixtureManifest.started_at, c = fixtureManifest.completed_at;
     if (UTC.test(s || '') && UTC.test(c || '') && Date.parse(c) > Date.parse(s)) args.push('--started-at', s, '--completed-at', c);
-    run('node', [CTRL, 'next', ingested]);
     const res = run('node', args);
-    if (res.status !== 0) return { ingested, error: `record ${phase} exited ${res.status}: ${(res.stderr || '').trim()}` };
+    if (res.status !== 0) return { ingested, error: `record ${phase}/${attempt} exited ${res.status}: ${(res.stderr || '').trim()}` };
     const out = parseJson(res.stdout);
-    if (!out) return { ingested, error: `record ${phase} produced unparseable output: ${(res.stdout || '').slice(0, 160)}` };
-    if (out.gate_result !== 'pass') { halt = { phase, reason: out.reason }; break; }
+    if (!out) return { ingested, error: `record ${phase}/${attempt} produced unparseable output: ${(res.stdout || '').slice(0, 160)}` };
+    consumed[phase] = (consumed[phase] || 0) + 1;
+    if (fixtureManifest.model_tier && out.model_tier && fixtureManifest.model_tier !== out.model_tier) {
+      tierDiff.push(`${phase}/attempt_${attempt}: recorded ${fixtureManifest.model_tier}, derived ${out.model_tier}`);
+    }
+    if (out.gate_result !== 'pass') lastFail = { phase, attempt, reason: out.reason };
+
+    // The measurement that replaced the old prediction. The fixture recorded a gate decision;
+    // the controller derived one from the same raw evidence. The two disagreements are NOT
+    // the same thing, and treating them alike is what made the first cut of this useless:
+    //
+    //   recorded non-pass, derived PASS  -> the controller is WEAKER than the record. The
+    //     fixture's defect lives in a field the controller computes, so replaying its
+    //     evidence cannot reproduce it. Stop before finalize — this is the I1 exposure.
+    //   recorded PASS, derived fail      -> the controller is STRICTER than the record: it
+    //     caught something that fixture's recorded gate_result waved through. Not a replay
+    //     failure. Keep driving (it will halt) and count it.
+    if (fixtureManifest.gate_result && fixtureManifest.gate_result !== out.gate_result) {
+      if (out.gate_result === 'pass') {
+        derivedMismatch = `fixture records ${phase}/attempt_${attempt} gate_result=${fixtureManifest.gate_result}; the controller derives "pass" from the same raw evidence — the defect is in a field the controller computes, not ingests`;
+        break;
+      }
+      stricter.push(`${phase}/attempt_${attempt}: recorded ${fixtureManifest.gate_result}, derived ${out.gate_result}`);
+    }
+  }
+  const unused = PHASES
+    .map((p) => ({ p, n: listAttempts(path.join(jobDir, p)).length - (consumed[p] || 0) }))
+    .filter((x) => x.n > 0)
+    .map((x) => `${x.p}+${x.n}`);
+  if (derivedMismatch || missingAttempt) {
+    return { ingested, stricter, tierDiff, unrunnable: derivedMismatch || missingAttempt, kind: derivedMismatch ? 'derived-field' : 'route' };
   }
 
   // Mirror the harness's runtime chmod onto the INGESTED tree. Here it lands AFTER every
@@ -171,7 +214,7 @@ function driveFixture(testCase, jobDir, tmp, reviewSrc) {
   const runManifest = readJsonSafe(path.join(ingested, 'run_manifest.json'));
   const canon = run('node', [VERIFY, ingested]);
   return {
-    ingested, halt,
+    ingested, halt, unused, stricter, tierDiff,
     final_status: runManifest && runManifest.final_status,
     decision: report ? report.decision : null,
     warn_flag: report ? report.warn_flag : null,
@@ -206,6 +249,9 @@ const CASES = officialCases();
 const rows = [];
 const limits = [];
 const adjustments = [];
+const divergent = [];
+const strictRows = [];
+const tierRows = [];
 const severity = [];
 let failures = 0;
 
@@ -219,32 +265,34 @@ for (const testCase of CASES) {
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ingest-'));
   try {
-    const refused = refusalReason(jobDir);
-    if (refused) {
-      push({ mode: 'REFUSED', verdict: officialPromote ? 'LIMIT' : 'EXPLAINED', detail: refused });
-      if (officialPromote) limits.push(`${testCase.name}: ${refused}`);
-      continue;
-    }
-
     // FR-12 risk: use the fixture's own recorded trace when it has one; supply it only when
     // it does not. mk-risk-trace.js refuses to overwrite, so this cannot erase a fixture's
-    // defect even if the check below were wrong.
-    let reviewSrc = path.join(jobDir, 'review', 'attempt_1');
-    let injected = false;
-    const recordedRisk = readJsonSafe(path.join(jobDir, RISK_TRACE));
-    if (!(recordedRisk && recordedRisk.output && ['low', 'medium', 'high'].includes(recordedRisk.output.risk_level))) {
-      const mock = path.join(tmp, 'review_mock');
-      copyTree(reviewSrc, mock);
-      const r = run('node', [MKTRACE, path.join(jobDir, 'build', 'attempt_1', 'phase_output.json'), mock]);
-      if (r.status !== 0) {
+    // defect even if the check below were wrong. STEP 2: a review RETRY means attempt_2 needs
+    // one too — `recomputedRisk` reads the LATEST review attempt — so the source is a factory
+    // over the attempt number rather than a single directory decided up front.
+    const hasRisk = (n) => {
+      const t = readJsonSafe(path.join(jobDir, 'review', `attempt_${n}`, 'skills', 'review-risk-assess', 'skill_trace.json'));
+      return !!(t && t.output && ['low', 'medium', 'high'].includes(t.output.risk_level));
+    };
+    const buildOut = path.join(jobDir, 'build', 'attempt_1', 'phase_output.json');
+    const injected = listAttempts(path.join(jobDir, 'review')).some((a) => !hasRisk(Number(a.slice('attempt_'.length))));
+    if (injected) {
+      const probe = path.join(tmp, 'review_probe');
+      copyTree(path.join(jobDir, 'review', 'attempt_1'), probe);
+      if (run('node', [MKTRACE, buildOut, probe]).status !== 0) {
         const why = 'review-risk-assess cannot assess this build output, so no FR-12 risk is recordable';
         push({ mode: 'REFUSED', verdict: officialPromote ? 'LIMIT' : 'EXPLAINED', detail: why });
         if (officialPromote) limits.push(`${testCase.name}: ${why}`);
         continue;
       }
-      reviewSrc = mock;
-      injected = true;
     }
+    const mkReviewSrc = (n) => {
+      const dir = path.join(jobDir, 'review', `attempt_${n}`);
+      if (hasRisk(n)) return dir;
+      const mock = path.join(tmp, `review_mock_${n}`);
+      copyTree(dir, mock);
+      return run('node', [MKTRACE, buildOut, mock]).status === 0 ? mock : null;
+    };
 
     // Measure what the injection alone does to the scorer's verdict, so the row is compared
     // against an expectation that accounts for it instead of quietly inheriting the blame.
@@ -267,16 +315,32 @@ for (const testCase of CASES) {
       }
     }
 
-    const r = driveFixture(testCase, jobDir, tmp, reviewSrc);
+    const r = driveFixture(testCase, jobDir, tmp, mkReviewSrc);
     if (r.error) { failures += 1; push({ mode: 'ERROR', verdict: 'MISMATCH', detail: r.error }); continue; }
+    if (r.tierDiff && r.tierDiff.length) tierRows.push(`${testCase.name}: ${r.tierDiff.join('; ')}`);
+    if (r.stricter && r.stricter.length) strictRows.push(`${testCase.name}: ${r.stricter.join('; ')}`);
+    if (r.unrunnable) {
+      // Discovered by driving, not predicted: the fixture's evidence stops being replayable
+      // partway. The drive halted before finalize, so this row cannot reach a promote.
+      push({ mode: 'REFUSED', verdict: officialPromote ? 'LIMIT' : 'EXPLAINED', detail: r.unrunnable });
+      if (officialPromote) limits.push(`${testCase.name}: ${r.unrunnable}`);
+      continue;
+    }
 
     const got = `${r.decision}/${r.exit_code}`;
     const mode = r.halt ? 'HALTED' : 'DRIVEN';
     const expectPromote = expect.decision === 'PROMOTE';
     let verdict = null, detail = adjusted ? `expectation ADJUSTED to ${expect.decision}/${expect.exit_code} for the supplied trace` : '';
+    if (r.unused && r.unused.length) {
+      // The controller reached the end by a DIFFERENT route than the recorded run took, so
+      // some recorded attempts were never asked for. The triple can still reproduce; the run
+      // did not. Counted separately so it is never read as a clean replay.
+      divergent.push(`${testCase.name}: ${r.unused.join(', ')} recorded attempt(s) unused — the controller took a different route`);
+      detail = detail ? `${detail}; route differs (${r.unused.join(', ')} unused)` : `route differs (${r.unused.join(', ')} recorded attempt(s) unused)`;
+    }
 
     if (!r.halt && r.decision === expect.decision && r.warn_flag === expect.warn_flag && r.exit_code === expect.exit_code) {
-      verdict = adjusted ? 'ADJUSTED' : 'MATCH';
+      verdict = adjusted ? 'ADJUSTED' : (r.unused && r.unused.length ? 'ROUTE-DIFF' : 'MATCH');
       // the official per-gate expectations, on the INGESTED tree. Skipped when the
       // expectation was adjusted: the gate set is no longer the one they describe.
       if (!adjusted) {
@@ -334,11 +398,25 @@ for (const r of rows) {
 }
 console.log('-'.repeat(122));
 const count = (v) => rows.filter((r) => r.verdict === v).length;
-console.log(`fixtures: ${rows.length}   MATCH: ${count('MATCH')}   ADJUSTED: ${count('ADJUSTED')}   EXPLAINED: ${count('EXPLAINED')}   LIMIT: ${count('LIMIT')}   MISMATCH: ${count('MISMATCH')}   SKIP: ${count('SKIP')}`);
+console.log(`fixtures: ${rows.length}   MATCH: ${count('MATCH')}   ADJUSTED: ${count('ADJUSTED')}   ROUTE-DIFF: ${count('ROUTE-DIFF')}   EXPLAINED: ${count('EXPLAINED')}   LIMIT: ${count('LIMIT')}   MISMATCH: ${count('MISMATCH')}   SKIP: ${count('SKIP')}`);
 console.log(`modes: ${['DRIVEN', 'HALTED', 'REFUSED', 'ERROR', 'SKIP'].map((m) => `${m}=${rows.filter((r) => r.mode === m).length}`).join('  ')}`);
 if (limits.length) {
   console.log('\nDECLARED step-1 limits (I2 — counted, never silent):');
   for (const n of limits) console.log(`  - ${n}`);
+}
+if (tierRows.length) {
+  console.log('\nTIER vs THE RECORD (FR-12 table + escalation ladder, checked against recorded manifests):');
+  for (const n of tierRows) console.log(`  - ${n}`);
+} else {
+  console.log('\nTIER vs THE RECORD: every attempt the controller recorded selected the tier the fixture recorded.');
+}
+if (strictRows.length) {
+  console.log('\nSTRICTER THAN THE RECORD (the controller failed a gate the fixture recorded as pass):');
+  for (const n of strictRows) console.log(`  - ${n}`);
+}
+if (divergent.length) {
+  console.log('\nROUTE DIVERGENCE (the triple reproduced; the RUN did not):');
+  for (const n of divergent) console.log(`  - ${n}`);
 }
 if (adjustments.length) {
   console.log('\nMOCK EFFECTS (measured, not assumed):');

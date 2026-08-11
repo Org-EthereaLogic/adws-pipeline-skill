@@ -1,0 +1,46 @@
+{
+  "task_id": "tsk_20260811_0001",
+  "source_type": "direct_prompt",
+  "schema_version": "1.0.0",
+  "repo": {
+    "provider": "github",
+    "owner": "Org-EthereaLogic",
+    "name": "adws-pipeline-skill",
+    "default_branch": "main"
+  },
+  "task": {
+    "title": "Idempotency guard for the retry worker",
+    "requested_change": "Make the retry worker reject duplicate job ids instead of re-executing them.",
+    "problem_statement": "A replayed message runs the job body twice, writing the ledger twice.",
+    "acceptance_criteria": [
+      "The retry worker must reject a duplicate job id and return the result already recorded for it.",
+      "The idempotency guard records each job id exactly once in the ledger.",
+      "A replayed request produces no second side effect and logs a skip."
+    ],
+    "non_goals": [],
+    "constraints": [],
+    "file_hints": []
+  },
+  "execution": {
+    "output_mode": "pr",
+    "target_branch": "main",
+    "allow_direct_commit": false,
+    "commit_identity": null,
+    "max_runtime_minutes": 60,
+    "evidence_archive_dir": null,
+    "resume_from_job": null,
+    "isolation_mode": "worktree"
+  },
+  "policy": {
+    "allowed_paths": ["src/"],
+    "blocked_paths": [],
+    "test_policy": "required",
+    "secret_policy": "no-new-secrets",
+    "falsifiability": true
+  },
+  "risk": {
+    "task_size": "small",
+    "risk_level": "medium",
+    "requires_human_approval_before_ship": false
+  }
+}

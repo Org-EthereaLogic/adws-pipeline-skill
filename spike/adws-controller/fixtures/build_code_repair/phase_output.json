@@ -1,0 +1,9 @@
+{
+  "files_changed": [
+    { "file_path": "src/retry_worker.py", "action": "modify" },
+    { "file_path": "tests/test_retry_worker_idempotency.py", "action": "create" }
+  ],
+  "diff_summary": "Guard moved ahead of the side effect; permanent regression check added for the duplicate path.",
+  "implementation_notes": "Observed before the fix: a replayed job id wrote the ledger twice and issued a second side effect. The new check reproduces that and is RED without the reorder.",
+  "regression_check_ids": ["CHK002"]
+}

@@ -207,13 +207,97 @@ function checkPhaseManifest(jobDir, phase, attempt, jobId) {
       if (CONTRACT_RISK_SOURCES.has(m.tier_input.source) && !['low', 'medium', 'high'].includes(m.tier_input.value)) {
         flag(w, `tier_input.value "${m.tier_input.value}" is not a risk level`);
       }
+      // SC-7/F-48: "Its `value` names the origin attempt ("review/attempt_1",
+      // "test/attempt_2", "verify/attempt_1")." A rewind that cannot say what sent it back
+      // is the recording gap F-48 was opened for.
+      if (/^cross-phase-rewind(-saturated)?$/.test(m.tier_input.source) && !/^(test|verify|review)\/attempt_\d+$/.test(m.tier_input.value)) {
+        flag(w, `tier_input.value "${m.tier_input.value}" must name the ORIGIN attempt for a cross-phase-rewind (SC-7/F-48)`);
+      }
     }
     if (typeof m.tier_input.value !== 'string') flag(w, 'tier_input.value must be a string');
   }
   if (!GATE_RESULTS.has(m.gate_result)) flag(w, `gate_result "${m.gate_result}" not null|pass|fail|deferred`);
   if (!(m.failure_reason === null || typeof m.failure_reason === 'string')) flag(w, 'failure_reason must be null|string');
   if (!(m.stability_gate === null || isObj(m.stability_gate))) flag(w, 'stability_gate must be null|object');
+  // phase-gates.md line 202 tells writers to record gate detail in the attempt manifest's
+  // `gate_failure_detail`; artifact-layout.md's phase_manifest shape block omits the key.
+  // Typed here rather than rejected as drift, and the disagreement is in FINDINGS.md.
+  if ('gate_failure_detail' in m && !(m.gate_failure_detail === null || isObj(m.gate_failure_detail))) {
+    flag(w, 'gate_failure_detail must be null|object');
+  }
   checkProvenance(w, m.provenance, m);
+}
+
+// --- corrections.json (SC-3 A3/F-15, SC-13/F-76) ------------------------------
+// The orchestrator-authored rewind input. Present ONLY in a build attempt that followed a
+// rewind. Everything below is from the shape block at artifact-layout.md lines 240-301.
+const CORRECTION_CLASSES = new Set(['code', 'check', 'environment', 'prerequisite']);
+const SOURCE_ATTEMPT_RE = /^(test|verify|review)\/attempt_(\d+)$/;
+const GUIDANCE_KEYS = new Set(['invisible_because', 'direction_of_error', 'must_not_regress', 'tie_breaking', 'housekeeping']);
+
+function checkCorrections(jobDir, phase, attempt) {
+  const p = path.join(jobDir, phase, `attempt_${attempt}`, 'corrections.json');
+  if (!fs.existsSync(p)) return;
+  const w = `${phase}/attempt_${attempt}/corrections`;
+  if (phase !== 'build') {
+    return flag(w, 'corrections.json is a BUILD-attempt artifact only (artifact-layout.md line 36)');
+  }
+  if (attempt === 1) flag(w, 'corrections.json is present only when the attempt FOLLOWS a rewind — attempt_1 cannot');
+  const c = readJson(p);
+  if (c.__err) return flag(w, `unreadable: ${c.__err}`);
+
+  const sm = typeof c.source_attempt === 'string' ? SOURCE_ATTEMPT_RE.exec(c.source_attempt) : null;
+  if (!sm) flag(w, `source_attempt "${c.source_attempt}" not {test|verify|review}/attempt_{n} (the enum, widened in SC-6/F-39)`);
+  else if (!fs.existsSync(path.join(jobDir, sm[1], `attempt_${sm[2]}`))) {
+    flag(w, `source_attempt "${c.source_attempt}" names an attempt that does not exist in this tree`);
+  }
+  if (!Array.isArray(c.corrections) || c.corrections.length === 0) {
+    return flag(w, 'corrections must be a non-empty array — a rewind with nothing to correct is not a rewind');
+  }
+  c.corrections.forEach((e, i) => {
+    const ew = `${w}[${i}]`;
+    if (!isObj(e)) return flag(ew, 'entry must be an object');
+    for (const k of ['check_id', 'criterion', 'expected', 'actual', 'path']) {
+      if (typeof e[k] !== 'string') flag(ew, `${k} must be a string, got ${JSON.stringify(e[k])}`);
+    }
+    if (!CORRECTION_CLASSES.has(e.classification)) flag(ew, `classification "${e.classification}" not code|check|environment|prerequisite`);
+    // SC-13/F-76: "Every `code` correction therefore has exactly one satisfiable regression id."
+    if (e.classification === 'code' && !(typeof e.regression_check_id === 'string' && e.regression_check_id)) {
+      flag(ew, 'a code correction REQUIRES a non-empty regression_check_id (SC-13/F-76)');
+    }
+    if (!('repro' in e)) flag(ew, 'repro is required (null when the finding was never reproduced by running anything)');
+    else if (e.repro !== null) {
+      if (!isObj(e.repro)) flag(ew, 'repro must be null|object');
+      else {
+        if (typeof e.repro.attempt !== 'string') flag(ew, 'repro.attempt must be the attempt directory holding the corpus');
+        if (!Array.isArray(e.repro.files)) flag(ew, 'repro.files must be an array of paths relative to that attempt');
+        else for (const f of e.repro.files) {
+          if (typeof f !== 'string' || path.isAbsolute(f) || f.split('/').includes('..')) {
+            flag(ew, `repro.files entry ${JSON.stringify(f)} must be a relative path with no ".." (artifact-layout.md: validate before opening)`);
+          }
+        }
+      }
+    }
+  });
+  if ('guidance' in c && c.guidance !== null) {
+    if (!isObj(c.guidance)) flag(w, 'guidance must be an object when present');
+    else {
+      for (const k of Object.keys(c.guidance)) if (!GUIDANCE_KEYS.has(k)) flag(w, `guidance has non-canonical key "${k}"`);
+      if ('must_not_regress' in c.guidance && !Array.isArray(c.guidance.must_not_regress)) flag(w, 'guidance.must_not_regress must be an array of strings');
+      for (const k of Object.keys(c.guidance)) {
+        if (k !== 'must_not_regress' && typeof c.guidance[k] !== 'string') flag(w, `guidance.${k} must be a string`);
+      }
+    }
+  }
+  // SC-13/F-76 step 2, checked INDEPENDENTLY of the controller that is supposed to gate it:
+  // the build attempt a code correction landed in must declare the permanent check it added.
+  const need = c.corrections.filter((e) => isObj(e) && e.classification === 'code' && e.regression_check_id).map((e) => e.regression_check_id);
+  if (need.length) {
+    const out = readJson(path.join(jobDir, phase, `attempt_${attempt}`, 'phase_output.json'));
+    const echoed = !out.__err && Array.isArray(out.regression_check_ids) ? out.regression_check_ids : [];
+    const missing = need.filter((id) => !echoed.includes(id));
+    if (missing.length) flag(w, `phase_output.regression_check_ids does not echo ${missing.join(', ')} (SC-13/F-76 step 2)`);
+  }
 }
 
 function main(argv) {
@@ -225,13 +309,24 @@ function main(argv) {
   for (const phase of PHASES) {
     const pdir = path.join(jobDir, phase);
     if (!fs.existsSync(pdir)) continue; // validate whatever phases exist
+    const nums = [];
     for (const ent of fs.readdirSync(pdir)) {
       const mm = /^attempt_(\d+)$/.exec(ent);
       if (mm) {
-        checkPhaseManifest(jobDir, phase, Number(mm[1]), jobId);
-        checkPhaseOutput(jobDir, phase, Number(mm[1]));
+        const n = Number(mm[1]);
+        nums.push(n);
+        checkPhaseManifest(jobDir, phase, n, jobId);
+        checkPhaseOutput(jobDir, phase, n);
+        checkCorrections(jobDir, phase, n);
       }
     }
+    // Append-only rule 1: "A new attempt ALWAYS gets a new attempt_{n} directory
+    // (n = max existing + 1)." So the numbers are 1..N with no gaps — a gap means an
+    // attempt directory was removed, and the evidence tree is append-only.
+    nums.sort((a, b) => a - b);
+    nums.forEach((n, i) => {
+      if (n !== i + 1) flag(`${phase}`, `attempt numbering is ${nums.join(',')} — rule 1 makes it 1..${nums.length} with no gaps`);
+    });
   }
   // A tree claiming completion must HAVE the seven phases it claims to have completed. The
   // per-phase loop above validates whatever exists and would otherwise say nothing about

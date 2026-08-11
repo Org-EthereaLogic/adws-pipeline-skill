@@ -1,0 +1,8 @@
+{
+  "files_changed": [
+    { "file_path": "src/retry_worker.py", "action": "modify" }
+  ],
+  "diff_summary": "Guard moved ahead of the side effect.",
+  "implementation_notes": "The defect is repaired but no permanent check was added, so nothing would catch it returning.",
+  "regression_check_ids": []
+}
