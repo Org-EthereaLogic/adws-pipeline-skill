@@ -2348,3 +2348,85 @@ tokens the dispatch it carried cost (~0.2%) — both inside the plan's bar. The 
 line-delta and the token-behaviour half are **zero measured**. **Step 4 decides**, and
 `SPIKE_CONTROLLER_PLAN.md` §11 says not to add rewind families, validators, phases, or resume
 logic before it.
+
+## Post-merge sync — PR #66 / §6.2 spike, `finalize` on the sequencing oracle (2026-08-11)
+
+Merged as `7c3e5ad`. A follow-up to #64 opened by an **independent post-merge audit** whose
+verdict was *"partially confirmed — the merge and most reported checks are real, but the
+ledger hardening is incomplete."* It was right; both cases were reproduced before anything
+was changed. Throwaway code under `spike/`, **nothing shipped**
+(`git diff --stat -- adws-pipeline/ parity/` empty; installs unaffected).
+
+### The defect
+
+`cmdFinalize` decided terminal readiness by walking the manifests itself — step 1's shape,
+which survived every round since because `next` and `record` were both on `expectedNext()`
+and **nobody asked whether `finalize` was.** It was not, so the `.decisions.json` ledger #64
+introduced was bypassable by calling one verb instead of another:
+
+| tree | `next` said | `finalize` did |
+|---|---|---|
+| seven clean phases, ledger **deleted** | `dispatch plan/attempt_1` | exit **0**, `completed`, scorer **PROMOTE** |
+| seven clean phases, ledger says test **failed** | `terminal` / **QUARANTINE** | exit 0, **`completed`** |
+
+`finalize` now asks `expectedNext()` and nothing else: it refuses when the oracle still wants
+a dispatch (leaving `final_status` untouched), and takes the oracle's verdict when there is
+one, so an integrity halt terminates in the QUARANTINE class rather than as a retriable
+`failed`. `run-step3.sh` S5b drives a real seven-phase job and asserts both rows.
+
+### The pattern, now named in the plan
+
+Findings 12, 14, 15, 18, 19 and 22 are **one error in six costumes**: a check that establishes
+*something else*, read as establishing the thing that matters. `SPIKE_CONTROLLER_PLAN.md` §11
+carries the operational form — *check that a new verb consults the oracle before it consults
+the tree; that is three defects from the same omission.*
+
+### Two reporting corrections, both from the same audit
+
+- **The step-3 assertion count was published as 58. The true figure is 69.** Both were wrong:
+  `grep -c PASS` also matched the final `STEP 3 PASS` banner (the audit counted 57 and was
+  closer), and four checks in S1 were *silent on success*, so they never emitted a PASS line
+  at all. The driver now reports its own count, every check prints on both branches, and the
+  two figures agree by construction. **A count derived by grepping prose is not a measurement**
+  — the same class of error as the findings above, in the reporting rather than the code.
+- **The `170,249`-token denominator behind the ~0.2% handshake figure is not in the evidence
+  tree.** It is the Agent tool's own `subagent_tokens` report; the controller writes token
+  fields as `null` per SC-11/A3 because they are structurally unavailable to an orchestrator
+  in this runtime. It is a **single observed measurement, not a reproducible one**, and
+  `FINDINGS.md` now says so at the point the number appears. An audit checking the archived
+  manifest will correctly find nulls there.
+
+### Two audit findings accepted without change
+
+- **The live dispatch is not independently reproducible.** The raw Agent-tool event and the
+  complete live tree were not retained, and `fixtures/live_plan_attempt/README.md` already
+  discloses that the agent-authored manifest is *transcribed* from the run rather than copied
+  (`record` overwrote the original in place). The archived output replays to a real
+  `task-normalize` pass, which is what `run-step3.sh` asserts; the historical dispatch itself
+  is not re-derivable and should not be described as if it were.
+- **"Everything green" applied to local and relevant checks, not to hosted status.** CodeQL
+  failed in 3s with zero steps executed on every PR in this series — the account billing lock.
+  Recorded here so the phrase is not read as covering it.
+
+### Review coverage on this PR
+
+CodeRabbit reviewed `7c3e5ad` and reported **no actionable comments** — a real review this
+time, unlike the rate-limited `pass` on #64's final commit and on #65. The distinction is in
+the check's description string (`Review completed` vs `Review rate limited`) and is worth
+checking before reading a green CodeRabbit status as coverage.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T143856Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T143906Z` |
+| all six drivers | exit 0; `run-step3.sh` 69 assertions over sixteen jobs |
+| `run-ingest-matrix.js` | exit 0 — 25 fixtures, MISMATCH 0, LIMIT 0 |
+| CodeQL | fail in 3s, zero steps — billing lock, not a code result |
+| `git status --porcelain` after a full driver run | clean |
+
+### Where §6.2 stands — unchanged by this PR
+
+Q1–Q4 answered; **Q5 half measured and still undecided**; step 4 decides. This PR fixed a
+defect in step 3's implementation and corrected two published numbers. It moved no question.
