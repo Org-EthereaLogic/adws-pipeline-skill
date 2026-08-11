@@ -230,8 +230,9 @@ spike outcome, not a failure.
 
 ## 11. Status (2026-08-11, after step 4 — the spike is complete)
 
-All four steps of §10 are done. **The §6.2 go/no-go is GO**, with three conditions stated
-below and in `FINDINGS.md`. Q1–Q5 are answered; the spike's remaining open items are named
+All four steps of §10 are done. **The §6.2 go/no-go is GO on the architecture**, with four
+conditions stated below and in `FINDINGS.md`, and argued from the pessimistic end of the
+margin bracket. Q1–Q5 are answered; the spike's remaining open items are named
 questions for the skill and for whoever builds the real controller, not gaps in the decision.
 
 **The numbers that decide.** Nobody has instrumented a real run's context, so the result is a
