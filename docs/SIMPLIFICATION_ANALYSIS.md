@@ -227,6 +227,13 @@ holds, but that it must *execute* it by hand every run.
 
 ### 6.2 Move orchestration into code — a `adws-run.js` controller *(structural; largest confusion win)*
 
+> **Status (2026-08-11).** A time-boxed feasibility spike is under way —
+> [`SPIKE_CONTROLLER_PLAN.md` §11](SPIKE_CONTROLLER_PLAN.md) for where it stands,
+> `spike/adws-controller/FINDINGS.md` for the evidence. Step 1 of 4 is done: evidence
+> compatibility holds against the unmodified `execution-report.js` without editing it. The
+> go/no-go below is **still open** — it turns on the handshake cost (Q5), which is unmeasured.
+> This recommendation is left as written; the spike is the test of it, not a revision to it.
+
 Create a dependency-light Node controller owning profile/phase selection, worktree lifecycle,
 attempt counters and rewind budgets, validator invocation, model-dispatch accounting, evidence-file
 generation, resume checkpoints, ship, and terminal reporting. `SKILL.md` becomes a *thin*

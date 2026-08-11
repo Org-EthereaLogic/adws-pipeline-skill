@@ -2065,3 +2065,99 @@ checked for the SC-14 changes that actually ship:
 correction above: F-80's egress fixes are harness-only and have never been part of an install.
 "Unregistered copies are not covered" remains true — `check-installs` knows only what
 `.adws-installs` records.
+
+---
+
+## Post-merge sync — PR #60 / §6.2 controller spike (2026-08-11)
+
+Merged as `c79260c` (merge commit) from `spike/controller-step1-hardening`, two commits:
+`17b8944` (the four fixes the second adversarial review required), `98a67cb` (CodeRabbit
+round). This is the first entry in this file for work **outside the shipped tree** — see
+"What an install carries" below, which is the point the SC-14 correction above was about.
+
+**Checks at merge.** Tier 1 16/16 and Tier 2 Node 20/24 both PASS via the `pre-push` hook on
+`98a67cb`. CodeRabbit `pass`. **CodeQL `Analyze` failed in 2 s** — the same org billing lock
+recorded across every prior run, and again not a code result: the job record carries
+`"steps": []`, so nothing ran. Not a required check (`main` carries no branch protection:
+`GET /branches/main/protection` → 404). Recorded rather than waved past.
+
+**Ledger counts at the moment of this sync** — both JSONL ledgers are append-only and every
+later run adds to them, so these are a timestamp and not a live claim. Each row is therefore
+anchored to the last record it counts, which is the boundary the number was true at:
+
+| Ledger | Records | Outcome | Through run_id |
+|---|---|---|---|
+| `ci_logs/local_ci.jsonl` | 163 | 157 pass, **6 fail** | `20260811T043646Z` |
+| `ci_logs/orb_ci.jsonl` | 70 | 70 pass | `20260811T043250Z` |
+
+**This round added the sixth red, and it was a real finding.** The five prior reds are the set
+M-6 analysed (`guard-ablation` ×2, `requires`, `bash32-scan`, `skill-manifest`); the new one is
+`20260811T042034Z` on `main`, dirty — `bash32-scan` catching an unguarded `"${PHASES[@]}"`
+under `set -u` in `spike/adws-controller/run-step1.sh` (F-13, the macOS bash-3.2 defect). Two
+things worth recording about it. The scan reaches `find . -name '*.sh'`, so it covered a new
+directory nobody wired it to; and the hazard was in code written the day before by someone who
+had read the rule. Fixed with the documented safe idiom before the branch existed. Latest gate
+record carries **16 steps**.
+
+**Branches.** `origin` carries **`main` alone**. `spike/controller-step1-hardening` was deleted
+by `gh pr merge --delete-branch`, which also removed the local branch;
+`git fetch --prune` cleared the stale remote-tracking ref. No local branch other than `main`
+exists. Nothing else was pending: the remote listed exactly two heads before the merge (`main`
+and the spike branch), so unlike the SC-13/SC-14 syncs there was no third ref to re-verify for
+unmerged commits.
+
+**Untracked files: none.** `.adws-installs`, `.vscode/`, `ci_logs/`, `parity/PARITY_REPORT.md`
+and the generated `parity/execution-report-fixtures/*/artifacts/*/execution_report.{json,md}`
+are gitignored **and retained by intent**, unchanged from the PR #57 inventory above. The
+warning there is repeated because it did not stop being true: a blanket `git clean -xdf` would
+destroy the install registry `make check-installs` reads. Also confirmed absent: any
+`artifacts/` tree at the repo root — the spike drivers write to `mktemp -d`, so a full matrix
+run leaves the working tree clean, and `git status --porcelain` under `parity/` is empty
+afterwards even though the matrix copies, chmods and scores all 25 fixture trees.
+
+**What an install carries: nothing from this PR.** `skill-manifest` digests only
+`adws-pipeline/`, and the merge touched no file under it — `git diff HEAD~1 HEAD --
+adws-pipeline/ parity/` is empty. Source version is unchanged at `549226ba94f0` and
+`make check-installs` reports all three registered installs **CURRENT**, so no reinstall is
+owed. Stating it explicitly is the SC-14 correction's lesson applied prospectively: the failure
+mode there was a record that overstated what a merge delivered to an install, and the honest
+default is to say when a merge delivers nothing.
+
+```text
+[check-installs] source version 549226ba94f0
+  ~                           CURRENT   549226ba94f0
+  ~/Dev/etherealogic-website  CURRENT   549226ba94f0
+  ~/Dev/agentic-starter-kit   CURRENT   549226ba94f0
+```
+
+**Stale-count sync.** `SPIKE_CONTROLLER_PLAN.md` gains a status section recording where the
+spike actually stands against its own five questions, including the two places the plan was
+not followed and why. `SIMPLIFICATION_ANALYSIS.md` §6.2 gains a one-line pointer to that
+status. Neither document is rewritten: the plan's §6 questions and the analysis's
+recommendation are the record of what was intended, and editing them to match the outcome
+would destroy the only evidence of the difference.
+
+### What the spike round is worth recording here
+
+The §6.2 hypothesis is **not** decided by this round and the spike's own `FINDINGS.md` says so.
+What is settled is narrower and belongs in this file because it is a verification result: a
+controller-generated evidence tree can be driven through the **unmodified** `execution-report.js`
+and scored, and the specific way the previous round got that wrong — a job reaching
+`final_status: completed` on a structurally incomplete tree that the scorer then QUARANTINEs,
+with **no post-gate mutation involved** — is now refused at three independent layers and pinned
+by an asserted regression.
+
+Two process facts, recorded because this repository's argument for its own expense rests on
+them (see `SIMPLIFICATION_ANALYSIS.md` §4):
+
+- **Three consecutive rounds of this spike were overturned by an independent pass**, each time
+  on a claim the primary pass had explicitly self-checked. The third refutation came with a
+  reproducible counterexample.
+- **The new fixture-ingest matrix caught a defect in its own driver** on first run:
+  `mk-risk-trace.js`, which supplies the FR-12 risk trace the minimal fixtures lack, was
+  *overwriting* the `review-risk-assess` trace of `quarantine_trace_mismatch{,_inverse,_case}`
+  — the exact file each of those three fixtures hides its defect in. All three silently turned
+  clean and promoted. This is the second time a spike harness was found mutating a fixture
+  while claiming to replay it (the first was the runtime `chmod` in the previous round). Both
+  times the harness was wrong before the controller was, which is an argument for fixture
+  corpora that encode defects the harness has to preserve rather than merely read.

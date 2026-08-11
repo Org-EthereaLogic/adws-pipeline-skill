@@ -225,3 +225,62 @@ The deterministic machine leaves the prompt; only genuine **human-in-the-loop** 
 If step 1 already shows evidence incompatibility that requires editing `execution-report.js`, or
 step 3 shows a token-regressive handshake, **stop and record the kill** — that is a successful
 spike outcome, not a failure.
+
+---
+
+## 11. Status (2026-08-11, after PR #60)
+
+Step 1 of §10 is done and has been through **three adversarial rounds**; steps 2–4 are not
+started. The spike is still inside its time-box and the §6.2 go/no-go is **not yet callable** —
+Q1, Q3 and Q5 are untouched, and Q5 is the one that decides.
+
+Code and evidence: `spike/adws-controller/` (`adws-run.js`, `verify-canonical.js`,
+`mk-risk-trace.js`, three drivers, the ingest matrix) and `FINDINGS.md`, which is the
+deliverable and carries the detail this section summarises.
+
+### Against the five questions of §6
+
+| Q | Status | What is actually established |
+|---|---|---|
+| 1. Handshake works in-harness | **not started** | every dispatch is still MOCKED via `record --from <dir>`; no live `adws-planner` has run |
+| 2. Evidence is compatible | **yes, with the oracle changed** | the controller-generated tree is scored by the unmodified `execution-report.js` at the expected exit code, and now also for the 25-fixture corpus driven through `init → record → finalize` (MISMATCH: 0). See the note on the byte-diff below |
+| 3. Budget-as-code is correct | **not started** | no retries, no rewinds, no `corrections.json`. The ingest matrix quantifies the cost of that gap: **3 of the 9 promote fixtures are unreachable** without retries |
+| 4. Idempotent | **not established** | `next` is safe to call twice, but re-invoking `finalize`, and resume/`carry_over`, are unproven |
+| 5. The win is real and measured | **not started** | no line-delta, no round-trip count, no token estimate — so no go/no-go |
+
+### Where this plan was not followed, and why
+
+- **Q2's oracle changed.** §6.2 specifies *"byte-diff against a golden tree"*. That was the
+  wrong oracle and the spike says so: the golden fixture is deliberately minimal — it exercises
+  the scorer's tolerant reader and omits `tier_input`, `stability_gate`, `provenance` and the
+  `run_manifest` run-state floor — so matching it byte-for-byte would prove the controller is
+  as minimal as a test stub, not that it is a conformant writer. `verify-canonical.js`
+  validates against the **writer** contract in `references/artifact-layout.md` instead, and
+  measures the gap: the golden tree carries **66 violations** of the floor a real orchestrator
+  must emit. Recording that gap is a better answer to Q2 than a diff that would have been green
+  for the wrong reason.
+- **Deliverable §5.2 (`spike/adws-controller/fixtures/`) was not produced.** The drivers read
+  `parity/execution-report-fixtures/` directly, on throwaway copies. A private fixture set would
+  have been a second corpus to keep in sync with the real one, and the whole value of the
+  compatibility question is that it is asked against the corpus the shipped suite actually uses.
+- **All seven phases are implemented, though §4 scoped the slice to plan/build/test.** This was
+  not scope creep for its own sake: `pipeline_completion`, `phase_gates` and the FR-12 tier
+  re-key at the review gate cannot be exercised on a three-phase tree, and the counterexample
+  that refuted round two lives precisely in those gates. The out-of-scope items that *stayed*
+  out are the expensive ones — consensus and the grader are still read as evidence, never run.
+
+### The kill-criteria have not fired
+
+§9 names two conditions that would kill §6.2. Neither has: the evidence schema was matched
+**without editing `execution-report.js`** (the controller `require()`s it and consults its
+exported `buildReport()` as a read-only oracle), and the handshake cost is unmeasured rather
+than adverse. §9's "spike creep" risk is the live one — the answer to it is that steps 2–4 are
+still the whole remaining scope, and step 3 (one live dispatch) is what Q1 and Q5 need.
+
+### Open before any step-2 claim
+
+Carried from `FINDINGS.md`: the terminal `failure_reason` vocabulary flattens `ADVOCATE_DISSENT`
+and evidence-integrity breaches — which `execution-report.js` itself classes as non-retriable —
+into a blanket `PHASE_GATE_FAILURE`. Fixing it needs a classification the controller can
+*source* from the scorer, not re-derive by parsing gate detail strings, which is the
+partial-reimplementation trap that produced the divergence round two was built to fix.
