@@ -4,10 +4,21 @@ Tracks [docs/SPIKE_CONTROLLER_PLAN.md](../../docs/SPIKE_CONTROLLER_PLAN.md). Thr
 the findings are the deliverable. **No shipped code was modified** — `adws-pipeline/` and
 `parity/` are untouched; everything here lives under `spike/`.
 
-> **Status: step 1 is closed (three adversarial rounds) and step 2 — retries and rewinds —
-> is implemented and asserted.** Q3 and Q4 are answered; Q1 and Q5 are untouched, and Q5 is
-> the one that decides §6.2. Step 2 also breaks a promise step 1 could keep, and the
-> "What step 2 costs" section states it before anything else.
+> **Status: steps 1, 2 and 3 are implemented.** Q1 is now answered — **one real
+> `adws-planner` subagent has been dispatched through the handshake and its evidence gated**
+> — along with Q2, Q3 and Q4. **Q5 still decides §6.2 and is only half measured**: the
+> round-trip count is now a real number, the line-delta and the token-behaviour half are not.
+>
+> **The live dispatch found two defects in twenty minutes, and both were in code two
+> adversarial rounds had already read.** Both had the same cause: the controller and the
+> phase agent write the SAME FILE by instruction, and the controller was reading that file's
+> existence as its own act. See findings 18 and 19 — one of them meant a live run went
+> terminal with the planner's output unread; the other meant an agent could grant itself its
+> own gate and the controller would dispatch the next phase against it.
+>
+> Step 2 broke a promise step 1 could keep, and the "What step 2 costs" section still states
+> it before anything else. **Step 3 does not repeat that**: the one gate it adds is
+> single-sourced from the scorer.
 >
 > **Step 1 status: the four fixes the second adversarial review required are implemented and
 > verified.** The counterexample that refuted the previous version is now a standing
@@ -499,6 +510,219 @@ modes: DRIVEN=10  HALTED=2  REFUSED=13
   halted fixture instead of ten, only because the other nine stop earlier for a different
   reason.
 
+## STEP 3 — one live `adws-planner` dispatch
+
+### Q1 — the handshake works in-harness: **yes**
+
+One real `adws-planner` subagent, dispatched through the Agent tool at the tier the
+controller advertised, writing into the attempt directory the controller named, gated by
+`record` with no fixture behind it.
+
+| | |
+|---|---|
+| contract | [`fixtures/live_contract.json`](fixtures/live_contract.json) — a real open item in this repo (the terminal `failure_reason` severity split, step-1 finding 4) |
+| worktree | a detached `git worktree` of `ba2f9d2`, so the live agent could not reach the working tree; discarded after the run |
+| tier | `opus`, from `tier_input: { source: "contract.risk_level", value: "medium" }` |
+| gate | **`pass`** — `task-normalize` `rubric_result: pass`, `delta_r` 0.1883 |
+| tree | **CANONICAL OK** against the writer floor |
+| evidence | archived at [`fixtures/live_plan_attempt/`](fixtures/live_plan_attempt/) and replayed by `run-step3.sh` |
+
+The planner produced a genuine plan — three files, all inside `policy.allowed_paths`, four
+criteria mapped — and returned three findings about the repo that no fixture would have
+produced, including a pre-existing doc/code disagreement about `PR_DRIFT_SENTINEL_BLOCK`.
+That is worth stating because it is the part a mock cannot simulate: the dispatch did real
+work against real files, and the handshake carried it.
+
+**What Q1 actually required, and did not have.** Steps 1 and 2 answered everything they
+answered against `record --from <dir>` — a replay of evidence someone else wrote. That is
+the right oracle for compatibility and budgets, and it cannot answer Q1, because a replay
+never exercises the two things a live dispatch needs:
+
+1. **A payload the model can act on.** `next` carried `attempt_dir`, `model_tier` and
+   `inputs`. SKILL.md step 1 requires a dispatcher to hand an agent five things: the contract
+   path, the worktree path, the attempt directory, the previous phase's `phase_output.json`,
+   and an absolute `scratch_root` (SC-13/F-77). Three were missing. Anything the model has to
+   re-derive from the tree is state the handshake failed to move, which is the whole §6.2
+   claim. `next` now emits all five, `run-step3.sh` asserts each one **exists at the moment
+   it is advertised**, and `init` grew `--worktree` so `worktree_path` is real.
+2. **A gate with no fixture behind it.** A replayed plan attempt arrives with its validator
+   trace already recorded. A live one does not. So `record` now runs `task-normalize` — the
+   plan gate's own validator, and the second of nine this controller runs.
+
+### The one gate step 3 adds is single-sourced — unlike step 2's
+
+Step 2's cost was owning a gate the scorer is silent on. Step 3 does not repeat it. The
+`task-normalize` trace is written **before** `phaseGate()` runs, so the scorer's own
+`skills_clean` evaluator is what turns a validator `fail` into a gate failure. There is no
+comparison in controller code to diverge.
+
+`run-step3.sh` S4 asserts this with a negative control that is not contrived: the **golden
+fixture's own contract**, which `task-normalize` scores `fail` (it has no
+`requested_change`). Same live evidence, different contract → `gate_result: fail`, and the
+recorded reason names `skills_clean`, the scorer's gate, rather than any controller check.
+
+### The live/replay split, and why it is keyed to the caller
+
+`--from` now declares which mode a `record` call is in, and it is the **only** thing the
+split keys off. Live mode runs the validator; replay mode ingests the trace the fixture
+recorded, exactly as it already ingests that fixture's consensus and grader files.
+
+That is keyed to **who authored the attempt** — a fact the caller states on the command
+line — and never to how the evidence looks. The distinction is the one step 2 had to learn
+twice: a reader that relaxes because the evidence in front of it looks thin is how the golden
+fixtures came to violate the writer floor 66 times with nothing noticing.
+
+### New findings from step 3
+
+**16. Every one of the 25 corpus fixtures records a plan verdict its own validator refutes —
+and the check built to catch that is inert against all of them.**
+
+Running `task-normalize` on each fixture's contract, which is what the recorded trace claims
+to be a transcription of:
+
+| | count |
+|---|---|
+| fixtures surveyed | 25 |
+| whose contract `task-normalize` scores **`fail`** | **25** |
+| recording `rubric_result: "pass"` with **no `output` key** | 21 |
+| recording no plan trace at all | 4 |
+
+Not one recorded verdict is reproducible. `promote_clean` — the tree this spike has driven
+to PROMOTE since step 1 — ships `plan-coherence: pass` over a contract whose required
+`requested_change` field is absent, which the validator scores `fail` with `synthetic_risk:
+high`.
+
+SC-8/F-55 exists precisely for this: a `skill_trace.json` "WRAPS the validator CLI's stdout —
+its `rubric_result` must be exactly what the validator printed, which `output` also carries",
+and the scorer fails `skills_clean` on a disagreement. The check is a **tolerant reader**:
+"Absent or unrecognized `output.rubric_result` (older traces, crashed validators) leaves the
+wrapper untouched." Every corpus trace omits `output`. So the fixtures predate the field that
+would convict them, and the mismatch detector — including the four fixtures built *specifically*
+to test mismatch detection — cannot see the largest mismatch in the corpus.
+
+**This does not mean the corpus is wrong to score as it does.** These are scorer fixtures:
+they exercise `execution-report.js`'s reading of a trace, and for that purpose a hand-authored
+`pass` is a legitimate stimulus. It means something narrower and more useful: **the corpus
+cannot be used as evidence that a real pipeline run's plan gate ever passed**, and any
+controller that recomputes a validator instead of ingesting its trace will disagree with all
+25 of them. That is why `record --from` does not recompute. Asserted in `run-step3.sh` S7.
+
+**17. The plan gate has the same silence as the test gate, one phase earlier — and closing it
+would reject the entire corpus.**
+
+`phase-gates.md` states the plan gate as "Plan written with **per-criterion file-change
+proposal**; validator not `fail`". The validator half is real now. The first half is not
+evaluated by anything: `pipeline_completion` checks only that `phase_output.json` is
+*readable*, and nothing reads `file_change_proposal` or `criteria_map`.
+
+Zero of the 25 corpus plan outputs carry either field — they carry `{"plan": {"steps": [...],
+"coherence_score": 0.94}}`, a shape `adws-planner.md` does not describe. So a controller that
+enforces the documented exit criterion rejects the whole recorded corpus.
+
+Deciding which of the two disagreeing sources is the contract — the reference documents or
+the recorded evidence — is not a spike-local call, and step 2's `test_gate_scope` precedent
+says what to do meanwhile: make the reduced gate **loud** rather than inferable. `planLayer2`
+therefore covers only what is decidable without picking a side — `planning_blocked: true`, the
+planner's own explicit refusal, which nothing in the scorer reads and which previously gated
+`pass` — and every plan handshake message reports
+`plan_gate_scope: "refusal-and-validator"`. `run-step3.sh` S6 asserts the refusal **and**
+asserts the limit: a plan output with no `file_change_proposal` still passes, recorded as a
+DECLARED LIMIT so it cannot be quietly forgotten.
+
+The absence of a declared block is not the presence of a plan. Saying so in the gate's own
+scope string is the mitigation; it is not a fix.
+
+**18. The live dispatch went TERMINAL before `record` ever ran — because the agent writes the
+file the controller used as its own bookkeeping.**
+
+`record` refused with `the job is at 'terminal'`, on a tree where the planner had just
+written a perfectly good plan. `expectedNext` had read `plan/attempt_1/phase_manifest.json`,
+found `gate_result: null`, and taken the `undecided is not a verdict` branch →
+`QUARANTINE`.
+
+The manifest was the **agent's**. `adws-planner.md` line 21 instructs it: "write
+`phase_manifest.json` per `references/artifact-layout.md` — write `"gate_result": null`; the
+gate decision is the ORCHESTRATOR'S designated post-hoc field, never yours." The agent did
+exactly as told.
+
+The controller had used file **presence** as its marker for "this attempt has been recorded",
+and that held for two entire steps for a reason worth naming: `cpDir`'s `NEVER_INGEST` set
+refuses to ingest a fixture's `phase_manifest.json`, so in a *replayed* attempt the only
+manifest that ever existed was the one the controller wrote. The mock path structurally
+could not produce this state. **Two adversarial rounds read this code and neither could have
+found it, because the defect only exists when a real agent writes a real file.**
+
+**19. Its mirror image is worse: an agent could grant itself its own gate.**
+
+Found while writing the regression test for 18. An agent that writes `gate_result: "pass"`
+into its own manifest — same file, same instruction, one different value — was believed:
+`next` walked past the phase and said *dispatch `build/attempt_1`*. `record` would have
+refused the plan attempt, but an orchestrator asking `next` what to do would have dispatched
+the **builder** against a plan gate the planner granted itself.
+
+The controller and the agent write the same file by instruction, so nothing about the file's
+existence distinguishes them. There is one discriminator in its **content**: `provenance` is
+the orchestrator's to record (SKILL.md step 1, SC-3 B1/F-17 — `started_at`, `completed_at`,
+the derived `wall_clock_s`, `agent` and `model_tier_requested` are MANDATORY and come from a
+live `date -u`), and `record` writes it beside every gate decision it makes, in replay mode
+as well as live. So in any tree this controller drove, a decided gate and a complete
+provenance block travel together. `attemptRecorded()` requires both.
+
+**This is a discriminator, not a proof, and it should not be read as one.** An agent that
+forged a complete provenance block would be indistinguishable, and no rearrangement of these
+files fixes that — the only real answer is a decision record the agent contracts never
+mention, which is a change to the shipped artifact layout and not a spike-local call. **This
+is the second question step 3 raises FOR the skill** (the first being F-76's row identity):
+the orchestrator's designated field lives in a file it has told the agent to write.
+
+**20. `next` advertised an attempt directory that did not exist.**
+
+SKILL.md step 1: hand the agent "its attempt directory `artifacts/{jobId}/{phase}/attempt_{n}/`
+(**create it first**)". `next` never did — `cpDir` `mkdir -p`s on the way in, so the mocked
+handshake advertised a path that only came into being at `record`. A live agent handed a
+non-existent directory either creates it (silently taking on an orchestrator's job) or fails.
+Now created at dispatch, which also makes an attempt whose dispatch *died* visible to
+`expectedNext` — a state it already knew how to handle and had never been able to reach.
+`run-step3.sh` S1 asserts every advertised path exists when advertised.
+
+**21. Two honest durations, and the controller records the right one.**
+
+The agent's own `phase_manifest.json` reports `07:08:50Z → 07:22:21Z` (811 s). The
+controller's reports `07:08:17Z → 07:24:23Z` (966 s). Neither is wrong: the agent times
+itself, the orchestrator times the dispatch — from the stamp `next` took when it handed the
+phase off, to `record`. The 155 s difference is orchestration latency the agent cannot see
+and the run genuinely spent. `provenance.started_at` is the dispatch stamp because SKILL.md
+requires a live clock **at dispatch**, which is a fact only the dispatcher holds. Worth
+recording because a reader comparing the two files will otherwise read it as a discrepancy.
+
+### Q5 — half measured, and the half that is measured passes
+
+§6 Q5 is two claims. The round-trip half is now a real number; the token/line half is not.
+
+**Round trips: 2 model turns per phase in steady state**, against the plan's "≤ ~2 model
+round-trips/phase" bar. The loop is `next` → dispatch → `record`, three tool calls, but
+`record` batches with the following phase's `next` in one turn, so a steady-state phase costs
+one turn to dispatch and one turn to record-and-advance. Plus one turn for `init` and one for
+`finalize` per job.
+
+**Marginal payload cost, measured on the live run:**
+
+| message | bytes |
+|---|---|
+| `init` | 173 |
+| `next` (plan dispatch) | 740 |
+| `record` (plan) | 400 |
+
+≈ 1.1 KB per phase, ~300 tokens. The planner dispatch it carried cost **170,249 tokens**. So
+the handshake is not a token regression *at the margin* — it is ~0.2% of the work it
+sequences.
+
+**That is not Q5.** Q5 asks whether "X lines of SKILL.md + phase-gates prose are replaced by
+Y lines of controller code + Z lines of thin interface" — a line-delta nobody has counted —
+and whether the model's *per-phase reasoning* shrinks when it stops hand-executing counters.
+The payload measurement bounds one term and says nothing about either of those. **Step 4 is
+still the deciding step, and it is still not done.**
+
 ## Canonical conformance — the writer floor, not the golden
 
 The plan asked for a byte-diff against a golden tree
@@ -550,11 +774,26 @@ resolve in one direction or the other.
 - The three step-1 matrix LIMITs are gone, and `retry` — the corpus's own retry-ladder
   fixture — now replays end to end.
 
+**Closed by step 3:**
+
+- **Q1 — the handshake works in-harness: yes.** One live `adws-planner` dispatch, at the
+  advertised tier, into the advertised directory, gated by a validator the controller really
+  ran, on a tree that is CANONICAL OK. The evidence is archived and replayed by
+  `run-step3.sh` so the result is re-checkable without spending another dispatch.
+- The dispatch payload carries all five things SKILL.md requires a dispatcher to hand an
+  agent, and every advertised path exists when advertised.
+- The plan gate's validator runs, and its verdict reaches the gate **through the scorer's own
+  `skills_clean` evaluator** — no controller-side comparison, unlike step 2's test gate.
+
 **Explicitly not established:**
 
-- **Live-dispatch handshake cost (step 3 / Q1 and Q5).** Every dispatch is still MOCKED. Q5
-  is the go/no-go and nothing in step 2 moves it: no round-trip count, no token estimate, no
-  SKILL.md line-delta.
+- **Q5, the go/no-go.** Half measured. Round trips are 2/phase in steady state and the
+  handshake payload is ~1.1 KB (~0.2% of the dispatch it carries) — both inside the bar. The
+  **line-delta and the token-behaviour half are not measured at all**, and they are what §6.2
+  turns on. Step 4 still decides.
+- **Six of seven phases have never run live.** One plan dispatch is one plan dispatch. It says
+  nothing about the consensus pair, the shipper, or any phase whose dispatch payload carries
+  more than a contract and a worktree.
 - **The other four rewind families.** Only test→build is implemented. The two ROUTE-DIFF rows
   are the measured cost of that: F-37 (operator-directed repair) and F-46 (Critic-fail at the
   review gate) reach the same verdict by a route the controller cannot take.
@@ -565,6 +804,18 @@ resolve in one direction or the other.
 - **The terminal `failure_reason` vocabulary** (step-1 finding 4) — unchanged and still open:
   a halted job should not flatten `ADVOCATE_DISSENT` or an evidence-integrity breach into a
   retriable reason.
+
+**Step 3's lesson is about oracles, not about care.** Two defects (18, 19), both fail-modes
+of the same root, both in code two adversarial rounds had already read closely, both found
+within twenty minutes of a real subagent writing a real file. Neither round could have found
+them: `NEVER_INGEST` means a replayed attempt structurally cannot contain an agent-written
+`phase_manifest.json`, so the state that breaks the oracle did not exist until step 3
+created it. The mock was not a weak test of that behaviour — it was **no test of it at all**,
+and nothing in the mocked suite could have revealed which.
+
+That generalises past this spike, and it is the argument for step 3 having been worth its
+cost even though Q5 remains open: *the six phases that have still never run live are in
+exactly the position the plan phase was in yesterday.*
 
 **Three review rounds on step 2, and the score is not flattering.** CodeRabbit found the
 F-76 row-identity hole; the independent verification round found two fail-OPEN defects in the
@@ -588,9 +839,33 @@ bash spike/adws-controller/run-step1.sh          # clean: PROMOTE / exit 0, CANO
 bash spike/adws-controller/run-step1-negative.sh # failing critic -> retry ladder -> RETRY / exit 1
 bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gate mutation, asserted
 bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
+bash spike/adws-controller/run-step3.sh          # step 3: the live dispatch's evidence, replayed
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance
 ```
 
-All five exit 0. The committed fixtures are read-only throughout (`git status` clean under
+All six exit 0. The committed fixtures are read-only throughout (`git status` clean under
 `parity/` and `adws-pipeline/` after a full run).
+
+The one thing on that list that is **not** reproducible is the live dispatch itself — it cost
+a real subagent run. `run-step3.sh` replays its archived evidence
+([`fixtures/live_plan_attempt/`](fixtures/live_plan_attempt/), provenance in that README)
+through the same live-mode code path and asserts the same gate. To do it for real again:
+
+```bash
+node spike/adws-controller/adws-run.js init spike/adws-controller/fixtures/live_contract.json \
+  "$EVIDENCE_ROOT" --worktree "$(git worktree add --detach "$WT" HEAD >/dev/null && echo "$WT")"
+node spike/adws-controller/adws-run.js next "$JOB_DIR"   # -> dispatch adws-planner from this payload
+node spike/adws-controller/adws-run.js record "$JOB_DIR" plan 1   # no --from: LIVE
+```
+
+The single check worth re-running against the shipped corpus, which needs no dispatch at all
+and is the sharpest thing step 3 found (finding 16):
+
+```bash
+node -e 'const t=require("./parity/execution-report-fixtures/promote_clean/artifacts/job-2f8c1a/task_contract_snapshot.json").task;
+process.stdout.write(JSON.stringify({title:t.title,requested_change:t.requested_change,problem_statement:t.problem_statement,
+acceptance_criteria:t.acceptance_criteria||[],constraints:t.constraints||[],file_hints:t.file_hints||[]}))' \
+  | node adws-pipeline/scripts/validators/task-normalize.js -
+# rubric_result: "fail" — against a recorded plan-coherence trace of "pass"
+```
