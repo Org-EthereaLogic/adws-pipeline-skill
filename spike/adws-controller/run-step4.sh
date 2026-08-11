@@ -2,7 +2,7 @@
 # STEP 4 driver — the Q5 line-delta and the go/no-go. THROWAWAY.
 #
 # Step 4 is a MEASUREMENT, so this driver's job is to make the measurement checkable rather
-# than asserted. It does three things:
+# than asserted. It does five things:
 #
 #   S1  drives one complete seven-phase run and measures the handshake by BYTE, so the
 #       "is the handshake cheap" half of Q5 rests on a full run rather than on step 3's
@@ -14,6 +14,7 @@
 #       headroom between them. If a later edit makes the handshake expensive or the thin
 #       interface fat, THESE assertions fail — the verdict is not a sentence in a document.
 #   S4  syntax + NUL sweep over the spike tree (finding 15; `make ci` does not see spike/).
+#   S5  the freshness stamp regression — a same-length controller edit must read STALE.
 #
 # What this driver does NOT establish is stated in FINDINGS.md finding 25: it measures the
 # INSTRUCTION mass the orchestrator loads, never the reasoning it spends. That half of Q5
@@ -84,20 +85,21 @@ assert "run_manifest final_status" \
 
 BYTES="$(wc -c < "$LOG" | tr -d ' ')"
 MSGS="$(cat "$COUNT")"
-# Model TURNS are the §9 unit, and they are not the message count: `record` batches into the
-# following `next` in one turn, so a phase costs next+dispatch+record = 2 turns, plus init
-# and finalize. This is the same accounting step 3 measured on the plan phase alone.
+# Model TURNS are the §9 unit, and they are not the message count. THIS VALUE IS INFERRED,
+# not measured: the run above is driven from a shell over canned phase outputs, so no model
+# was ever in the loop. The accounting comes from step 3's LIVE plan dispatch — `record`
+# batches into the following `next` in one turn, so a phase costs next+dispatch+record = 2
+# turns, plus init and finalize. An audit was right to flag the first cut for reporting it
+# beside the measured figures without saying which was which.
 TURNS=$(( 7 * 2 + 2 ))
-# `controller_bytes` stamps the adws-run.js this was measured against. measure-delta.js
+# `controller_sha256` stamps the adws-run.js this was measured against. measure-delta.js
 # compares it and reports the handshake as STALE rather than quoting it if the controller has
-# changed since — a committed measurement that a later edit can silently invalidate is the
-# exact failure mode findings 12-23 keep naming.
-node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({total_bytes:+process.argv[2],messages:+process.argv[3],phases:7,model_turns:+process.argv[4],controller_bytes:fs.statSync(process.argv[5]).size,measured_over:"one complete seven-phase green run, all controller stdout concatenated"},null,2)+"\n")' \
+# changed since. This was `controller_bytes` until S5 below — see finding 27.
+node -e 'const fs=require("fs");fs.writeFileSync(process.argv[1],JSON.stringify({total_bytes:+process.argv[2],messages:+process.argv[3],phases:7,model_turns:+process.argv[4],controller_sha256:require("crypto").createHash("sha256").update(fs.readFileSync(process.argv[5])).digest("hex"),measured_over:"one complete seven-phase green run, all controller stdout concatenated"},null,2)+"\n")' \
   "$HANDSHAKE" "$BYTES" "$MSGS" "$TURNS" "$CTRL"
-printf '  handshake: %s bytes over %s controller messages, %s model turns\n' "$BYTES" "$MSGS" "$TURNS"
+printf '  handshake: %s bytes over %s controller messages (MEASURED); %s model turns (INFERRED)\n' "$BYTES" "$MSGS" "$TURNS"
 assert "one init + 7*(next+record) + finalize"  "$MSGS" "16"
-assert "model turns per phase"                  "$(( (TURNS - 2) / 7 ))" "2"
-assert_le "turns per phase within the plan's bar of ~2" "$(( (TURNS - 2) / 7 ))" "2"
+assert_le "inferred turns per phase within the plan's bar of ~2" "$(( (TURNS - 2) / 7 ))" "2"
 
 echo
 echo "### S2 — the measurement's structural invariants"
@@ -124,15 +126,19 @@ AFTER="$(printf '%s' "$M" | jget context_after_bytes)"
 FLOOR_B="$(printf '%s' "$M" | jget context_floor_before_bytes)"
 FLOOR_A="$(printf '%s' "$M" | jget context_floor_after_bytes)"
 BE="$(printf '%s' "$M" | jget breakeven_handshake_bytes_per_run)"
-printf '  orchestrator instruction bytes  %s -> %s   (floor %s -> %s)\n' "$BEFORE" "$AFTER" "$FLOOR_B" "$FLOOR_A"
-# A reduction on BOTH readings — the realistic one and the one where the model never opens a
-# reference file. If either flips, the go/no-go flips with it.
-assert_ge "realistic reading is a reduction"   "$(( BEFORE - AFTER ))"       "1"
-assert_ge "conservative floor is a reduction"  "$(( FLOOR_B - FLOOR_A ))"    "1"
-# §9's kill criterion, as arithmetic: the handshake must stay far under the break-even. 5x is
-# the margin below which this stops being a decision and starts being a coin flip.
-assert_ge "handshake headroom against break-even is >= 5x" "$(( BE / BYTES ))" "5"
-assert_ge "reduction is at least half the before-mass"     "$(( (BEFORE - AFTER) * 2 / BEFORE ))" "1"
+BE_C="$(printf '%s' "$M" | jget breakeven_handshake_bytes_per_run_conservative)"
+printf '  full-document  %s -> %s (+hs %s)\n' "$BEFORE" "$AFTER" "$(( AFTER + BYTES ))"
+printf '  no-reference   %s -> %s (+hs %s)\n' "$FLOOR_B" "$FLOOR_A" "$(( FLOOR_A + BYTES ))"
+# BOTH scenarios must be a reduction WITH the handshake included. An earlier cut asserted the
+# optimistic scenario's headroom beside the conservative scenario's reduction, which flattered
+# both; an independent audit caught it. The honest bracket is asserted at both ends.
+assert_ge "full-document reading is a reduction, handshake included"  "$(( BEFORE - AFTER - BYTES ))"   "1"
+assert_ge "no-reference reading is a reduction, handshake included"   "$(( FLOOR_B - FLOOR_A - BYTES ))" "1"
+# §9's kill criterion, as arithmetic, at the PESSIMISTIC end. 2x is the floor below which the
+# margin is inside the noise of §9's own "~2-3 round trips" bar and this stops being a
+# decision. The optimistic end is reported, never relied on.
+assert_ge "worst-case handshake headroom is >= 2x" "$(( BE_C / BYTES ))" "2"
+assert_ge "best-case handshake headroom is >= 5x"  "$(( BE / BYTES ))"   "5"
 # The thin interface has to actually carry the residue. This is a PRESENCE check, not a
 # sufficiency proof — it cannot show the sketch says enough, only that it does not silently
 # drop a named human-decision boundary. Sufficiency is finding 24's declared limit.
@@ -165,6 +171,35 @@ NUL="$(node -e 'const fs=require("fs"),p=require("path");const d=process.argv[1]
 let bad=[];for(const f of fs.readdirSync(d)){const s=p.join(d,f);if(fs.statSync(s).isFile()&&fs.readFileSync(s).includes(0))bad.push(f)}
 process.stdout.write(String(bad.length))' "$REPO/spike/adws-controller")"
 assert "no NUL bytes in the spike tree" "$NUL" "0"
+
+echo
+echo "### S5 — the freshness stamp is a digest, not a size (finding 27 regression)"
+# The first cut compared FILE SIZE. CodeRabbit and an independent audit each found the hole
+# the same day, with the same probe: `action: 'finalize'` -> `action: 'terminal'` is the same
+# LENGTH, so the size matched, the check passed, and a stale handshake was reported for a
+# controller that no longer produced it. This asserts the probe now fails closed.
+BAK="$SCRATCH/adws-run.js.bak"
+cp "$CTRL" "$BAK"
+trap 'cp "$BAK" "$CTRL" 2>/dev/null' EXIT   # never leave a mutated controller behind
+sed "s/action: 'finalize', note:/action: 'terminal', note:/" "$BAK" > "$CTRL"
+assert "the probe actually changed the controller" \
+  "$(cmp -s "$CTRL" "$BAK" && echo same || echo differs)" "differs"
+assert "and did so at IDENTICAL byte length (the old check's blind spot)" \
+  "$(wc -c < "$CTRL" | tr -d ' ')" "$(wc -c < "$BAK" | tr -d ' ')"
+assert "measure-delta reports STALE on a same-length edit" \
+  "$(node "$MEASURE" | grep -c 'handshake volume: STALE')" "1"
+assert "and quotes no handshake figure while stale" \
+  "$(node "$MEASURE" --json | jget handshake)" "null"
+cp "$BAK" "$CTRL"; trap - EXIT
+assert "controller restored byte-for-byte" \
+  "$(cmp -s "$CTRL" "$BAK" && echo same || echo differs)" "same"
+# An absent digest is stale too — an old artifact must not read as a fresh one.
+cp "$HANDSHAKE" "$SCRATCH/hs.bak"
+node -e 'const fs=require("fs");const p=process.argv[1];const j=JSON.parse(fs.readFileSync(p));delete j.controller_sha256;fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n")' "$HANDSHAKE"
+assert "a handshake record with NO digest is stale, not fresh" \
+  "$(node "$MEASURE" | grep -c 'handshake volume: STALE')" "1"
+cp "$SCRATCH/hs.bak" "$HANDSHAKE"
+assert "handshake record restored" "$(node "$MEASURE" --json | jget handshake.total_bytes)" "$BYTES"
 
 echo
 if [ "$FAILS" -eq 0 ]; then echo "STEP 4 PASS — $PASSES assertions"; exit 0

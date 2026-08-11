@@ -824,7 +824,7 @@ Step 4 is a measurement, so the work was to make it checkable rather than assert
   smaller X. Its coverage table is anchored the same way: each row names a regex that must
   still match `adws-run.js`.
 - [`run-step4.sh`](run-step4.sh) drives one complete seven-phase run to measure the handshake
-  by byte, then asserts the go/no-go's own arithmetic. **34 assertions.** If a later edit
+  by byte, then asserts the go/no-go's own arithmetic. **40 assertions.** If a later edit
   makes the handshake expensive or the thin interface fat, those assertions fail — the
   verdict is not a sentence in a document.
 
@@ -840,15 +840,33 @@ with the model", so X is a floor. It is published to be argued with.
 | — of the remainder: agent-facing (belongs in `.claude/agents/`, replaced by nothing) | 36 |
 | — of the remainder: kept by the model (intake, dispatch, human decisions, relay) | 307 |
 | **Y** — controller code as it stands, covering 11 of 20 rule families | **1,526** |
-| **Y** — floor on the finished controller, at the realized 1.31 code-lines-per-prose-line | **1,704** |
+| **Y** — finished controller, LINEAR PROJECTION at the realized 1.31 code-lines-per-prose-line | **~1,704** |
 | **Z** — the thin interface ([`thin-skill-sketch.md`](thin-skill-sketch.md)) | **151** |
 
 Crediting every SPLIT block to the controller — the optimistic reading — moves X to 1,542 of
 1,643 (93.9%). The result does not turn on where the line is drawn.
 
-**So the line delta is a net INCREASE.** 1,643 lines of prose become ~1,704 lines of code
-plus 151 lines of interface plus the 343 lines that stay. Anyone selling §6.2 as "less to
-maintain" is selling the wrong thing, and Q5 as written invites exactly that sale.
+**~1,704 is a projection, not a floor.** It assumes per-family code cost scales with the
+prose each family owns. Two things push it down (shared prose blocks are credited to the
+implemented side; the absent set holds the two most branching families, ship modes and
+resume) and one pushes it up (fixed plumbing — io helpers, CLI, argument parsing — is already
+paid for and does not recur). Which dominates is unknown. It was labelled a "floor" until an
+audit rejected the label, correctly.
+
+**So the line delta is a net INCREASE:**
+
+```
+before   1,643 lines of orchestrator prose
+after    1,704 controller (projected) + 151 interface = 1,855
+         plus 36 agent-facing lines that relocate into .claude/agents/*.md
+net      +212 lines (+248 counting the relocated agent lines)
+```
+
+The 307 KEPT+SPLIT lines are **inside** the 151-line interface, not additional to it. An
+earlier draft of this section wrote "1,704 + 151 + the 343 lines that stay" and overstated
+the increase by 307 lines; the same audit caught that. Anyone selling §6.2 as "less to
+maintain" is still selling the wrong thing — Q5 as written invites exactly that sale — but
+the increase is ~212 lines, not ~555.
 
 ### Q5, second half — the measurement that actually decides
 
@@ -857,65 +875,87 @@ context. Prose is loaded and interpreted **every run**. The two sides of Q5 are 
 commensurable as line counts, and the comparison that bears on §9's kill criterion is
 orchestrator instruction volume per run:
 
-| | bytes |
-|---|---|
-| before — the five documents `SKILL.md`'s procedure directs the orchestrator into | 124,008 |
-| after — the thin interface + `task-contract.md` (intake is still model work) | 17,206 |
-| **reduction** | **−106,802 → 13.9% of before** |
-| conservative floor — `SKILL.md` alone vs the sketch alone, if the model never opened a reference | 30,012 → 9,362 = **31.2%** |
-| handshake added back — one complete seven-phase run, every controller message concatenated | 8,738 |
-| **net** | **25,944 = 20.9% of before** |
+**Nobody has instrumented a real run's context**, so the honest output is a bracket, not a
+point — and the handshake is added back on **both** ends of it:
 
-Token estimates would divide both sides by the same constant, so these ratios are
-independent of any tokenizer. Bytes are reported because bytes are what was measured.
+| scenario | before | after | + handshake | of before | headroom |
+|---|---|---|---|---|---|
+| **full-document** — each reference read once | 124,008 | 17,206 | 25,944 | **20.9%** | **12.22×** |
+| **no-reference** — `SKILL.md` only, ever | 30,012 | 9,362 | 18,100 | **60.3%** | **2.36×** |
 
-**"Would the orchestrator really load all five?"** is the obvious attack on the before
-figure, and it is answerable rather than arguable. `SKILL.md` directs the reader into each
-one **by name**: `phase-gates.md` ×8, `artifact-layout.md` ×3, `task-contract.md` ×2,
+"Headroom" is how many times larger the handshake would have to be to erase that scenario's
+reduction — §9's kill criterion as arithmetic. **A reduction on both readings**, but the
+margin ranges from comfortable to thin, and the true per-run context was not observed.
+
+An earlier draft published the full-document scenario's 12.2× beside the no-reference
+scenario's 31.2%, which took the favourable half of each; an independent audit caught it.
+The correct pessimistic figure is 60.3% at 2.36×, and that end of the bracket is what the
+verdict has to survive.
+
+These are **bytes**. No tokenizer was run, and JSON and English prose do not share a
+bytes-per-token ratio, so they must not be read as token ratios. (An earlier draft claimed
+tokenizer-independence "because both sides divide by the same constant" — they do not.)
+
+**"Would the orchestrator really load all five?"** is the obvious attack on the 124,008, and
+it is not fully answerable. What can be shown: `SKILL.md` directs the reader into each one
+**by name** — `phase-gates.md` ×8, `artifact-layout.md` ×3, `task-contract.md` ×2,
 `validator-inputs.md` ×2 — at points spread across intake, the phase loop, ship and the
-terminal report, so a run that reaches all seven phases reaches all of them. `runtimes.md`
-and `troubleshooting.md` are conditional in **both** worlds and are excluded from both, so
-the comparison stays symmetric. And for a reader who rejects the count entirely, the floor
-row settles it: even if the model never opens a single reference, the reduction is 69%.
+terminal report. What cannot: that a directive is followed, or that a whole file enters
+context when it is. The shipped text says references are read "when needed, not all
+upfront", so **124,008 is a full-document scenario, not a measurement of per-run context.**
+That is why both ends of the bracket are published and why the verdict is argued from the
+pessimistic one. `runtimes.md` and `troubleshooting.md` are conditional in both worlds and
+excluded from both, so the comparison stays symmetric.
 
 One thing the classification does **not** affect: the C/A boundary is invisible to this
 measurement. Whether a line is executed by the controller or belongs to a phase agent, it
 leaves the orchestrator's context either way. Only C-versus-K/S moves this number, which is
 why every borderline call was resolved toward K/S.
 
-**The kill criterion, as arithmetic.** §9 kills §6.2 if the handshake costs more than it
-saves. Break-even is 106,802 bytes per run — 15,257 per phase. Measured: 8,738 per run, 1,248
-per phase. **12.2× headroom**, at 2 model turns per phase (16 controller messages: `init` +
-7 × (`next` + `record`) + `finalize`), which is the plan's own "≤ ~2" bar met exactly.
+**The handshake: 8,738 bytes, 16 controller messages — measured. 2 model turns per phase —
+inferred.** The messages and bytes come from a real seven-phase run. The *turn* accounting
+does not: step 4 drove that run from a shell over canned phase outputs, so **no model was in
+the loop**, and 2/phase is carried from step 3's live plan dispatch (`record` batching into
+the following `next`) rather than observed here. Break-even is 106,802 bytes per run on the
+full-document reading and 20,650 on the no-reference one.
 
-### The verdict: **GO**, with three conditions
+### The verdict: **GO** on the architecture, with four conditions
 
-§6.2 is viable. Both kill criteria are measured and neither fires: the evidence schema was
-matched without editing `execution-report.js`, and the handshake costs a twelfth of what it
-would need to cost to erase the win. The conditions are not hedges — each is a thing a reader
-could otherwise take from this document that it does not say.
+§6.2 is viable. Both §9 kill criteria are measured and neither fires on either reading: the
+evidence schema was matched without editing `execution-report.js`, and the handshake costs
+between a twelfth and a half of what it would need to cost to erase the reduction. The
+conditions are not hedges — each is a thing a reader could otherwise take from this document
+that it does not say.
 
-1. **The win is relocation, not reduction.** The repository gets bigger. What shrinks is the
-   instruction mass a probabilistic model must load and interpret per run, by ~86%. That is
-   the §6.1 "prose engine" problem and it is the only thing this measurement establishes.
-2. **A go on the architecture is not a clearance to skip live validation.** Six of seven
+1. **The win is relocation, not reduction.** The repository gets bigger by ~212 lines. What
+   shrinks is the instruction mass a probabilistic model must load and interpret per run —
+   by 79% on the full-document reading and **40% on the pessimistic one**. That is the §6.1
+   "prose engine" problem, and it is the only thing this measurement establishes.
+2. **The margin is a bracket, not a point: 2.36×–12.22×.** The verdict is argued from 2.36×,
+   because the true per-run context was never observed. §9 kills §6.2 above roughly 2–3 model
+   round trips per phase, so the pessimistic end sits close to the bar rather than far above
+   it.
+3. **A go on the architecture is not a clearance to skip live validation.** Six of seven
    phases have never run live, and both defects step 3 found were structurally unreachable
    from the mocked path. The nine unimplemented rule families are in exactly the position the
    plan phase was in before it ran.
-3. **Q5's reasoning half stays unmeasured.** It bounds the size of the win, not its sign —
-   see finding 25.
+4. **Q5's reasoning half stays unmeasured, and condition 2 makes it load-bearing.** With
+   12.2× headroom it would only have bounded the size of the win. At 2.36× a modest growth in
+   per-phase reasoning could consume the pessimistic margin, so the argument in finding 25 is
+   carrying more weight than an argument should. **Measure it before building the real
+   thing** — it is now the highest-value experiment left, ahead of any unimplemented family.
 
 ### New findings from step 4
 
 **Finding 23 — the plan's own success criterion asks for the wrong measurement, and it is
 the same error six earlier findings named.** Q5 says "X lines of prose are replaced by Y
-lines of code". Measured, that is 1,300 → ~1,704: a loss. The property that matters is what
-the model must interpret per run, and on that measure it is 124,008 → 17,206 bytes: a win by
-a factor of seven. Lines are a **proxy**; instruction mass is the property. Findings 12, 14,
-15, 18, 19 and 22 were each one error in a different costume — trusting a proxy for the
-property — and this is the seventh, sitting in the spike's own plan since it was written.
-The reason it matters here and not only rhetorically: a reader who takes Q5 literally reads
-this spike's own numbers as a **no-go**.
+lines of code". Measured, that is 1,643 → ~1,855: a loss of 212 lines. The property that
+matters is what the model must interpret per run, and on that measure it is a 40–79%
+reduction depending on the reading. Lines are a **proxy**; instruction mass is the property.
+Findings 12, 14, 15, 18, 19 and 22 were each one error in a different costume — trusting a
+proxy for the property — and this is the seventh, sitting in the spike's own plan since it
+was written. The reason it matters here and not only rhetorically: a reader who takes Q5
+literally reads this spike's own numbers as a **no-go**.
 
 **Finding 24 — the thin interface was written against a controller that does not exist, and
 the checkable half caught it.** The first cut of `thin-skill-sketch.md` had branches for
@@ -929,16 +969,23 @@ is still *named* is a presence check, not a sufficiency proof. **Nobody has run 
 orchestrator from this document.** Z is a measurement of the interface, not of a working
 orchestrator, and that is the single largest reason to distrust the 151.
 
-**Finding 25 — the second half of Q5 is not measurable inside the time-box, and it cannot
-flip the sign.** "Does the model's per-phase reasoning shrink once it stops hand-executing
-counters" needs two live runs of the same contract — one prose-orchestrated, one
-controller-orchestrated — compared on orchestrator-side tokens: ~14 subagent dispatches and
-two full seven-phase runs. Not done, and named here rather than estimated. What can be said
-without it: the controller **removes** decisions from the model (sequencing, budgets, tiers,
-gate computation, evidence writing) and adds none, so per-phase reasoning has no mechanism by
-which to grow. The one place it could is where the thin interface is thinner than the
-original on a KEPT block — the consensus briefing above all — and that is a **quality** risk,
-not a token risk. Magnitude unmeasured; sign safe.
+**Finding 25 — the second half of Q5 is not measurable inside the time-box, and the argument
+that it is safe is an argument, not a result.** "Does the model's per-phase reasoning shrink
+once it stops hand-executing counters" needs two live runs of the same contract — one
+prose-orchestrated, one controller-orchestrated — compared on orchestrator-side tokens: ~14
+subagent dispatches and two full seven-phase runs. Not done, and named here rather than
+estimated. The argument for it being safe: the controller **removes** decisions from the
+model (sequencing, budgets, tiers, gate computation, evidence writing) and adds none, so
+per-phase reasoning has no obvious mechanism by which to grow; the one place it could is
+where the thin interface is thinner than the original on a KEPT block — the consensus
+briefing above all — and that is a quality risk more than a token risk.
+
+**An earlier draft of this finding said the reasoning half "cannot flip the sign". That
+overstates it and an audit was right to reject it.** The mechanism argument is not a
+measurement, and at the pessimistic 2.36× margin it does not have the room the 12.2× figure
+appeared to give it. What the evidence supports is narrower: no mechanism for growth has been
+identified, and none was looked for empirically. Treat the sign as *unconfirmed at the
+pessimistic end*, not as established.
 
 **Finding 26 — one shipped reference document is 140 of 140 lines machine work.**
 `validator-inputs.md` is the only file in the classification with a unanimous verdict: every
@@ -947,6 +994,32 @@ read two of their outputs by name, and map three exit-code vocabularies. It cont
 judgment, no human decision, and nothing an agent needs. It is the cleanest single datum for
 §6.1's claim, because it is not an argument about a mixed document — it is an entire
 reference that exists **only** because the assembly it describes was never given to code.
+
+**Finding 27 — the freshness stamp compared file SIZE, which is a proxy for file content.
+That is finding 23's error, committed in the commit that named finding 23.** The
+`.step4-handshake.json` record carried `controller_bytes` and `measure-delta.js` compared it,
+described in its own commit message as making the measurement "self-invalidating". It was
+not. CodeRabbit and an independent audit each found the hole within a day of each other, with
+the same probe:
+
+```
+action: 'finalize'  ->  action: 'terminal'      # same length, byte-for-byte
+```
+
+Size unchanged at 88,913; the check passed; a stale 8,738 was reported for a controller that
+no longer produced it. Reproduced before fixing. It is now a SHA-256 comparison, an absent
+digest reads as stale rather than fresh, and `run-step4.sh` S5 runs that exact probe as a
+regression — asserting the mutation applied, that it preserved byte length, that STALE is
+reported, that no figure is quoted while stale, and that the controller is restored
+byte-for-byte afterwards.
+
+**Two things are worth keeping from this beyond the fix.** First: the pattern is not one a
+writer catches by resolving to be careful, because I wrote finding 23 and this defect in the
+same sitting. Second: **two independent reviewers found it independently, and neither was
+me.** That is the fourth consecutive round where the decisive catch came from outside — the
+live argument in [SIMPLIFICATION_ANALYSIS](../../docs/SIMPLIFICATION_ANALYSIS.md) for keeping
+the second independent look, now with a data point where the author had just finished writing
+the rule he broke.
 
 ## Canonical conformance — the writer floor, not the golden
 
@@ -1012,22 +1085,27 @@ resolve in one direction or the other.
 
 **Closed by step 4:**
 
-- **Q5 — the win is real and measured: yes.** The orchestrator's instruction mass falls from
-  124,008 to 17,206 bytes per run (13.9%), 25,944 with the handshake added back (20.9%), and
-  31.2% even on the reading where the model never opens a reference file. The handshake costs
-  8,738 bytes for a complete seven-phase run against a 106,802-byte break-even — 12.2×
-  headroom — at 2 model turns per phase.
-- **The go/no-go: GO**, under the three conditions in the step-4 section. Neither §9 kill
-  criterion fired.
-- The line delta itself is a net **increase** (1,643 lines of prose → ~1,704 of code + 151 of
-  interface + 343 that stay), which is the answer to Q5 as literally written and the reason
-  finding 23 exists.
+- **Q5 — the win is real and measured: yes, as a bracket.** The orchestrator's instruction
+  mass falls to 20.9% of before if each reference is read once, and to 60.3% if the model
+  never opens one — handshake included on both. The handshake costs 8,738 bytes for a
+  complete seven-phase run, against break-evens of 106,802 and 20,650: **2.36×–12.22×**
+  headroom. 16 controller messages measured; 2 model turns per phase inferred from step 3.
+- **The go/no-go: GO** on the architecture, under the four conditions in the step-4 section,
+  argued from the pessimistic end of that bracket. Neither §9 kill criterion fired on either
+  reading.
+- The line delta itself is a net **increase** of ~212 lines (1,643 of prose → ~1,704 of code
+  + 151 of interface, the kept lines being inside the 151), which is the answer to Q5 as
+  literally written and the reason finding 23 exists.
 
 **Explicitly not established:**
 
 - **Q5's reasoning half.** Whether the model's per-phase reasoning shrinks is unmeasured and
-  needs two live runs of the same contract (finding 25). It bounds the size of the win, not
-  its sign.
+  needs two live runs of the same contract (finding 25). At the pessimistic end of the margin
+  bracket it is load-bearing, not merely qualifying — the highest-value experiment left.
+- **The per-run context itself was never observed.** 124,008 and 30,012 are the two ends of a
+  scenario bracket, not instrumented measurements of what a real orchestrator loads.
+- **Two model turns per phase is inferred**, carried from step 3's live plan dispatch. No
+  model was in the loop for step 4's run.
 - **That the thin interface is sufficient.** Nobody has run an orchestrator from
   `thin-skill-sketch.md`, and three of its branches are extrapolated from prose the
   controller has not implemented (finding 24). Z is the least trustworthy number in step 4.
@@ -1080,7 +1158,7 @@ bash spike/adws-controller/run-step1-negative.sh # failing critic -> retry ladde
 bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gate mutation, asserted
 bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
 bash spike/adws-controller/run-step3.sh          # step 3: the live dispatch's evidence, replayed
-bash spike/adws-controller/run-step4.sh          # step 4: 34 assertions — the delta and the go/no-go
+bash spike/adws-controller/run-step4.sh          # step 4: 40 assertions — the delta and the go/no-go
 node spike/adws-controller/measure-delta.js      # the X/Y/Z report, re-derived from the tree
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance

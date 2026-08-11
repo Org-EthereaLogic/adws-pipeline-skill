@@ -20,6 +20,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const REPO = path.resolve(__dirname, '../..');
 const CLASSIFICATION = path.join(__dirname, 'prose-classification.json');
@@ -107,7 +108,7 @@ const FULL_SCOPE = files;
 // `owns` lists the C-classified blocks that belong WHOLLY to an absent family, by exact
 // classification-table range. Blocks an absent family SHARES with an implemented one (the
 // rewind prose, the consensus prose) are deliberately left out, which makes the projection
-// below a FLOOR on the full controller's size, never a ceiling.
+// below conservative in ONE respect only — see the projection caveat where it is printed.
 const COVERAGE = [
   { name: 'phase sequencing, no skip, terminal states',        status: 'full',    anchor: /const PHASES = \[/ },
   { name: 'fresh attempt_{n} directory per attempt (FR-4)',    status: 'full',    anchor: /function attemptDir\(/ },
@@ -184,8 +185,16 @@ const HANDSHAKE = path.join(__dirname, '.step4-handshake.json');
 let handshake = fs.existsSync(HANDSHAKE) ? JSON.parse(fs.readFileSync(HANDSHAKE, 'utf8')) : null;
 // The recorded run is only evidence about the controller it ran against. If adws-run.js has
 // changed since, say so instead of quoting a number that no longer describes anything.
+//
+// This compared `controller_bytes` until CodeRabbit and an independent audit both found the
+// hole within a day: `action: 'finalize'` -> `action: 'terminal'` is the same LENGTH, so the
+// size matched, the check passed, and a stale 8,738 was reported for a controller that no
+// longer produced it. Reproduced before fixing. File size is a PROXY for file content — the
+// error finding 23 names, committed in the commit that named it (finding 27). A digest is
+// the property; an absent digest is stale, not fresh.
+const controllerSha = crypto.createHash('sha256').update(fs.readFileSync(CONTROLLER)).digest('hex');
 let handshakeStale = false;
-if (handshake && handshake.controller_bytes !== fs.statSync(CONTROLLER).size) {
+if (handshake && handshake.controller_sha256 !== controllerSha) {
   handshakeStale = true;
   handshake = null;
 }
@@ -230,18 +239,25 @@ say(`    not implemented             ${String(covCount('absent')).padStart(5)}`)
 say(`    built with no prose origin  ${String(covCount('extra')).padStart(5)}   (the decision ledger — finding 19)`);
 for (const r of COVERAGE) say(`      ${r.status.padEnd(8)} ${r.name}`);
 
-// Floor on the full controller. The nine absent families wholly own `absentProseLines` of
-// C-classified prose; the rest of C is what the 1,526 lines already cover. Applying that
-// realized code-per-prose-line ratio to all of C projects the finished controller. It is a
-// FLOOR twice over: shared blocks are credited to the implemented side, and the absent set
-// contains the two families with the most branching (ship modes, resume).
+// Size of the full controller, PROJECTED. The nine absent families wholly own
+// `absentProseLines` of C-classified prose; the rest of C is what the 1,526 lines already
+// cover. Applying that realized code-per-prose-line ratio to all of C extrapolates the
+// finished controller.
+//
+// This was called a FLOOR until an audit rejected the label, correctly. Two things push it
+// DOWN (shared blocks are credited to the implemented side; the absent set holds the two
+// most branching families, ship modes and resume) and one pushes it UP (fixed plumbing —
+// io helpers, CLI, the argument parser — is already paid for and does not recur per family).
+// Which dominates is unknown, and linearity across families of very different shape is an
+// assumption, not a result. It is a projection with a stated method, nothing stronger.
 const implementedProse = Cfull.lines - absentProseLines;
 const ratio = Y.lines / implementedProse;
 const yFullFloor = Math.round(ratio * Cfull.lines);
 say('');
 say(`  C prose wholly owned by the nine absent families   ${String(absentProseLines).padStart(5)} lines`);
 say(`  C prose the 1,526 lines already cover              ${String(implementedProse).padStart(5)} lines   ${ratio.toFixed(2)} code lines per prose line`);
-say(`  FLOOR on the finished controller                   ${String(yFullFloor).padStart(5)} lines`);
+say(`  LINEAR PROJECTION, finished controller             ${String(yFullFloor).padStart(5)} lines   assumes per-family cost scales`);
+say(`                                                             with prose; NOT a floor`);
 
 say('\nZ — the thin interface\n');
 say(`  thin-skill-sketch.md          ${String(Z.lines).padStart(5)} lines  (${Z.nonblank} non-blank, ${Z.bytes} bytes)`);
@@ -259,16 +275,32 @@ const skillText = fs.readFileSync(path.join(REPO, 'adws-pipeline/SKILL.md'), 'ut
 const directives = BEFORE_SET.filter((f) => f !== 'adws-pipeline/SKILL.md')
   .map((f) => [path.basename(f), (skillText.match(new RegExp(path.basename(f).replace('.', '\\.'), 'g')) || []).length]);
 say(`  SKILL.md directs the orchestrator into these by name: ${directives.map(([n, c]) => `${n} x${c}`).join(', ')}`);
-say(`  before  ${BEFORE_SET.length} documents the procedure directs into   ${String(beforeBytes).padStart(7)} bytes`);
-say(`  after   thin interface + task-contract.md          ${String(afterBytes).padStart(7)} bytes`);
-say(`  delta                                             ${String(afterBytes - beforeBytes).padStart(7)} bytes   ${pct(afterBytes, beforeBytes)} of before`);
-say(`  conservative floor (SKILL.md alone vs the sketch)  ${String(floorAfter - floorBefore).padStart(7)} bytes   ${pct(floorAfter, floorBefore)} of before`);
-say('  Token estimates would divide both sides by the same constant, so the ratio above is');
-say('  independent of any tokenizer. Bytes are reported because they are what was measured.');
+// TWO SCENARIOS, both reported with the handshake included, because neither is observed.
+// Nobody has instrumented a real run's context, so the honest output is the bracket: the
+// full-document case (every reference read once) and the no-reference case (SKILL.md only).
+// The first cut published the optimistic scenario's headroom beside the conservative
+// scenario's reduction, which flattered both — an independent audit caught it.
+const hs = handshake ? handshake.total_bytes : 0;
+const scen = [
+  ['full-document  (each reference read once)', beforeBytes, afterBytes],
+  ['no-reference   (SKILL.md only, ever)', floorBefore, floorAfter],
+];
+say(`  ${''.padEnd(44)}${'before'.padStart(9)}${'after'.padStart(9)}${'+hs'.padStart(9)}${'of before'.padStart(11)}${'headroom'.padStart(10)}`);
+for (const [label, b, a] of scen) {
+  const net = a + hs;
+  const head = hs ? `${((b - a) / hs).toFixed(2)}x` : 'n/a';
+  say(`  ${label.padEnd(44)}${String(b).padStart(9)}${String(a).padStart(9)}${String(net).padStart(9)}${pct(net, b).padStart(11)}${head.padStart(10)}`);
+}
+say('  A reduction on BOTH readings; the true per-run context is somewhere between them and');
+say('  was NOT observed. "of before" includes the measured handshake. "headroom" is how many');
+say('  times larger the handshake would have to be to erase that scenario\'s reduction.');
+say('  These are BYTES. No tokenizer was run, and JSON and English prose do not share a');
+say('  bytes-per-token ratio, so they must not be read as token ratios.');
 if (handshake) {
-  say(`\n  handshake added back, one complete seven-phase run      ${String(handshake.total_bytes).padStart(7)} bytes`);
-  say(`    ${handshake.messages} controller messages over ${handshake.phases} phases, ${handshake.model_turns} model turns`);
-  say(`    net change in orchestrator instruction bytes         ${String(afterBytes + handshake.total_bytes - beforeBytes).padStart(7)} bytes`);
+  say(`\n  handshake, one complete seven-phase run                 ${String(handshake.total_bytes).padStart(7)} bytes`);
+  say(`    ${handshake.messages} controller messages, MEASURED. ${handshake.model_turns} model turns, INFERRED —`);
+  say('    step 4 drove the run from a shell over canned phase outputs, so no model was in the');
+  say('    loop; the 2-turns-per-phase accounting is carried from step 3\'s live plan dispatch.');
 } else if (handshakeStale) {
   say('\n  handshake volume: STALE — .step4-handshake.json was measured against a different');
   say('  adws-run.js. Re-run run-step4.sh; the recorded number is not quoted here.');
@@ -282,18 +314,27 @@ const tot4 = FULL_SCOPE.reduce((a, f) => a + prose[f].total, 0);
 say(`  as classified,  X = ${Cfull.lines} of ${tot4} lines   ${pct(Cfull.lines, tot4)}`);
 say(`  credit every SPLIT block to the controller (the optimistic reading)`);
 say(`                  X = ${Cfull.lines + Sfull.lines} of ${tot4} lines   ${pct(Cfull.lines + Sfull.lines, tot4)}`);
-const residue = sumClass('A', FULL_SCOPE).lines + sumClass('K', FULL_SCOPE).lines + Sfull.lines;
-say(`  the residue the thin interface must carry: A + K + S = ${residue} lines of prose,`);
-say(`  absorbed by a ${Z.lines}-line sketch plus the unchanged agent definitions. That ratio, not`);
-say(`  the classification, is what a reader should attack: if the sketch is too thin, X is wrong.`);
+const agentLines = sumClass('A', FULL_SCOPE).lines;
+const residue = sumClass('K', FULL_SCOPE).lines + Sfull.lines;
+say(`  the residue the thin interface must carry: K + S = ${residue} lines of prose, absorbed by`);
+say(`  a ${Z.lines}-line sketch. That ratio, not the classification, is what a reader should attack:`);
+say(`  if the sketch is too thin the residue leaks back and X is wrong.`);
+say('');
+say(`  LINE ACCOUNTING, without double-counting the residue:`);
+say(`    before   ${String(tot4).padStart(5)} lines of orchestrator prose`);
+say(`    after    ${String(yFullFloor).padStart(5)} lines of controller (projected) + ${Z.lines} interface = ${yFullFloor + Z.lines}`);
+say(`             plus ${agentLines} agent-facing lines that relocate into .claude/agents/*.md`);
+say(`    net      ${String(yFullFloor + Z.lines - tot4).padStart(5)} lines, an INCREASE (${agentLines + yFullFloor + Z.lines - tot4} counting the relocated agent lines)`);
+say(`  The ${residue} kept lines are INSIDE the ${Z.lines}, not additional to it — an earlier draft added`);
+say(`  both and overstated the increase by ${residue} lines.`);
 const breakeven = beforeBytes - afterBytes;
 say('');
-say(`  BREAK-EVEN, which is §9's kill criterion stated as a number: the handshake would have`);
-say(`  to cost ${breakeven} bytes per run — ${Math.round(breakeven / 7)} bytes per phase — to erase the`);
-say(`  reduction. §9 kills §6.2 above roughly 2-3 model round trips per phase.`);
+say(`  §9's kill criterion as arithmetic: the handshake erases the reduction at ${breakeven} bytes`);
+say(`  per run on the full-document reading and ${floorBefore - floorAfter} on the no-reference one. Measured:`);
 if (handshake) {
-  say(`  measured: ${handshake.total_bytes} bytes per run, ${Math.round(handshake.total_bytes / handshake.phases)} per phase`);
-  say(`            = ${(breakeven / handshake.total_bytes).toFixed(1)}x headroom against break-even.`);
+  say(`  ${handshake.total_bytes} bytes per run — ${(breakeven / handshake.total_bytes).toFixed(2)}x and ${((floorBefore - floorAfter) / handshake.total_bytes).toFixed(2)}x headroom respectively. The pessimistic`);
+  say(`  end of that bracket is thin enough that the unmeasured reasoning half (finding 25)`);
+  say(`  bounds the result rather than merely qualifying it.`);
 }
 
 const result = {
@@ -306,10 +347,11 @@ const result = {
   prose_total_full: tot4,
   y_lines: Y.lines,
   y_nonblank: Y.nonblank,
-  y_full_floor: yFullFloor,
+  y_full_projection_linear: yFullFloor,
   absent_family_prose_lines: absentProseLines,
   z_lines: Z.lines,
   breakeven_handshake_bytes_per_run: breakeven,
+  breakeven_handshake_bytes_per_run_conservative: floorBefore - floorAfter,
   coverage: { full: covCount('full'), partial: covCount('partial'), absent: covCount('absent'), extra: covCount('extra') },
   context_before_bytes: beforeBytes,
   context_after_bytes: afterBytes,

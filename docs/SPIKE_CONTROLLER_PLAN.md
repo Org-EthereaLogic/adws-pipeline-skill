@@ -234,13 +234,20 @@ All four steps of §10 are done. **The §6.2 go/no-go is GO**, with three condit
 below and in `FINDINGS.md`. Q1–Q5 are answered; the spike's remaining open items are named
 questions for the skill and for whoever builds the real controller, not gaps in the decision.
 
-**The number that decides:** the orchestrator's instruction mass falls from **124,008 bytes
-per run to 17,206** (13.9%), or 25,944 with the handshake added back (20.9%), against a
-break-even of 106,802 — **12.2× headroom** on §9's kill criterion. The *line* delta, which is
-what Q5 literally asks for, goes the other way: 1,643 lines of prose become ~1,704 lines of
-code plus 151 of interface. Both numbers are real and they point in opposite directions,
-which is finding 23 and the single most important thing to carry out of step 4: **§6.2 is a
-relocation of the interpretation burden, not a reduction in artifact size.**
+**The numbers that decide.** Nobody has instrumented a real run's context, so the result is a
+bracket, with the measured handshake added back on both ends:
+
+| scenario | before | after + handshake | of before | headroom to §9's kill criterion |
+|---|---|---|---|---|
+| full-document — each reference read once | 124,008 | 25,944 | **20.9%** | **12.22×** |
+| no-reference — `SKILL.md` only, ever | 30,012 | 18,100 | **60.3%** | **2.36×** |
+
+A reduction on both readings; the GO is argued from the pessimistic one. The *line* delta,
+which is what Q5 literally asks for, goes the other way: 1,643 lines of prose become ~1,704
+lines of code plus 151 of interface — a **net increase of ~212 lines**. Both numbers are real
+and they point in opposite directions, which is finding 23 and the single most important
+thing to carry out of step 4: **§6.2 is a relocation of the interpretation burden, not a
+reduction in artifact size.**
 
 Step 1 went through three adversarial rounds; step 2 had two, which between them found four
 fail-OPEN defects in the one gate the controller owns outright. **Step 3 found three more —
@@ -267,7 +274,7 @@ step-3 result is re-checkable without spending another subagent run.
 | 2. Evidence is compatible | **yes, with the oracle changed** | the controller-generated tree is scored by the unmodified `execution-report.js` at the expected exit code, and for the 25-fixture corpus driven through `init → record → finalize` (MISMATCH: 0, and step 2 removed all three declared limits). See the note on the byte-diff below |
 | 3. Budget-as-code is correct | **yes** | one test→build rewind with the prescribed counters, `corrections.json` and tier escalation; a second code failure terminates `TEST_GATE_FAILURE`; the rewind and check-defect budgets are independent and neither consumes a build retry; the F-47 three-build-attempt tree is reproduced with the accounting intact; the retry ladder escalates sonnet→opus→fable and exhausts, matching the `retry` fixture's recorded ladder |
 | 4. Idempotent | **yes** | `next` is byte-identical on an unchanged tree (this required a fix — step 1's dispatch stamp moved), a recorded attempt cannot be re-recorded, and a second `finalize` is a no-op. Resume / `carry_over` remain unproven |
-| 5. The win is real and measured | **yes** — and the answer depends on which measurement | X = 705 of 1,030 lines in Q5's own scope (68.4%), 1,300 of 1,643 across all four orchestrator documents (79.1%); Y = 1,526 lines covering 11 of 20 rule families, floor 1,704 for the finished controller; Z = 151. As a LINE delta that is a net increase. As the thing that bears on §9 it is a 7× reduction: 124,008 → 17,206 instruction bytes per run, 25,944 with the handshake, 31.2% even if the model never opens a reference. Handshake: 8,738 bytes over a complete seven-phase run, 16 controller messages, **2 model turns per phase** — the bar met exactly, with 12.2× headroom to break-even. NOT MEASURED: whether per-phase *reasoning* shrinks (finding 25 — bounds the size of the win, not its sign). **GO** |
+| 5. The win is real and measured | **yes**, as a bracket — and the answer depends on which measurement | X = 705 of 1,030 lines in Q5's own scope (68.4%), 1,300 of 1,643 across all four orchestrator documents (79.1%); Y = 1,526 lines covering 11 of 20 rule families, ~1,704 projected (linear, not a floor); Z = 151. As a LINE delta that is a net increase of ~212. As the thing that bears on §9 it is a reduction to 20.9% (each reference read once) or 60.3% (never opened), handshake included in both — 12.22× and 2.36× headroom. Handshake: 8,738 bytes over a complete seven-phase run, 16 controller messages MEASURED; 2 model turns per phase INFERRED from step 3 (no model was in step 4's loop). NOT MEASURED: the per-run context itself, and whether per-phase *reasoning* shrinks (finding 25 — load-bearing at the pessimistic end). **GO on the architecture, argued from 2.36×** |
 
 ### Where this plan was not followed, and why
 
@@ -306,28 +313,36 @@ step-3 result is re-checkable without spending another subagent run.
 - **Evidence schema drift** — the schema was matched **without editing
   `execution-report.js`** (the controller `require()`s it and consults its exported
   `buildReport()` as a read-only oracle), across the 25-fixture corpus at MISMATCH 0.
-- **Chatty handshake** — 8,738 bytes for a complete seven-phase run at 2 model turns per
-  phase, against a break-even of 106,802 bytes. It would have to be **12× more expensive**
-  to erase the reduction it buys.
+- **Chatty handshake** — 8,738 bytes for a complete seven-phase run, against break-evens of
+  106,802 and 20,650. It would have to be between **2.4× and 12× more expensive** to erase
+  the reduction it buys.
 
 §9's "spike creep" risk was the live one throughout, and the time-box held: the spike ends
 here, with the box shut on the nine unimplemented rule families.
 
-### The three conditions on the GO
+### The four conditions on the GO
 
-1. **The win is relocation, not reduction.** The repository gets bigger. What shrinks by
-   ~86% is the instruction mass a probabilistic model must load and interpret per run. That
-   is the §6.1 "prose engine" problem, and it is the only thing this measurement establishes.
-2. **A go on the architecture is not a clearance to skip live validation.** Six of seven
+1. **The win is relocation, not reduction.** The repository gets bigger by ~212 lines. What
+   shrinks is the instruction mass a probabilistic model must load and interpret per run —
+   by 79% on the full-document reading, 40% on the pessimistic one. That is the §6.1 "prose
+   engine" problem, and it is the only thing this measurement establishes.
+2. **The margin is a bracket, not a point.** The true per-run context was never instrumented,
+   so the honest headroom is **2.36×–12.22×**. §9 kills §6.2 above roughly 2–3 model round
+   trips per phase, so the pessimistic end sits near the bar rather than far above it, and
+   the GO is argued from that end.
+3. **A go on the architecture is not a clearance to skip live validation.** Six of seven
    phases have never run live, and both defects step 3 found were structurally unreachable
    from the mocked path — the mock was not a weak test of them, it was no test of them at
    all. The nine unimplemented rule families are in exactly the position the plan phase was
    in before it ran. Whoever builds the real controller should expect that class of defect
    in each of them, and should not expect a mocked suite to find it.
-3. **Q5's reasoning half is unmeasured.** Whether the model's per-phase reasoning shrinks
-   needs two live runs of the same contract, one under each orchestrator. Not done. It
-   bounds the size of the win, not its sign — the controller removes decisions from the
-   model and adds none (`FINDINGS.md` finding 25).
+4. **Q5's reasoning half is unmeasured, and condition 2 makes it load-bearing.** Whether the
+   model's per-phase reasoning shrinks needs two live runs of the same contract, one under
+   each orchestrator. Not done. At 12.2× it would only bound the size of the win; at 2.36× a
+   modest growth in per-phase reasoning could consume the margin. An earlier draft said it
+   "cannot flip the sign" — that overstated a mechanism argument as a result
+   (`FINDINGS.md` finding 25). **This is the highest-value experiment left, ahead of any
+   unimplemented family.**
 
 ### Open after the GO — none of these are decided by it
 

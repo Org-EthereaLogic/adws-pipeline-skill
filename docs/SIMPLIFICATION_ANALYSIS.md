@@ -233,17 +233,20 @@ holds, but that it must *execute* it by hand every run.
 > are answered. Evidence compatibility holds against the unmodified `execution-report.js`
 > (Q2); the budget/rewind bookkeeping this section calls "hand-run" is code with the
 > accounting asserted (Q3, Q4); one real `adws-planner` subagent was dispatched through the
-> handshake and its evidence gated (Q1); and the win is measured (Q5): the orchestrator's
-> instruction mass falls from **124,008 bytes per run to 17,206**, 25,944 with the handshake
-> added back, against a break-even of 106,802 — **12.2× headroom** on the kill criterion, at
-> 2 model turns per phase.
+> handshake and its evidence gated (Q1); and the win is measured (Q5) as a **bracket**,
+> because nobody instrumented a real run's context. With the measured handshake included on
+> both ends: the orchestrator's instruction mass falls to **20.9%** of before if each
+> reference is read once, and to **60.3%** if the model never opens one — **12.22× and 2.36×
+> headroom** against the kill criterion. The GO is argued from the pessimistic end.
 >
-> **The GO carries three conditions**, in the plan's §11: the win is a relocation of the
-> interpretation burden and not a reduction in artifact size; a go on the architecture is not
-> a clearance to skip live validation of the six phases that have never run; and whether the
-> model's per-phase *reasoning* shrinks is unmeasured, which bounds the size of the win and
-> not its sign. This recommendation is left as written below; the spike is the test of it,
-> not a revision to it.
+> **The GO carries four conditions**, in the plan's §11: the win is a relocation of the
+> interpretation burden and not a reduction in artifact size (the repository grows by ~212
+> lines); the margin is a bracket rather than a point, and its low end sits near §9's bar
+> rather than far above it; a go on the architecture is not a clearance to skip live
+> validation of the six phases that have never run; and whether the model's per-phase
+> *reasoning* shrinks is unmeasured — which at 2.36× is load-bearing rather than merely
+> qualifying, and is the highest-value experiment left. This recommendation is left as
+> written below; the spike is the test of it, not a revision to it.
 >
 > Four results cut against the section's own framing and belong here rather than only in the
 > spike.
@@ -279,10 +282,11 @@ holds, but that it must *execute* it by hand every run.
 > work — and `references/validator-inputs.md` is 140 of 140, an entire shipped reference whose
 > only content is telling a probabilistic model how to assemble nine deterministic function
 > calls. But those 1,643 lines of prose become roughly 1,704 lines of controller code plus a
-> 151-line interface plus the 343 lines that stay: **the repository gets bigger.** This
-> section sits in a document about simplification, and on a line count §6.2 is the opposite of
-> one. What it removes is the mass a probabilistic model must load and *interpret* every run,
-> which is the §6.1 problem — a different claim, and the only one the measurement supports.
+> 151-line interface that absorbs the residue: **the repository gets bigger, by about 212
+> lines.** This section sits in a document about simplification, and on a line count §6.2 is
+> the opposite of one. What it removes is the mass a probabilistic model must load and
+> *interpret* every run, which is the §6.1 problem — a different claim, and the only one the
+> measurement supports.
 
 Create a dependency-light Node controller owning profile/phase selection, worktree lifecycle,
 attempt counters and rewind budgets, validator invocation, model-dispatch accounting, evidence-file
