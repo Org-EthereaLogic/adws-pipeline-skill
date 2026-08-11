@@ -41,24 +41,24 @@
       "check": "regression: replaying a delivery twice leaves exactly one ledger row (tests/test_retry_worker_idempotency.py)",
       "criterion": "The idempotency guard records each job id exactly once in the ledger.",
       "pass": true,
-      "output": "1 passed post-change; the pre-change baseline errored during collection, so the check was never shown capable of failing",
+      "output": "1 passed \u2014 RED before the reorder (2 rows), green after",
       "baseline_pass": false,
-      "baseline_reason": "collection-error",
-      "falsifiable": false,
-      "verdict": "gate_weak",
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
       "classification": null
     },
     {
       "check_id": "CHK003",
       "check": "a replayed request logs a skip and issues no second side effect",
       "criterion": "A replayed request produces no second side effect and logs a skip.",
-      "pass": true,
-      "output": "1 passed \u2014 skip logged, one side effect observed",
+      "pass": false,
+      "output": "1 failed \u2014 the check greps for the literal 'SKIP:' prefix, a log format the frozen criterion never mentions",
       "baseline_pass": false,
       "baseline_reason": "assertion-failed-runtime-present",
       "falsifiable": true,
-      "verdict": "verified",
-      "classification": null
+      "verdict": "fail",
+      "classification": "check"
     }
   ],
   "command_log": [

@@ -465,19 +465,49 @@ function testLayer2(jobDir, attempt, contract) {
   // so an older row satisfies it while the new regression assertion never ran.
   const debt = regressionDebt(jobDir);
   if (debt.length) {
-    const priorRows = new Set();
-    for (const n of listAttempts(jobDir, 'test').filter((n) => n < attempt)) {
-      for (const c of (phaseOutputOf(jobDir, 'test', n) || {}).checks || []) priorRows.add(JSON.stringify(c));
-    }
+    // Row identity is (check_id, `check`) — the ASSERTION, not its serialization.
+    //
+    // Keying on the whole serialized row was WRONG, and wrong in exactly the way F-76 warns
+    // about. `check_id` is a CRITERION id and one criterion may legitimately carry several
+    // checks, so a pre-existing structural row whose `output` merely changed between attempts
+    // serialized differently, counted as "new", and discharged the debt while the behavioural
+    // regression assertion never ran. That is "an OLDER row would satisfy [the criterion join]
+    // while the new regression assertion never ran at all" wearing a different disguise, and
+    // the whole point of this check is to catch that substitution.
+    //
+    // "Pre-existing" means pre-existing AT THE TIME OF THE REPAIR, so the cutoff is each
+    // correction's own `source_attempt` rather than every earlier attempt. Comparing against
+    // all of them is wrong in a way only a two-excursion job reveals: the regression assertion
+    // added for the first excursion legitimately RE-RUNS on every later attempt, and a second
+    // excursion would then find it "not new" and fail a job for doing exactly what F-76 asked.
+    const assertionOf = (c) => `${c.check_id} :: ${c.check}`;
+    const assertionsThrough = (cutoff) => {
+      const seen = new Set();
+      for (const n of listAttempts(jobDir, 'test').filter((n) => n <= cutoff)) {
+        for (const c of (phaseOutputOf(jobDir, 'test', n) || {}).checks || []) {
+          if (c && typeof c === 'object') seen.add(assertionOf(c));
+        }
+      }
+      return seen;
+    };
     for (const owed of debt) {
+      const src = /\/attempt_(\d+)$/.exec(owed.source_attempt || '');
+      const priorAssertions = assertionsThrough(src ? Number(src[1]) : attempt - 1);
       const rows = checks.filter((c) => c.check_id === owed.id);
       if (!rows.length) {
         return gateFail(terminalReasonFor('test'),
           `SC-13/F-76: the repair of ${owed.source_attempt} owes a regression check carrying id ${owed.id}; test/attempt_${attempt} has no check row with that id`);
       }
-      if (!rows.some((c) => !priorRows.has(JSON.stringify(c)))) {
+      const fresh = rows.filter((c) => !priorAssertions.has(assertionOf(c)));
+      if (!fresh.length) {
         return gateFail(terminalReasonFor('test'),
-          `SC-13/F-76: every check row carrying ${owed.id} in test/attempt_${attempt} is identical to one a superseded attempt already recorded — a pre-existing row for the criterion is not the new regression assertion`);
+          `SC-13/F-76: every check row carrying ${owed.id} in test/attempt_${attempt} runs an assertion a superseded attempt already ran (${rows.map((c) => JSON.stringify(c.check)).join(', ')}) — a pre-existing check for the criterion is not the new regression assertion`);
+      }
+      // "records real output from exercising the correction". A new assertion that recorded
+      // nothing is a claim about the future, not evidence about the present.
+      if (!fresh.some((c) => typeof c.output === 'string' && c.output.trim())) {
+        return gateFail(terminalReasonFor('test'),
+          `SC-13/F-76: the new regression assertion for ${owed.id} in test/attempt_${attempt} recorded no output — it must be exercised, not merely declared`);
       }
     }
     // "A criterion repaired in THIS job that comes back gate_weak fails the gate rather than
@@ -897,7 +927,12 @@ function cmdRecord(jobDir, phase, attemptArg, opts) {
   let rewindAttempt = null;
   if (v.route === 'rewind') {
     rewindAttempt = openRewind(jobDir, phase, attempt, v.failing, CLASS_CODE);
-    run.cross_phase_rewinds.test = (run.cross_phase_rewinds.test || 0) + 1;
+    // Keyed to the ORIGIN phase, not to the literal `test`. Only testLayer2 produces this
+    // route today, so the two are the same value — but `cross_phase_rewinds` carries `test`,
+    // `verify` and `review`, and a verify- or review-origin rewind added later would
+    // otherwise spend the test budget silently.
+    run.cross_phase_rewinds = run.cross_phase_rewinds || {};
+    run.cross_phase_rewinds[phase] = (run.cross_phase_rewinds[phase] || 0) + 1;
   } else if (v.route === 'repair') {
     rewindAttempt = openRewind(jobDir, phase, attempt, v.failing, CLASS_CHECK);
     run.check_defect_repairs = (run.check_defect_repairs || 0) + 1;

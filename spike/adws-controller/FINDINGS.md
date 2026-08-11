@@ -212,7 +212,7 @@ Step 1 answered Q2 (evidence compatibility). Step 2 is the plan's §10.2 — "ad
 test→build rewind, mocked outputs" — and it answers **Q3 (budget-as-code)** and **Q4
 (idempotency)**. Q1 and Q5 remain untouched: every dispatch is still MOCKED.
 
-Driven and asserted by [run-step2.sh](run-step2.sh), 93 assertions over nine jobs, against
+Driven and asserted by [run-step2.sh](run-step2.sh), 95 assertions over ten jobs, against
 the purpose-built [fixtures/](fixtures) the plan asked for in §5.2 and step 1 did not need.
 
 ### What step 2 costs, stated first
@@ -264,7 +264,7 @@ against that budget [of 1] with no accounting." `S3` builds exactly that tree �
 rewind, then a `check`-classified failure taking the independent check-defect repair — and
 asserts the accounting survives it:
 
-```
+```text
 build attempts : 3        origins: initial, rewind, rewind
 build retries  : 0/1      cross_phase_rewinds.test: 1   check_defect_repairs: 1
 test  attempts : 3        retries: 0/2                  -> finalize PROMOTE / exit 0
@@ -284,8 +284,8 @@ logic that is not this spike marking its own homework.
 **SC-13/F-76 is enforced on both halves**, so a rewind means a repair with a permanent check
 behind it rather than a counter increment: the rewind build attempt must echo each
 `regression_check_id` in `phase_output.regression_check_ids` (`S6a`), the forward test re-run
-must carry a check row for it that is not simply the row a superseded attempt already had
-(`S6b` — the doc is explicit that the SC-5/F-31 criterion join does *not* establish this),
+must carry a check row for it running an assertion no earlier attempt ran (`S6b`/`S6b2` — the
+doc is explicit that the SC-5/F-31 criterion join does *not* establish this),
 and a criterion repaired in this job that comes back `gate_weak` fails rather than warns
 (`S6c`).
 
@@ -377,6 +377,32 @@ taken, implemented, and recorded so a reader can disagree with it.
     The recorded tier is below the floor. Surfaced by the matrix's new tier cross-check, which
     otherwise reports agreement on every attempt it drove.
 
+12. **A defect the review round found in my own F-76 check, and the semantic bug fixing it
+    exposed.** The first cut identified a check row by its whole serialized value, so a row was
+    "new" if any field of it had changed. But `check_id` is a CRITERION id and one criterion
+    may carry several checks — so a pre-existing STRUCTURAL row whose `output` merely changed
+    between attempts serialized differently, counted as new, and discharged the regression debt
+    while the behavioural assertion never ran. That is the exact substitution F-76 exists to
+    catch ("an OLDER row would satisfy [the criterion join] while the new regression assertion
+    never ran at all") wearing a different disguise, and my own fixture set could not see it
+    because every fixture happened to change the row that mattered. Row identity is now the
+    ASSERTION — `(check_id, check)` — and `test_pass_mutated_structural` is the standing
+    regression for it.
+    Tightening the rule immediately broke `S3`, and the break was correct: comparing against
+    *every* earlier attempt meant the regression assertion added for the first excursion was
+    "not new" on a second excursion's re-run, failing a job for doing exactly what F-76 asked.
+    "Pre-existing" means pre-existing **at the time of the repair**, so the cutoff is each
+    correction's own `source_attempt`. A single-excursion fixture set cannot distinguish those
+    two readings; a two-excursion one does.
+13. **The ship gate is not validated, and that is scope, not an oversight — but it is worth
+    stating plainly.** `phaseGate()` has no ship branch and never runs `ship-mode-select` or
+    `patch-compose`, so `fixtures/ship/phase_output.json` passes with `pushed: true`, a
+    `/pull/0` URL and an all-zero `commit_sha`, though `pr` mode requires a live PR URL. The
+    sentinel values are deliberate — a mock that looked like a real PR URL would be worse — and
+    the general point is the one already made above: eight of the nine validators are still
+    fixture-supplied, so every gate except the test gate's checks layer is exactly as strong as
+    the scorer, and no stronger.
+
 ### The ingest matrix, re-measured
 
 Step 2 changed how the matrix decides what it can replay, and the change is worth stating
@@ -402,7 +428,7 @@ not the same thing:
   report catches what a phase gate missed (hard rule 8), so the permissive `gate_result` is
   deliberate. The controller catching them one layer earlier is the result.
 
-```
+```text
 fixtures: 25   MATCH: 7   ADJUSTED: 1   ROUTE-DIFF: 2   EXPLAINED: 15   LIMIT: 0   MISMATCH: 0
 modes: DRIVEN=10  HALTED=2  REFUSED=13
 ```
@@ -452,8 +478,11 @@ resolve in one direction or the other.
 - The completed-but-contradicted class is refused at record (completeness), caught at
   finalize (full terminal gate set), and rejected by the validator — verified by an asserted
   regression covering both the no-mutation and post-gate-mutation routes.
-- Evidence conforms to the provenance, agent-id, tier-source and phase-output contracts, and
-  the validator enforces all four rather than a plausible subset.
+- **Controller-generated** evidence conforms to the provenance, agent-id, tier-source and
+  phase-output contracts, and the validator enforces all four rather than a plausible subset.
+  This says nothing about the fixtures it replays: the golden tree carries 66 writer-floor
+  violations and the corpus `corrections.json` files two required-field violations each, both
+  measured below. Conformance is a property of what the controller WRITES.
 - Fixture agreement is measured by ingestion against the official expectations, with the
   controller's coverage limits declared and counted rather than absorbed.
 
@@ -500,9 +529,9 @@ second independent look.
 bash spike/adws-controller/run-step1.sh          # clean: PROMOTE / exit 0, CANONICAL OK
 bash spike/adws-controller/run-step1-negative.sh # failing critic -> retry ladder -> RETRY / exit 1
 bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gate mutation, asserted
-bash spike/adws-controller/run-step2.sh          # step 2: 93 assertions over nine jobs
+bash spike/adws-controller/run-step2.sh          # step 2: 95 assertions over ten jobs
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
-node spike/adws-controller/verify-canonical.js <jobDir>   # writer-floor conformance
+node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance
 ```
 
 All five exit 0. The committed fixtures are read-only throughout (`git status` clean under

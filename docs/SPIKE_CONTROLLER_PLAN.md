@@ -291,7 +291,7 @@ can kill the whole thing.
 ### Open before any step-3 claim
 
 - The terminal `failure_reason` vocabulary flattens `ADVOCATE_DISSENT` and evidence-integrity
-  breaches — which `execution-report.js` itself classes as non-retriable — into a blanket
+  breaches — which `execution-report.js` itself classifies as non-retriable — into a blanket
   gate-failure reason. Unchanged by step 2. Fixing it needs a classification the controller
   can *source* from the scorer, not re-derive by parsing gate detail strings, which is the
   partial-reimplementation trap round two was built to fix.

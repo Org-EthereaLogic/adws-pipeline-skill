@@ -67,3 +67,24 @@ pre-existing passing row for the same id, that failure mode cannot be written do
 The Critic and Advocate pass in every variant on purpose: the variable under test is the
 tester's classification, not the consensus verdict. `run-step1-negative.sh` covers the
 failing-Critic path against the real corpus.
+
+## Two fixtures that exist because of the review round
+
+`test_pass_mutated_structural` and `test_fail_check_after_repair` were added after CodeRabbit
+found that the F-76 check identified a row by its whole serialized value.
+
+- **`test_pass_mutated_structural`** — every `CHK002` row runs an assertion `attempt_1` already
+  ran, but the structural row's `output` changed. Under serialized-row identity that counted as
+  a new row and discharged the regression debt while the behavioural assertion never ran. Row
+  identity is now the ASSERTION, `(check_id, check)`, and this fixture is the standing
+  regression for it. Nothing else in the set could catch it: every other variant happens to
+  change the row that matters.
+- **`test_fail_check_after_repair`** — a `check`-classified failure on `CHK003` *after* the
+  `CHK002` code repair landed and its regression assertion ran. The earlier fixture put the
+  check defect on `CHK002` itself, which tangled the check-defect route together with the
+  regression debt for the same criterion and made `S3` test two things at once.
+
+Tightening row identity also exposed a semantic bug of my own: "pre-existing" means
+pre-existing **at the time of the repair**, not at any earlier attempt. Comparing against every
+earlier attempt made the first excursion's regression assertion "not new" on a second
+excursion's re-run. A single-excursion fixture set cannot tell those two readings apart.

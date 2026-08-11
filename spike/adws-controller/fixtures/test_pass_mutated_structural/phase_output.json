@@ -17,7 +17,7 @@
       "check": "ledger schema declares a unique constraint on job_id",
       "criterion": "The idempotency guard records each job id exactly once in the ledger.",
       "pass": true,
-      "output": "1 passed \u2014 UNIQUE(job_id) present in the ledger schema",
+      "output": "1 passed \u2014 UNIQUE(job_id) present in the ledger schema (re-run after the repair)",
       "baseline_pass": false,
       "baseline_reason": "assertion-failed-runtime-present",
       "falsifiable": true,
@@ -34,18 +34,6 @@
       "baseline_reason": "assertion-failed-runtime-present",
       "falsifiable": true,
       "verdict": "verified",
-      "classification": null
-    },
-    {
-      "check_id": "CHK002",
-      "check": "regression: replaying a delivery twice leaves exactly one ledger row (tests/test_retry_worker_idempotency.py)",
-      "criterion": "The idempotency guard records each job id exactly once in the ledger.",
-      "pass": true,
-      "output": "1 passed post-change; the pre-change baseline errored during collection, so the check was never shown capable of failing",
-      "baseline_pass": false,
-      "baseline_reason": "collection-error",
-      "falsifiable": false,
-      "verdict": "gate_weak",
       "classification": null
     },
     {

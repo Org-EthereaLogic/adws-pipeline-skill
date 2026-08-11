@@ -33,8 +33,11 @@ jfile() { node -e 'const fs=require("fs");try{let x=JSON.parse(fs.readFileSync(p
 attempts() { ls -d "$1/$2"/attempt_* 2>/dev/null | wc -l | tr -d ' '; }
 
 newjob() {
-  node -e 'process.stdout.write(JSON.parse(require("child_process").execSync(process.argv[1]).toString()).job_dir)' \
-    "node $CTRL init $FIX/contract.json $1"
+  # execFileSync with an argument ARRAY: execSync would re-split the command string on
+  # whitespace, so a checkout path containing a space would break `init` and every later
+  # assertion would fail with an unrelated message.
+  node -e 'const {execFileSync}=require("child_process");const [c,f,o]=process.argv.slice(1);process.stdout.write(JSON.parse(execFileSync("node",[c,"init",f,o]).toString()).job_dir)' \
+    "$CTRL" "$FIX/contract.json" "$1"
 }
 # `next` then `record`, echoing nothing; returns record's stdout
 step() { # <job> <phase> <attempt> <fixtureDir>
@@ -146,7 +149,7 @@ step "$J3" plan 1 "$FIX/plan" >/dev/null
 step "$J3" build 1 "$FIX/build_initial" >/dev/null
 step "$J3" test 1 "$(mktest test_fail_code)" >/dev/null          # -> cross_phase_rewinds.test
 step "$J3" build 2 "$FIX/build_code_repair" >/dev/null
-T3B="$(step "$J3" test 2 "$(mktest test_fail_check)")"           # -> check_defect_repairs
+T3B="$(step "$J3" test 2 "$(mktest test_fail_check_after_repair)")"   # -> check_defect_repairs
 assert "test/2 annotation"     "$(printf '%s' "$T3B" | jget annotation)" "CHECK_DEFECT_REPAIR"
 assert "test/2 route"          "$(printf '%s' "$T3B" | jget route)"      "repair"
 assert "repair opened"         "$(printf '%s' "$T3B" | jget rewind_opened)" "build/attempt_3"
@@ -237,7 +240,23 @@ step "$J7" test 1 "$(mktest test_fail_code)" >/dev/null
 step "$J7" build 2 "$FIX/build_code_repair" >/dev/null
 T7="$(step "$J7" test 2 "$(mktest test_pass_no_regression)")"
 assert       "test/2 gate"                "$(printf '%s' "$T7" | jget gate_result)" "fail"
-assert_match "names the pre-existing row" "$(printf '%s' "$T7" | jget reason)"      "identical to one a superseded attempt"
+assert_match "names the pre-existing assertion" "$(printf '%s' "$T7" | jget reason)" "assertion a superseded attempt already ran.*unique constraint"
+
+echo "  6b2) a CHANGED pre-existing row is still not the new assertion (row identity is the CHECK, not its bytes)"
+J7B="$(newjob "$SCRATCH/s6b2")"
+step "$J7B" plan 1 "$FIX/plan" >/dev/null
+step "$J7B" build 1 "$FIX/build_initial" >/dev/null
+step "$J7B" test 1 "$(mktest test_fail_code)" >/dev/null
+step "$J7B" build 2 "$FIX/build_code_repair" >/dev/null
+# Every CHK002 row here runs an assertion attempt_1 already ran; only the structural row's
+# `output` changed. Serialized-row identity called that "new" and discharged the debt while
+# the regression assertion never ran — the substitution F-76 exists to catch.
+T7B="$(step "$J7B" test 2 "$(mktest test_pass_mutated_structural)")"
+assert       "test/2 gate"                 "$(printf '%s' "$T7B" | jget gate_result)" "fail"
+# BOTH CHK002 rows must be rejected: the mutated structural one AND the behavioural one whose
+# text attempt_1 already carried. Naming both is what proves neither discharged the debt.
+assert_match "rejects the MUTATED structural row" "$(printf '%s' "$T7B" | jget reason)" "assertion a superseded attempt already ran.*unique constraint"
+assert_match "and the behavioural row too"        "$(printf '%s' "$T7B" | jget reason)" "exactly one ledger row"
 
 echo "  6c) a repaired criterion that comes back gate_weak FAILS rather than warns"
 J8="$(newjob "$SCRATCH/s6c")"
@@ -276,7 +295,7 @@ echo "### S8 — the loop guard never fired; every run stopped on a real budget"
 # MAX_ATTEMPTS_PER_PHASE is 6 and is a bug backstop, not a rule. If it is ever what stopped a
 # run, a budget above it is not counting. Worst case here is test in S4 at 3.
 OVER=0; WORST=0
-for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J6" "$J7" "$J8" "$J9"; do
+for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J6" "$J7" "$J7B" "$J8" "$J9"; do
   for P in plan build test review document ship verify; do
     N="$(attempts "$J" "$P")"
     [ "$N" -gt "$WORST" ] && WORST="$N"
@@ -284,7 +303,7 @@ for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J6" "$J7" "$J8" "$J9"; do
   done
 done
 assert "phases that reached the loop guard" "$OVER" "0"
-printf '        deepest phase across all nine jobs: %s attempts (guard 6)\n' "$WORST"
+printf '        deepest phase across all ten jobs: %s attempts (guard 6)\n' "$WORST"
 
 echo
 if [ "$FAILS" -eq 0 ]; then
