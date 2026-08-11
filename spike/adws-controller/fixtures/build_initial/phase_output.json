@@ -1,0 +1,9 @@
+{
+  "files_changed": [
+    { "file_path": "src/retry_worker.py", "action": "modify" },
+    { "file_path": "src/ledger.py", "action": "modify" }
+  ],
+  "diff_summary": "Guard added at the top of execute(); ledger insert made conditional.",
+  "implementation_notes": "The guard reads the ledger AFTER the side effect is issued, so a duplicate still writes once before being rejected. This is the defect the test gate finds.",
+  "regression_check_ids": []
+}

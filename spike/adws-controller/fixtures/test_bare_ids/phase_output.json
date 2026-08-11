@@ -1,0 +1,16 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK001"
+    },
+    {
+      "check_id": "CHK002"
+    },
+    {
+      "check_id": "CHK003"
+    }
+  ],
+  "command_log": [
+    "pytest -q tests/"
+  ]
+}

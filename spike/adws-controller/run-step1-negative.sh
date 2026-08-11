@@ -51,11 +51,24 @@ node "$CTRL" record "$JOBDIR" review 1 --from "$GOLDEN/review/attempt_1" 2>"$SCR
 assert       "record review rejected (exit 65)" "" "$RC" "65"
 assert_match "rejection explains why"            "$(cat "$SCRATCH/rej.txt")" "out of order|terminal|refused"
 
-echo "### 4) next reports terminal / RETRY / test"
+echo "### 4) STEP 2: the failure is retried on the escalation ladder, then terminates"
+# Step 1 stopped here and asserted `terminal`. Rule 4 gives test a budget of 2, so the same
+# failing Critic now buys two more attempts at rising tiers before the job ends. The ladder
+# below is the one the recorded `retry` fixture took (sonnet -> opus -> fable), reproduced by
+# the controller rather than read out of a manifest someone wrote by hand.
+for N in 2 3; do
+  ROUT="$(node "$CTRL" record "$JOBDIR" test "$N" --from "$MOCK_TEST")"
+  assert "test/attempt_$N still fails" "" "$(printf '%s' "$ROUT" | jget gate_result)" "fail"
+  assert "test/attempt_$N origin"      "" "$(printf '%s' "$ROUT" | jget origin)"      "retry"
+done
+assert "test/1 tier" "" "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1]+"/test/attempt_1/phase_manifest.json")).model_tier)' "$JOBDIR")" "sonnet"
+assert "test/2 tier" "" "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1]+"/test/attempt_2/phase_manifest.json")).model_tier)' "$JOBDIR")" "opus"
+assert "test/3 tier" "" "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1]+"/test/attempt_3/phase_manifest.json")).model_tier)' "$JOBDIR")" "fable"
 NOUT="$(node "$CTRL" next "$JOBDIR")"
 assert "next action"  "" "$(printf '%s' "$NOUT" | jget action)"  "terminal"
 assert "next verdict" "" "$(printf '%s' "$NOUT" | jget verdict)" "RETRY"
 assert "next phase"   "" "$(printf '%s' "$NOUT" | jget phase)"   "test"
+assert "terminal reason" "" "$(printf '%s' "$NOUT" | jget failure_reason)" "TEST_GATE_FAILURE"
 
 echo "### 5) finalize -> failed -> UNMODIFIED scorer RETRY / exit 1 / consensus=fail"
 node "$CTRL" finalize "$JOBDIR" --report "$SCORER" >/dev/null 2>&1; EXIT=$?

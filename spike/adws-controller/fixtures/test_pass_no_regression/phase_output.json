@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK001",
+      "check": "duplicate delivery of one job id returns the recorded result and does not re-execute",
+      "criterion": "The retry worker must reject a duplicate job id and return the result already recorded for it.",
+      "pass": true,
+      "output": "1 passed — second delivery returned the recorded result",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK002",
+      "check": "ledger schema declares a unique constraint on job_id",
+      "criterion": "The idempotency guard records each job id exactly once in the ledger.",
+      "pass": true,
+      "output": "1 passed — UNIQUE(job_id) present in the ledger schema",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK003",
+      "check": "a replayed request logs a skip and issues no second side effect",
+      "criterion": "A replayed request produces no second side effect and logs a skip.",
+      "pass": true,
+      "output": "1 passed — skip logged, one side effect observed",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    }
+  ],
+  "command_log": ["pytest -q tests/"]
+}

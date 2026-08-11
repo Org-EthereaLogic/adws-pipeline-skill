@@ -1,0 +1,13 @@
+{
+  "verify_result": {
+    "passed": 3,
+    "total": 3,
+    "syntax_errors": 0,
+    "checks": [
+      { "check": "src/retry_worker.py parses", "pass": true },
+      { "check": "src/ledger.py parses", "pass": true },
+      { "check": "tests/test_retry_worker_idempotency.py parses", "pass": true }
+    ]
+  },
+  "drift_verdict": "PASS"
+}

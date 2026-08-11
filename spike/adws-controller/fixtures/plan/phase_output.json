@@ -1,0 +1,14 @@
+{
+  "plan_summary": "Add a ledger-backed idempotency guard to the retry worker and short-circuit duplicate job ids.",
+  "file_change_proposal": [
+    { "file_path": "src/retry_worker.py", "action": "modify", "description": "Consult the ledger before executing; return the recorded result on a duplicate job id." },
+    { "file_path": "src/ledger.py", "action": "modify", "description": "Add a unique constraint on job_id and an insert-or-get helper." }
+  ],
+  "criteria_map": [
+    { "criterion": "The retry worker must reject a duplicate job id and return the result already recorded for it.", "file_path": "src/retry_worker.py" },
+    { "criterion": "The idempotency guard records each job id exactly once in the ledger.", "file_path": "src/ledger.py" },
+    { "criterion": "A replayed request produces no second side effect and logs a skip.", "file_path": "src/retry_worker.py" }
+  ],
+  "planning_blocked": false,
+  "planning_blocked_reason": null
+}
