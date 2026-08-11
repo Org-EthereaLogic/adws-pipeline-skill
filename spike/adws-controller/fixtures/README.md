@@ -88,3 +88,21 @@ Tightening row identity also exposed a semantic bug of my own: "pre-existing" me
 pre-existing **at the time of the repair**, not at any earlier attempt. Comparing against every
 earlier attempt made the first excursion's regression assertion "not new" on a second
 excursion's re-run. A single-excursion fixture set cannot tell those two readings apart.
+
+## Two more from the independent verification round
+
+Both are fail-OPEN counterexamples the reviewer constructed and neither was reachable from the
+fixtures above.
+
+- **`test_bare_ids`** — three rows carrying nothing but `{check_id}`. They satisfied the
+  SC-5/F-31 coverage join and were neither `pass: false` nor `verdict: "fail"`, so the gate
+  returned `pass` on a tester output that recorded no result at all. Every row is now typed
+  and coherence-checked before anything else, and an unreadable row fails closed.
+- **`test_pass_renamed_structural`** — the old structural assertion RENAMED to the regression
+  check's text, still carrying the criterion id. Under `(check_id, check)` identity it looked
+  like the new regression assertion and discharged the debt.
+
+The second is why `regression_check_id` is now a controller-MINTED `REG-{source_attempt}-{k}`
+rather than the criterion id: three successive identities all failed because each was a field
+the TESTER writes, and the tester is the party the check constrains. See FINDINGS.md finding 14
+for the deviation from the letter of SC-13/F-76 and why it is deliberate.

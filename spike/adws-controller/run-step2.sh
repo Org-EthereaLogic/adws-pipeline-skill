@@ -90,7 +90,8 @@ assert "test/1 consumed NO test retry" "$(printf '%s' "$T1OUT" | jget retries_us
 C="$J1/build/attempt_2/corrections.json"
 assert "corrections source_attempt"     "$(jfile "$C" source_attempt)"                 "test/attempt_1"
 assert "corrections classification"     "$(jfile "$C" corrections.0.classification)"   "code"
-assert "corrections regression_check_id" "$(jfile "$C" corrections.0.regression_check_id)" "CHK002"
+assert "corrections criterion id"        "$(jfile "$C" corrections.0.check_id)"              "CHK002"
+assert "corrections MINTED regression id" "$(jfile "$C" corrections.0.regression_check_id)"  "REG-test-attempt_1-1"
 assert "corrections repro"              "$(jfile "$C" corrections.0.repro)"            "null"
 assert "corrections guidance ABSENT"    "$(jfile "$C" guidance)"                       "<absent>"
 
@@ -218,6 +219,21 @@ node "$CTRL" record "$J5" test 2 --from "$(mktest test_pass_regression)" >/dev/n
 assert "the controller will not auto-retry an environment gap" "$RC5" "65"
 
 echo
+echo "### S5b — REVIEW COUNTEREXAMPLE: rows carrying nothing but a check_id fail CLOSED"
+# The first cut recognised failure only as `pass === false || verdict === "fail"`, so a row
+# with neither field was neither failing nor malformed and counted as a pass. Three such rows
+# cleared the coverage join and the gate returned `pass` — a fail-OPEN on the one gate this
+# controller owns outright.
+J5B="$(newjob "$SCRATCH/s5b")"
+step "$J5B" plan 1 "$FIX/plan" >/dev/null
+step "$J5B" build 1 "$FIX/build_initial" >/dev/null
+T5B="$(step "$J5B" test 1 "$(mktest test_bare_ids)")"
+assert       "test/1 gate"                 "$(printf '%s' "$T5B" | jget gate_result)" "fail"
+assert_match "names the unreadable shape"  "$(printf '%s' "$T5B" | jget reason)"      "not schema-valid"
+assert_match "and every missing field"     "$(printf '%s' "$T5B" | jget reason)"      "verdict.*not verified"
+assert       "no route was invented"       "$(printf '%s' "$T5B" | jget route)"       "retry"
+
+echo
 echo "### S6 — SC-13/F-76: a repair that leaves no permanent check does not pass the gate"
 echo "  6a) the BUILDER half — the rewind attempt does not echo regression_check_ids"
 J6="$(newjob "$SCRATCH/s6")"
@@ -239,24 +255,31 @@ step "$J7" build 1 "$FIX/build_initial" >/dev/null
 step "$J7" test 1 "$(mktest test_fail_code)" >/dev/null
 step "$J7" build 2 "$FIX/build_code_repair" >/dev/null
 T7="$(step "$J7" test 2 "$(mktest test_pass_no_regression)")"
-assert       "test/2 gate"                "$(printf '%s' "$T7" | jget gate_result)" "fail"
-assert_match "names the pre-existing assertion" "$(printf '%s' "$T7" | jget reason)" "assertion a superseded attempt already ran.*unique constraint"
+assert       "test/2 gate"              "$(printf '%s' "$T7" | jget gate_result)" "fail"
+assert_match "names the owed minted id" "$(printf '%s' "$T7" | jget reason)"      "REG-test-attempt_1-1"
 
-echo "  6b2) a CHANGED pre-existing row is still not the new assertion (row identity is the CHECK, not its bytes)"
+echo "  6b2) a CHANGED pre-existing row is not the new assertion"
 J7B="$(newjob "$SCRATCH/s6b2")"
 step "$J7B" plan 1 "$FIX/plan" >/dev/null
 step "$J7B" build 1 "$FIX/build_initial" >/dev/null
 step "$J7B" test 1 "$(mktest test_fail_code)" >/dev/null
 step "$J7B" build 2 "$FIX/build_code_repair" >/dev/null
-# Every CHK002 row here runs an assertion attempt_1 already ran; only the structural row's
-# `output` changed. Serialized-row identity called that "new" and discharged the debt while
-# the regression assertion never ran — the substitution F-76 exists to catch.
 T7B="$(step "$J7B" test 2 "$(mktest test_pass_mutated_structural)")"
-assert       "test/2 gate"                 "$(printf '%s' "$T7B" | jget gate_result)" "fail"
-# BOTH CHK002 rows must be rejected: the mutated structural one AND the behavioural one whose
-# text attempt_1 already carried. Naming both is what proves neither discharged the debt.
-assert_match "rejects the MUTATED structural row" "$(printf '%s' "$T7B" | jget reason)" "assertion a superseded attempt already ran.*unique constraint"
-assert_match "and the behavioural row too"        "$(printf '%s' "$T7B" | jget reason)" "exactly one ledger row"
+assert       "test/2 gate"           "$(printf '%s' "$T7B" | jget gate_result)" "fail"
+assert_match "still owes the repair" "$(printf '%s' "$T7B" | jget reason)"      "REG-test-attempt_1-1"
+
+echo "  6b3) REVIEW COUNTEREXAMPLE — RENAMING the old assertion does not discharge the debt"
+# (check_id, check) identity accepted this: the structural row renamed to the regression text
+# looked new, and the gate passed with the behavioural assertion never having run. The id is
+# minted by the CONTROLLER, so no row the tester renames can carry it.
+J7C="$(newjob "$SCRATCH/s6b3")"
+step "$J7C" plan 1 "$FIX/plan" >/dev/null
+step "$J7C" build 1 "$FIX/build_initial" >/dev/null
+step "$J7C" test 1 "$(mktest test_fail_code)" >/dev/null
+step "$J7C" build 2 "$FIX/build_code_repair" >/dev/null
+T7C="$(step "$J7C" test 2 "$(mktest test_pass_renamed_structural)")"
+assert       "test/2 gate"              "$(printf '%s' "$T7C" | jget gate_result)" "fail"
+assert_match "names the owed minted id" "$(printf '%s' "$T7C" | jget reason)"      "REG-test-attempt_1-1"
 
 echo "  6c) a repaired criterion that comes back gate_weak FAILS rather than warns"
 J8="$(newjob "$SCRATCH/s6c")"
@@ -295,7 +318,7 @@ echo "### S8 — the loop guard never fired; every run stopped on a real budget"
 # MAX_ATTEMPTS_PER_PHASE is 6 and is a bug backstop, not a rule. If it is ever what stopped a
 # run, a budget above it is not counting. Worst case here is test in S4 at 3.
 OVER=0; WORST=0
-for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J6" "$J7" "$J7B" "$J8" "$J9"; do
+for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J5B" "$J6" "$J7" "$J7B" "$J7C" "$J8" "$J9"; do
   for P in plan build test review document ship verify; do
     N="$(attempts "$J" "$P")"
     [ "$N" -gt "$WORST" ] && WORST="$N"
@@ -303,7 +326,23 @@ for J in "$J1" "$J2" "$J3" "$J4" "$J5" "$J6" "$J7" "$J7B" "$J8" "$J9"; do
   done
 done
 assert "phases that reached the loop guard" "$OVER" "0"
-printf '        deepest phase across all ten jobs: %s attempts (guard 6)\n' "$WORST"
+printf '        deepest phase across all twelve jobs: %s attempts (guard 6)\n' "$WORST"
+
+echo
+echo "### S9 — syntax sweep of spike/ (the shipped gate's node-check covers adws-pipeline/ only)"
+SYNTAX=0
+for F in "$REPO"/spike/adws-controller/*.js; do
+  node --check "$F" >/dev/null 2>&1 || { echo "      SYNTAX FAIL: $F"; SYNTAX=$((SYNTAX+1)); }
+done
+for F in "$REPO"/spike/adws-controller/*.sh; do
+  bash -n "$F" >/dev/null 2>&1 || { echo "      SYNTAX FAIL: $F"; SYNTAX=$((SYNTAX+1)); }
+done
+assert "spike/ files that fail a syntax check" "$SYNTAX" "0"
+NULS="$(python3 -c "
+import pathlib
+print(sum(1 for p in pathlib.Path('$REPO/spike').rglob('*') if p.is_file() and b'\x00' in p.read_bytes()))
+")"
+assert "spike/ files containing a NUL byte" "$NULS" "0"
 
 echo
 if [ "$FAILS" -eq 0 ]; then

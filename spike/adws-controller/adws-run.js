@@ -142,6 +142,47 @@ const CLASS_CODE = 'code';
 const CLASS_CHECK = 'check';
 const CLASS_ENV = new Set(['environment', 'prerequisite']);
 
+// The documented test-phase check row (artifact-layout.md). A gate that means "executed and
+// passing" has to be able to tell an executed check from an absent field, so every one of
+// these is required and typed — writers are strict, and a row that cannot be read is not a
+// row that passed.
+const CHECK_VERDICTS = new Set(['verified', 'gate_weak', 'fail']);
+const BASELINE_REASONS = new Set(['assertion-failed-runtime-present', 'collection-error', 'not-run']);
+const CHECK_CLASSIFICATIONS = new Set([null, CLASS_CODE, CLASS_CHECK, 'environment', 'prerequisite']);
+
+function malformedCheckRows(checks) {
+  const bad = [];
+  checks.forEach((c, i) => {
+    const why = [];
+    const str = (k) => { if (typeof c[k] !== 'string' || !c[k].trim()) why.push(`${k} must be a non-empty string`); };
+    const bool = (k) => { if (typeof c[k] !== 'boolean') why.push(`${k} must be a boolean`); };
+    str('check_id'); str('check'); str('criterion');
+    // `output` is the evidence the check RAN. F-9: NOT RUN is neither a pass nor a valid red.
+    str('output');
+    bool('pass'); bool('baseline_pass'); bool('falsifiable');
+    if (!BASELINE_REASONS.has(c.baseline_reason)) why.push(`baseline_reason ${JSON.stringify(c.baseline_reason)} not in the documented enum`);
+    if (!CHECK_VERDICTS.has(c.verdict)) why.push(`verdict ${JSON.stringify(c.verdict)} not verified|gate_weak|fail`);
+    if (!('classification' in c) || !CHECK_CLASSIFICATIONS.has(c.classification)) {
+      why.push(`classification ${JSON.stringify(c.classification)} must be null|code|check|environment|prerequisite`);
+    }
+    // Internal coherence. A row whose fields contradict each other records two different runs,
+    // and picking the convenient half is how `test_gate_weak_repaired` claimed a baseline that
+    // both passed and failed.
+    if (!why.length) {
+      if (c.verdict === 'verified' && !(c.pass === true && c.falsifiable === true)) {
+        why.push('verdict "verified" requires pass: true and falsifiable: true (SC-3 A1/A2 — a green that cannot be shown capable of failing is a gap)');
+      }
+      if (c.verdict === 'fail' && c.pass !== false) why.push('verdict "fail" requires pass: false');
+      if (c.verdict === 'gate_weak' && c.falsifiable !== false) why.push('verdict "gate_weak" requires falsifiable: false — gate_weak IS the unfalsifiable outcome');
+      if (c.falsifiable === true && !(c.baseline_pass === false && c.baseline_reason === 'assertion-failed-runtime-present')) {
+        why.push('falsifiable: true requires a RED pre-change baseline for the right reason (baseline_pass: false, baseline_reason: "assertion-failed-runtime-present")');
+      }
+    }
+    if (why.length) bad.push(`checks[${i}]${typeof c.check_id === 'string' ? ` "${c.check_id}"` : ''}: ${why.join('; ')}`);
+  });
+  return bad;
+}
+
 // SC-11/A3 (artifact-layout.md F-17 disposition; parity/provenance-fixtures/run-tests.js).
 // The obtainable half is MANDATORY and non-null; the structurally-unavailable half is
 // present and null so a reader can tell "not captured" from "field dropped".
@@ -402,7 +443,7 @@ function regressionDebt(jobDir) {
     if (!c || !Array.isArray(c.corrections)) continue;
     for (const e of c.corrections) {
       if (e && e.classification === CLASS_CODE && e.regression_check_id) {
-        owed.push({ id: e.regression_check_id, criterion: e.criterion, source_attempt: c.source_attempt, build_attempt: m });
+        owed.push({ id: e.regression_check_id, criterion: e.criterion, criterion_id: e.check_id, source_attempt: c.source_attempt, build_attempt: m });
       }
     }
   }
@@ -448,6 +489,20 @@ function testLayer2(jobDir, attempt, contract) {
   const out = phaseOutputOf(jobDir, 'test', attempt) || {};
   const checks = Array.isArray(out.checks) ? out.checks.filter((c) => c && typeof c === 'object') : [];
 
+  // SCHEMA-VALID SUCCESS, FIRST. The exit criterion is "All derived checks EXECUTED and
+  // PASSING", and the first cut could not say either: it looked only for `pass === false ||
+  // verdict === 'fail'`, so a row carrying nothing but `{check_id}` was neither failing nor
+  // malformed and counted as a pass. Three such rows cleared the coverage join and the gate
+  // returned `pass` — a fail-OPEN on the one gate this controller owns outright, found by an
+  // independent review. A check is only "executed and passing" if it says so in the
+  // documented shape, so the shape is now the first thing checked and anything else fails
+  // CLOSED.
+  const malformed = malformedCheckRows(checks);
+  if (malformed.length) {
+    return gateFail(terminalReasonFor('test'),
+      `phase_output.checks is not schema-valid, so the gate cannot say a check EXECUTED and PASSED — failing closed (artifact-layout.md test phase_output; F-9): ${malformed.join('; ')}`);
+  }
+
   // SC-5/F-31 coverage, BY ID. "Full emission (F-27) guarantees the criterion reaches the
   // tester; the id join is what proves it was answered." An output with no `checks` array at
   // all lands here as 0/N answered — a decision, not an inability to decide.
@@ -475,46 +530,36 @@ function testLayer2(jobDir, attempt, contract) {
     // while the new regression assertion never ran at all" wearing a different disguise, and
     // the whole point of this check is to catch that substitution.
     //
-    // "Pre-existing" means pre-existing AT THE TIME OF THE REPAIR, so the cutoff is each
-    // correction's own `source_attempt` rather than every earlier attempt. Comparing against
-    // all of them is wrong in a way only a two-excursion job reveals: the regression assertion
-    // added for the first excursion legitimately RE-RUNS on every later attempt, and a second
-    // excursion would then find it "not new" and fail a job for doing exactly what F-76 asked.
-    const assertionOf = (c) => `${c.check_id} :: ${c.check}`;
-    const assertionsThrough = (cutoff) => {
-      const seen = new Set();
-      for (const n of listAttempts(jobDir, 'test').filter((n) => n <= cutoff)) {
-        for (const c of (phaseOutputOf(jobDir, 'test', n) || {}).checks || []) {
-          if (c && typeof c === 'object') seen.add(assertionOf(c));
-        }
-      }
-      return seen;
-    };
+    // The id below is MINTED BY THE CONTROLLER when the rewind is opened, so no attempt that
+    // existed at the time of the repair can legitimately carry it. That is what makes step
+    // 3(b) — "a NEW row answering this correction, not a pre-existing row for the same
+    // criterion" — checkable at all. Both earlier attempts at deciding it from the evidence
+    // the TESTER writes failed: serialized-row identity let a changed structural row discharge
+    // the debt, and (check_id, check) identity let a RENAMED one do the same. Any field the
+    // tester writes is a field the tester can edit; the id has to come from outside.
+    const seenAtRepair = (cutoff, id) => listAttempts(jobDir, 'test')
+      .filter((n) => n <= cutoff)
+      .some((n) => ((phaseOutputOf(jobDir, 'test', n) || {}).checks || [])
+        .some((c) => c && c.check_id === id));
     for (const owed of debt) {
       const src = /\/attempt_(\d+)$/.exec(owed.source_attempt || '');
-      const priorAssertions = assertionsThrough(src ? Number(src[1]) : attempt - 1);
+      const cutoff = src ? Number(src[1]) : attempt - 1;
       const rows = checks.filter((c) => c.check_id === owed.id);
       if (!rows.length) {
         return gateFail(terminalReasonFor('test'),
-          `SC-13/F-76: the repair of ${owed.source_attempt} owes a regression check carrying id ${owed.id}; test/attempt_${attempt} has no check row with that id`);
+          `SC-13/F-76: the repair of ${owed.source_attempt} owes a permanent regression check carrying ${owed.id}; test/attempt_${attempt} has no check row with that id (answering criterion ${owed.criterion_id} again is not the new assertion)`);
       }
-      const fresh = rows.filter((c) => !priorAssertions.has(assertionOf(c)));
-      if (!fresh.length) {
+      if (seenAtRepair(cutoff, owed.id)) {
         return gateFail(terminalReasonFor('test'),
-          `SC-13/F-76: every check row carrying ${owed.id} in test/attempt_${attempt} runs an assertion a superseded attempt already ran (${rows.map((c) => JSON.stringify(c.check)).join(', ')}) — a pre-existing check for the criterion is not the new regression assertion`);
-      }
-      // "records real output from exercising the correction". A new assertion that recorded
-      // nothing is a claim about the future, not evidence about the present.
-      if (!fresh.some((c) => typeof c.output === 'string' && c.output.trim())) {
-        return gateFail(terminalReasonFor('test'),
-          `SC-13/F-76: the new regression assertion for ${owed.id} in test/attempt_${attempt} recorded no output — it must be exercised, not merely declared`);
+          `SC-13/F-76: ${owed.id} was already carried by a check row at or before ${owed.source_attempt} — the correction-scoped id is minted at rewind time and cannot pre-date its own repair`);
       }
     }
     // "A criterion repaired in THIS job that comes back gate_weak fails the gate rather than
     // warning — gate_weak means unverified, and unverified is not an acceptable answer for
     // the defect the job just stopped to fix."
-    const repaired = new Set(debt.map((d) => d.criterion));
-    const weakRepaired = checks.filter((c) => c.verdict === 'gate_weak' && (repaired.has(c.criterion) || debt.some((d) => d.id === c.check_id)));
+    const repairedCriteria = new Set(debt.map((d) => d.criterion));
+    const repairedIds = new Set(debt.flatMap((d) => [d.id, d.criterion_id]));
+    const weakRepaired = checks.filter((c) => c.verdict === 'gate_weak' && (repairedCriteria.has(c.criterion) || repairedIds.has(c.check_id)));
     if (weakRepaired.length) {
       return gateFail(terminalReasonFor('test'),
         `SC-13/F-76: ${weakRepaired.map((c) => c.check_id).join(', ')} came back gate_weak on a criterion this job repaired — unverified is not an answer for the defect the job stopped to fix`);
@@ -824,7 +869,7 @@ function openRewind(jobDir, sourcePhase, sourceAttempt, rows, classification) {
   fs.mkdirSync(dir, { recursive: true });
   writeJson(path.join(dir, 'corrections.json'), {
     source_attempt: sourceRef,
-    corrections: rows.map((c) => ({
+    corrections: rows.map((c, k) => ({
       check_id: c.check_id,
       criterion: c.criterion,
       // The criterion IS the expectation; `output` is what the tester observed. Neither is
@@ -836,10 +881,26 @@ function openRewind(jobDir, sourcePhase, sourceAttempt, rows, classification) {
       // model work, not controller work (see `guidance` below).
       path: typeof c.path === 'string' ? c.path : '',
       classification,
-      // SC-13/F-76: "Where an acceptance criterion covers the finding it is that criterion's
-      // criteria-to-checks id, the same value as check_id." A tester-originated correction
-      // always has one, so no REG- id is ever minted here.
-      regression_check_id: c.check_id,
+      // SC-13/F-76, WITH A STATED DEVIATION. The doc says: "Where an acceptance criterion
+      // covers the finding it is that criterion's criteria-to-checks id, the same value as
+      // check_id", reserving the minted `REG-{source_attempt}-{k}` form for findings no
+      // criterion covers. A tester-originated correction always has a criterion, so the doc
+      // points at the criterion id — and that is exactly what makes step 3(b) uncheckable.
+      //
+      // `check_id` names the CRITERION, not the assertion, and one criterion may carry
+      // several checks. So "a NEW row answering this correction — not a pre-existing row for
+      // the same criterion" cannot be decided from the criterion id, and the only other
+      // candidate, the `check` prose, is written by the same agent the check constrains: an
+      // independent review renamed the old structural row and the gate passed without the
+      // regression assertion ever running.
+      //
+      // So the id is minted for EVERY code correction. The doc's own rationale carries over
+      // unchanged — REG- ids "live outside the criteria namespace by construction, so they
+      // never collide with a criteria-to-checks id and never disturb the SC-5/F-31
+      // criterion-coverage join" — and the criterion is still recorded, in `check_id` on this
+      // same entry, so nothing is lost. The `/` is normalised to `-` to keep the id free of
+      // path separators.
+      regression_check_id: `REG-${sourceRef.replace('/', '-')}-${k + 1}`,
       // "null only when the finding was never reproduced by running anything." The check WAS
       // run, but `repro` names an archived corpus under the attempt's consensus/repro/, and a
       // tester check has none — its check_id is the re-runnable handle. Recorded in

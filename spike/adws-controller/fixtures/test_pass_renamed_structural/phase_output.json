@@ -14,7 +14,7 @@
     },
     {
       "check_id": "CHK002",
-      "check": "ledger schema declares a unique constraint on job_id",
+      "check": "regression: replaying a delivery twice leaves exactly one ledger row (tests/test_retry_worker_idempotency.py)",
       "criterion": "The idempotency guard records each job id exactly once in the ledger.",
       "pass": true,
       "output": "1 passed \u2014 UNIQUE(job_id) present in the ledger schema",
@@ -30,18 +30,6 @@
       "criterion": "The idempotency guard records each job id exactly once in the ledger.",
       "pass": true,
       "output": "1 passed \u2014 one ledger row after a replayed delivery",
-      "baseline_pass": false,
-      "baseline_reason": "assertion-failed-runtime-present",
-      "falsifiable": true,
-      "verdict": "verified",
-      "classification": null
-    },
-    {
-      "check_id": "REG-test-attempt_1-1",
-      "check": "regression: replaying a delivery twice leaves exactly one ledger row (tests/test_retry_worker_idempotency.py)",
-      "criterion": "The idempotency guard records each job id exactly once in the ledger.",
-      "pass": true,
-      "output": "1 passed \u2014 RED before the reorder (2 rows), green after",
       "baseline_pass": false,
       "baseline_reason": "assertion-failed-runtime-present",
       "falsifiable": true,

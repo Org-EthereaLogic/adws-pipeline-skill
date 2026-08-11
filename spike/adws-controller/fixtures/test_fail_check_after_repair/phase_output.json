@@ -37,7 +37,7 @@
       "classification": null
     },
     {
-      "check_id": "CHK002",
+      "check_id": "REG-test-attempt_1-1",
       "check": "regression: replaying a delivery twice leaves exactly one ledger row (tests/test_retry_worker_idempotency.py)",
       "criterion": "The idempotency guard records each job id exactly once in the ledger.",
       "pass": true,

@@ -232,7 +232,10 @@ spike outcome, not a failure.
 
 Steps 1 and 2 of §10 are done; steps 3 and 4 are not started. The §6.2 go/no-go is **still
 not callable** — Q1 and Q5 are untouched, and **Q5 is the one that decides**. Step 1 went
-through three adversarial rounds; step 2 has had none yet.
+through three adversarial rounds; step 2 has had two (an automated review and an independent
+verification pass), which between them found four defects in the one gate the controller owns
+outright — every one of them a fail-OPEN, and every one of them the same error: treating "no
+failure detected" as "a success was established". See `FINDINGS.md` findings 12, 14 and 15.
 
 Code and evidence: `spike/adws-controller/` (`adws-run.js`, `verify-canonical.js`,
 `mk-risk-trace.js`, `fixtures/`, four drivers, the ingest matrix) and `FINDINGS.md`, which is
@@ -299,3 +302,16 @@ can kill the whole thing.
   (forward-re-run budget, routing precedence, the environment-gap halt, and the attempt-level
   route annotations). All four are marked as decisions in `FINDINGS.md` and are the first
   things an adversarial pass should attack.
+- **One deviation from the letter of a shipped rule, which is a question FOR the skill.**
+  SC-13/F-76 step 3(b) asks the orchestrator to confirm that a repaired defect's regression
+  check is "a NEW row … not a pre-existing row for the same criterion", while
+  `artifact-layout.md` tells it to identify that row by the CRITERION's `criteria-to-checks`
+  id — and one criterion may legitimately carry several checks. The property is therefore not
+  decidable from the id the rule names, and every alternative in the documented row shape is a
+  field the tester writes. The spike mints a correction-scoped `REG-{source_attempt}-{k}` id
+  for every `code` correction instead (`FINDINGS.md` finding 14). Either the rule or the row
+  schema needs an assertion-level identity; this is not a spike-local choice.
+- **`make ci` is not evidence about this code.** `scripts/local-ci/gate.sh` validates the
+  shipped paths only — correctly, since the spike must not be able to affect them — so a green
+  gate says nothing about `spike/`. `run-step2.sh` carries its own syntax and NUL-byte sweep
+  (finding 15). Any step-3 validation claim has to say which of the two it rests on.

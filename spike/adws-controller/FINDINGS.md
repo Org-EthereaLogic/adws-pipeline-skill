@@ -212,7 +212,7 @@ Step 1 answered Q2 (evidence compatibility). Step 2 is the plan's §10.2 — "ad
 test→build rewind, mocked outputs" — and it answers **Q3 (budget-as-code)** and **Q4
 (idempotency)**. Q1 and Q5 remain untouched: every dispatch is still MOCKED.
 
-Driven and asserted by [run-step2.sh](run-step2.sh), 95 assertions over ten jobs, against
+Driven and asserted by [run-step2.sh](run-step2.sh), 103 assertions over twelve jobs, against
 the purpose-built [fixtures/](fixtures) the plan asked for in §5.2 and step 1 did not need.
 
 ### What step 2 costs, stated first
@@ -281,13 +281,21 @@ ladder the `retry` fixture recorded by hand, and the ingest matrix now **replays
 end to end and reproduces its tiers exactly** (see below) — the only external check on this
 logic that is not this spike marking its own homework.
 
-**SC-13/F-76 is enforced on both halves**, so a rewind means a repair with a permanent check
-behind it rather than a counter increment: the rewind build attempt must echo each
-`regression_check_id` in `phase_output.regression_check_ids` (`S6a`), the forward test re-run
-must carry a check row for it running an assertion no earlier attempt ran (`S6b`/`S6b2` — the
-doc is explicit that the SC-5/F-31 criterion join does *not* establish this),
-and a criterion repaired in this job that comes back `gate_weak` fails rather than warns
-(`S6c`).
+**SC-13/F-76 is enforced on both halves — after two failed attempts at it** (finding 14). The
+rewind build attempt must echo each `regression_check_id` in
+`phase_output.regression_check_ids` (`S6a`); the forward test re-run must carry a check row
+under the correction-scoped id the CONTROLLER minted at rewind time (`S6b`/`S6b2`/`S6b3`); and
+a criterion repaired in this job that comes back `gate_weak` fails rather than warns (`S6c`).
+The minted id is the load-bearing part: step 3(b) asks for "a NEW row … not a pre-existing row
+for the same criterion", and no field the TESTER writes can answer that, because every one of
+them is a field the tester can edit.
+
+**The gate requires schema-valid SUCCESS, not merely the absence of failure** (finding 14).
+"All derived checks executed and passing" is only checkable if a row says so in the documented
+shape, so every row is typed and coherence-checked first — `verdict: "verified"` requires
+`pass: true` and `falsifiable: true`, `falsifiable: true` requires a RED pre-change baseline
+for the right reason, and a row that cannot be read fails CLOSED. `S5b` is the standing
+regression.
 
 **One validator now actually runs.** `criteria-to-checks` is the one that must run BEFORE its
 phase agent (SC-7/F-45), so the controller runs it at test-phase entry, checks
@@ -403,6 +411,48 @@ taken, implemented, and recorded so a reader can disagree with it.
     fixture-supplied, so every gate except the test gate's checks layer is exactly as strong as
     the scorer, and no stronger.
 
+14. **Two fail-OPEN defects in the gate this controller owns outright, both found by an
+    independent review, neither by me.** They are the same mistake in two places: checking for
+    the presence of a failure rather than for the presence of a success.
+    - **The test gate accepted rows that said nothing.** Failure was recognised only as
+      `pass === false || verdict === "fail"`, so three rows carrying nothing but `{check_id}`
+      were neither failing nor malformed, cleared the SC-5/F-31 coverage join, and the gate
+      returned `pass`. The exit criterion is "all derived checks EXECUTED and PASSING" and
+      the implementation could establish neither. Every row is now typed against the
+      documented shape AND checked for internal coherence, and anything unreadable fails
+      closed. Fixture `test_bare_ids`.
+    - **F-76's row identity was still model-editable.** After the CodeRabbit round moved
+      identity from the serialized row to `(check_id, check)`, the review simply RENAMED the
+      old structural assertion to the regression check's text: it looked new, and the gate
+      passed with the behavioural assertion never having run. Fixture
+      `test_pass_renamed_structural`.
+
+    The second one is the more instructive. Three successive identities — serialized row,
+    `(check_id, check)`, and before either of them the bare `check_id` — all failed for one
+    reason: **every candidate was a field the tester writes, and the tester is the party the
+    check constrains.** The id has to come from outside, so the controller now MINTS
+    `REG-{source_attempt}-{k}` for every `code` correction and requires the forward attempt to
+    carry a row under it. Nothing the tester renames can produce that id, and an id that
+    pre-dates its own repair is rejected too.
+
+    **This deviates from the letter of SC-13/F-76** and the deviation is deliberate. The doc
+    reserves minted `REG-` ids for findings that no criterion covers, and says a
+    criterion-covered finding reuses the criterion's `criteria-to-checks` id. But `check_id`
+    names the CRITERION, and one criterion may legitimately carry several checks — so the
+    doc's own step 3(b) is not decidable from the id the doc tells you to use. The doc's
+    rationale for `REG-` ids carries over unchanged ("outside the criteria namespace by
+    construction … never disturb the SC-5/F-31 criterion-coverage join"), the criterion is
+    still recorded in the same entry's `check_id`, and the criterion-coverage join is
+    untouched. **This is worth raising against the skill itself**: as written, F-76 asks the
+    orchestrator to verify a property the evidence schema cannot express.
+15. **The shipped CI gate does not execute or syntax-check `spike/`.** `scripts/local-ci/gate.sh`
+    validates the shipped paths, which is correct — the spike must not be able to affect them.
+    But it means "make ci PASS" was never evidence about this code, and a NUL byte in
+    `adws-run.js` (CodeRabbit round) and every defect above lived through several green runs.
+    `run-step2.sh` now ends with its own sweep: `node --check` / `bash -n` over every file in
+    `spike/adws-controller/`, plus a NUL-byte scan. Reported as a limit of the validation
+    claim, not fixed by widening a shipped gate for throwaway code.
+
 ### The ingest matrix, re-measured
 
 Step 2 changed how the matrix decides what it can replay, and the change is worth stating
@@ -516,6 +566,14 @@ resolve in one direction or the other.
   a halted job should not flatten `ADVOCATE_DISSENT` or an evidence-integrity breach into a
   retriable reason.
 
+**Three review rounds on step 2, and the score is not flattering.** CodeRabbit found the
+F-76 row-identity hole; the independent verification round found two fail-OPEN defects in the
+same area plus the fact that `make ci` never covered this code at all. Every one of them was
+in the gate the controller owns outright — the one place step 2 removed the scorer as a
+backstop — and every one of them was the same error: treating "no failure detected" as "a
+success was established". My own fixtures could not catch them, because I wrote the fixtures
+from the same understanding that produced the code.
+
 A note on process, since it is now the fourth data point: each of the last three step-1
 rounds was overturned by an independent pass, step 1's own driver defect was caught by the
 new matrix rather than by me, and step 2's first cut of the derived-gate comparison was wrong
@@ -529,7 +587,7 @@ second independent look.
 bash spike/adws-controller/run-step1.sh          # clean: PROMOTE / exit 0, CANONICAL OK
 bash spike/adws-controller/run-step1-negative.sh # failing critic -> retry ladder -> RETRY / exit 1
 bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gate mutation, asserted
-bash spike/adws-controller/run-step2.sh          # step 2: 95 assertions over ten jobs
+bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance
 ```
