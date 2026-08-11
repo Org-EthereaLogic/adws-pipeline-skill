@@ -2666,3 +2666,97 @@ pre-date this PR; the 2 orb failures are the daemon-down runs described above.
 deleted at merge and the stale remote-tracking ref pruned locally. No worktrees.
 **Untracked files: none.** `.adws-installs`, `.vscode/`, `ci_logs/`,
 `parity/PARITY_REPORT.md` remain gitignored.
+
+---
+
+## Post-merge sync — PR #72 + #73 / §6.2 spike step 5, the run (2026-08-11)
+
+Two merges since the #70 entry, both throwaway code under `spike/`, **nothing shipped**:
+
+- `80f1e95` (#72) — finding 36, from the pre-run review the operator asked for.
+- `c2aa2c3` (#73) — **the step-5 run itself.** Verdict: **Z CONFIRMED**.
+
+`git diff --stat 036ff0a..c2aa2c3 -- adws-pipeline/ parity/` is empty, `skill-manifest`
+is unchanged at `549226ba94f0`, and `make check-installs` reports all three known installs
+CURRENT. No reinstall is required or implied.
+
+### The result
+
+| | |
+|---|---|
+| Z at run time | 9,700 B / 155 lines |
+| Z′ after patching every residue event | **11,400 B / 176 lines** |
+| Ceiling (§12.1) | 21,274 B — **1.87×** headroom |
+| §12.7 band | **< 14,000 B → Z CONFIRMED** |
+
+The GO's pessimistic floor holds. `run-step5.sh` S9 asserts the band rather than stating it,
+and `.step5-residue.json` records a **SHA-256** of the sketch it measured (finding 27), so a
+same-length edit reads stale.
+
+**How the run was isolated, because it nearly was not.** The `adws-pipeline` skill is a
+**user-level** install (`~/.claude/skills/`), so *every* session on the development machine
+carries the 429-line `SKILL.md` in its skill list — the document the after arm is measured
+against. §12.4 assumed a fresh session was sufficient isolation; it is not. The run was
+executed in an OrbStack VM with a clean `~/.claude` and a fresh clone. The repo carries the ten
+`adws-*` agent definitions in `.claude/agents/` but no `.claude/skills/`, so the VM had exactly
+what the run needed and nothing it was measuring against — `SKILL.md` present as a *file* (a
+reach is detectable and countable) and absent as a *skill* (it cannot load silently).
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS |
+| all seven drivers | exit 0; `run-step5.sh` **133 assertions** |
+| `run-ingest-matrix.js` | exit 0 — 25 ingested, MISMATCH 0 |
+| Drivers re-run inside the VM (Linux, Node 24) | `run-step5.sh` and `run-step3.sh` pass, matrix 0 MISMATCH |
+| CodeQL | fail in 1–3s, zero steps executed — [[codeql-billing-lock]] |
+
+### Review coverage: still none from CodeRabbit, and the pattern is now three deep
+
+Neither #72 nor #73 drew a CodeRabbit review or comment. Recorded, as #70's entry recorded it.
+
+What has actually caught things across these three PRs, in order: an **independent audit** of a
+pre-commit tree (findings 33, 34, 35), a **self-review before spending dispatches** (finding
+36 — the weak form, and it found a mechanical defect), and a **live run by an uncontaminated
+orchestrator** (findings 37–40). The third was the most productive by a wide margin, and it is
+the only one that exercised the system rather than reading it. That is step 3's lesson holding
+at a larger scale: *the six phases that have never run live are in exactly the position the
+plan phase was in before it ran.*
+
+### The four findings, and which are ours to fix
+
+- **37** — one wrong argument in the sketch (`init <contract> <target_repo>`, where the
+  controller's second positional is `evidenceRoot`) produced **four of the ten residue
+  events**, including a mandated consensus briefing that was factually false on the run.
+  *Fixed in the sketch.*
+- **38** — finding 25's named risk occurred **in the block finding 25 named**: the consensus
+  briefing, compressed past the point where "check results" survived. *Fixed in the sketch.*
+- **39** — the documented check row cannot express the primary documented `gate_weak` case.
+  **Not ours** — a shipped-document disagreement, opened as
+  [#74](https://github.com/Org-EthereaLogic/adws-pipeline-skill/issues/74) and a fourth member
+  of the findings 16/17 family.
+- **40** — two controller defects the harness could not reach: an uncaught `ENOENT` where a
+  controlled error belongs, and `worktree_path` emitted as `""` **silently**, on the one field
+  that enforces isolation. *Open, in `spike/`.*
+
+### Where §6.2 stands
+
+**GO, four conditions, and condition 2's load-bearing assumption is now measured.** Condition 4
+said the reasoning A/B was the highest-value experiment left "ahead of any unimplemented
+family"; §12 argued Z had to go first because it was the only open item that could flip the
+sign. It did not flip: Z′ is 1.87× under the ceiling.
+
+**Condition 4 is now unambiguously the top of the list**, and one input to it moved: finding 38
+is the first observed instance of per-phase work *growing* under the thin interface — two
+assessors re-derived what the tester had established. That is a quality cost, not yet a token
+measurement, and it is exactly the mechanism finding 25 named.
+
+Still unmeasured after this run: the **live handshake cost** (finding 31's prediction is open —
+the run's controller messages were never counted), both arms of the reasoning A/B, and four of
+the seven phases, which have still never been orchestrated from this document.
+
+**Branches.** `origin` carries **`main` alone** — `spike/step5-finding36` and
+`spike/step5-run` were deleted at merge and their stale refs pruned. No worktrees.
+**Untracked files: none.**
