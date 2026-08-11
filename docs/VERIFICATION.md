@@ -2161,3 +2161,76 @@ them (see `SIMPLIFICATION_ANALYSIS.md` §4):
   while claiming to replay it (the first was the runtime `chmod` in the previous round). Both
   times the harness was wrong before the controller was, which is an argument for fixture
   corpora that encode defects the harness has to preserve rather than merely read.
+
+---
+
+## Post-merge sync — PR #62 / §6.2 controller spike, step 2 (2026-08-11)
+
+Step 2 of the §6.2 spike (retries and rewinds) merged as `c9d517f` (squash of three commits
+on `spike/controller-step2-retries-rewinds`). Same shape as the PR #60 entry: throwaway code
+under `spike/`, **nothing shipped**.
+
+### What an install carries from this PR: nothing
+
+`git diff --stat -- adws-pipeline/ parity/` is empty across all three commits, so
+`skill-manifest` — which digests only `adws-pipeline/` — is unchanged and
+`make check-installs` reports the three known installs still CURRENT at the pre-existing
+digest. No reinstall is required or implied by this merge.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T062234Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS |
+| `run-step1.sh` / `-negative` / `run-counterexample.sh` | exit 0 |
+| `run-step2.sh` | exit 0, 103 assertions over twelve jobs |
+| `run-ingest-matrix.js` | exit 0 — 25 fixtures, MISMATCH 0, LIMIT 0 |
+| CodeQL `Analyze (javascript-typescript)` | fail in 2s, **zero steps executed** — the account billing lock, not a code result |
+| `git status --porcelain` after a full driver run | clean |
+
+Ledger state after the final validation run on merged `main`: 45 gate logs, 29 orb logs in
+`ci_logs/` (both counts true through run_id `20260811T062234Z`; a later run moves them).
+
+### The result worth recording, and it is not a flattering one
+
+Step 2 answered the plan's Q3 (budget-as-code) and Q4 (idempotency) with assertions. It also
+**gave up a property step 1 had**: `execution-report.js` has no gate over the test phase's
+`checks[]` and never reads `classification`, so a controller that owns retries and rewinds
+must own a gate the scorer is silent on.
+
+**Every defect found in step 2 landed in exactly that gate**, and every one was the same error
+— treating "no failure detected" as "a success was established":
+
+- an automated review found that F-76's regression-coverage check identified a check row by its
+  whole serialized value, so a *changed* pre-existing row discharged the repair's debt while the
+  new assertion never ran;
+- an independent verification round then found **two fail-OPEN cases**: rows carrying nothing
+  but a `check_id` passed the gate outright, and after the first fix, simply *renaming* the old
+  assertion still discharged the debt.
+
+Three successive row identities failed for one reason: **every candidate was a field the tester
+writes, and the tester is the party the check constrains.** The controller now mints the
+regression id itself. That is a deviation from the letter of SC-13/F-76 and is recorded as a
+question for the skill rather than a spike-local choice — as written, F-76 asks the
+orchestrator to verify a property the evidence schema cannot express.
+
+### A limit of every "make ci PASS" claim in this file, for spike code
+
+`scripts/local-ci/gate.sh` validates the **shipped** paths. That is correct — the spike must
+not be able to affect them — but it means a green gate has never been evidence about
+`spike/`. A NUL byte in `adws-run.js` and all four defects above survived several green runs.
+`run-step2.sh` now ends with its own `node --check` / `bash -n` / NUL-byte sweep. Any future
+verification claim about spike code has to say which of the two gates it rests on.
+
+### Process facts, continuing the PR #60 entry
+
+- **Step 2 went through two review rounds and both found real defects**, bringing the running
+  count to five consecutive spike rounds overturned by an independent pass. In every case the
+  primary pass had explicitly self-checked the claim that fell.
+- **My own fixtures could not catch any of the four**, because I wrote them from the same
+  understanding that produced the code. The two counterexample fixtures now in the corpus
+  (`test_bare_ids`, `test_pass_renamed_structural`) were both constructed by reviewers.
+- The second CodeRabbit pass was **rate-limited**, so commits 2 and 3 of the PR are unreviewed
+  by it. The check reported `pass`; that status was not a review, and is recorded here so the
+  green check is not later read as one.
