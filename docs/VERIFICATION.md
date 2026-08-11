@@ -2234,3 +2234,117 @@ verification claim about spike code has to say which of the two gates it rests o
 - The second CodeRabbit pass was **rate-limited**, so commits 2 and 3 of the PR are unreviewed
   by it. The check reported `pass`; that status was not a review, and is recorded here so the
   green check is not later read as one.
+
+## Post-merge sync — PR #64 / §6.2 controller spike, step 3 (2026-08-11)
+
+Step 3 of the §6.2 spike — **one live `adws-planner` dispatch**, which answers the plan's Q1
+— merged as `1ce5307` (squash of three commits on `spike/step3-live-dispatch`). Same shape as
+the #60 and #62 entries: throwaway code under `spike/`, **nothing shipped**.
+
+### What an install carries from this PR: nothing
+
+`git diff --stat ba2f9d2..1ce5307 -- adws-pipeline/ parity/` is empty, so `skill-manifest` —
+which digests only `adws-pipeline/` — is unchanged and `make check-installs` reports the three
+known installs still CURRENT at the pre-existing digest. No reinstall is required or implied.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T133742Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T133752Z` |
+| `run-step1.sh` / `-negative` / `run-counterexample.sh` / `run-step2.sh` | exit 0 |
+| `run-step3.sh` (new) | exit 0, 58 assertions over fourteen jobs |
+| `run-ingest-matrix.js` | exit 0 — 25 fixtures, MISMATCH 0, LIMIT 0 |
+| `verify-canonical.js` on the live tree | CANONICAL OK |
+| CodeQL `Analyze (javascript-typescript)` | fail in 3s, **zero steps executed** — the account billing lock, not a code result |
+| `git status --porcelain` after a full driver run | clean |
+
+Ledger state after the final validation run on merged `main`: 52 gate logs, 36 orb logs in
+`ci_logs/`.
+
+### The result: Q1 answered, and the reason it was worth running
+
+One real `adws-planner` subagent through `next → Agent tool → record`, at the tier the
+controller advertised, into the directory it named, against a detached `git worktree` so it
+could not reach the checkout. Gate `pass` from a `task-normalize` run the controller really
+performed; tree CANONICAL OK. Evidence archived at
+`spike/adws-controller/fixtures/live_plan_attempt/` and replayed by `run-step3.sh`, so the
+result is re-checkable without spending another subagent run.
+
+**The live dispatch found two defects in twenty minutes, in code two adversarial rounds had
+already read closely.** Both had one cause — the controller and the phase agent write the
+*same file* by instruction, and the controller read that file's existence as its own act:
+
+- the run went **terminal before `record` ran**, because the planner writes
+  `phase_manifest.json` with `gate_result: null` exactly as `adws-planner.md:21` instructs,
+  and the sequencing oracle read that as an undecided verdict;
+- an agent writing `gate_result: "pass"` into that same file was **believed**, and `next`
+  said dispatch `build` — the builder would have run against a gate the planner granted
+  itself.
+
+Neither was reachable from the mocked path: `NEVER_INGEST` means a replayed attempt
+structurally cannot contain an agent-written `phase_manifest.json`. **The mock was not a weak
+test of that behaviour — it was no test of it at all**, and nothing in the mocked suite could
+have revealed which. The six phases that have still never run live are in exactly the position
+the plan phase was in before it ran.
+
+### A finding that cost no dispatch, and is the sharpest of the three steps
+
+Running the plan gate's own validator over the fixture corpus: **all 25 fixtures record
+`plan-coherence: pass` over contracts `task-normalize` scores `fail`** — `promote_clean`
+included, the tree this spike has driven to PROMOTE since step 1. Every one of those traces
+omits the `output` key SC-8/F-55's mismatch check reads, so the check built to catch exactly
+this is **inert against all of them, including the four fixtures built to test mismatch
+detection**.
+
+This does not make the corpus wrong to score as it does — they are scorer fixtures, and a
+hand-authored `pass` is a legitimate stimulus. It means the corpus cannot be used as evidence
+that a real run's plan gate ever passed. Reproduce with the one-liner in `FINDINGS.md`
+§Reproduce.
+
+### Two questions this spike now raises FOR the skill
+
+1. **SC-13/F-76 row identity** (from step 2, unchanged): the property F-76 asks the
+   orchestrator to confirm is not decidable from the id the rule names.
+2. **`gate_result` lives in the agent's file** (new): it is the orchestrator's designated
+   post-hoc field, inside a file the agent specs instruct the agent to write. Every
+   orchestrator — the prose one included — therefore needs a decision record outside that
+   file to know its own decisions. The spike added `.decisions.json` for itself; the shipped
+   artifact layout has no equivalent.
+   **There is no permission behind such a record.** The orchestrator and its subagents are the
+   same OS principal, so no `chmod` separates them and the boundary is a contract ("never
+   write outside your attempt directory"). A ledger does not make forgery impossible — it
+   makes forgery require *violating* a prohibition rather than *following* an instruction. Both
+   defects above were agents doing exactly as told, which is the class it closes.
+
+### Process facts, continuing the PR #60 and #62 entries
+
+- **Step 3 went through two review rounds and both found real defects**, bringing the running
+  count to **seven** consecutive spike rounds overturned by an independent pass.
+- Both rounds landed on the *same fix*, twice: the first version of finding 19's fix keyed
+  authorship to the `provenance` block **inside** the agent-written manifest (rejected — a
+  discriminator inside the forgeable region is not an authorization record); the second stored
+  the verdict in the ledger **without comparing it** to the manifest, so a recorded `fail`
+  could still be flipped to `pass` after recording. Writing up a weakness in prose is not a
+  substitute for closing one that costs fifteen lines.
+- One review request was **declined with reasons rather than implemented**: a test asserting
+  that a forged ledger plus an agent-authored `gate_result` cannot advance the job would
+  assert something false. The driver instead asserts the three cases that hold and declares
+  the fourth (a *consistent* forgery of both files) as a limit.
+- The third CodeRabbit pass was **rate-limited**, so commit `0716d1c` is unreviewed by it. The
+  check reported `pass`; that status was not a review. Same as #62, and recorded here for the
+  same reason.
+- `make ci` remains **not evidence about `spike/`** — it validates the shipped paths only.
+  `run-step2.sh` and `run-step3.sh` each carry their own syntax and NUL sweep. `run-step3.sh`'s
+  NUL check was itself wrong on first run (`grep $'\x00'` is an empty pattern in bash and
+  matched all 68 files); fixed to the python3 method `run-step2.sh` already used.
+
+### Where §6.2 stands
+
+**Q1–Q4 answered; Q5 half measured and still undecided.** Round trips are 2 model turns per
+phase in steady state and the handshake payload is ~1.1 KB per phase against the 170,249
+tokens the dispatch it carried cost (~0.2%) — both inside the plan's bar. The SKILL.md
+line-delta and the token-behaviour half are **zero measured**. **Step 4 decides**, and
+`SPIKE_CONTROLLER_PLAN.md` §11 says not to add rewind families, validators, phases, or resume
+logic before it.
