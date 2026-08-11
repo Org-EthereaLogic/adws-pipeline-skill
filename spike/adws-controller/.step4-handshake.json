@@ -3,6 +3,6 @@
   "messages": 16,
   "phases": 7,
   "model_turns": 16,
-  "controller_sha256": "3240f854edffae97e08e39ab6542fdbe8a87267ca26fdd2356bce0ec3edab903",
+  "controller_sha256": "bf8ea26a3f0d479dbfa0a3463249563f9638bf70737015ae7110eb6cfa73d2d7",
   "measured_over": "one complete seven-phase green run, all controller stdout concatenated"
 }

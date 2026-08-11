@@ -335,6 +335,31 @@ REC="$(stage_repro "$JX" test 1 true code)"
 R="$(node "$CTRL" record "$JX" test 1 --reproduction "$REC")"
 assert "and the Critic finding still routes" "$(printf '%s' "$R" | jget annotation)" "CRITIC_FAIL_REPAIRED"
 assert "the overridden dissent did not become a retry" "$(printf '%s' "$R" | jget route)" "rewind"
+# ...and the other THREE resolutions must NOT ask for a reproduction, because in each of them
+# the dissent still owns the route: uphold ends the job, repair rewinds, re-review retries. A
+# reproduce round requested there costs a dispatch whose answer is then discarded. (The first
+# cut of the fix above fell through to the Critic for exactly these three — and never for
+# `override`, the case it was written for, which writes the file and skips the block.)
+mixed_job() { # <name> -> a job at test/attempt_1 with BOTH a dissent and a Critic fail
+  local j; j="$(newjob "$SCRATCH/$1")"
+  head_phases "$j" >/dev/null || return 1
+  node "$CTRL" next "$j" >/dev/null
+  stage_live "$j" test 1 "$FIX/test_pass"
+  node "$CTRL" record "$j" test 1 >/dev/null
+  mkdir -p "$j/test/attempt_1/consensus"
+  cp "$FIX/consensus_critic_fail/critic.json" "$j/test/attempt_1/consensus/critic.json"
+  cp "$FIX/consensus_dissent/advocate.json"   "$j/test/attempt_1/consensus/advocate.json"
+  node "$CTRL" record "$j" test 1 >/dev/null
+  printf '%s' "$j"
+}
+for pair in "uphold:ADVOCATE_DISSENT" "repair:ADVOCATE_DISSENT_REPAIRED" "re-review:TEST_GATE_FAILURE"; do
+  act="${pair%%:*}"; want="${pair##*:}"
+  JM="$(mixed_job "s5b_$act")"
+  R="$(node "$CTRL" record "$JM" test 1 --resolution "$act")"
+  assert "$act with a Critic fail present decides, never defers" "$(printf '%s' "$R" | jget awaiting)" "<absent>"
+  assert "  and routes on the DISSENT"                           "$(printf '%s' "$R" | jget annotation)" "$want"
+  assert "  with no reproduce round requested"                   "$(node -e 'const fs=require("fs");const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(!!(r["test/attempt_1"]||{}).reproduce))' "$JM/.rounds.json")" "false"
+done
 # (ii) a `route: "terminal"` that never terminated. Nothing in expectedNext reads `route` — it
 #      reads the ANNOTATION — so an integrity breach announced itself and then dispatched a retry.
 JY="$(dissent_job s5b2)"
@@ -356,6 +381,12 @@ assert "a ledger/file resolution disagreement is an integrity breach" \
 N="$(node "$CTRL" next "$JW")"
 assert "and it ACTUALLY terminates"  "$(printf '%s' "$N" | jget action)"  "terminal"
 assert "in the quarantine class"     "$(printf '%s' "$N" | jget verdict)" "QUARANTINE"
+# ...all the way through finalize, and scored as quarantine by the untouched scorer.
+node "$CTRL" finalize "$JW" >/dev/null 2>&1
+assert "finalize records it as quarantined" "$(jfile "$JW/run_manifest.json" final_status)"    "quarantined"
+assert "on the sourced reason"              "$(jfile "$JW/run_manifest.json" failure_reason)"  "MISSING_UPSTREAM_ARTIFACT"
+node "$CTRL" finalize "$JW" --report "$REPO/adws-pipeline/scripts/execution-report.js" >/dev/null 2>&1
+assert "and the scorer agrees: exit 2"      "$?" "2"
 
 echo
 echo "### S6 — REPLAY is unchanged: no round requested, no route re-derived"

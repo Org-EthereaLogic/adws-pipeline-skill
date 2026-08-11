@@ -2004,9 +2004,17 @@ function consensusPending(jobDir, phase, attempt, opts) {
       return { action: 'operator', kind: 'advocate_dissent', dissent };
     }
     if (!res.resolved_at) return { action: 'operator', kind: 'advocate_dissent', dissent };
-    // FALLS THROUGH to the Critic. This used to `return null`, which meant an attempt carrying
-    // both a dissent and a Critic fail answered the dissent and then went to the gate with the
-    // Critic's reproduction never requested. A resolved dissent resolves the DISSENT.
+    // RESOLVED, and the resolution is not `override` — an override writes the file, so
+    // `overriddenOf` is true and this block was skipped entirely. Which leaves uphold, repair
+    // and re-review, and in all three the DISSENT still owns the route: uphold ends the job,
+    // repair rewinds to build, re-review opens a fresh attempt. So the Critic is not asked to
+    // be reproduced — `consensusRoute` will take the dissent branch regardless, and a
+    // reproduction requested here would cost a dispatch whose answer is then discarded.
+    //
+    // The first cut of the finding-33 fix fell through to the Critic here. That was wrong in
+    // an instructive way: the case it was written for (override) never reaches this line, and
+    // the three cases that do reach it are the three where falling through is wrong.
+    return null;
   }
   if (criticFailed(critic)) {
     const rep = roundOf(jobDir, phase, attempt, 'reproduce');

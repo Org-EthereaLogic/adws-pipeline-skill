@@ -1032,7 +1032,7 @@ three and every route they open is asserted. Whether the sketch's PROSE for thos
 sufficient to orchestrate from is untouched by any of it — that needs a model reading the
 document, and no model was in this loop.
 
-`run-step5.sh`: **112 assertions, 0 failed.** The six earlier shell drivers and the ingest
+`run-step5.sh`: **124 assertions, 0 failed.** The six earlier shell drivers and the ingest
 matrix still pass (25 fixtures ingested, 0 MISMATCH; 10 driven end to end, the rest halted or
 refused with a recorded reason), and `git status` is clean under `parity/` and
 `adws-pipeline/`.
@@ -1231,6 +1231,35 @@ itself. A one-voter round scores as a clean round. The first is honest; the seco
 unanimity. Whether the SCORER should require both roles is not a spike-local call and belongs
 with findings 16 and 17 as a question for the skill.
 
+**Finding 36 — the fix for finding 33 was unreachable for the case it was written for, and
+reachable only for the three where it was wrong.** Finding 33's fix made `consensusPending`
+fall through from a RESOLVED dissent to the Critic, so an attempt carrying both could still get
+its reproduction. Trace which resolutions actually reach that line:
+
+```
+override   -> applyResolution writes `resolution` to advocate.json
+              -> overriddenOf() is true -> the dissent block is SKIPPED ENTIRELY
+              -> the fallthrough is never executed for the one case it exists for
+uphold     -> reaches it. Job is about to end on ADVOCATE_DISSENT.
+repair     -> reaches it. Dissent already routes to a build rewind.
+re-review  -> reaches it. Dissent already routes to a fresh attempt.
+```
+
+In all three the DISSENT owns the route, and `consensusRoute` takes the dissent branch
+regardless — so the reproduce round was requested, answered by the orchestrator, and then
+discarded. Against step 5's hard cap of 10 dispatches (`SPIKE_CONTROLLER_PLAN.md` §12.7),
+that is a wasted dispatch in the three most likely dissent outcomes. `consensusPending` now
+returns null on any resolved dissent; the four-resolution matrix with a Critic fail present is
+asserted, which is the test that would have caught it.
+
+**Why this one is worth more than its size.** Finding 33 was found by an independent audit and
+fixed in a hurry; the fix went in **unreviewed** and merged that way (PR #70's own sync entry
+says so). It was then caught by a review requested *before* spending dispatches on the live
+run — the cheapest possible place to catch it, and the reason the operator's "review first"
+call was right. But the review that caught it was **mine, of my own code**, which is the weak
+form this file has argued against five times. It found a mechanical defect (a branch reachable
+only in the wrong cases) and it should not be assumed to have found a conceptual one.
+
 ### What step 5 part 1 does NOT establish
 
 - **That the sketch is sufficient.** Unchanged from finding 24. The branch prose for
@@ -1382,7 +1411,7 @@ bash spike/adws-controller/run-counterexample.sh # the counterexample + post-gat
 bash spike/adws-controller/run-step2.sh          # step 2: 103 assertions over twelve jobs
 bash spike/adws-controller/run-step3.sh          # step 3: the live dispatch's evidence, replayed
 bash spike/adws-controller/run-step4.sh          # step 4: 42 assertions — the delta and the go/no-go
-bash spike/adws-controller/run-step5.sh          # step 5 part 1: 112 assertions — consensus, reproduce, the four resolutions
+bash spike/adws-controller/run-step5.sh          # step 5 part 1: 124 assertions — consensus, reproduce, the four resolutions
 node spike/adws-controller/measure-delta.js      # the X/Y/Z report, re-derived from the tree
 node spike/adws-controller/run-ingest-matrix.js  # 25 fixtures through init -> record -> finalize
 node spike/adws-controller/verify-canonical.js "$JOB_DIR"  # writer-floor conformance
