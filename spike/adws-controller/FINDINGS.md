@@ -869,6 +869,20 @@ orchestrator instruction volume per run:
 Token estimates would divide both sides by the same constant, so these ratios are
 independent of any tokenizer. Bytes are reported because bytes are what was measured.
 
+**"Would the orchestrator really load all five?"** is the obvious attack on the before
+figure, and it is answerable rather than arguable. `SKILL.md` directs the reader into each
+one **by name**: `phase-gates.md` ×8, `artifact-layout.md` ×3, `task-contract.md` ×2,
+`validator-inputs.md` ×2 — at points spread across intake, the phase loop, ship and the
+terminal report, so a run that reaches all seven phases reaches all of them. `runtimes.md`
+and `troubleshooting.md` are conditional in **both** worlds and are excluded from both, so
+the comparison stays symmetric. And for a reader who rejects the count entirely, the floor
+row settles it: even if the model never opens a single reference, the reduction is 69%.
+
+One thing the classification does **not** affect: the C/A boundary is invisible to this
+measurement. Whether a line is executed by the controller or belongs to a phase agent, it
+leaves the orchestrator's context either way. Only C-versus-K/S moves this number, which is
+why every borderline call was resolved toward K/S.
+
 **The kill criterion, as arithmetic.** §9 kills §6.2 if the handshake costs more than it
 saves. Break-even is 106,802 bytes per run — 15,257 per phase. Measured: 8,738 per run, 1,248
 per phase. **12.2× headroom**, at 2 model turns per phase (16 controller messages: `init` +

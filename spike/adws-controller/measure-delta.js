@@ -251,6 +251,14 @@ say('\nTHE MEASUREMENT THAT DECIDES — orchestrator instruction bytes per run\n
 say('  Controller code is EXECUTED, not read: adws-run.js never enters the model\'s context.');
 say('  Prose is loaded and interpreted every run. So the two sides of Q5 are not commensurable');
 say('  as line counts, and this is the comparison that bears on §9\'s kill criterion.\n');
+// "Would the orchestrator really read all five?" is the obvious objection to the before
+// figure, and it is answerable rather than arguable: count the times SKILL.md explicitly
+// directs the reader into each one. The floor row below is the answer for a skeptic who
+// rejects the count entirely.
+const skillText = fs.readFileSync(path.join(REPO, 'adws-pipeline/SKILL.md'), 'utf8');
+const directives = BEFORE_SET.filter((f) => f !== 'adws-pipeline/SKILL.md')
+  .map((f) => [path.basename(f), (skillText.match(new RegExp(path.basename(f).replace('.', '\\.'), 'g')) || []).length]);
+say(`  SKILL.md directs the orchestrator into these by name: ${directives.map(([n, c]) => `${n} x${c}`).join(', ')}`);
 say(`  before  ${BEFORE_SET.length} documents the procedure directs into   ${String(beforeBytes).padStart(7)} bytes`);
 say(`  after   thin interface + task-contract.md          ${String(afterBytes).padStart(7)} bytes`);
 say(`  delta                                             ${String(afterBytes - beforeBytes).padStart(7)} bytes   ${pct(afterBytes, beforeBytes)} of before`);
