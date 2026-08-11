@@ -1,0 +1,101 @@
+{
+  "what": "Condition 4 of the §6.2 GO — the reasoning A/B. Everything here is frozen BEFORE arm A runs. Arm B has run; its numbers are computed from the committed transcript by the committed script, and run-ab.sh re-derives every one of them.",
+  "protocol": "spike/adws-controller/ab/PROTOCOL.md",
+  "registered_at": "2026-08-11",
+  "arm_a_status": "NOT RUN — the VM is prepared and the prompt is frozen",
+
+  "digests": {
+    "note": "SHA-256, never a size. Finding 27 is why: 'finalize' -> 'terminal' was the same byte length and walked straight through a size stamp.",
+    "measure_ab_js": "144a65873ea1102b560d5f9a0d7e853373a74fc83f8fed963de2f0477f25ee90",
+    "PROTOCOL_md": "da8adbca0948aa2647d9ea5a2a6294c17f90133208ab05964bd49bd0a5db1c92",
+    "armA_launch_prompt_md": "8064497295f509c5a73856655ef3bd367e04dd80db9862afd283f76e70bad5c1",
+    "armB_launch_prompt_md": "4ebeda4a6883acf6e76a8d776260b3b346f1597a0616ce4ac554a49a1e8d7973",
+    "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
+    "live_contract_json": "999ea1fa52093281a4883c776e959263b4798b1cd733a1863f66162d262543ee",
+    "shipped_tree": {
+      "value": "fe1657c8586eece65484be49e2b1b28c514c2a8cb416c01d5fb040facf058fd1",
+      "over": "adws-pipeline/ + .claude/agents/, sorted, sha256 of the sha256 list",
+      "why": "arm A reads this tree as its operating instruction. If it changes between pre-registration and the end of arm A, the arms did not read the same document and the pair is VOID."
+    }
+  },
+
+  "arm_b": {
+    "provenance": "step 5's live run, 2026-08-11, OrbStack VM adws-step5, repo at 80f1e95, no adws-pipeline skill installed",
+    "harness": { "model": "claude-opus-5", "version": "2.1.228", "effort": "high", "service_tier": "standard" },
+    "integrity": {
+      "assistant_rows": 61,
+      "turns": 26,
+      "row_to_turn_inflation": 2.3462,
+      "distinct_message_ids": 26,
+      "distinct_request_ids": 26,
+      "usage_identical_within_message_id": true,
+      "additivity_violations": 0,
+      "sidechain_rows": 0
+    },
+    "primary_S1": {
+      "P": 5588.67,
+      "per_phase_growth": { "plan": 5605, "build": 5485, "test": 5676 },
+      "within_run_spread_pct": 3.42
+    },
+    "primary_S2": {
+      "P": 6111.67,
+      "per_phase_growth": { "to-build": 5453, "to-test": 5360, "to-consensus": 7522 },
+      "within_run_spread_pct": 35.37
+    },
+    "round_trips_per_phase": { "plan": 3, "build": 3, "test": 3, "mean": 3.0 },
+    "output_tokens_per_phase": { "plan": 3564, "build": 2946, "test": 3157 },
+    "thinking_tokens_per_phase": { "plan": 1513, "build": 89, "test": 270 },
+    "intake_mass": { "I_net": 20379, "I_raw": 29701 },
+    "session_baseline_prefix": 31320,
+    "instruction_reads": {
+      "thin-skill-sketch.md": { "tokens": 3862, "bytes": 9700 },
+      "references/task-contract.md": { "tokens": 3432, "bytes": 7844 },
+      "total": { "tokens": 7294, "bytes": 17544 }
+    },
+    "handshake": {
+      "as_run": { "calls": 11, "inbound_bytes": 12695, "inbound_chars": 12687, "outbound_bytes": 2708 },
+      "pure": { "calls": 9, "inbound_chars": 7493, "note": "2 of the 11 calls bundle non-handshake work; see amendment A4" },
+      "step4_replayed_seven_phase_bytes": 9146
+    },
+    "subagents": {
+      "note": "recovered from the VM's own sidechain transcripts, which the harness does not expose for async dispatches; deduped by message.id, max-usage record per id",
+      "round_trips": 236,
+      "output_tokens": 177047,
+      "per_agent_output": { "adws-planner": 34273, "adws-builder": 48741, "adws-tester": 41592, "adws-critic": 20514, "adws-advocate": 31927 },
+      "orchestrator_share_of_run_output_pct": 14.85
+    },
+    "forbidden_reads": 0,
+    "human_turns": 1,
+    "terminal_state": "TEST_GATE_FAILURE",
+    "run_totals_DO_NOT_HEADLINE": {
+      "why": "PROTOCOL.md §10.1 forbids reporting these as a headline or a comparison — the arms end in different terminal states doing different amounts of work",
+      "turns": 26, "output_tokens": 30863, "thinking_tokens": 11856, "final_prefix": 82209
+    }
+  },
+
+  "arm_a_setup": {
+    "vm": "adws-arma — an OrbStack clone of adws-step5, so the two arms run on a byte-identical machine",
+    "sanitized": [
+      "git worktree prune + arm B's worktree and evidence tree removed",
+      "~/.claude/projects/** (arm B's transcripts) removed — an orchestrator that read them would run with the answer key",
+      "~/step5/launch-prompt.md (arm B's) removed",
+      "~/.claude/history.jsonl truncated"
+    ],
+    "installed": "./install.sh --global — skill to ~/.claude/skills/adws-pipeline, agents to ~/.claude/agents",
+    "why_the_installer_and_not_a_copy": "copying adws-pipeline/ alone yields skill-check.js intact:false / agents_dir:null / exit 1, and SKILL.md §0.3 says do NOT start the job. A hand-copied install would have ended arm A at zero dispatches. Verified before and after.",
+    "skill_check": { "intact": true, "agents_checked": 10, "exit": 0 },
+    "single_variable": "adws-step5 and adws-arma differ in the presence of the installed skill and agents, and in nothing else that either arm reads",
+    "install_baseline_sha256": "recorded at spike/adws-controller/ab/armA-install-baseline.sha256 — re-checked after the run, because arm A's own contract edits the files the installed skill is made of"
+  },
+
+  "predictions": {
+    "why_recorded": "PROTOCOL.md §10 names the ways this result could be spun afterwards. A prediction written before the data exists is the cheapest defence against the one it cannot name: quietly discovering that whatever happened is what was expected.",
+    "by_claude_before_arm_a": [
+      "Arm A uses MORE round trips per phase than arm B's 3.00 — the prose orchestrator evaluates gates, writes evidence and tracks budgets in turns the controller replaces with a Node call.",
+      "Arm A's per-phase growth exceeds arm B's 5,589, most likely by 1.3x-2.5x.",
+      "Arm A's intake mass is 1.5x-6x arm B's 7,294 tokens, depending entirely on how many of the four references it opens.",
+      "The sign is NOT uniform across phases: finding 25's mechanism predicts arm B loses at the consensus gate, where its briefing had to be re-derived rather than read (finding 38). Consensus is outside the common scope, so the primary will not see it, and that is a limit of this design and not a result."
+    ],
+    "what_would_falsify_the_controller": "arm A at or below arm B on either instrument. §5's KILL band is a reachable answer, and the setup was built to let it happen."
+  }
+}

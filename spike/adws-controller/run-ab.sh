@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# THE REASONING A/B DRIVER — condition 4 of the §6.2 GO. THROWAWAY, like every other driver here.
+#
+# What this asserts today: that arm B's frozen numbers REPRODUCE. Every figure in
+# `ab/PREREGISTRATION.json` is re-derived from the committed transcript by the committed script and
+# compared. Nothing here is a sentence in a document that nobody re-checks — the spike has been
+# wrong that way four times (findings 22, 27, 29, 34) and once about its own findings file (the
+# ENOENT frame count, corrected in PR #76 and now asserted by run-step5.sh S9b).
+#
+# What this does NOT assert: anything about arm A. Arm A has not run. When it does, this driver
+# gains the comparison; until then a missing arm A is the honest state and is printed as such.
+#
+#   A1  the artifacts are the ones the pre-registration froze (SHA-256, never a size)
+#   A2  arm B's integrity assertions still hold on the committed transcript
+#   A3  arm B's primary, both segmentations, re-derived and matched
+#   A4  arm B's secondaries re-derived and matched
+#   A5  the shipped tree arm A reads is unchanged since pre-registration
+#   A6  arm A: present or honestly absent
+set -uo pipefail
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+AB="$REPO/spike/adws-controller/ab"
+PREREG="$AB/PREREGISTRATION.json"
+MEASURE="$AB/measure-ab.js"
+ARMB="$AB/evidence/armB-orchestrator.jsonl"
+
+FAILS=0
+PASSES=0
+assert() { # <label> <actual> <expected>
+  if [ "$2" = "$3" ]; then printf '  PASS  %s (%s)\n' "$1" "$2"; PASSES=$((PASSES+1))
+  else printf '  FAIL  %s: expected [%s], got [%s]\n' "$1" "$3" "$2"; FAILS=$((FAILS+1)); fi
+}
+# JSON.parse, not require(): the measure report lands in a temp file with no .json suffix and
+# require() would try to execute it as JavaScript.
+jget() { node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const k=process.argv[2].split(".");let x=j;for(const p of k)x=x==null?x:x[p];process.stdout.write(String(x))' "$1" "$2"; }
+pget() { jget "$PREREG" "$1"; }
+sha() { node -e 'const c=require("crypto"),f=require("fs");process.stdout.write(c.createHash("sha256").update(f.readFileSync(process.argv[1])).digest("hex"))' "$1"; }
+
+echo "### A1 — the artifacts are the ones the pre-registration froze"
+# A digest, never a size. A same-length edit to the transcript or the script must read stale, which
+# is finding 27's lesson applied to the experiment that cites it.
+assert "measure-ab.js"          "$(sha "$MEASURE")"                     "$(pget digests.measure_ab_js)"
+# The protocol itself is frozen. Editing it after arm A runs is the move §10 exists to make
+# visible, so this assertion is SUPPOSED to fail on any edit — including a well-meant one.
+assert "PROTOCOL.md"            "$(sha "$AB/PROTOCOL.md")"              "$(pget digests.PROTOCOL_md)"
+assert "armB transcript"        "$(sha "$ARMB")"                        "$(pget digests.armB_orchestrator_jsonl)"
+assert "armA launch prompt"     "$(sha "$AB/armA-launch-prompt.md")"    "$(pget digests.armA_launch_prompt_md)"
+assert "armB launch prompt"     "$(sha "$AB/armB-launch-prompt.md")"    "$(pget digests.armB_launch_prompt_md)"
+assert "the contract both arms run" "$(sha "$REPO/spike/adws-controller/fixtures/live_contract.json")" "$(pget digests.live_contract_json)"
+
+echo
+echo "### A2 — arm B's integrity assertions still hold"
+REPORT="$(mktemp)"; trap 'rm -f "$REPORT"' EXIT
+node "$MEASURE" --arm B "$ARMB" --json > "$REPORT" 2>/dev/null
+rget() { jget "$REPORT" "$1"; }
+B=arms.B
+# The single most consequential fact about this data: 61 assistant ROWS are 26 model TURNS, and the
+# usage object is repeated verbatim on every row of a turn. Summing rows inflates output by 2.71x.
+# A row is a proxy for a response; findings 12/14/15/18/19/23/27 are what happens to proxies here.
+assert "assistant rows in the file"        "$(rget $B.integrity.assistant_rows_total)" "61"
+assert "which are this many model turns"   "$(rget $B.integrity.turns)"                "$(pget arm_b.integrity.turns)"
+assert "message.id and requestId agree"    "$(rget $B.integrity.message_id_equals_request_id_count)" "true"
+assert "usage is identical within a turn"  "$(rget $B.integrity.usage_identical_within_message_id)" "true"
+assert "prefix additivity violations"      "$(rget $B.integrity.additivity.violations.length)" "0"
+assert "sidechain rows (subagents are NOT in this file)" "$(rget $B.integrity.sidechain_rows_in_file)" "0"
+assert "harness single-valued"             "$(rget $B.integrity.harness.single_valued)" "true"
+assert "model"                             "$(rget $B.integrity.harness.models.0)"   "$(pget arm_b.harness.model)"
+assert "version"                           "$(rget $B.integrity.harness.versions.0)" "$(pget arm_b.harness.version)"
+assert "effort"                            "$(rget $B.integrity.harness.efforts.0)"  "$(pget arm_b.harness.effort)"
+
+echo
+echo "### A3 — arm B's primary, re-derived under BOTH segmentations"
+# The verdict must not depend on which segmentation is chosen (PROTOCOL §4.11). Both are computed
+# every time so that picking one after seeing arm A is not available as a move.
+S1=$B.segmentations.S1.primary
+S2=$B.segmentations.S2.primary
+assert "S1 tiles every turn exactly once"  "$(rget $B.segmentations.S1.tiling.ok)" "true"
+assert "S2 tiles every turn exactly once"  "$(rget $B.segmentations.S2.tiling.ok)" "true"
+assert "P_B under S1"                      "$(rget $S1.P)" "$(pget arm_b.primary_S1.P)"
+assert "  plan growth"                     "$(rget $S1.per_phase.plan.growth)"  "$(pget arm_b.primary_S1.per_phase_growth.plan)"
+assert "  build growth"                    "$(rget $S1.per_phase.build.growth)" "$(pget arm_b.primary_S1.per_phase_growth.build)"
+assert "  test growth"                     "$(rget $S1.per_phase.test.growth)"  "$(pget arm_b.primary_S1.per_phase_growth.test)"
+assert "P_B under S2"                      "$(rget $S2.P)" "$(pget arm_b.primary_S2.P)"
+# S2's spread is 35%, S1's is 3.4% — the same run. That is why the resolution floor exists and why
+# the leave-one-out check in §6.3 is not a formality.
+assert "S1 within-run spread %"            "$(rget $S1.within_run_spread_pct)" "$(pget arm_b.primary_S1.within_run_spread_pct)"
+assert "S2 within-run spread %"            "$(rget $S2.within_run_spread_pct)" "$(pget arm_b.primary_S2.within_run_spread_pct)"
+
+echo
+echo "### A4 — arm B's secondaries, including §9's own kill unit"
+# §9 kills §6.2 above "~2-3 model round-trips per phase". The controller's measured steady state is
+# 3.00 — at the ceiling of that band, not under it. FINDINGS.md Q5 inferred 2 from step 3's mocked
+# path; the only live run says 3, and `next` and `record` were never batched.
+assert "round trips: plan"   "$(rget $S1.round_trips_per_phase.plan)"  "$(pget arm_b.round_trips_per_phase.plan)"
+assert "round trips: build"  "$(rget $S1.round_trips_per_phase.build)" "$(pget arm_b.round_trips_per_phase.build)"
+assert "round trips: test"   "$(rget $S1.round_trips_per_phase.test)"  "$(pget arm_b.round_trips_per_phase.test)"
+assert "round trips: mean"   "$(rget $S1.round_trips_mean)"            "$(pget arm_b.round_trips_per_phase.mean)"
+assert "intake mass I_net"   "$(rget $B.secondary.S6_intake_mass.I_net)" "$(pget arm_b.intake_mass.I_net)"
+assert "session baseline"    "$(rget $B.secondary.S7_session_baseline.prefix)" "$(pget arm_b.session_baseline_prefix)"
+assert "instruction mass, tokens" "$(rget $B.secondary.S8_instruction_reads.total_attributed_tokens)" "$(pget arm_b.instruction_reads.total.tokens)"
+assert "instruction mass, bytes"  "$(rget $B.secondary.S8_instruction_reads.total_content_bytes_utf8)" "$(pget arm_b.instruction_reads.total.bytes)"
+assert "handshake calls, as run"  "$(rget $B.secondary.S9_handshake_volume.controller.n_calls)" "$(pget arm_b.handshake.as_run.calls)"
+assert "handshake inbound bytes"  "$(rget $B.secondary.S9_handshake_volume.controller.inbound_bytes_utf8)" "$(pget arm_b.handshake.as_run.inbound_bytes)"
+# Amendment A4: 2 of the 11 calls bundle non-handshake work, so the pure interface cost is lower —
+# and it lands UNDER step 4's replayed seven-phase estimate rather than over it. Finding 31's
+# prediction is confirmed on the as-run figure and not on the pure one; both are published.
+assert "handshake calls, pure"    "$(rget $B.secondary.S9_handshake_volume.controller.n_calls_pure)" "$(pget arm_b.handshake.pure.calls)"
+PURE="$(rget $B.secondary.S9_handshake_volume.controller.inbound_chars_pure)"
+assert "pure handshake chars"     "$PURE" "$(pget arm_b.handshake.pure.inbound_chars)"
+assert "  and it is UNDER step 4's replayed seven-phase figure" \
+  "$(node -e 'process.stdout.write(String(Number(process.argv[1])<Number(process.argv[2])))' "$PURE" "$(pget arm_b.handshake.step4_replayed_seven_phase_bytes)")" "true"
+assert "forbidden reads"     "$(rget $B.secondary.S12_forbidden_reads.strict_count)" "$(pget arm_b.forbidden_reads)"
+assert "human turns (an unsteered run has exactly one)" "$(rget $B.secondary.S13_human_turns.count)" "$(pget arm_b.human_turns)"
+
+echo
+echo "### A5 — the tree arm A reads is unchanged since pre-registration"
+# Arm A's operating instruction IS this tree. If it moved between pre-registration and the run, the
+# two arms did not read the same document and the pair is void.
+TREE="$(cd "$REPO" && find adws-pipeline .claude/agents -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -c1-64)"
+assert "shipped tree digest" "$TREE" "$(pget digests.shipped_tree.value)"
+
+echo
+echo "### A6 — arm A"
+ARMA="$AB/evidence/armA-orchestrator.jsonl"
+if [ -f "$ARMA" ]; then
+  echo "  arm A transcript present — running the comparison"
+  node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA" || FAILS=$((FAILS+1))
+else
+  # An absent arm is stated, never assumed away. Condition 4 stays open until this file exists.
+  assert "arm A has not run, and the pre-registration says so" "$(pget arm_a_status)" "NOT RUN — the VM is prepared and the prompt is frozen"
+  echo "  (condition 4 remains OPEN: one arm measured, one arm pre-registered and unrun)"
+fi
+
+echo
+echo "### $((PASSES+FAILS)) assertions run, $FAILS failed."
+if [ "$FAILS" -eq 0 ]; then
+  cat <<'EOF'
+### A/B PASS — arm B's frozen numbers reproduce from the committed transcript under the committed
+###   script: 26 turns (not 61 rows), P_B = 5,589 tokens/phase under S1 and 6,112 under S2,
+###   3.00 round trips per phase, I_net 20,379, instruction mass 7,294 tok / 17,544 B.
+###
+### NOT established here: anything about arm A, which has not run; and nothing about which arm is
+###   cheaper overall — subagents are 85% of the run's output tokens and are outside this
+###   instrument entirely.
+EOF
+  exit 0
+fi
+echo "### A/B FAIL — $FAILS assertion(s) failed"
+exit 1

@@ -2805,3 +2805,76 @@ run (37–40), **post-merge audit (this correction)**. Each caught something the
 structurally could not — and this one is the first to catch an error in a document that had
 already shipped, which is the only stage that can. Three of the four were adversarial reads by
 something that had not written the thing it was reading.
+
+---
+
+## The reasoning A/B — arm B measured, arm A pre-registered (PR #77)
+
+Condition 4 of the §6.2 GO asked for "two live runs of the same contract, one under each
+orchestrator." **One of them had already happened.** Step 5 was a live run under the controller,
+and its session transcript survived in the `adws-step5` VM with a `usage` record on every turn.
+The controller arm was therefore measured **for zero dispatches** — what was missing was an
+instrument, not a run.
+
+| Arm B (controller), measured | |
+|---|---|
+| Per-phase context growth `P_B` | **5,589 tokens/phase** — plan 5,605 / build 5,485 / test 5,676 |
+| Round trips per phase | **3.00 exactly**, against §9's kill band of "~2–3" |
+| Instruction mass | 7,294 tok / 17,544 B |
+| Live handshake | **12,695 B / 11 calls** as run; **7,493 chars / 9 calls** pure |
+| Orchestrator share of run output | **14.8%** (30,863 against 177,047 from five subagents) |
+
+### What was pre-registered, and why it is committed before arm A runs
+
+`spike/adws-controller/ab/PROTOCOL.md` fixes the metric, two segmentation rules that must agree or
+the result is indeterminate, numeric kill bands, the replication rule, 8 vetoes, 18 confounds with
+their bias directions, 13 named ways the result could be spun afterwards, and the prediction being
+tested. `run-ab.sh` (42 assertions) re-derives every arm-B figure from the committed transcript
+under the committed script and asserts the protocol's own SHA-256, so a later edit reads as an edit.
+
+**It was amended five times before being committed**, each amendment forced by running it against
+arm B. Two are worth naming: one veto turned out to be a **tautology** (`setup` growth *is* `I_net`
+by definition, so the displacement veto fired on every possible pair), and one claim this
+repository would otherwise have published as confirmed was **downgraded** — the live handshake
+exceeds step 4's replayed estimate only on the as-run figure; 2 of its 11 calls bundle diagnostics,
+and the pure interface cost is *under* it.
+
+### The trap that would have produced a confident wrong answer
+
+An assistant JSONL row is not a model turn. The transcript writes one row per content block and
+repeats the same `usage` object on each — 61 rows are **26** turns, and summing per row inflates
+output tokens **2.71×**. The obvious fix (first row per `message.id`) is wrong in the *other*
+direction on the subagent transcripts, where the rows of a turn carry partial streaming usage:
+first-wins undercounts the advocate **10×**. One rule is correct on both files — the maximum-output
+record per `message.id`. Three independent computations were run before any number was published
+and all three agree. Finding 41.
+
+### The setup defect, predicted and then confirmed
+
+`skill-check.js` locates agents at `<skill>/../../agents` or `<skill>/../.claude/agents`. Copying
+`adws-pipeline/` alone into `~/.claude/skills/` satisfies neither: `intact:false`, exit 1, and
+SKILL.md §0.3 says **do not start the job**. Arm A's first setup did exactly that and would have
+aborted at zero dispatches. Caught by a design agent reading the script before the run; fixed by
+using the shipped `install.sh --global`. Finding 45.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T230953Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T231003Z` |
+| all eight drivers | exit 0; `run-ab.sh` **42 assertions**, `run-step5.sh` **135** |
+| `run-ingest-matrix.js` | exit 0 — 25 ingested, MISMATCH 0 |
+| CodeQL | fail in 1–3s, zero steps executed — [[codeql-billing-lock]] |
+
+### Arm A is a handoff, and that is a harness limit rather than a choice
+
+Arm A must be a fresh top-level session in a VM with the skill installed — the same arrangement
+that produced arm B, which is itself the control. Launching a nested `claude` from inside a Claude
+Code session is blocked by the harness's own guardrail, so an operator starts it. Everything else
+is prepared: `adws-arma` is an OrbStack clone of arm B's machine, sanitized of arm B's transcripts,
+worktree and evidence tree, with the skill installed and `skill-check.js` returning `intact:true`.
+The two VMs differ in the presence of the installed skill and in nothing else either arm reads.
+
+**Also closed here:** §12.8 deliverable 3, the step 5 evidence archive, which was never delivered.
+It is now at `spike/adws-controller/fixtures/live_step5_run/`.

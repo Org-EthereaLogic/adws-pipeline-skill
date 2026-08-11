@@ -1,0 +1,26 @@
+{
+  "role": "advocate",
+  "verdict": "pass",
+  "dissent": null,
+  "findings": [
+    {
+      "issue": "SKILL.md's own 'Failure-reason classes' section still cross-references phase-gates.md's section by its old, now-renamed title",
+      "evidence": "adws-pipeline/SKILL.md line 391: \"The authoritative lists ... are in `references/phase-gates.md` \\\"Failure-reason classes\\\"\" — but this change renames that phase-gates.md section (adws-pipeline/references/phase-gates.md) from '## Failure-reason classes' to '## Terminal failure-reason vocabulary'. SKILL.md is outside this task's policy.allowed_paths (adws-pipeline/references/, adws-pipeline/scripts/execution-report.js), so the build could not fix the pointer itself; the file it points to and its content are still correct, only the quoted heading name is stale.",
+      "reproduction": null
+    },
+    {
+      "issue": "PR_DRIFT_SENTINEL_BLOCK's decision changes from an implicit RETRY (old code, reason absent from both QUARANTINE_REASONS/NO_RETRY_REASONS) to QUARANTINE (new code) — a functional change beyond the two reasons acceptance criteria 2/3 name explicitly (ADVOCATE_DISSENT, EVIDENCE_INTEGRITY_BREACH)",
+      "evidence": "adws-pipeline/scripts/execution-report.js diff adds 'PR_DRIFT_SENTINEL_BLOCK' to QUARANTINE_REASONS with an inline comment explaining the old code contradicted phase-gates.md's own pre-existing prose (which already documented it as quarantine-class) and that no parity fixture pins it as a run_manifest.failure_reason. Verified: `node parity/execution-report-fixtures/run-tests.js` reports 25/25 fixtures + CLI path passing after the change, so the constraint 'parity fixture corpus must keep scoring the same decision and exit code' holds empirically. Flagging for visibility only, not as a defect — this closes a genuine pre-existing doc/code split that criterion 1's single consistent severity table would otherwise have had to misstate.",
+      "reproduction": {
+        "command": "node parity/execution-report-fixtures/run-tests.js",
+        "files": [],
+        "observed": "All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs.",
+        "expected": "All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs.",
+        "runs": 1,
+        "deterministic": true
+      }
+    }
+  ],
+  "model_tier": "sonnet",
+  "assessed_at": "2026-08-11T21:20:21Z"
+}
