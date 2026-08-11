@@ -104,10 +104,15 @@ assert "handshake inbound bytes"  "$(rget $B.secondary.S9_handshake_volume.contr
 # and it lands UNDER step 4's replayed seven-phase estimate rather than over it. Finding 31's
 # prediction is confirmed on the as-run figure and not on the pure one; both are published.
 assert "handshake calls, pure"    "$(rget $B.secondary.S9_handshake_volume.controller.n_calls_pure)" "$(pget arm_b.handshake.pure.calls)"
-PURE="$(rget $B.secondary.S9_handshake_volume.controller.inbound_chars_pure)"
-assert "pure handshake chars"     "$PURE" "$(pget arm_b.handshake.pure.inbound_chars)"
-assert "  and it is UNDER step 4's replayed seven-phase figure" \
-  "$(node -e 'process.stdout.write(String(Number(process.argv[1])<Number(process.argv[2])))' "$PURE" "$(pget arm_b.handshake.step4_replayed_seven_phase_bytes)")" "true"
+# Amendment A6. This comparison used inbound_chars_pure (7,493) against a BYTE-denominated 9,146 —
+# the exact chars/bytes mix amendment A3 was written to stop, in the driver that asserts A3. The
+# byte figure is 7,497 and the conclusion is unchanged, which is why it is worth naming: a unit
+# error that does not move the answer is the kind that survives review.
+PURE_B="$(rget $B.secondary.S9_handshake_volume.controller.inbound_bytes_utf8_pure)"
+assert "pure handshake bytes"     "$PURE_B" "$(pget arm_b.handshake.pure.inbound_bytes)"
+assert "pure handshake chars"     "$(rget $B.secondary.S9_handshake_volume.controller.inbound_chars_pure)" "$(pget arm_b.handshake.pure.inbound_chars)"
+assert "  and BYTES are UNDER step 4's replayed seven-phase BYTES" \
+  "$(node -e 'process.stdout.write(String(Number(process.argv[1])<Number(process.argv[2])))' "$PURE_B" "$(pget arm_b.handshake.step4_replayed_seven_phase_bytes)")" "true"
 assert "forbidden reads"     "$(rget $B.secondary.S12_forbidden_reads.strict_count)" "$(pget arm_b.forbidden_reads)"
 assert "human turns (an unsteered run has exactly one)" "$(rget $B.secondary.S13_human_turns.count)" "$(pget arm_b.human_turns)"
 

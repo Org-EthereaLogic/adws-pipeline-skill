@@ -1449,12 +1449,17 @@ each: 61 assistant rows are **26** model turns. Summing per row inflates output 
 (83,651 vs 30,863). The obvious correction — one row per `message.id`, first wins — is *also* wrong,
 and only on the other files: in the SUBAGENT transcripts the rows of a turn carry **different**
 partial usage, so first-wins reports the advocate at 3,217 output tokens against a true 31,927, a
-**10× undercount**, while row-summing there is accurate to 0.6%. One rule is right on both:
-**take the record with the maximum `output_tokens` within each `message.id`** — the final streaming
-state. This is findings 22/29/34's shape inside the instrument itself: two ways of counting that
-agree on one file and diverge on the next, and whichever you checked first is the one you would
-have shipped. Every number in this section is max-per-id; `run-ab.sh` asserts the row/turn ratio so
-a future reader cannot silently regress to rows.
+**10× undercount**, while row-summing there is accurate to 0.6%. The rule used everywhere here is
+**the record with the maximum `output_tokens` within each `message.id`** — the final streaming
+state. An audit checked whether that rule is *uniquely* right and it is not: **last-record-per-id
+returns the identical total on all six observed transcripts**, with zero non-monotonic rows. Max is
+chosen because it stays correct if a row ever arrives out of order, not because it is the only rule
+that reproduces these numbers — the earlier phrasing here overstated that and is corrected.
+
+This is findings 22/29/34's shape inside the instrument itself: two ways of counting that agree on
+one file and diverge on the next, and whichever you checked first is the one you would have
+shipped. Every number in this section is max-per-id; `run-ab.sh` asserts the row/turn ratio so a
+future reader cannot silently regress to rows.
 
 **Finding 42 — the controller's measured steady state is 3.00 round trips per phase, not the
 inferred 2, and §9's kill band is "~2–3".** Q5's answer said "2 model turns per phase in steady
