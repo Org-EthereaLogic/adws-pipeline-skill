@@ -1387,8 +1387,11 @@ the contract under test exists to split. The run failed into the vocabulary it w
 **Finding 40 — two controller defects the mocked path could not surface.** The literal sketch
 command crashed with an **uncaught `ENOENT` stack trace** rather than a controlled error —
 notable for a component whose defining property is "the controller's word is the state", and it
-leaked five `adws-run.js` line numbers into a context explicitly instructed not to read that
-file. And `worktree_path` was emitted as `""` on all four dispatch payloads: never populated,
+leaked four `adws-run.js` line numbers into a context explicitly instructed not to read that
+file (291, 1545, 2361, 2384 — this entry first said *five*, and an independent audit of the
+merged record caught the miscount; the crash reproduces, so `run-step5.sh` S9b now derives the
+number from the stack and requires this sentence to agree with it). And `worktree_path` was
+emitted as `""` on all four dispatch payloads: never populated,
 never an error, **silently empty on the one field that enforces isolation**. Every driver passes
 a worktree or does not care, so neither was reachable from the harness.
 

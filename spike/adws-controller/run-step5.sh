@@ -19,6 +19,8 @@
 #   S5  the refusals: an agent-written resolution, a short round, an unasked answer
 #   S6  replay is UNCHANGED — no round is requested and no route is re-derived
 #   S7  idempotency of the three new actions (Q4, on the code step 5 added)
+#   S9  the residue ledger's arithmetic and its freshness — step 5's verdict, asserted
+#   S9b finding 40's leak count, derived from the crash rather than remembered
 #   S8  syntax + NUL sweep (finding 15; `make ci` does not see spike/)
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -487,6 +489,20 @@ assert "within the dispatch cap"               "$(lget run.dispatches_used)"    
 # not a tally. A ledger listing events against an unchanged sketch would measure nothing.
 assert "the patched sketch is larger than the one measured" \
   "$(node -e 'process.stdout.write(String(Number(process.argv[1])>Number(process.argv[2])))' "$BYTES_NOW" "$(lget sketch_at_run.bytes)")" "true"
+
+echo
+echo "### S9b — finding 40's leak count, derived from the crash rather than remembered"
+# An independent audit of the MERGED record found finding 40 claiming five leaked frames where
+# the captured stack carried four. The crash reproduces, so the count is a measurement and not
+# a memory: it is taken from the stack here and the prose is required to agree. Same lesson as
+# findings 22/29/34 — one place answers the question, and the other is checked against it.
+# This assertion is SUPPOSED to fail if the uncaught ENOENT is ever fixed: the frame count goes
+# to zero, and finding 40's first half stops being true and must be rewritten, not re-passed.
+FRAMES="$(node "$CTRL" next "$SCRATCH/no_such_job" 2>&1 | grep -c 'adws-run\.js:')"
+assert "the uncaught ENOENT still reproduces, leaking this many controller frames" "$FRAMES" "4"
+WORD="$(node -e 'const w=["zero","one","two","three","four","five","six","seven","eight"];process.stdout.write(w[Number(process.argv[1])]||String(process.argv[1]))' "$FRAMES")"
+assert "and finding 40 states that number in words, not another" \
+  "$(grep -c "leaked $WORD \`adws-run.js\` line numbers" "$REPO/spike/adws-controller/FINDINGS.md")" "1"
 
 echo
 echo "### S8 — syntax + NUL sweep (finding 15)"
