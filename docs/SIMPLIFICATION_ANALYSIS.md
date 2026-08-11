@@ -227,22 +227,47 @@ holds, but that it must *execute* it by hand every run.
 
 ### 6.2 Move orchestration into code — a `adws-run.js` controller *(structural; largest confusion win)*
 
-> **Status (2026-08-11, after step 2).** A time-boxed feasibility spike is under way —
+> **Status (2026-08-11, after step 3).** A time-boxed feasibility spike is under way —
 > [`SPIKE_CONTROLLER_PLAN.md` §11](SPIKE_CONTROLLER_PLAN.md) for where it stands,
-> `spike/adws-controller/FINDINGS.md` for the evidence. Steps 1 and 2 of 4 are done: evidence
-> compatibility holds against the unmodified `execution-report.js` without editing it (Q2), and
-> the budget/rewind bookkeeping this section calls "hand-run" is now code with the accounting
-> asserted (Q3, Q4). The go/no-go below is **still open** — it turns on the handshake cost
-> (Q5), which is unmeasured. This recommendation is left as written; the spike is the test of
-> it, not a revision to it.
+> `spike/adws-controller/FINDINGS.md` for the evidence. **Steps 1–3 of 4 are done.** Evidence
+> compatibility holds against the unmodified `execution-report.js` without editing it (Q2);
+> the budget/rewind bookkeeping this section calls "hand-run" is code with the accounting
+> asserted (Q3, Q4); and one real `adws-planner` subagent has now been dispatched through the
+> handshake and its evidence gated (Q1). The go/no-go below is **still open**: Q5 is *half*
+> measured — 2 model turns per phase and ~1.1 KB of handshake against the 170k tokens the
+> dispatch it carried cost, both inside the bar — but the SKILL.md line-delta and the
+> token-behaviour half are unmeasured, and they are what this recommendation turns on. **Step
+> 4 decides.** This recommendation is left as written; the spike is the test of it, not a
+> revision to it.
 >
-> One result cuts against the section's own framing and belongs here rather than only in the
-> spike: **moving a gate into code does not by itself make it stronger.** Step 2 had to
-> implement one test-gate condition `execution-report.js` does not evaluate, and all four
-> defects found by two review rounds landed in exactly that condition — each a fail-open where
-> the code checked for the absence of a failure instead of the presence of a success. The
+> Two results cut against the section's own framing and belong here rather than only in the
+> spike.
+>
+> **1. Moving a gate into code does not by itself make it stronger.** Step 2 had to implement
+> one test-gate condition `execution-report.js` does not evaluate, and all four defects found
+> by two review rounds landed in exactly that condition — each a fail-open where the code
+> checked for the absence of a failure instead of the presence of a success. The
 > deterministic-machine-in-code argument holds for *counters and sequencing*, which are now
 > demonstrably correct. It does not extend for free to *judgement the scorer never made*.
+>
+> **2. The section's premise that a controller can own the deterministic machine has a
+> boundary the spike found by crossing it.** Step 3's two defects were both the same shape:
+> `phase_manifest.json` carries `gate_result`, which the agent specs call the orchestrator's
+> designated field — *in a file those same specs instruct the agent to write*. So the
+> orchestrator cannot tell its own decisions from its agents' claims by reading the evidence
+> tree, and the controller needed a record outside it. **That is not fixed by moving
+> orchestration into code**, because there is no permission boundary to lean on either: the
+> orchestrator and its subagents are the same OS principal, so the separation is a contract
+> ("never write outside your attempt directory") whichever way §6.2 is decided. A prose
+> orchestrator has exactly the same hole and no ledger; the code one at least made it visible
+> and testable. That is a real argument *for* this recommendation, and it is a different one
+> from the token/confusion argument the section makes.
+>
+> **3. The mocked oracle was not a weak test of the above — it was no test of it.** Both step-3
+> defects were unreachable from `record --from`, because a replayed attempt structurally
+> cannot contain an agent-written manifest. Two adversarial rounds had read that code. This is
+> the strongest single data point the spike has produced about how much of §6.2 can be
+> validated without live dispatches, and the answer is: less than it looks.
 
 Create a dependency-light Node controller owning profile/phase selection, worktree lifecycle,
 attempt counters and rewind budgets, validator invocation, model-dispatch accounting, evidence-file
