@@ -1,0 +1,14 @@
+{
+  "role": "advocate",
+  "verdict": "fail",
+  "dissent": "The change set satisfies every acceptance criterion as written and still does not deliver what the task asked for: the criteria describe a counter that never double-counts, and the implementation reaches that by not counting at all in the one path the operator cares about. A reader of the criteria would call this done; a reader of the problem statement would not.",
+  "findings": [
+    {
+      "issue": "Criteria satisfied, requested outcome not delivered",
+      "evidence": "problem_statement names the rewind path explicitly; the shipped counter skips it, and the criterion that would have caught it was written narrowly enough to pass anyway.",
+      "reproduction": null
+    }
+  ],
+  "model_tier": "sonnet",
+  "assessed_at": "2026-08-11T14:31:44Z"
+}

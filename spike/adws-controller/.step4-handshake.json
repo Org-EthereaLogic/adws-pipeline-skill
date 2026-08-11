@@ -1,8 +1,8 @@
 {
-  "total_bytes": 8738,
+  "total_bytes": 9146,
   "messages": 16,
   "phases": 7,
   "model_turns": 16,
-  "controller_sha256": "4760603d3d4dc87dd59ce65528c6d0a383cd6c2386f4e627affc380f962d1955",
+  "controller_sha256": "3240f854edffae97e08e39ab6542fdbe8a87267ca26fdd2356bce0ec3edab903",
   "measured_over": "one complete seven-phase green run, all controller stdout concatenated"
 }

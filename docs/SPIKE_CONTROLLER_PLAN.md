@@ -226,6 +226,9 @@ If step 1 already shows evidence incompatibility that requires editing `executio
 step 3 shows a token-regressive handshake, **stop and record the kill** — that is a successful
 spike outcome, not a failure.
 
+Steps 1–4 closed this time-box and answered Q1–Q5 (§11). **§12 opens a separately boxed step 5**
+— not a continuation of the sequence above, and not a licence to reopen §4's out-of-scope list.
+
 ---
 
 ## 11. Status (2026-08-11, after step 4 — the spike is complete)
@@ -343,7 +346,10 @@ here, with the box shut on the nine unimplemented rule families.
    modest growth in per-phase reasoning could consume the margin. An earlier draft said it
    "cannot flip the sign" — that overstated a mechanism argument as a result
    (`FINDINGS.md` finding 25). **This is the highest-value experiment left, ahead of any
-   unimplemented family.**
+   unimplemented family.** Ordering, since finding 24 names a different "first thing": the
+   reasoning A/B bounds the margin, and step 5 (§12) tests the number the pessimistic margin
+   is computed *from*. Z can flip the sign; the reasoning half can only erode it. So step 5
+   goes first, and §12.7's middle band is what makes the A/B mandatory rather than advisable.
 
 ### Open after the GO — none of these are decided by it
 
@@ -421,4 +427,174 @@ here, with the box shut on the nine unimplemented rule families.
   human-decision boundary, which is a presence check and not a sufficiency proof. **The first
   thing a real §6.2 build should do is run one contract end to end from that document** — it
   is cheaper than any of the nine unimplemented families and it is the assumption everything
-  else rests on.
+  else rests on. **Scoped as step 5 in §12.**
+
+---
+
+## 12. Step 5 — run one contract from the thin interface alone
+
+**Status:** scoped, not started. **Type:** a separately time-boxed experiment against an
+already-issued GO, not a fifth step of §10's box. **Time-box:** one focused session.
+**Touches:** `spike/adws-controller/` only, same as steps 1–4.
+
+Step 5 exists because the GO is argued from the pessimistic end of a bracket, and Z — the 151
+lines of `thin-skill-sketch.md` — is the number holding up that end while being the one the
+spike itself trusts least (finding 24). I wrote the sketch *and* the standard `run-step4.sh`
+judges it against, and three of its five branches are extrapolated from prose the controller
+never implemented. **Z is the only open item that can turn the reduction into an increase.**
+The reasoning half (condition 4) erodes the margin; the nine unimplemented families and the
+two questions-for-the-skill change what gets built. Only this one can flip the sign.
+
+### 12.1 The threshold that makes this a decision
+
+The pessimistic reading has a hard break-even, and it is stated in **bytes**, because bytes are
+what §9's kill criterion was computed in and lines are the proxy findings 23 and 27 were each
+about:
+
+```
+thin interface today          9,362 bytes  (151 lines @ 62.0 B/line)
+break-even, no-reference     21,274 bytes  (= 30,012 before − 8,738 handshake)
+headroom                       2.27×  (+11,912 bytes ≈ +192 lines at today's density)
+```
+
+If a real orchestrator needs more than **~21,274 bytes** of interface to run from, the
+no-reference reading stops being a reduction and the GO's floor collapses. A denser sketch hits
+that ceiling at fewer than 343 lines, which is why the rule below is keyed to bytes.
+
+### 12.2 One correction to what this can retire
+
+Step 5 measures the **after** end of condition 2's bracket. It does not collapse the bracket to
+a point, and a claim that it does would repeat the error §11 keeps naming.
+
+The 2.36×–12.22× spread is wide because **both** ends are scenario readings. Step 5 puts the
+after end on a measurement — the bytes an orchestrator actually loaded on a real run. The before
+end (30,012 vs 124,008) stays a scenario until the same contract is run under the shipped prose
+orchestrator, which is condition 4's other half and is **not** in this box.
+
+There is also a comparison trap to avoid when the measurement lands. The sketch's step 0
+*instructs* the orchestrator to read `references/task-contract.md` (7,844 bytes), so a measured
+after arm will almost certainly include it: 9,362 + 7,844 + 8,738 = **25,944 bytes**. Held
+against the pessimistic before of 30,012, that is 86.4% and 1.157× headroom — but it is not a
+fair comparison, because the pessimistic before assumes a model that opens no reference while
+this after arm obeys the one its intake mandates. Both published readings are internally
+consistent (both arms disobey, or both obey); the hybrid is not. **Do not report 1.157× as a
+result.** Report the measured after against both consistent befores, and say which of the two
+the run's own read behaviour resembles.
+
+### 12.3 Prerequisite — two of the nine families
+
+`consensus` and `reproduce` must exist as emitted actions before the sketch can be exercised;
+they are two of its three extrapolated branches, and the third (the dissent-resolution half of
+`operator`) rides on consensus. §4 put consensus out of scope for proving the *architecture* —
+that still holds. It is in scope here for testing the *interface*, and it is the two cheapest of
+the nine. `fixtures/consensus_clean/{critic,advocate}.json` already exist and the scorer already
+reads a `consensus` gate, so the controller side is a routing addition, not a new evidence
+schema.
+
+### 12.4 The run
+
+Drive `plan → build → test` with consensus at the test gate, on a real contract, with the
+orchestrator reading **only** `thin-skill-sketch.md` + `references/task-contract.md`. Same slice
+§3 chose, for the same reason — it is the smallest that contains sequencing, retry, a
+cross-phase rewind, and now a consensus pair.
+
+**The orchestrator must be a fresh session.** This session cannot run the experiment: it already
+holds SKILL.md, phase-gates.md and the spike's own reasoning, so its reads are not a measurement
+of what the sketch supplies. A fresh session whose first message names the two documents is the
+only arrangement where the Read calls in the transcript *are* the datum.
+
+`fixtures/live_contract.json` is the obvious contract — it is real, it is already the spike's own
+open item (the `failure_reason` severity split), and reusing it keeps step 5 comparable to step
+3's archived plan attempt.
+
+**`reproduce` will probably not be exercised live.** It fires only on a Critic `fail`, and the
+Critic's verdict on a real change set is not ours to choose. Do not select a contract to provoke
+one. Route the branch on a replayed critic-fail fixture to prove the controller's routing, and
+**declare that the sketch's `reproduce` prose remains untested by a model** — step 3's lesson is
+that a replayed arm is not a weak test of a live oracle, it is no test of it.
+
+### 12.5 What is instrumented
+
+1. **Every document read**, by path and byte count, from the orchestrator's transcript. This is
+   the after-arm point of §12.2.
+2. **Residue events** — each place the orchestrator had to be told something the sketch does not
+   say, including every appeal to a shipped reference the sketch does not name. Recorded as a
+   *proposed patch* with its line and byte cost, never applied mid-run (§12.7).
+3. **Orchestrator-side tokens per phase** for plan, build and test, so a later prose arm can be
+   compared phase-by-phase rather than run-total to run-total — the phase counts will differ.
+4. **Handshake volume** for the slice, to check the 8,738-byte seven-phase figure against a run
+   with a model actually in the loop (step 4's was driven from a shell).
+
+### 12.6 Success criteria (falsifiable)
+
+1. **Sufficiency:** the slice completes from the sketch alone — zero blocking residue events,
+   zero `record` refusals caused by a misread dispatch payload. *(yes/no, with the count)*
+2. **Z′ measured, not judged:** the patched sketch's byte size after every residue event is
+   applied, against the 21,274-byte ceiling. *(a number and a verdict)*
+3. **The after end is on a measurement**, reported against both consistent befores. *(§12.2)*
+4. **The controller arm of condition 4 exists** — per-phase orchestrator tokens recorded. The
+   prose arm is explicitly not done, and the A/B stays open.
+
+### 12.7 The stopping rule
+
+Steps 1–4 each ended by answering their questions rather than by finishing their code; this one
+says so in advance, because it is the step most likely to become an authoring session.
+
+- **No mid-run repair.** The sketch is **frozen** for the duration of the run. Every gap is
+  written to the residue ledger and patched afterwards. Editing it mid-run converts a sufficiency
+  test into a drafting exercise and destroys the only measurement step 5 exists to take.
+- **No substitution.** The orchestrator does not open `SKILL.md`, `phase-gates.md`,
+  `artifact-layout.md` or `validator-inputs.md`. Reaching for one is a residue event; needing one
+  to proceed is a blocking residue event and ends the run.
+- **Answer-first stop.** Stop the moment criteria 1 and 2 have an answer, even mid-run. A sketch
+  that fails at the build gate has answered the question — do not finish the run for tidiness.
+- **Dispatch cap: 10.** Five are the slice (three phase agents + the consensus pair); the rest
+  cover one retry and one rewind. At ten, stop and write up what was measured. A partial result
+  is the deliverable, exactly as in steps 1–4.
+- **Operator actions are answered minimally and recorded as data.** The answer is the operator's;
+  whether the sketch's `operator` branch said enough to make the question answerable is the
+  finding.
+- **Prerequisite creep guard.** If `consensus` + `reproduce` cannot be added inside the session,
+  or cannot be added without touching the shipped tree, **stop** — that the prerequisite was the
+  cost is itself the result. Still out of scope and not reopened by this step: the other seven
+  families, the grader, the entropy gate, resume/`carry_over`, and the four remaining rewind
+  families.
+
+**The verdict thresholds, both in bytes:**
+
+| Z′ (patched sketch, no references) | What it means |
+|---|---|
+| **> 21,274 B** | the no-reference reading is no longer a reduction. **The GO's pessimistic floor is gone** and §6.2 is downgraded to conditional-on-the-optimistic-reading. Record the kill and stop; that is a successful step, not a failure. |
+| **~14,000–21,274 B** (headroom < 1.5×) | the GO survives the arithmetic but the margin can no longer absorb finding 25. **The reasoning A/B becomes mandatory before any real controller is built**, not merely recommended. |
+| **< 14,000 B** | Z is confirmed at roughly its current size; condition 4 stays the highest-value open item and the GO is unchanged. |
+
+Separately, if the measured after arm (sketch + references actually opened + handshake) reaches
+**30,012 bytes** — the pessimistic before — then no consistent reading of this run shows a
+reduction, and the prose arm becomes mandatory regardless of where Z′ lands.
+
+### 12.8 Deliverables
+
+1. `consensus` + `reproduce` actions in `adws-run.js`, with the `operator` dissent-resolution
+   branch they enable.
+2. `spike/adws-controller/run-step5.sh` — asserts the arithmetic the way `run-step4.sh` S3 does,
+   so the verdict is not a sentence in a document.
+3. `fixtures/live_step5_run/` — the live run's evidence, archived and replayed, so the result is
+   re-checkable without spending dispatches again (the `run-step3.sh` pattern).
+4. `.step5-residue.json` — the residue ledger, carrying a **SHA-256 of the sketch it was measured
+   against**, not a byte count. Finding 27 is why: a size stamp is a proxy for content, and a
+   same-length edit walks straight through it.
+5. The patched `thin-skill-sketch.md` and the measured Z′.
+6. A `FINDINGS.md` **STEP 5** section with the verdict against §12.7's table.
+
+### 12.9 Not part of step 5, and one of them is the operator's call
+
+- **The remaining seven families** — the largest cost on the board and unable to change this
+  decision. If Z fails, some of them would be built against an interface we would not design
+  today. Same reasoning that gated step 4 before them.
+- **The prose arm of the reasoning A/B** (condition 4). Step 5 produces the controller arm only.
+- **Findings 16/17 — whether the reference documents or the recorded evidence is the contract.**
+  The scorer evaluates neither the test gate's `checks[]` nor the plan gate's
+  `file_change_proposal`, and 0 of 25 fixtures carry the latter. This costs no dispatches and is
+  a product call rather than an engineering one, but it sets the gate scope a real controller has
+  to encode — better settled before ~1,700 lines assume an answer. It blocks nothing in step 5
+  and can be decided in parallel.
