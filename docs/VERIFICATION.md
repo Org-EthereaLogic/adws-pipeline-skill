@@ -2758,5 +2758,50 @@ the run's controller messages were never counted), both arms of the reasoning A/
 the seven phases, which have still never been orchestrated from this document.
 
 **Branches.** `origin` carries **`main` alone** — `spike/step5-finding36` and
-`spike/step5-run` were deleted at merge and their stale refs pruned. No worktrees.
-**Untracked files: none.**
+`spike/step5-run` were deleted at merge and their stale refs pruned. No worktrees **in this
+checkout**; the retained `adws-step5` VM still holds the run's detached experiment worktree,
+which is the point of retaining it. **Untracked files: none.**
+
+---
+
+## Correction to the step 5 record (PR #76)
+
+An independent audit of the **merged** step 5 record confirmed the verdict — it reproduced the
+digest, the arithmetic, the 1.866× headroom, the five dispatches and the four instruction reads
+— and found **one factual error**: finding 40 said the uncaught `ENOENT` leaked *five*
+`adws-run.js` line numbers. The captured stack carries **four** (291, 1545, 2361, 2384).
+
+The count was corrected, but the useful part is what replaced it. **The crash reproduces**, so
+the number is a measurement and not a memory:
+
+```
+node spike/adws-controller/adws-run.js next /nonexistent/job_dir
+```
+
+`run-step5.sh` **S9b** now takes the frame count from that stack and requires finding 40's
+sentence to agree with it — the same shape as S9's verdict arithmetic, and the same lesson as
+findings 22/29/34: one place answers the question and the other is checked against it. A prose
+claim that can be derived should be derived. S9b is *supposed* to fail if the `ENOENT` defect is
+ever fixed: the count goes to zero and finding 40's first half must be rewritten, not re-passed.
+
+**Nothing about the verdict moved.** Z′ is unchanged at 11,400 B / 176 lines, the band is still
+`Z_CONFIRMED`, and no controller or sketch byte changed — `adws-run.js` is untouched since
+`80f1e95`, which is what made the line numbers reproducible in the first place.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T220035Z` |
+| `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T220045Z` |
+| all seven drivers | exit 0; `run-step5.sh` **135 assertions**, 0 failed |
+| `run-ingest-matrix.js` | exit 0 — 25 ingested, MISMATCH 0 |
+| CodeQL | fail in 1–3s, zero steps executed — [[codeql-billing-lock]] |
+
+### The pattern this extends
+
+The audit ledger for §6.2 now reads: pre-commit audit (findings 33–35), self-review (36), live
+run (37–40), **post-merge audit (this correction)**. Each caught something the previous stage
+structurally could not — and this one is the first to catch an error in a document that had
+already shipped, which is the only stage that can. Three of the four were adversarial reads by
+something that had not written the thing it was reading.
