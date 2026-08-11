@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "job_id": "job_20260811_0001",
+  "task_id": "tsk_20260811_0002",
+  "started_at": "2026-08-11T20:45:26Z",
+  "completed_at": null,
+  "final_status": null,
+  "failure_reason": null,
+  "current_phase": "test",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "worktree_path": "",
+  "branch_name": "",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet"
+  },
+  "cross_phase_rewinds": {
+    "test": 0,
+    "verify": 0,
+    "review": 0
+  },
+  "check_defect_repairs": 0,
+  "operator_directed_rewinds": {
+    "test": 0,
+    "review": 0
+  },
+  "carry_over": null,
+  "resumed_from": null,
+  "risk_level": "medium",
+  "recomputed_risk_level": null
+}

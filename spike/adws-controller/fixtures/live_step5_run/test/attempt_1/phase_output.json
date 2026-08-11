@@ -1,0 +1,86 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK001",
+      "check": "Parse `adws-pipeline/references/phase-gates.md` for a single markdown table whose header row carries both a `Reason` column and a `Terminal severity`-labelled column; assert every data row's severity cell is exactly `retriable` or `non-retriable` (no blank, no prose), and that this is the ONLY such table in the file (the reason definition and its severity live together). Script: `chk001_check.js`, run against the baseline copy and the post-change worktree file.",
+      "criterion": "The terminal failure reason vocabulary documents, for every reason, whether that reason is retriable or non-retriable, and the severity is stated in the same table the reason is defined in.",
+      "pass": true,
+      "output": "post-change: {\"pass\":true,\"rows_found\":10,\"bad\":[],\"header_line\":\"| Reason | When it is recorded | Attempt policy | Terminal severity | Report decision |\"}",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK002",
+      "check": "Compound assertion: (a) doc — `phase-gates.md`'s Consensus rule 2 (unresolved dissent) AND rule 5 (operator uphold) both explicitly state ADVOCATE_DISSENT is the MANDATORY terminal reason, overriding the `{PHASE}_GATE_FAILURE` default (regex match for 'MANDATORY'..'ADVOCATE_DISSENT' and 'override'..'{PHASE}_GATE_FAILURE default'); (b) code — `execution-report.js` exports `failureReasonSeverity`, and `failureReasonSeverity('ADVOCATE_DISSENT') === 'non-retriable'` while `failureReasonSeverity('BUILD_GATE_FAILURE') === 'retriable'` (the two are distinct, not collapsed). Script: `chk002_check.js`.",
+      "criterion": "An upheld advocate dissent terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "post-change: {\"pass\":true,\"docMandatory\":true,\"codeOk\":true,\"details\":{\"hasSeverityFn\":true,\"advocateSeverity\":\"non-retriable\",\"blanketSeverity\":\"retriable\"}}",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK003",
+      "check": "Compound assertion: (a) doc — both `artifact-layout.md` and `phase-gates.md` name `EVIDENCE_INTEGRITY_BREACH` explicitly (grep); (b) code — a synthetic `run_manifest.json` with `final_status: \"failed\"`, `failure_reason: \"EVIDENCE_INTEGRITY_BREACH\"` (built in scratch `probes/evidence_integrity/`) produces `buildReport().report.decision === 'QUARANTINE'`, exit code 2, and `failureReasonSeverity('EVIDENCE_INTEGRITY_BREACH') === 'non-retriable'`, distinct from the blanket `{PHASE}_GATE_FAILURE`'s `retriable`/RETRY treatment. Script: `chk003_check.js`.",
+      "criterion": "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "post-change: {\"pass\":true,\"docHasReason\":true,\"codeOk\":true,\"details\":{\"eibDecision\":\"QUARANTINE\",\"eibExit\":2,\"eibSeverity\":\"non-retriable\",\"blanketSeverity\":\"retriable\"}}",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "Compound assertion, all against a live `require()` of `execution-report.js` (no string parsing of gate detail): `failureReasonSeverity` is a function; `FAILURE_REASON_SEVERITY`'s key set is EXACTLY the union of the exported `QUARANTINE_REASONS`/`NO_RETRY_REASONS` Sets (derived, never hand-written); `buildReport(jobDir).classification` exists and carries a `severity` field; and — the projection test — every populated severity cell in `phase-gates.md`'s vocabulary table equals `failureReasonSeverity(reason)` for that row's reason (skipping the `{PHASE}_GATE_FAILURE` template row). Script: `chk004_check.js`.",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "post-change: {\"pass\":true,\"details\":{\"hasFn\":true,\"hasMap\":true,\"hasClassification\":true,\"mapIsUnion\":true,\"tableProjectionOk\":true,\"classification\":{\"failure_reason\":\"ADVOCATE_DISSENT\",\"severity\":\"non-retriable\",\"integrity_breach\":false}}}",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "Regression guard (contract constraint, not itself a criterion, folded into CHK004 since it verifies the severity-sourcing change is additive-only): re-run the repo's existing parity suites post-change — `node parity/execution-report-fixtures/run-tests.js` (25 fixture dirs + CLI error path) and `node parity/cli-contract/run-tests.js` (330 assertions across 9 validators + 2 scripts) — and confirm every fixture's scored `decision`/`exit_code` is unchanged. `parity/` is a `policy.blocked_paths` entry: read and executed only, never edited.",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "execution-report-fixtures: 'All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs.' exit=0. cli-contract: 'All CLI-contract assertions passed (330 assertion(s) across 9 validators + 2 scripts).' exit=0. Both suites also pass unchanged against the materialized baseline tree (25/25, 330 assertions, exit=0/0) confirming the fixture corpus scores the same decision/exit code before and after this change.",
+      "baseline_pass": true,
+      "baseline_reason": null,
+      "falsifiable": false,
+      "verdict": "gate_weak",
+      "classification": null
+    }
+  ],
+  "command_log": [
+    { "command": "mkdir -p /tmp/adws-job_20260811_0001/test/attempt_1/adws-tester", "exit_code": 0 },
+    { "command": "git rev-parse HEAD && git rev-parse main  (in live-target worktree)", "exit_code": 0, "note": "confirmed HEAD == main == 80f1e9593b368915716e3fc54709566fb575f1a9, the base commit for this build" },
+    { "command": "git archive main | tar -x -C /tmp/adws-job_20260811_0001/test/attempt_1/adws-tester/baseline-tree  (in live-target worktree)", "exit_code": 0, "note": "materialized the PRE-change tree in a separate scratch location, never by reverting the pipeline worktree" },
+    { "command": "git status --porcelain -uall | grep -v '^?? job_20260811_0001/'  (in live-target worktree)", "exit_code": 0, "output": " M adws-pipeline/references/artifact-layout.md\n M adws-pipeline/references/phase-gates.md\n M adws-pipeline/references/validator-inputs.md\n M adws-pipeline/scripts/execution-report.js", "note": "confirmed exactly the four planned files changed, all UNTRACKED-stage-wise (uncommitted, as expected pre-ship)" },
+    { "command": "node -c adws-pipeline/scripts/execution-report.js  (in live-target worktree)", "exit_code": 0, "output": "SYNTAX OK" },
+    { "command": "node <build synthetic probe dirs under scratch: probes/advocate_dissent, probes/evidence_integrity, probes/blanket_gate, each a minimal run_manifest.json>", "exit_code": 0 },
+    { "command": "node chk001_check.js <baseline-tree>/adws-pipeline/references/phase-gates.md", "exit_code": 0, "output": "{\"pass\":false,\"reason\":\"No single table found with a Reason column AND a severity column in its header\"}" },
+    { "command": "node chk001_check.js <worktree>/adws-pipeline/references/phase-gates.md", "exit_code": 0, "output": "{\"pass\":true,\"rows_found\":10,\"bad\":[]}" },
+    { "command": "node chk002_check.js <baseline-tree paths>", "exit_code": 0, "output": "{\"pass\":false,\"docMandatory\":false,\"codeOk\":false,\"details\":{\"hasSeverityFn\":false}}" },
+    { "command": "node chk002_check.js <worktree paths>", "exit_code": 0, "output": "{\"pass\":true,\"docMandatory\":true,\"codeOk\":true,...}" },
+    { "command": "node chk003_check.js <baseline-tree paths> probes/evidence_integrity", "exit_code": 0, "output": "{\"pass\":false,\"docHasReason\":false,\"codeOk\":false,\"details\":{\"eibDecision\":\"RETRY\",\"eibExit\":1}}" },
+    { "command": "node chk003_check.js <worktree paths> probes/evidence_integrity", "exit_code": 0, "output": "{\"pass\":true,\"docHasReason\":true,\"codeOk\":true,\"details\":{\"eibDecision\":\"QUARANTINE\",\"eibExit\":2,...}}" },
+    { "command": "node chk004_check.js <baseline-tree paths> probes/advocate_dissent", "exit_code": 0, "output": "{\"pass\":false,\"details\":{\"hasFn\":false,\"mapIsUnion\":false,\"tableProjectionOk\":null}}" },
+    { "command": "node chk004_check.js <worktree paths> probes/advocate_dissent", "exit_code": 0, "output": "{\"pass\":true,\"details\":{\"hasFn\":true,\"hasMap\":true,\"hasClassification\":true,\"mapIsUnion\":true,\"tableProjectionOk\":true,...}}" },
+    { "command": "node parity/execution-report-fixtures/run-tests.js  (in live-target worktree, post-change)", "exit_code": 0, "output": "All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs." },
+    { "command": "node parity/cli-contract/run-tests.js  (in live-target worktree, post-change)", "exit_code": 0, "output": "All CLI-contract assertions passed (330 assertion(s) across 9 validators + 2 scripts)." },
+    { "command": "node parity/execution-report-fixtures/run-tests.js  (in baseline-tree, pre-change)", "exit_code": 0, "output": "All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs." },
+    { "command": "node parity/cli-contract/run-tests.js  (in baseline-tree, pre-change)", "exit_code": 0, "output": "All CLI-contract assertions passed (330 assertion(s) across 9 validators + 2 scripts)." },
+    { "command": "grep -rl PR_DRIFT_SENTINEL_BLOCK parity/  (in live-target worktree)", "exit_code": 0, "output": "4 hits, all inside two fixtures' own generated execution_report.{json,md} OUTPUT files (rendered gate-detail text), none in a run_manifest.json failure_reason input — confirms the disclosed QUARANTINE_REASONS tie-break changes no fixture's scored decision" },
+    { "command": "node -e \"...\"  (verified all 9 named terminal reasons' failureReasonSeverity() retain their pre-existing decision-level meaning: the 7 already-quarantine-class reasons remain non-retriable, PROTECTED_BRANCH_BLOCKED and STABILITY_BUDGET_EXCEEDED remain retriable)", "exit_code": 0 }
+  ]
+}

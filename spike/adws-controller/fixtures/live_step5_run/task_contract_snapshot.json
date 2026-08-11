@@ -1,0 +1,65 @@
+{
+  "task_id": "tsk_20260811_0002",
+  "source_type": "direct_prompt",
+  "schema_version": "1.0.0",
+  "repo": {
+    "provider": "github",
+    "owner": "Org-EthereaLogic",
+    "name": "adws-pipeline-skill",
+    "default_branch": "main"
+  },
+  "task": {
+    "title": "Separate the non-retriable terminal failure reasons from the retriable ones",
+    "requested_change": "Give the terminal failure reason vocabulary a severity split, so that a non-retriable terminal failure reason is recorded as a distinct reason from a retriable gate failure instead of both collapsing into one blanket phase gate failure reason.",
+    "problem_statement": "The terminal failure reason an orchestrator records at the end of a run flattens every gate failure into a single blanket phase gate failure reason, including the failures execution-report.js itself classifies as non-retriable — an upheld advocate dissent and an evidence integrity breach. A retriable failure and a non-retriable one are then indistinguishable in run_manifest.failure_reason, so a reader cannot tell a run worth retrying from a run that must be quarantined without re-deriving the severity by parsing gate detail strings.",
+    "acceptance_criteria": [
+      "The terminal failure reason vocabulary documents, for every reason, whether that reason is retriable or non-retriable, and the severity is stated in the same table the reason is defined in.",
+      "An upheld advocate dissent terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings."
+    ],
+    "non_goals": [
+      "Changing the decision or exit code vocabulary of execution-report.js.",
+      "Adding a new gate, a new phase, or a new validator."
+    ],
+    "constraints": [
+      "The failure reason vocabulary must stay a closed enum — no free-text terminal reason.",
+      "Existing recorded failure reasons must keep their current meaning, so a reason may be added but never silently redefined.",
+      "The orchestrator must source the retriable/non-retriable severity, never re-derive it by parsing gate detail prose.",
+      "The parity fixture corpus must keep scoring the same decision and exit code."
+    ],
+    "file_hints": [
+      "adws-pipeline/references/phase-gates.md",
+      "adws-pipeline/references/artifact-layout.md",
+      "adws-pipeline/scripts/execution-report.js"
+    ]
+  },
+  "execution": {
+    "output_mode": "pr",
+    "target_branch": "main",
+    "allow_direct_commit": false,
+    "commit_identity": null,
+    "max_runtime_minutes": 60,
+    "evidence_archive_dir": null,
+    "resume_from_job": null,
+    "isolation_mode": "worktree"
+  },
+  "policy": {
+    "allowed_paths": [
+      "adws-pipeline/references/",
+      "adws-pipeline/scripts/execution-report.js"
+    ],
+    "blocked_paths": [
+      "parity/",
+      "spike/"
+    ],
+    "test_policy": "required",
+    "secret_policy": "no-new-secrets",
+    "falsifiability": true
+  },
+  "risk": {
+    "task_size": "small",
+    "risk_level": "medium",
+    "requires_human_approval_before_ship": false
+  }
+}

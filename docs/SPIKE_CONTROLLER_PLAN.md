@@ -342,7 +342,11 @@ here, with the box shut on the nine unimplemented rule families.
    in each of them, and should not expect a mocked suite to find it.
 4. **Q5's reasoning half is unmeasured, and condition 2 makes it load-bearing.** Whether the
    model's per-phase reasoning shrinks needs two live runs of the same contract, one under
-   each orchestrator. Not done. At 12.2× it would only bound the size of the win; at 2.36× a
+   each orchestrator. **HALF DONE (§13).** One of the two runs had already happened — step 5 was
+   a live run under the controller — and its transcript carried per-turn `usage`, so the
+   controller arm was measured **for no dispatches**: 5,589 tokens of context growth per phase,
+   **3.00 round trips per phase**, instruction mass 7,294 tok / 17,544 B. The prose arm is
+   pre-registered (`spike/adws-controller/ab/PROTOCOL.md`) and has not run. At 12.2× it would only bound the size of the win; at 2.36× a
    modest growth in per-phase reasoning could consume the margin. An earlier draft said it
    "cannot flip the sign" — that overstated a mechanism argument as a result
    (`FINDINGS.md` finding 25). **This is the highest-value experiment left, ahead of any
@@ -645,3 +649,68 @@ reduction, and the prose arm becomes mandatory regardless of where Z′ lands.
   and can be decided in parallel.
 
 </details>
+
+---
+
+## 13. Step 6 — the reasoning A/B (condition 4)
+
+**Status (2026-08-11): arm B MEASURED, arm A PRE-REGISTERED AND UNRUN.**
+
+| | |
+|---|---|
+| Arm B (controller) `P_B` | **5,589 tokens of context growth per phase** — plan 5,605 / build 5,485 / test 5,676 |
+| Arm B round trips per phase | **3.00 exactly**, against §9's kill band of "~2–3" |
+| Arm B instruction mass | **7,294 tokens / 17,544 B** (sketch + `task-contract.md`) |
+| Arm B live handshake | **12,695 B over 11 calls** as run; **7,493 chars over 9 calls** pure |
+| Arm A | not run. `ab/PROTOCOL.md` is frozen; `ab/PREREGISTRATION.json` carries its SHA-256 |
+
+**The controller arm cost nothing to measure.** §12.6 criterion 4 recorded "no per-phase
+orchestrator token counts were captured" — but the counts were *in the step 5 transcript all
+along*, one `usage` record per turn, preserved in the VM. What was missing was an instrument, not
+a run. That is worth stating plainly because it is the second time in this spike that a claimed
+gap turned out to be an unread artifact rather than an unperformed experiment.
+
+**What arm A needs, and why this session could not do it.** Arm A must be a fresh top-level Claude
+Code session in a VM where the skill is installed — the same arrangement that produced arm B, which
+is itself the control. Launching a nested `claude` from inside this session is blocked by the
+harness's own guardrail, so **an operator starts arm A**. Everything else is done: `adws-arma` is an
+OrbStack clone of arm B's machine, sanitized of arm B's transcripts, worktree and evidence tree,
+with the skill installed via the shipped `install.sh --global` and `skill-check.js` returning
+`intact: true` / `agents_checked: 10`.
+
+```bash
+orb -m adws-arma -w /home/etherealogic_2/adws-pipeline-skill claude
+```
+
+Then, as the only human message of the session:
+
+```
+implement the following: ~/step5/launch-prompt.md
+```
+
+Afterwards the transcript is pulled to `spike/adws-controller/ab/evidence/armA-orchestrator.jsonl`
+and `run-ab.sh` computes the comparison. **The prompt is frozen and must not be edited to get a
+better run**; if arm A aborts at intake, that is the result (`ab/PROTOCOL.md` §10.11).
+
+### 13.1 The one rule that makes this an experiment rather than an argument
+
+The protocol was written before arm A existed and is committed with a digest the driver asserts.
+It fixes, in advance: the metric and why the three rejected alternatives lost; two segmentation
+rules that must return the same verdict or the result is indeterminate; the numeric kill bands; the
+replication rule; eight vetoes; eighteen confounds with their bias directions; and thirteen named
+ways the result could be spun afterwards. It also records the prediction being tested, so that
+"what happened is what we expected" is checkable rather than remembered.
+
+It was amended five times (§0 of that document) between being written and being committed —
+every amendment forced by running it against arm B and finding a clause that did not survive
+contact with the data, and every one made while arm A did not exist. One of them struck a veto that
+was a tautology; one downgraded a claim this plan would otherwise have published as confirmed.
+
+### 13.2 Not part of step 6
+
+- **The comparison itself**, until arm A runs.
+- **Which arm is cheaper overall.** The orchestrator is 14.8% of the run's output tokens
+  (30,863 against 177,047 from five subagents). This experiment sees only that share.
+- **Quality.** Neither arm's output is scored. An interface that briefs its assessors worse wins a
+  token comparison while gating worse — finding 38 is the observed instance, and it sits in the
+  segment the primary excludes.

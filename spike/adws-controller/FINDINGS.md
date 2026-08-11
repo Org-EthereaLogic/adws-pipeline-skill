@@ -1411,15 +1411,103 @@ could only flag as a trap and this run answers.
 
 ### What step 5 does not establish
 
-- **The live handshake cost.** Not counted. Finding 31 predicted a real run exceeds the replayed
-  9,146 B and that prediction is still open.
-- **The reasoning A/B**, either arm. Condition 4 is untouched and remains the highest-value
-  open item.
+- ~~**The live handshake cost.** Not counted.~~ **Counted after the fact** — see STEP 6 below.
+  Step 5's transcript held the datum all along; only the instrument was missing.
+- ~~**The reasoning A/B**, either arm.~~ **Arm B is now measured**, from the same transcript.
+  Arm A is pre-registered and unrun; condition 4 is half-closed and still the top of the list.
 - **Four phases and every rewind family.** The run stopped at the test gate by design; review,
   document, ship and verify have still never been orchestrated from this document.
 - **That the patched sketch is now sufficient.** Z′ is a measurement of the interface after one
   run found ten gaps in it. A second run would find more; the claim is that the FIRST run's
   gaps cost 1,700 bytes, not that no gaps remain.
+
+## STEP 6 — the reasoning A/B: arm B measured, arm A pre-registered
+
+**Status (2026-08-11): the controller arm is MEASURED; the prose arm is pre-registered and has not
+run.** Condition 4 asked for "two live runs of the same contract, one under each orchestrator."
+One of them already happened — step 5 was a live run under the controller — and its transcript
+survived in the VM with per-message `usage` on every turn. **No dispatch was spent to measure it.**
+The protocol, the frozen numbers and the measurement script are in `ab/`; `run-ab.sh` re-derives
+every figure below from the committed transcript (42 assertions) rather than restating it.
+
+### The controller arm, measured
+
+| | |
+|---|---|
+| Per-phase context growth `P_B` | **5,589 tokens/phase** (plan 5,605 / build 5,485 / test 5,676) |
+| Round trips per phase | **3.00 exactly** — 3 / 3 / 3 |
+| Output tokens per phase | 3,564 / 2,946 / 3,157 |
+| Intake mass `I_net` | 20,379 tokens, of which instruction reads are **7,294 tok / 17,544 B** |
+| Live handshake, as run | 11 calls, **12,695 B** inbound |
+| Live handshake, pure | 9 calls, **7,493 chars** inbound |
+
+### New findings from step 6
+
+**Finding 41 — an assistant row is not a model turn, and the naive fix is wrong in the other
+direction.** The transcript writes one row per content block and repeats the same `usage` object on
+each: 61 assistant rows are **26** model turns. Summing per row inflates output tokens **2.71×**
+(83,651 vs 30,863). The obvious correction — one row per `message.id`, first wins — is *also* wrong,
+and only on the other files: in the SUBAGENT transcripts the rows of a turn carry **different**
+partial usage, so first-wins reports the advocate at 3,217 output tokens against a true 31,927, a
+**10× undercount**, while row-summing there is accurate to 0.6%. One rule is right on both:
+**take the record with the maximum `output_tokens` within each `message.id`** — the final streaming
+state. This is findings 22/29/34's shape inside the instrument itself: two ways of counting that
+agree on one file and diverge on the next, and whichever you checked first is the one you would
+have shipped. Every number in this section is max-per-id; `run-ab.sh` asserts the row/turn ratio so
+a future reader cannot silently regress to rows.
+
+**Finding 42 — the controller's measured steady state is 3.00 round trips per phase, not the
+inferred 2, and §9's kill band is "~2–3".** Q5's answer said "2 model turns per phase in steady
+state." That was an inference from step 3's mocked path. The only live controller run shows
+`next` and `record` as **separate turns at every one of the three phases** — T11/T12, T14/T15,
+T17/T18 — never batched. The controller therefore sits **at the ceiling of §9's band, not under
+it**. This is published independently of arm A because it is a fact about the controller, not a
+comparison: nothing arm A does can move it.
+
+**Finding 43 — finding 31's prediction closes, and it closes in two halves that point opposite
+ways.** The live handshake for a partial three-phase slice was **12,695 B over 11 calls**, which
+exceeds step 4's replayed seven-phase estimate of 9,146 B — the prediction confirmed. But 2 of
+those 11 calls bundle non-handshake work into the same Bash invocation (a `git worktree list` and
+a `find` riding along with the ENOENT probe; a `node -e` dump of `checks[4]`). **Pure handshake is
+9 calls / 7,493 chars — under 9,146 B for three phases where step 4 estimated seven.** So the
+interface is cheaper than step 4 guessed and the *run* was more expensive, because the orchestrator
+put diagnostics through the same channel. Both numbers are published; only the pure one describes
+the interface, and only the as-run one describes what a run costs.
+
+**Finding 44 — the orchestrator is 14.8% of the run's output tokens.** 30,863 against 177,047 from
+the five subagents (planner 34,273 / builder 48,741 / tester 41,592 / critic 20,514 / advocate
+31,927), recovered from the VM's own sidechain transcripts — which the harness does **not** expose
+for the two async consensus dispatches, so `toolUseResult.totalTokens` reports them as unrecoverable
+and only the archived JSONL has them. Condition 4 argues about the smaller share. That does not make
+it the wrong argument — instruction mass is the orchestrator's cost and nobody else's — but it
+bounds what any A/B result can claim about what a run costs.
+
+**Finding 45 — a hand-copied install fails its own integrity gate, and the failure is
+end-of-run-shaped.** `skill-check.js` finds the agents directory at `<skill>/../../agents` or
+`<skill>/../.claude/agents`. Copying `adws-pipeline/` alone into `~/.claude/skills/` satisfies
+neither: `intact: false`, `agents_dir: null`, exit 1, ten `agent/*.md` reported missing — and
+SKILL.md §0.3 says **do not start the job**. Arm A's setup did exactly this and would have aborted
+at zero dispatches. The shipped `install.sh --global` does the right thing and was used instead.
+Recorded because the check behaves correctly and the *setup* was wrong: a reviewer preparing an
+isolated environment reaches for `cp -R` before they reach for the installer, and the gate that
+catches it fires at intake of the first job rather than at install time. **Predicted before the run
+by a design agent reading `skill-check.js`, then confirmed by running it** — the cheapest defect in
+this spike's history, found for the price of reading the code that was about to run.
+
+### What step 6 does not establish, and it is most of it
+
+**Arm A has not run.** Everything above is one arm. The comparison — `Δ_P`, `n*`, the §9 round-trip
+delta, the verdict bands — is defined in `ab/PROTOCOL.md`, frozen, and unanswered. The protocol was
+written before arm A existed, amended five times where running it against arm B proved a clause
+wrong (`ab/PROTOCOL.md` §0), and committed with a SHA-256 that `run-ab.sh` asserts, so a later edit
+reads as an edit rather than as the original.
+
+The protocol also records, before the data exists, the four ways this result could be spun and the
+prediction being tested. The one worth repeating here: **every orchestrator-side metric rewards
+under-briefing.** Arm B's consensus pair re-derived what the tester had already established
+(finding 38), and an interface that briefs badly wins this experiment while gating worse. That is
+why the primary excludes the consensus segment, and why the exclusion is a limit on the answer
+rather than a tidying-up.
 
 ## Canonical conformance — the writer floor, not the golden
 
