@@ -661,19 +661,36 @@ refused the plan attempt, but an orchestrator asking `next` what to do would hav
 the **builder** against a plan gate the planner granted itself.
 
 The controller and the agent write the same file by instruction, so nothing about the file's
-existence distinguishes them. There is one discriminator in its **content**: `provenance` is
-the orchestrator's to record (SKILL.md step 1, SC-3 B1/F-17 — `started_at`, `completed_at`,
-the derived `wall_clock_s`, `agent` and `model_tier_requested` are MANDATORY and come from a
-live `date -u`), and `record` writes it beside every gate decision it makes, in replay mode
-as well as live. So in any tree this controller drove, a decided gate and a complete
-provenance block travel together. `attemptRecorded()` requires both.
+**existence** distinguishes them.
 
-**This is a discriminator, not a proof, and it should not be read as one.** An agent that
-forged a complete provenance block would be indistinguishable, and no rearrangement of these
-files fixes that — the only real answer is a decision record the agent contracts never
-mention, which is a change to the shipped artifact layout and not a spike-local call. **This
-is the second question step 3 raises FOR the skill** (the first being F-76's row identity):
-the orchestrator's designated field lives in a file it has told the agent to write.
+**The first fix was wrong, and the review round that caught it was right.** It keyed
+authorship to `provenance` — the orchestrator's to record (SKILL.md step 1, SC-3 B1/F-17),
+and written beside every gate decision `record` makes — reasoning that a decided gate and a
+complete provenance block therefore travel together in any tree this controller drove. True,
+and irrelevant: **every byte of that block lives in a file the agent is told to write.** An
+agent that emits five more keys is indistinguishable. A discriminator inside the forgeable
+region is not an authorization record, and the write-up shipped it as a known-weak
+"discriminator, not a proof" — which is the wrong response to a hole whose fix costs fifteen
+lines. Naming a weakness is not a substitute for closing one that is cheap to close.
+
+Authorship now comes from `.decisions.json`, a controller-owned ledger at the **job root** —
+a file the agent contracts never mention, at a path they explicitly forbid writing to ("never
+write outside your attempt directory"). It answers exactly one question, "did I decide this
+attempt?". It is deliberately **not** a cursor: *where* the job is stays derived from the
+tree, the verdict is still read from the manifest, and a tree that arrives without its ledger
+reads as wholly undecided and re-runs — the safe direction. `run-step3.sh` S5 forges a
+complete, well-formed provenance block beside a self-granted `pass` and asserts it is still
+not believed.
+
+The residual is smaller and stated plainly: an agent that writes outside its attempt
+directory, in violation of an explicit prohibition, can forge a ledger too. Nothing inside
+one filesystem tree fixes that.
+
+**This is still the second question step 3 raises FOR the skill** (the first being F-76's row
+identity), and the spike-local fix does not answer it: the orchestrator's designated field
+`gate_result` lives in a file the agent specs instruct the agent to write, so *every*
+orchestrator — this controller or the prose one — needs a record outside that file to know
+its own decisions. That is a gap in the shipped artifact layout, not in the spike.
 
 **20. `next` advertised an attempt directory that did not exist.**
 
@@ -853,10 +870,13 @@ a real subagent run. `run-step3.sh` replays its archived evidence
 through the same live-mode code path and asserts the same gate. To do it for real again:
 
 ```bash
-node spike/adws-controller/adws-run.js init spike/adws-controller/fixtures/live_contract.json \
-  "$EVIDENCE_ROOT" --worktree "$(git worktree add --detach "$WT" HEAD >/dev/null && echo "$WT")"
-node spike/adws-controller/adws-run.js next "$JOB_DIR"   # -> dispatch adws-planner from this payload
-node spike/adws-controller/adws-run.js record "$JOB_DIR" plan 1   # no --from: LIVE
+CTRL=spike/adws-controller/adws-run.js
+WT=$(mktemp -d)/worktree && git worktree add --detach "$WT" HEAD   # the agent must not reach your checkout
+JOB_DIR=$(node "$CTRL" init spike/adws-controller/fixtures/live_contract.json \
+            "$EVIDENCE_ROOT" --worktree "$WT" | node -pe 'JSON.parse(require("fs").readFileSync(0)).job_dir')
+node "$CTRL" next "$JOB_DIR"          # -> dispatch adws-planner from this payload, verbatim
+node "$CTRL" record "$JOB_DIR" plan 1 # no --from: LIVE
+git worktree remove --force "$WT"
 ```
 
 The single check worth re-running against the shipped corpus, which needs no dispatch at all

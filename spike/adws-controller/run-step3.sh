@@ -43,9 +43,12 @@ assert_match() { # <label> <actual> <regex>
   else printf '  FAIL  %s: [%s] did not match /%s/\n' "$1" "$2" "$3"; FAILS=$((FAILS+1)); fi
 }
 jget() { node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const v=JSON.parse(s)[process.argv[1]];process.stdout.write(v===null?"null":String(v))}catch(e){process.stdout.write("<unparseable>")}})' "$1"; }
+# execFileSync with an ARGV, never execSync with a built command string: $REPO is a
+# filesystem path and a path containing shell syntax would otherwise execute.
 newjob() { # <evidence-root> [contract]
-  node -e 'process.stdout.write(JSON.parse(require("child_process").execSync(process.argv[1]).toString()).job_dir)' \
-    "node $CTRL init ${2:-$FIX/live_contract.json} $1 --worktree $REPO"
+  node -e 'const{execFileSync}=require("child_process");const a=process.argv.slice(1);
+process.stdout.write(JSON.parse(execFileSync("node",[a[0],"init",a[1],a[2],"--worktree",a[3]]).toString()).job_dir)' \
+    "$CTRL" "${2:-$FIX/live_contract.json}" "$1" "$REPO"
 }
 # stage the agent-authored half of the live attempt into a job's plan/attempt_1, exactly as
 # a live subagent would have left it
@@ -90,7 +93,7 @@ node -e '
  const c=JSON.parse(fs.readFileSync(process.argv[2])).task;
  const inp={title:c.title,requested_change:c.requested_change,problem_statement:c.problem_statement,
             acceptance_criteria:c.acceptance_criteria||[],constraints:c.constraints||[],file_hints:c.file_hints||[]};
- const out=JSON.parse(require("child_process").execSync("node "+process.argv[3]+" -",{input:JSON.stringify(inp)}).toString());
+ const out=JSON.parse(require("child_process").execFileSync("node",[process.argv[3],"-"],{input:JSON.stringify(inp)}).toString());
  process.exit(JSON.stringify(t.output)===JSON.stringify(out)?0:1);
 ' "$TRACE" "$JOB1/task_contract_snapshot.json" "$TN"
 assert "trace.output is the validator's real stdout" "$?" "0"
@@ -160,6 +163,25 @@ node -e 'const fs=require("fs"),p=process.argv[1];const m=JSON.parse(fs.readFile
 N5="$(node "$CTRL" next "$JOB5")"
 assert "a self-granted pass does NOT advance the job" "$(printf '%s' "$N5" | jget phase)"   "plan"
 assert "…the attempt is still the one to run"         "$(printf '%s' "$N5" | jget attempt)" "1"
+# The first fix here keyed authorship to the orchestrator-written `provenance` block, which
+# an automated review correctly rejected: every byte of it lives in a file the agent is TOLD
+# to write. So forge the whole thing — a complete, well-formed provenance block beside the
+# self-granted pass — and assert it is still not believed. Only the controller's own
+# .decisions.json ledger, outside the attempt directory, can answer "did I decide this".
+JOB5F="$(newjob "$SCRATCH/s5f")"
+node "$CTRL" next "$JOB5F" >/dev/null
+stage_live "$JOB5F"
+node -e '
+ const fs=require("fs"),p=process.argv[1];const m=JSON.parse(fs.readFileSync(p));
+ m.gate_result="pass";
+ m.provenance={started_at:m.started_at,completed_at:m.completed_at,wall_clock_s:811,
+               agent:"adws-planner",model_tier_requested:"opus",model_id:null,cost_usd:null,
+               tokens_in:null,tokens_out:null,tool_call_count:null,elapsed_ms:null,timeout:null,cancel:null};
+ fs.writeFileSync(p,JSON.stringify(m,null,2));
+' "$JOB5F/plan/attempt_1/phase_manifest.json"
+assert "a FORGED provenance block is not believed either" "$(node "$CTRL" next "$JOB5F" | jget phase)" "plan"
+assert "…and the ledger, not the manifest, is what says so" \
+  "$([ -f "$JOB5F/.decisions.json" ] && echo present || echo absent)" "absent"
 node "$CTRL" record "$JOB5" plan 1 >/dev/null 2>"$SCRATCH/e5.txt"; RC5=$?
 assert       "agent-written gate_result refused (exit 65)" "$RC5" "65"
 assert_match "and the refusal says why"                    "$(cat "$SCRATCH/e5.txt")" "grading itself|designated post-hoc"

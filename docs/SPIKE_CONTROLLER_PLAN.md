@@ -339,10 +339,14 @@ go/no-go — it does not override the ordering above.
   write. So the orchestrator's field lives in the agent's file, and nothing about the file
   distinguishes the two authors. An agent that writes `gate_result: "pass"` into its own
   manifest was believed by the controller's sequencing oracle, which then dispatched the next
-  phase against a gate the agent granted itself. The spike closes it by requiring the
-  orchestrator-written `provenance` floor beside any decided gate — a **discriminator, not a
-  proof**: a forged provenance block would be indistinguishable. The real fix is a decision
-  record the agent contracts never mention, which is a change to the shipped artifact layout.
+  phase against a gate the agent granted itself. The spike closes it with `.decisions.json`,
+  a controller-owned ledger at the job root — outside the directory the agent may write to.
+  (The first cut keyed it to the orchestrator-written `provenance` floor *inside* the
+  manifest; an automated review correctly rejected that, since every byte of it sits in the
+  file the agent is told to write.) **The question for the skill is unchanged by the fix**:
+  `gate_result` is the orchestrator's designated field inside the agent's file, so every
+  orchestrator — this controller or the prose one — needs a record outside it to know its own
+  decisions. That is a gap in the shipped artifact layout.
 - **Two silences the spike has now found in the same shape, one phase apart (findings 16, 17).**
   `execution-report.js` does not evaluate the test gate's `checks[]` (step 2) and does not
   evaluate the plan gate's "per-criterion file-change proposal" (step 3). In both cases the

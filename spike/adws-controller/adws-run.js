@@ -309,19 +309,36 @@ function phaseOutputOf(jobDir, phase, attempt) {
 // refuses to ingest an attempt's manifest and the controller writes its own. So in any tree
 // this controller drove, a decided gate and a complete provenance block travel together.
 //
-// This is a DISCRIMINATOR, not a proof. An agent that forged a complete provenance block too
-// would be indistinguishable, and no rearrangement of these files fixes that — the only real
-// answer is a decision record the agent contracts never mention, which is a change to the
-// shipped layout and not a spike-local call. Recorded as FINDINGS.md finding 19.
-const PROVENANCE_FLOOR = ['started_at', 'completed_at', 'wall_clock_s', 'agent', 'model_tier_requested'];
-function attemptRecorded(man) {
+// That was the first cut, and an automated review was right to reject it: every byte of
+// `provenance` lives in a file the agent is TOLD to write, so a discriminator inside the
+// forgeable region is not an authorization record. It defends against the case that actually
+// occurred twice — an HONEST agent following its instructions — and against nothing else.
+//
+// So authorship comes from a CONTROLLER-OWNED DECISION LEDGER, `.decisions.json`, at the job
+// root: a file the agent contracts never mention, at a path they explicitly forbid writing to
+// ("never write outside your attempt directory"). It answers exactly one question — "did I
+// decide this attempt?" — and must never grow into a cursor: WHERE the job is stays derived
+// from the tree, and the VERDICT is still read from the manifest. A tree that arrives without
+// its ledger reads as wholly undecided and re-runs, which is the safe direction to fail.
+//
+// The residual is smaller and honest: an agent that writes outside its attempt directory, in
+// violation of an explicit prohibition, can still forge one. FINDINGS.md finding 19.
+function decisionsPath(jobDir) { return path.join(jobDir, '.decisions.json'); }
+function decisionKey(phase, attempt) { return `${phase}/attempt_${attempt}`; }
+function stampDecision(jobDir, phase, attempt, gate) {
+  const p = decisionsPath(jobDir);
+  const d = readJsonSafe(p) || {};
+  d[decisionKey(phase, attempt)] = { gate_result: gate, decided_at: nowUtc() };
+  writeJson(p, d);
+}
+function attemptRecorded(jobDir, phase, attempt, man) {
+  // (a) did THIS controller decide this attempt? Nothing an agent writes can answer yes.
+  const d = readJsonSafe(decisionsPath(jobDir));
+  if (!d || !d[decisionKey(phase, attempt)]) return false;
+  // (b) the verdict itself is still read from the evidence, never from the ledger. An
+  // interrupted `record` — ledger written, manifest not, or the reverse — re-runs.
   if (!man) return false;
-  // An interrupted `record` leaves a manifest with real provenance and an undecided gate.
-  // That attempt has not been recorded either, and it re-runs.
-  if (man.gate_result === null || man.gate_result === undefined) return false;
-  const p = man.provenance;
-  if (!p || typeof p !== 'object' || Array.isArray(p)) return false;
-  return PROVENANCE_FLOOR.every((k) => p[k] !== null && p[k] !== undefined);
+  return man.gate_result !== null && man.gate_result !== undefined;
 }
 
 // The build attempt a rewind opened FROM `{phase}/attempt_{n}`, or null. corrections.json is
@@ -884,7 +901,13 @@ function cmdInit(contractPath, evidenceRoot, opts) {
   // vouched for, and the plan phase only ever reads from it. An absent flag keeps step 1's
   // empty-string default, which is what every mocked run uses.
   const worktreePath = opts && opts.worktree ? path.resolve(opts.worktree) : '';
-  if (worktreePath && !exists(worktreePath)) fail(`init: --worktree ${worktreePath} does not exist`);
+  if (worktreePath) {
+    // A DIRECTORY, not merely an existing path: `exists()` accepts a regular file, and the
+    // dispatch would then advertise that file to an agent told to explore a repository.
+    let st = null;
+    try { st = fs.statSync(worktreePath); } catch (_e) { /* reported below */ }
+    if (!st || !st.isDirectory()) fail(`init: --worktree ${worktreePath} is not an existing directory`);
+  }
   writeJson(path.join(jobDir, 'run_manifest.json'), {
     schema_version: '1.0.0',
     job_id: jobId,
@@ -933,7 +956,7 @@ function expectedNext(jobDir) {
     // a dispatch that died, a live dispatch waiting for `record`, or an agent's own manifest
     // (see attemptRecorded, which is where step 3's second defect is explained). Either way
     // the next action is to run it, not to read a verdict off it.
-    if (!attemptRecorded(man)) {
+    if (!attemptRecorded(jobDir, phase, n, man)) {
       return { action: 'dispatch', phase, attempt: n, origin: attemptOrigin(jobDir, phase, n) };
     }
     const gate = man.gate_result;
@@ -1246,6 +1269,10 @@ function cmdRecord(jobDir, phase, attemptArg, opts) {
   // Following the instruction and recording the disagreement (FINDINGS.md).
   manifest.gate_failure_detail = v.gate === 'pass' ? null : { summary: v.detail };
   writeJson(manPath, manifest);
+  // The controller's own record that IT decided this attempt, outside the agent-writable
+  // attempt directory. Written after the manifest, so an interrupt between the two leaves an
+  // attempt that re-runs rather than one that reads as decided with no evidence behind it.
+  stampDecision(jobDir, phase, attempt, v.gate);
 
   // run_manifest is the one mutable file (rule 4). The counters move HERE, once, beside the
   // attempt that caused them — never in `next`, which must stay a pure read (Q4).
