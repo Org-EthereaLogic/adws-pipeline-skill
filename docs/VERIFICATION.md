@@ -2254,7 +2254,7 @@ known installs still CURRENT at the pre-existing digest. No reinstall is require
 | `make ci` gate (Tier 1) | PASS, 16/16 — run_id `20260811T133742Z` |
 | `make ci` orb (Tier 2, Node 20 + 24) | PASS — run_id `20260811T133752Z` |
 | `run-step1.sh` / `-negative` / `run-counterexample.sh` / `run-step2.sh` | exit 0 |
-| `run-step3.sh` (new) | exit 0, 58 assertions over fourteen jobs |
+| `run-step3.sh` (new) | exit 0, 69 assertions over sixteen jobs (the driver reports its own count; see the PR #66 entry for why the first figure was wrong) |
 | `run-ingest-matrix.js` | exit 0 — 25 fixtures, MISMATCH 0, LIMIT 0 |
 | `verify-canonical.js` on the live tree | CANONICAL OK |
 | CodeQL `Analyze (javascript-typescript)` | fail in 3s, **zero steps executed** — the account billing lock, not a code result |

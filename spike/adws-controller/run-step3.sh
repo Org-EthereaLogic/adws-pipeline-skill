@@ -17,6 +17,8 @@
 #       scorer's own skills_clean evaluator, with no hand-rolled comparison
 #   S5  authorship refusals: an agent that writes its own gate_result, or its own
 #       corrections.json, is refused rather than silently overwritten
+#   S5b finding 22 — the ledger governs FINALIZE too. A full clean seven-phase tree with a
+#       missing or mismatched .decisions.json must not reach `completed`
 #   S6  the planning_blocked refusal (planLayer2), and the scope it does NOT cover
 #   S7  finding 16 — the corpus records plan-coherence=pass over a contract the validator
 #       scores fail, on all 25 fixtures, with no `output` field for the scorer to catch it
@@ -34,11 +36,17 @@ SCRATCH="$(mktemp -d)"
 trap 'rm -rf "$SCRATCH"' EXIT
 
 FAILS=0
+# Counted here rather than by grepping the output: an audit found the reported figure was one
+# high, because `grep -c PASS` also matches the final "STEP 3 PASS" banner. A driver that
+# reports its own count cannot drift from the docs that quote it.
+ASSERTS=0
 assert() { # <label> <actual> <expected>
+  ASSERTS=$((ASSERTS+1))
   if [ "$2" = "$3" ]; then printf '  PASS  %s (%s)\n' "$1" "$2"
   else printf '  FAIL  %s: expected [%s], got [%s]\n' "$1" "$3" "$2"; FAILS=$((FAILS+1)); fi
 }
 assert_match() { # <label> <actual> <regex>
+  ASSERTS=$((ASSERTS+1))
   if printf '%s' "$2" | grep -qiE "$3"; then printf '  PASS  %s (matched /%s/)\n' "$1" "$3"
   else printf '  FAIL  %s: [%s] did not match /%s/\n' "$1" "$2" "$3"; FAILS=$((FAILS+1)); fi
 }
@@ -68,7 +76,13 @@ assert "plan_gate_scope reported" "$(printf '%s' "$P" | jget plan_gate_scope)" "
 assert "prev_output is null at the first phase" "$(printf '%s' "$P" | jget prev_output)" "null"
 for K in attempt_dir contract worktree_path scratch_root; do
   V="$(printf '%s' "$P" | jget "$K")"
-  case "$V" in /*) ;; *) printf '  FAIL  %s is not an absolute path: [%s]\n' "$K" "$V"; FAILS=$((FAILS+1));; esac
+  # Both branches print, so the PASS-line count and the self-reported ASSERTS agree. A check
+  # that is silent on success is the reason the two numbers diverged in the first place.
+  ASSERTS=$((ASSERTS+2))
+  case "$V" in
+    /*) printf '  PASS  %s is an absolute path\n' "$K" ;;
+    *)  printf '  FAIL  %s is not an absolute path: [%s]\n' "$K" "$V"; FAILS=$((FAILS+1)) ;;
+  esac
   if [ -e "$V" ]; then printf '  PASS  %s exists when advertised (%s)\n' "$K" "$V"
   else printf '  FAIL  %s advertised but does not exist: %s\n' "$K" "$V"; FAILS=$((FAILS+1)); fi
 done
@@ -82,6 +96,7 @@ assert "gate_result"   "$(printf '%s' "$R" | jget gate_result)"   "pass"
 assert "dispatch_mode" "$(printf '%s' "$R" | jget dispatch_mode)" "live"
 assert "tier_source"   "$(printf '%s' "$R" | jget tier_source)"   "contract.risk_level"
 TRACE="$JOB1/plan/attempt_1/skills/task-normalize/skill_trace.json"
+ASSERTS=$((ASSERTS+1))
 if [ -f "$TRACE" ]; then printf '  PASS  task-normalize trace written\n'
 else printf '  FAIL  no task-normalize trace at %s\n' "$TRACE"; FAILS=$((FAILS+1)); fi
 # the trace must WRAP the validator's stdout (SC-8/F-55, F-60): wrapper string identical to
@@ -222,6 +237,42 @@ node "$CTRL" record "$JOB5C" plan 1 >/dev/null 2>"$SCRATCH/e5c.txt"; RC5C=$?
 assert       "an empty live attempt is refused" "$RC5C" "65"
 assert_match "…naming the missing output"       "$(cat "$SCRATCH/e5c.txt")" "no readable phase_output|does not exist"
 
+echo "### S5b — the ledger governs FINALIZE too, not just next/record"
+# An independent audit found that `finalize` walked the manifests itself instead of asking
+# expectedNext(), so the ledger was bypassable by calling one verb instead of another: on a
+# fully clean seven-phase tree, deleting .decisions.json and finalizing directly returned 0,
+# wrote final_status: completed, and the scorer PROMOTEd. Same root as findings 18/19 one verb
+# over — phase_manifest.json is agent-writable, so "every latest manifest says pass" is a
+# CLAIM, not a decision. These drive a real seven-phase job and assert both halves.
+MOCKR="$SCRATCH/mock_review"; mkdir -p "$MOCKR"
+cp -R "$GOLDEN/review/attempt_1/." "$MOCKR/"
+node "$REPO/spike/adws-controller/mk-risk-trace.js" "$GOLDEN/build/attempt_1/phase_output.json" "$MOCKR" >/dev/null
+drive7() { # <jobDir> -> seven clean recorded phases
+  for P in plan build test review document ship verify; do
+    F="$GOLDEN/$P/attempt_1"; [ "$P" = "review" ] && F="$MOCKR"
+    node "$CTRL" next "$1" >/dev/null
+    node "$CTRL" record "$1" "$P" 1 --from "$F" >/dev/null
+  done
+}
+JOB5L="$(newjob "$SCRATCH/s5l" "$GOLDEN/task_contract_snapshot.json")"
+drive7 "$JOB5L"
+assert "seven clean gates -> next says finalize" "$(node "$CTRL" next "$JOB5L" | jget action)" "finalize"
+rm "$JOB5L/.decisions.json"
+node "$CTRL" finalize "$JOB5L" --report "$SCORER" >/dev/null 2>"$SCRATCH/e5l.txt"; RC5L=$?
+assert       "ledger DELETED -> finalize refused (exit 65)" "$RC5L" "65"
+assert_match "…and says the controller never decided it"    "$(cat "$SCRATCH/e5l.txt")" "not been recorded|cannot vouch"
+assert       "…and final_status was NOT written"            "$(node -e 'console.log(String(JSON.parse(require("fs").readFileSync(process.argv[1])).final_status))' "$JOB5L/run_manifest.json")" "null"
+# The sharper half: a ledger that DISAGREES with the manifest. next already quarantines here;
+# finalize used to write `completed` anyway.
+JOB5M="$(newjob "$SCRATCH/s5m" "$GOLDEN/task_contract_snapshot.json")"
+drive7 "$JOB5M"
+node -e 'const fs=require("fs"),p=process.argv[1];const d=JSON.parse(fs.readFileSync(p));d["test/attempt_1"].gate_result="fail";fs.writeFileSync(p,JSON.stringify(d,null,2))' "$JOB5M/.decisions.json"
+assert "mismatched ledger -> next quarantines" "$(node "$CTRL" next "$JOB5M" | jget verdict)" "QUARANTINE"
+node "$CTRL" finalize "$JOB5M" --report "$SCORER" >/dev/null 2>&1; EXIT5M=$?
+assert "…finalize does NOT reach completed" "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1])).final_status)' "$JOB5M/run_manifest.json")" "quarantined"
+assert "…on the evidence-integrity reason"   "$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1])).failure_reason)' "$JOB5M/run_manifest.json")" "MISSING_UPSTREAM_ARTIFACT"
+assert "…and the scorer exits QUARANTINE (2)" "$EXIT5M" "2"
+
 echo "### S6 — planLayer2: a declared refusal fails the gate"
 JOB6="$(newjob "$SCRATCH/s6")"
 node "$CTRL" next "$JOB6" >/dev/null
@@ -286,6 +337,7 @@ print(sum(1 for p in pathlib.Path('$REPO/spike').rglob('*') if p.is_file() and b
 assert "no NUL bytes in spike/" "$NULS" "0"
 
 echo
+printf '### %d assertions run, %d failed.\n' "$ASSERTS" "$FAILS"
 if [ "$FAILS" -eq 0 ]; then
   echo "### STEP 3 PASS — the live dispatch's evidence replays through the live-mode path at the"
   echo "###   same gate; the payload is complete and its paths exist; an agent-authored manifest"
