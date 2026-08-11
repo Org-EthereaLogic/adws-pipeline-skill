@@ -433,6 +433,35 @@ here, with the box shut on the nine unimplemented rule families.
 
 ## 12. Step 5 — run one contract from the thin interface alone
 
+**Status (2026-08-11): DONE. The run happened, and the verdict is Z CONFIRMED.**
+
+| | |
+|---|---|
+| Z at run time | 9,700 B / 155 lines |
+| Z′ after patching every residue event | **11,400 B / 176 lines** |
+| Ceiling (§12.1) | 21,274 B — **1.87×** headroom |
+| §12.7 band | **< 14,000 B → Z confirmed.** The GO's pessimistic floor holds |
+
+One orchestrator ran `plan → build → test` with a consensus round from
+`thin-skill-sketch.md` alone, in an isolated VM with no `adws-pipeline` skill installed, in
+five dispatches of a cap of ten. **Zero forbidden reads, zero blocking residue events, and ten
+residue events** — one of which forced a knowing departure from frozen text. Sufficient to RUN
+from; not sufficient to run from correctly WITHOUT judgment. Findings 37–40 in `FINDINGS.md`;
+the enum gap is [#74](https://github.com/Org-EthereaLogic/adws-pipeline-skill/issues/74).
+
+**§12.4's isolation rule was insufficient as written** and is corrected here for anyone
+repeating this: the skill is a USER-level install, so a fresh session on the development
+machine still carries the 429-line `SKILL.md` in its skill list. The run needs a host with a
+clean `~/.claude` — the repo's own `.claude/agents/` supplies the ten agents and the repo has
+no `.claude/skills/`, so a clone gives exactly what is needed and nothing that is being
+measured against.
+
+**Criteria 3 and 4 are not closed.** The live handshake was never counted (finding 31's
+prediction is open) and no per-phase orchestrator token counts were captured, so the reasoning
+A/B still has neither arm — and it is now unambiguously the top of the list.
+
+<details><summary>Original scope, as written before the run</summary>
+
 **Status (2026-08-11): §12.3's prerequisite is DONE and merged (PR #70, `8adb0f8`); the run
 itself has not started.** `consensus`, `reproduce` and the operator dissent-resolution action
 are emitted, with the F-3/F-6/F-37/F-46 routes behind them, asserted by `run-step5.sh` (112
@@ -614,3 +643,5 @@ reduction, and the prose arm becomes mandatory regardless of where Z′ lands.
   a product call rather than an engineering one, but it sets the gate scope a real controller has
   to encode — better settled before ~1,700 lines assume an answer. It blocks nothing in step 5
   and can be decided in parallel.
+
+</details>
