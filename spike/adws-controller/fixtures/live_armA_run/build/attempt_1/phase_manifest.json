@@ -1,0 +1,31 @@
+{
+  "phase": "build",
+  "attempt": 1,
+  "job_id": "job_20260812_0001",
+  "started_at": "2026-08-12T03:43:44Z",
+  "completed_at": "2026-08-12T03:50:16Z",
+  "agent": "adws-builder",
+  "model_tier": "sonnet",
+  "tier_input": {
+    "source": "contract.risk_level",
+    "value": "medium"
+  },
+  "gate_result": "pass",
+  "failure_reason": null,
+  "stability_gate": null,
+  "provenance": {
+    "model_id": null,
+    "cost_usd": null,
+    "tokens_in": null,
+    "tokens_out": null,
+    "elapsed_ms": 458274,
+    "tool_call_count": 47,
+    "timeout": false,
+    "cancel": false,
+    "started_at": "2026-08-12T03:43:44Z",
+    "completed_at": "2026-08-12T03:50:16Z",
+    "wall_clock_s": 392,
+    "agent": "adws-builder",
+    "model_tier_requested": "sonnet"
+  }
+}

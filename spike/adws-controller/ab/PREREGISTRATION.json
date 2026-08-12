@@ -2,7 +2,7 @@
   "what": "Condition 4 of the §6.2 GO — the reasoning A/B. Everything here is frozen BEFORE arm A runs. Arm B has run; its numbers are computed from the committed transcript by the committed script, and run-ab.sh re-derives every one of them.",
   "protocol": "spike/adws-controller/ab/PROTOCOL.md",
   "registered_at": "2026-08-11",
-  "arm_a_status": "NOT RUN — the VM is prepared and the prompt is frozen",
+  "arm_a_status": "RUN 2026-08-12 — VOID on §7.4 (model mismatch); see arm_a",
   "refrozen": {
     "when": "2026-08-11, after a post-commit audit and while arm A had still not run",
     "why": "three corrections that do not move any result: a chars-vs-bytes comparison in run-ab.sh (amendment A6 — inside the driver that asserts the units rule), an overstated uniqueness claim about the max-per-message-id rule (A7), and a miscount of the rejected-metric table (A8).",
@@ -16,6 +16,7 @@
     "PROTOCOL_md": "501cb5bab06a920d3c8bf33aa5f4936a3c837c632020a2fda9747a71043ccd22",
     "armA_launch_prompt_md": "8064497295f509c5a73856655ef3bd367e04dd80db9862afd283f76e70bad5c1",
     "armB_launch_prompt_md": "4ebeda4a6883acf6e76a8d776260b3b346f1597a0616ce4ac554a49a1e8d7973",
+    "armA_orchestrator_jsonl": "b9ae9511747c6d4b05bfcd795e789806c43a7c84c61961eda9597b86114ae9cd",
     "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
     "live_contract_json": "999ea1fa52093281a4883c776e959263b4798b1cd733a1863f66162d262543ee",
     "shipped_tree": {
@@ -77,6 +78,38 @@
       "why": "PROTOCOL.md §10.1 forbids reporting these as a headline or a comparison — the arms end in different terminal states doing different amounts of work",
       "turns": 26, "output_tokens": 30863, "thinking_tokens": 11856, "final_prefix": 82209
     }
+  },
+
+  "arm_a": {
+    "provenance": "live run 2026-08-12, OrbStack VM adws-arma, repo at 80f1e95, skill installed at ~/.claude/skills via install.sh --global",
+    "harness": { "model": "claude-fable-5", "version": "2.1.228", "effort": "high" },
+    "models_equal_across_arms": "false",
+    "VOID": "§7.4 froze the harness config as a single value per arm AND EQUAL ACROSS ARMS. Arm B ran on claude-opus-5; arm A ran on claude-fable-5, because a /model command in an earlier session in that VM had saved Fable 5 as the default for new sessions. The pre-registered consequence is VOID, and it was declared from the config check alone, before the comparison was computed.",
+    "verdict": "INDETERMINATE (§4.11 binding rule: S1 and S2 returned different bands)",
+    "independent_of_the_model_the_pair_also_fails": [
+      "§4.11: S1 returns CONFIRM-AT-FLOOR and S2 returns CONFIRM — different bands, which the protocol pre-registered as binding",
+      "§6.3 leave-one-out: dropping the build phase flips the sign of delta_P to -128.5. One of three phases decides the direction",
+      "|delta_P| = 996 under S1, four tokens under the pre-registered 1,000-token resolution floor",
+      "instrument 2 is a tie at 3.00 round trips per phase in both arms, and §10.7 says a tie does not discriminate"
+    ],
+    "instrument_1": { "P_A_S1": 6584.67, "P_B_S1": 5588.67, "delta_P_S1": 996, "S1_band": "CONFIRM-AT-FLOOR", "P_A_S2": 7814.33, "P_B_S2": 6111.67, "delta_P_S2": 1702.66, "S2_band": "CONFIRM" },
+    "instrument_2": { "RT_A": 3.0, "RT_B": 3.0, "per_phase_A": { "plan": 4, "build": 4, "test": 1 }, "discriminates": false },
+    "intake_mass": { "I_net": 63504, "delta_I": 43125 },
+    "instruction_reads": {
+      "note": "the one cross-arm quantity that is not a token count: arm A opened SKILL.md via the Skill tool plus all four references it names — 124,008 B, which is exactly the full-document before-reading §11 has always carried as its optimistic end. §12.2 asked which of the two consistent befores a real run resembles. This one resembles the full-document reading, not the 30,012 B no-reference one.",
+      "documents": ["SKILL.md (Skill result)", "references/task-contract.md", "references/phase-gates.md", "references/artifact-layout.md", "references/validator-inputs.md"],
+      "bytes": 124008, "tokens": 82942,
+      "arm_b_for_comparison": { "bytes": 17544, "tokens": 7294 },
+      "ratio_bytes": 7.07
+    },
+    "subagents": { "round_trips": 152, "output_tokens": 144022, "arm_b_output_tokens": 177047 },
+    "terminal_state": "test gate PASS, 4/4 criteria verified, halted by operator directive (recorded canceled / OPERATOR_CANCEL with a resumable carry-over)",
+    "forbidden_reads": 0,
+    "contamination_hits": 0,
+    "installed_skill_unchanged_after_run": true,
+    "human_turns_measured": 3,
+    "human_turns_substantive": 1,
+    "human_turns_note": "S13 counts plain-string user rows; two of arm A's three are local-command wrappers for /clear, not instructions. Veto 6 fires as literally written and should not. The metric is a proxy for steering and this is the gap. NOT amended here: the defect was found AFTER the data existed, unlike amendments A1-A8, and PROTOCOL.md 10.4 is about exactly that. It is recorded for the re-run."
   },
 
   "arm_a_setup": {

@@ -1,0 +1,4745 @@
+{
+  "schema": "ab-analyze/1",
+  "protocol": "Pre-registration — the reasoning A/B (condition 4 of the §6.2 GO)",
+  "script": {
+    "path": "/Users/etherealogic_2/Dev/adws-pipeline-skill/spike/adws-controller/ab/measure-ab.js",
+    "sha256": "144a65873ea1102b560d5f9a0d7e853373a74fc83f8fed963de2f0477f25ee90",
+    "node": "v24.18.0"
+  },
+  "generated_at": "2026-08-12T04:24:35.996Z",
+  "thresholds": {
+    "ANCHOR_MAP": {
+      "adws-planner": "plan",
+      "adws-builder": "build",
+      "adws-tester": "test",
+      "adws-critic": "consensus",
+      "adws-advocate": "consensus",
+      "adws-grader": "consensus",
+      "adws-reviewer": "post",
+      "adws-documenter": "post",
+      "adws-shipper": "post",
+      "adws-verifier": "post"
+    },
+    "COMMON_S1": [
+      "plan",
+      "build",
+      "test"
+    ],
+    "COMMON_S2": [
+      "to-build",
+      "to-test",
+      "to-consensus"
+    ],
+    "ADDITIVITY_TOL": 5,
+    "NOTIF_OUT_MAX": 100,
+    "NOTIF_PREFIX": "<task-notification>",
+    "RESOLUTION_FLOOR": 1000,
+    "FLOOR_CONFIRM_DELTA_I": 14000,
+    "N_STAR_KILL": 7,
+    "N_STAR_CONFIRM": 14,
+    "RT_ABS_KILL": 3.5,
+    "RT_DELTA_KILL": 1,
+    "THINK_VETO_MIN": 1000,
+    "BASELINE_DRIFT_TOK": 2000,
+    "SUBAGENT_BAND": 1.5,
+    "CHANGESET_BAND": 2,
+    "TOLERANCE_REFERENCE_N": 9,
+    "CONTAMINATION_DEFAULT": [
+      "thin-skill-sketch",
+      "FINDINGS",
+      "SPIKE_CONTROLLER_PLAN"
+    ],
+    "FORBIDDEN": {
+      "A": {
+        "describe": "arm A: any read of spike/** or docs/**"
+      },
+      "B": {
+        "describe": "arm B: any read of adws-pipeline/** other than references/task-contract.md"
+      }
+    }
+  },
+  "arms": {
+    "B": {
+      "label": "B",
+      "sources": [
+        {
+          "path": "/Users/etherealogic_2/Dev/adws-pipeline-skill/spike/adws-controller/ab/evidence/armB-orchestrator.jsonl",
+          "bytes": 379865,
+          "sha256": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
+          "rows_parsed": 145,
+          "rows_unparseable": 0
+        }
+      ],
+      "integrity": {
+        "assistant_rows_total": 61,
+        "assistant_rows_used": 61,
+        "turns": 26,
+        "row_to_turn_inflation": 2.3462,
+        "distinct_message_ids": 26,
+        "distinct_request_ids": 26,
+        "message_id_equals_request_id_count": true,
+        "usage_identical_within_message_id": true,
+        "additivity": {
+          "tolerance": 5,
+          "pairs_checked": 25,
+          "violations": []
+        },
+        "harness": {
+          "models": [
+            "claude-opus-5"
+          ],
+          "versions": [
+            "2.1.228"
+          ],
+          "efforts": [
+            "high"
+          ],
+          "service_tiers": [
+            "standard"
+          ],
+          "single_valued": true
+        },
+        "inference_iterations_per_turn": {
+          "max": 1,
+          "turns_over_1": []
+        },
+        "sidechain_rows_in_file": 0,
+        "row_type_histogram": {
+          "mode": 10,
+          "permission-mode": 10,
+          "file-history-snapshot": 1,
+          "user": 27,
+          "attachment": 8,
+          "ai-title": 10,
+          "assistant": 61,
+          "last-prompt": 9,
+          "system": 5,
+          "queue-operation": 4
+        },
+        "permission_modes": [
+          "default",
+          "acceptEdits",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto"
+        ],
+        "modes": [
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal"
+        ]
+      },
+      "turns": [
+        {
+          "i": 0,
+          "message_id": "msg_011CdwcVSUgBJqt5eYJt3MzE",
+          "ts": "2026-08-11T20:44:02.610Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 9320,
+          "cr": 21998,
+          "prefix": 31320,
+          "growth": 777,
+          "out": 84,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": true,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 1,
+          "message_id": "msg_011CdwcWPsw5XAzvpm4iwTri",
+          "ts": "2026-08-11T20:44:14.089Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 777,
+          "cr": 31318,
+          "prefix": 32097,
+          "growth": 3964,
+          "out": 102,
+          "think": 12,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 2,
+          "message_id": "msg_011CdwcWXNPHSuRwC2BwHyGf",
+          "ts": "2026-08-11T20:44:27.273Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 3964,
+          "cr": 32095,
+          "prefix": 36061,
+          "growth": 3335,
+          "out": 882,
+          "think": 688,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 3,
+          "message_id": "msg_011CdwcXdqMA4Usa2VpZncWf",
+          "ts": "2026-08-11T20:44:34.977Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 3335,
+          "cr": 36059,
+          "prefix": 39396,
+          "growth": 3780,
+          "out": 348,
+          "think": 206,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 4,
+          "message_id": "msg_011CdwcY9vbUYzUKEisRQB9A",
+          "ts": "2026-08-11T20:44:40.670Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 3780,
+          "cr": 39394,
+          "prefix": 43176,
+          "growth": 1797,
+          "out": 422,
+          "think": 249,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 5,
+          "message_id": "msg_011CdwcYcYz8kun7BsXx35K4",
+          "ts": "2026-08-11T20:45:07.904Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 1797,
+          "cr": 43174,
+          "prefix": 44973,
+          "growth": 2571,
+          "out": 2417,
+          "think": 2039,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 6,
+          "message_id": "msg_011Cdwcams8aFhMo1XTZqqq9",
+          "ts": "2026-08-11T20:45:15.152Z",
+          "rows": 1,
+          "inp": 1,
+          "cc": 2572,
+          "cr": 44971,
+          "prefix": 47544,
+          "growth": 384,
+          "out": 208,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 7,
+          "message_id": "msg_011CdwcbA76j7hbaAmiwShFK",
+          "ts": "2026-08-11T20:45:23.840Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 383,
+          "cr": 47543,
+          "prefix": 47928,
+          "growth": 633,
+          "out": 522,
+          "think": 307,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 8,
+          "message_id": "msg_011Cdwcbrn5mk5mjiLJYitWf",
+          "ts": "2026-08-11T20:45:36.932Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 633,
+          "cr": 47926,
+          "prefix": 48561,
+          "growth": 1989,
+          "out": 1052,
+          "think": 713,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 9,
+          "message_id": "msg_011CdwccyYAGmdefy4Lm91oL",
+          "ts": "2026-08-11T20:45:50.211Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 1989,
+          "cr": 48559,
+          "prefix": 50550,
+          "growth": 1149,
+          "out": 750,
+          "think": 539,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 10,
+          "message_id": "msg_011CdwcdrxoEtfUAjU8vU2hb",
+          "ts": "2026-08-11T20:46:14.541Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 1149,
+          "cr": 50548,
+          "prefix": 51699,
+          "growth": 4248,
+          "out": 3031,
+          "think": 1396,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-planner"
+          ],
+          "disp_chars": 3315,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 11,
+          "message_id": "msg_011CdwdJMgW5PuYppcy4rkdQ",
+          "ts": "2026-08-11T20:54:38.618Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 4248,
+          "cr": 51697,
+          "prefix": 55947,
+          "growth": 666,
+          "out": 315,
+          "think": 104,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 12,
+          "message_id": "msg_011CdwdJtEHaxNEkVk4m6bvc",
+          "ts": "2026-08-11T20:54:44.868Z",
+          "rows": 3,
+          "inp": 1,
+          "cc": 667,
+          "cr": 55945,
+          "prefix": 56613,
+          "growth": 691,
+          "out": 218,
+          "think": 13,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 13,
+          "message_id": "msg_011CdwdKG5CBmXMRoAtm8mWy",
+          "ts": "2026-08-11T20:54:50.704Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 690,
+          "cr": 56612,
+          "prefix": 57304,
+          "growth": 4096,
+          "out": 2552,
+          "think": 89,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-builder"
+          ],
+          "disp_chars": 5453,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 14,
+          "message_id": "msg_011Cdwe6AWaes25SYwR75bSV",
+          "ts": "2026-08-11T21:05:00.023Z",
+          "rows": 1,
+          "inp": 2,
+          "cc": 4096,
+          "cr": 57302,
+          "prefix": 61400,
+          "growth": 396,
+          "out": 192,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 15,
+          "message_id": "msg_011Cdwe6VwsXUZzJLzQABTmZ",
+          "ts": "2026-08-11T21:05:03.752Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 396,
+          "cr": 61398,
+          "prefix": 61796,
+          "growth": 993,
+          "out": 202,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 16,
+          "message_id": "msg_011Cdwe6pDijmRGGyB5V7ppV",
+          "ts": "2026-08-11T21:05:09.883Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 993,
+          "cr": 61794,
+          "prefix": 62789,
+          "growth": 3971,
+          "out": 2690,
+          "think": 200,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-tester"
+          ],
+          "disp_chars": 5643,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 17,
+          "message_id": "msg_011Cdwek4VyrkoYzPvXdDV3z",
+          "ts": "2026-08-11T21:13:34.135Z",
+          "rows": 1,
+          "inp": 2,
+          "cc": 3971,
+          "cr": 62787,
+          "prefix": 66760,
+          "growth": 322,
+          "out": 192,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 18,
+          "message_id": "msg_011CdwekPEro6yXZmS1J7xEY",
+          "ts": "2026-08-11T21:13:38.017Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 322,
+          "cr": 66758,
+          "prefix": 67082,
+          "growth": 1383,
+          "out": 275,
+          "think": 70,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 19,
+          "message_id": "msg_011CdwekoGEP4jg8T4WLGivt",
+          "ts": "2026-08-11T21:13:55.490Z",
+          "rows": 4,
+          "inp": 1,
+          "cc": 1384,
+          "cr": 67080,
+          "prefix": 68465,
+          "growth": 5817,
+          "out": 5016,
+          "think": 956,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent",
+            "Agent"
+          ],
+          "agents": [
+            "adws-critic",
+            "adws-advocate"
+          ],
+          "disp_chars": 9984,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 20,
+          "message_id": "msg_011CdweqAbynR2qDoaM3YaM4",
+          "ts": "2026-08-11T21:14:42.178Z",
+          "rows": 1,
+          "inp": 2,
+          "cc": 5816,
+          "cr": 68464,
+          "prefix": 74282,
+          "growth": 2306,
+          "out": 49,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "end_turn",
+          "tools": [],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": true,
+            "output_under_threshold": true,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 21,
+          "message_id": "msg_011Cdwf9gqRF2Cc7YtDNb8Aj",
+          "ts": "2026-08-11T21:18:53.689Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 2306,
+          "cr": 74280,
+          "prefix": 76588,
+          "growth": 1739,
+          "out": 55,
+          "think": 18,
+          "iterations": 1,
+          "stop_reason": "end_turn",
+          "tools": [],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": true,
+          "notif_clauses": {
+            "zero_tool_use": true,
+            "output_under_threshold": true,
+            "preceded_by_task_notification": true
+          }
+        },
+        {
+          "i": 22,
+          "message_id": "msg_011CdwfJ7s2t855CDDc5GKc5",
+          "ts": "2026-08-11T21:20:48.038Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 1739,
+          "cr": 76586,
+          "prefix": 78327,
+          "growth": 549,
+          "out": 236,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": true
+          }
+        },
+        {
+          "i": 23,
+          "message_id": "msg_011CdwfJUQZAxv1Spn4qh8hU",
+          "ts": "2026-08-11T21:21:01.190Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 549,
+          "cr": 78325,
+          "prefix": 78876,
+          "growth": 2377,
+          "out": 1016,
+          "think": 677,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 24,
+          "message_id": "msg_011CdwfKXgn2dekHSF1cDRhL",
+          "ts": "2026-08-11T21:21:13.666Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 2377,
+          "cr": 78874,
+          "prefix": 81253,
+          "growth": 956,
+          "out": 721,
+          "think": 450,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 25,
+          "message_id": "msg_011CdwfLVyN9yv3rmg1euCBg",
+          "ts": "2026-08-11T21:21:59.553Z",
+          "rows": 2,
+          "inp": 1,
+          "cc": 957,
+          "cr": 81251,
+          "prefix": 82209,
+          "growth": null,
+          "out": 7316,
+          "think": 3130,
+          "iterations": 1,
+          "stop_reason": "end_turn",
+          "tools": [],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": true,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        }
+      ],
+      "notif_near_misses": [
+        {
+          "turn": 20,
+          "out": 49,
+          "preceding_user_row_index": 106,
+          "preceding_user_row_kind": "content blocks: tool_result"
+        }
+      ],
+      "anchors": [
+        {
+          "i": 10,
+          "label": "plan",
+          "types": [
+            "adws-planner"
+          ]
+        },
+        {
+          "i": 13,
+          "label": "build",
+          "types": [
+            "adws-builder"
+          ]
+        },
+        {
+          "i": 16,
+          "label": "test",
+          "types": [
+            "adws-tester"
+          ]
+        },
+        {
+          "i": 19,
+          "label": "consensus",
+          "types": [
+            "adws-critic",
+            "adws-advocate"
+          ]
+        }
+      ],
+      "raw_anchors": [
+        {
+          "i": 10,
+          "label": "plan",
+          "types": [
+            "adws-planner"
+          ]
+        },
+        {
+          "i": 13,
+          "label": "build",
+          "types": [
+            "adws-builder"
+          ]
+        },
+        {
+          "i": 16,
+          "label": "test",
+          "types": [
+            "adws-tester"
+          ]
+        },
+        {
+          "i": 19,
+          "label": "consensus",
+          "types": [
+            "adws-critic",
+            "adws-advocate"
+          ]
+        }
+      ],
+      "report_cut_turn_index": 25,
+      "segmentations": {
+        "S1": {
+          "rule": "§4.4 anchor OPENS its segment; turns before the first anchor = setup",
+          "tiling": {
+            "ok": true,
+            "total_segment_turns": 26,
+            "n_turns": 26,
+            "doubled": [],
+            "uncovered": []
+          },
+          "segments": [
+            {
+              "name": "setup",
+              "lo": 0,
+              "hi": 9,
+              "turns": 10,
+              "round_trips": 10,
+              "round_trips_incl_notif": 10,
+              "notif_turns": [],
+              "growth": 20379,
+              "out": 6787,
+              "think": 4753,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Read": 4,
+                "Bash": 6
+              },
+              "non_agent_tool_count": 10,
+              "agents": [],
+              "max_prefix": 50550,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  9
+                ]
+              ]
+            },
+            {
+              "name": "plan",
+              "lo": 10,
+              "hi": 12,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 5605,
+              "out": 3564,
+              "think": 1513,
+              "disp_chars": 3315,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 56613,
+              "attempts": 1,
+              "parts": [
+                [
+                  10,
+                  12
+                ]
+              ]
+            },
+            {
+              "name": "build",
+              "lo": 13,
+              "hi": 15,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 5485,
+              "out": 2946,
+              "think": 89,
+              "disp_chars": 5453,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-builder"
+              ],
+              "max_prefix": 61796,
+              "attempts": 1,
+              "parts": [
+                [
+                  13,
+                  15
+                ]
+              ]
+            },
+            {
+              "name": "test",
+              "lo": 16,
+              "hi": 18,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 5676,
+              "out": 3157,
+              "think": 270,
+              "disp_chars": 5643,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-tester"
+              ],
+              "max_prefix": 67082,
+              "attempts": 1,
+              "parts": [
+                [
+                  16,
+                  18
+                ]
+              ]
+            },
+            {
+              "name": "consensus",
+              "lo": 19,
+              "hi": 24,
+              "turns": 6,
+              "round_trips": 5,
+              "round_trips_incl_notif": 6,
+              "notif_turns": [
+                {
+                  "turn": 21,
+                  "out": 55
+                }
+              ],
+              "growth": 13744,
+              "out": 7093,
+              "think": 2101,
+              "disp_chars": 9984,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 81253,
+              "attempts": 1,
+              "parts": [
+                [
+                  19,
+                  24
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 25,
+              "hi": 25,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 7316,
+              "think": 3130,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 82209,
+              "attempts": 1,
+              "parts": [
+                [
+                  25,
+                  25
+                ]
+              ]
+            }
+          ],
+          "primary": {
+            "segmentation": "S1",
+            "common_scope": [
+              "plan",
+              "build",
+              "test"
+            ],
+            "per_phase": {
+              "plan": {
+                "growth": 5605,
+                "round_trips": 3,
+                "out": 3564,
+                "think": 1513,
+                "disp_chars": 3315,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 56613,
+                "parts": [
+                  [
+                    10,
+                    12
+                  ]
+                ]
+              },
+              "build": {
+                "growth": 5485,
+                "round_trips": 3,
+                "out": 2946,
+                "think": 89,
+                "disp_chars": 5453,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 61796,
+                "parts": [
+                  [
+                    13,
+                    15
+                  ]
+                ]
+              },
+              "test": {
+                "growth": 5676,
+                "round_trips": 3,
+                "out": 3157,
+                "think": 270,
+                "disp_chars": 5643,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 67082,
+                "parts": [
+                  [
+                    16,
+                    18
+                  ]
+                ]
+              }
+            },
+            "missing_phases": [],
+            "undefined_growth_phases": [],
+            "P": 5588.67,
+            "P_sum": 16766,
+            "within_run_spread_pct": 3.42,
+            "round_trips_mean": 3,
+            "round_trips_mean_over_present_only": 3,
+            "round_trips_per_phase": {
+              "plan": 3,
+              "build": 3,
+              "test": 3
+            },
+            "output_tokens_sum": 9667,
+            "thinking_tokens_sum": 1872,
+            "dispatch_chars_sum": 14411,
+            "attempts_per_phase": {
+              "plan": 1,
+              "build": 1,
+              "test": 1
+            },
+            "max_prefix_per_phase": {
+              "plan": 56613,
+              "build": 61796,
+              "test": 67082
+            },
+            "defined": true
+          }
+        },
+        "S2": {
+          "rule": "§4.11 anchor CLOSES its segment (inclusive)",
+          "tiling": {
+            "ok": true,
+            "total_segment_turns": 26,
+            "n_turns": 26,
+            "doubled": [],
+            "uncovered": []
+          },
+          "segments": [
+            {
+              "name": "intake+plan",
+              "lo": 0,
+              "hi": 10,
+              "turns": 11,
+              "round_trips": 11,
+              "round_trips_incl_notif": 11,
+              "notif_turns": [],
+              "growth": 24627,
+              "out": 9818,
+              "think": 6149,
+              "disp_chars": 3315,
+              "non_agent_tools": {
+                "Read": 4,
+                "Bash": 6
+              },
+              "non_agent_tool_count": 10,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 51699,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  10
+                ]
+              ]
+            },
+            {
+              "name": "to-build",
+              "lo": 11,
+              "hi": 13,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 5453,
+              "out": 3085,
+              "think": 206,
+              "disp_chars": 5453,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-builder"
+              ],
+              "max_prefix": 57304,
+              "attempts": 1,
+              "parts": [
+                [
+                  11,
+                  13
+                ]
+              ]
+            },
+            {
+              "name": "to-test",
+              "lo": 14,
+              "hi": 16,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 5360,
+              "out": 3084,
+              "think": 200,
+              "disp_chars": 5643,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-tester"
+              ],
+              "max_prefix": 62789,
+              "attempts": 1,
+              "parts": [
+                [
+                  14,
+                  16
+                ]
+              ]
+            },
+            {
+              "name": "to-consensus",
+              "lo": 17,
+              "hi": 19,
+              "turns": 3,
+              "round_trips": 3,
+              "round_trips_incl_notif": 3,
+              "notif_turns": [],
+              "growth": 7522,
+              "out": 5483,
+              "think": 1026,
+              "disp_chars": 9984,
+              "non_agent_tools": {
+                "Bash": 2
+              },
+              "non_agent_tool_count": 2,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 68465,
+              "attempts": 1,
+              "parts": [
+                [
+                  17,
+                  19
+                ]
+              ]
+            },
+            {
+              "name": "tail",
+              "lo": 20,
+              "hi": 24,
+              "turns": 5,
+              "round_trips": 4,
+              "round_trips_incl_notif": 5,
+              "notif_turns": [
+                {
+                  "turn": 21,
+                  "out": 55
+                }
+              ],
+              "growth": 7927,
+              "out": 2077,
+              "think": 1145,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [],
+              "max_prefix": 81253,
+              "attempts": 1,
+              "parts": [
+                [
+                  20,
+                  24
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 25,
+              "hi": 25,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 7316,
+              "think": 3130,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 82209,
+              "attempts": 1,
+              "parts": [
+                [
+                  25,
+                  25
+                ]
+              ]
+            }
+          ],
+          "primary": {
+            "segmentation": "S2",
+            "common_scope": [
+              "to-build",
+              "to-test",
+              "to-consensus"
+            ],
+            "per_phase": {
+              "to-build": {
+                "growth": 5453,
+                "round_trips": 3,
+                "out": 3085,
+                "think": 206,
+                "disp_chars": 5453,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 57304,
+                "parts": [
+                  [
+                    11,
+                    13
+                  ]
+                ]
+              },
+              "to-test": {
+                "growth": 5360,
+                "round_trips": 3,
+                "out": 3084,
+                "think": 200,
+                "disp_chars": 5643,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 62789,
+                "parts": [
+                  [
+                    14,
+                    16
+                  ]
+                ]
+              },
+              "to-consensus": {
+                "growth": 7522,
+                "round_trips": 3,
+                "out": 5483,
+                "think": 1026,
+                "disp_chars": 9984,
+                "non_agent_tools": {
+                  "Bash": 2
+                },
+                "attempts": 1,
+                "turns": 3,
+                "max_prefix": 68465,
+                "parts": [
+                  [
+                    17,
+                    19
+                  ]
+                ]
+              }
+            },
+            "missing_phases": [],
+            "undefined_growth_phases": [],
+            "P": 6111.67,
+            "P_sum": 18335,
+            "within_run_spread_pct": 35.37,
+            "round_trips_mean": 3,
+            "round_trips_mean_over_present_only": 3,
+            "round_trips_per_phase": {
+              "to-build": 3,
+              "to-test": 3,
+              "to-consensus": 3
+            },
+            "output_tokens_sum": 11652,
+            "thinking_tokens_sum": 1432,
+            "dispatch_chars_sum": 21080,
+            "attempts_per_phase": {
+              "to-build": 1,
+              "to-test": 1,
+              "to-consensus": 1
+            },
+            "max_prefix_per_phase": {
+              "to-build": 57304,
+              "to-test": 62789,
+              "to-consensus": 68465
+            },
+            "defined": true
+          }
+        }
+      },
+      "secondary": {
+        "S1_round_trips": {
+          "S1": {
+            "plan": 3,
+            "build": 3,
+            "test": 3
+          },
+          "S1_mean": 3,
+          "S2": {
+            "to-build": 3,
+            "to-test": 3,
+            "to-consensus": 3
+          },
+          "S2_mean": 3
+        },
+        "S2_output_tokens": {
+          "S1": {
+            "plan": 3564,
+            "build": 2946,
+            "test": 3157
+          },
+          "S1_sum": 9667,
+          "S2_sum": 11652
+        },
+        "S3_thinking_tokens": {
+          "S1": {
+            "plan": 1513,
+            "build": 89,
+            "test": 270
+          },
+          "S1_sum": 1872,
+          "S2_sum": 1432
+        },
+        "S4_dispatch_briefing_chars": {
+          "S1": {
+            "plan": 3315,
+            "build": 5453,
+            "test": 5643
+          },
+          "S1_sum": 14411,
+          "per_dispatch": [
+            {
+              "turn": 10,
+              "subagent_type": "adws-planner",
+              "prompt_chars": 3315,
+              "prompt_bytes_utf8": 3325
+            },
+            {
+              "turn": 13,
+              "subagent_type": "adws-builder",
+              "prompt_chars": 5453,
+              "prompt_bytes_utf8": 5475
+            },
+            {
+              "turn": 16,
+              "subagent_type": "adws-tester",
+              "prompt_chars": 5643,
+              "prompt_bytes_utf8": 5667
+            },
+            {
+              "turn": 19,
+              "subagent_type": "adws-critic",
+              "prompt_chars": 4916,
+              "prompt_bytes_utf8": 4938
+            },
+            {
+              "turn": 19,
+              "subagent_type": "adws-advocate",
+              "prompt_chars": 5068,
+              "prompt_bytes_utf8": 5090
+            }
+          ]
+        },
+        "S5_non_agent_tool_calls": {
+          "plan": {
+            "Bash": 2
+          },
+          "build": {
+            "Bash": 2
+          },
+          "test": {
+            "Bash": 2
+          }
+        },
+        "S6_intake_mass": {
+          "first_dispatch_turn": 10,
+          "first_dispatch_label": "plan",
+          "I_net": 20379,
+          "I_raw": 29701
+        },
+        "S7_session_baseline": {
+          "prefix": 31320,
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 9320,
+          "cache_read_input_tokens": 21998
+        },
+        "S8_instruction_reads": {
+          "rule": "§3 S8 — Read/Skill of an orchestration document; tokens = turn prefix growth minus that turn output_tokens",
+          "instruction_reads": [
+            {
+              "tool_use_id": "toolu_01JBX4jMTzWZNuRTmeGU4hrw",
+              "source": "Read",
+              "path": "/home/etherealogic_2/adws-pipeline-skill/spike/adws-controller/thin-skill-sketch.md",
+              "turn": 1,
+              "turn_out_tokens": 102,
+              "turn_growth_tokens": 3964,
+              "attributed_tokens": 3862,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": 9700,
+              "content_chars": 9604,
+              "rendered_result_bytes_utf8": 10216,
+              "rendered_result_chars": 10120,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "thin-skill-sketch"
+            },
+            {
+              "tool_use_id": "toolu_014E1qfyvR6QXSEJbmngHA6i",
+              "source": "Read",
+              "path": "/home/etherealogic_2/adws-pipeline-skill/adws-pipeline/references/task-contract.md",
+              "turn": 3,
+              "turn_out_tokens": 348,
+              "turn_growth_tokens": 3780,
+              "attributed_tokens": 3432,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": 7844,
+              "content_chars": 7793,
+              "rendered_result_bytes_utf8": 8296,
+              "rendered_result_chars": 8245,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "references/*"
+            }
+          ],
+          "total_attributed_tokens": 7294,
+          "total_content_bytes_utf8": 17544,
+          "total_content_chars": 17397,
+          "unattributed_reads": 0,
+          "other_reads": [
+            {
+              "tool_use_id": "toolu_01SEWNamyBCHNKzVYv1vdqPR",
+              "source": "Read",
+              "path": "/home/etherealogic_2/step5/launch-prompt.md",
+              "turn": 0,
+              "turn_out_tokens": 84,
+              "turn_growth_tokens": 777,
+              "attributed_tokens": 693,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": 1706,
+              "content_chars": 1702,
+              "rendered_result_bytes_utf8": 1796,
+              "rendered_result_chars": 1792,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": null
+            },
+            {
+              "tool_use_id": "toolu_01DoMFowZyYfRxZD8wf3C7CE",
+              "source": "Read",
+              "path": "/home/etherealogic_2/adws-pipeline-skill/spike/adws-controller/fixtures/live_contract.json",
+              "turn": 4,
+              "turn_out_tokens": 422,
+              "turn_growth_tokens": 1797,
+              "attributed_tokens": 1375,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": 3388,
+              "content_chars": 3384,
+              "rendered_result_bytes_utf8": 3577,
+              "rendered_result_chars": 3573,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": null
+            }
+          ]
+        },
+        "S9_handshake_volume": {
+          "controller": {
+            "describe": "Bash calls invoking adws-run.js (arm B controller handshake)",
+            "n_calls": 11,
+            "outbound_chars": 2708,
+            "outbound_bytes_utf8": 2708,
+            "inbound_chars": 12687,
+            "inbound_bytes_utf8": 12695,
+            "n_calls_pure": 9,
+            "inbound_chars_pure": 7493,
+            "inbound_bytes_utf8_pure": 7497,
+            "calls": [
+              {
+                "tool_use_id": "toolu_01DDavsZ53V3BbXToHw9T7zd",
+                "turn": 7,
+                "via": "Bash",
+                "outbound_chars": 226,
+                "outbound_bytes": 226,
+                "inbound_chars": 232,
+                "inbound_bytes": 232,
+                "stdout_bytes": 232,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "node spike/adws-controller/adws-run.js init spike/adws-controller/fixtures/live_contract.json /tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-…"
+              },
+              {
+                "tool_use_id": "toolu_015Fb7V8Ln84BEp4AFatnYVs",
+                "turn": 8,
+                "via": "Bash",
+                "outbound_chars": 407,
+                "outbound_bytes": 407,
+                "inbound_chars": 1923,
+                "inbound_bytes": 1923,
+                "stdout_bytes": 1923,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": true,
+                "command_preview": "echo \"=== literal sketch form: next artifacts/{jobId} ===\" && node spike/adws-controller/adws-run.js next artifacts/job_20260811_0001; echo \"EXIT=$?\"; echo; ech…"
+              },
+              {
+                "tool_use_id": "toolu_01McLLLApYEU4LQnNh9uhQK6",
+                "turn": 9,
+                "via": "Bash",
+                "outbound_chars": 202,
+                "outbound_bytes": 202,
+                "inbound_chars": 763,
+                "inbound_bytes": 763,
+                "stdout_bytes": 763,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_013BAhCB5iUZkYLkyQc6vLk2",
+                "turn": 11,
+                "via": "Bash",
+                "outbound_chars": 211,
+                "outbound_bytes": 211,
+                "inbound_chars": 458,
+                "inbound_bytes": 458,
+                "stdout_bytes": 458,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01RBgHfri5mZmvPDCKEfPaJ6",
+                "turn": 12,
+                "via": "Bash",
+                "outbound_chars": 202,
+                "outbound_bytes": 202,
+                "inbound_chars": 891,
+                "inbound_bytes": 891,
+                "stdout_bytes": 891,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_0134s7BnH9pmeTB3gTCoCeMt",
+                "turn": 14,
+                "via": "Bash",
+                "outbound_chars": 212,
+                "outbound_bytes": 212,
+                "inbound_chars": 419,
+                "inbound_bytes": 419,
+                "stdout_bytes": 419,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01M1wJ69iKM4KyQFRFdjVKha",
+                "turn": 15,
+                "via": "Bash",
+                "outbound_chars": 202,
+                "outbound_bytes": 202,
+                "inbound_chars": 1794,
+                "inbound_bytes": 1794,
+                "stdout_bytes": 1794,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01N1rMFFFfpXnHVhxDHr5DKN",
+                "turn": 17,
+                "via": "Bash",
+                "outbound_chars": 211,
+                "outbound_bytes": 211,
+                "inbound_chars": 315,
+                "inbound_bytes": 315,
+                "stdout_bytes": 315,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01Uh8T2RmWjHN5kqENZQJefo",
+                "turn": 18,
+                "via": "Bash",
+                "outbound_chars": 202,
+                "outbound_bytes": 202,
+                "inbound_chars": 1940,
+                "inbound_bytes": 1942,
+                "stdout_bytes": 1942,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01Gu7qY6B79S5orv2fCkEoQm",
+                "turn": 22,
+                "via": "Bash",
+                "outbound_chars": 211,
+                "outbound_bytes": 211,
+                "inbound_chars": 681,
+                "inbound_bytes": 683,
+                "stdout_bytes": 683,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; node spike/adws-contro…"
+              },
+              {
+                "tool_use_id": "toolu_01JmexR5WL2kLiJiVZ9NUTMC",
+                "turn": 23,
+                "via": "Bash",
+                "outbound_chars": 422,
+                "outbound_bytes": 422,
+                "inbound_chars": 3271,
+                "inbound_bytes": 3275,
+                "stdout_bytes": 3275,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": true,
+                "command_preview": "J=/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/scratchpad/live-target/job_20260811_0001; echo \"=== next (read-o…"
+              }
+            ]
+          },
+          "validator": {
+            "describe": "Bash calls invoking a script under adws-pipeline/scripts/ (arm A validators)",
+            "n_calls": 0,
+            "outbound_chars": 0,
+            "outbound_bytes_utf8": 0,
+            "inbound_chars": 0,
+            "inbound_bytes_utf8": 0,
+            "n_calls_pure": 0,
+            "inbound_chars_pure": 0,
+            "inbound_bytes_utf8_pure": 0,
+            "calls": []
+          },
+          "evidence_readback": {
+            "describe": "Read (or content-reading Bash) of the job/evidence tree",
+            "n_calls": 0,
+            "outbound_chars": 0,
+            "outbound_bytes_utf8": 0,
+            "inbound_chars": 0,
+            "inbound_bytes_utf8": 0,
+            "n_calls_pure": 0,
+            "inbound_chars_pure": 0,
+            "inbound_bytes_utf8_pure": 0,
+            "calls": []
+          },
+          "comparable_total": {
+            "n_calls": 11,
+            "inbound_chars": 12687,
+            "inbound_bytes_utf8": 12695,
+            "outbound_chars": 2708,
+            "outbound_bytes_utf8": 2708
+          }
+        },
+        "S10_subagent_cost": {
+          "dispatches": [
+            {
+              "tool_use_id": "toolu_01R2uumwEEdnXmrLvRG5Brfo",
+              "turn": 10,
+              "subagent_type": "adws-planner",
+              "requested_model": "opus",
+              "run_in_background": false,
+              "prompt_chars": 3315,
+              "prompt_bytes_utf8": 3325,
+              "recoverable": true,
+              "agent_type_reported": "adws-planner",
+              "resolved_model": "claude-opus-5[1m]",
+              "total_tokens": 102114,
+              "total_tool_use_count": 31,
+              "total_duration_ms": 480377,
+              "tool_stats": {
+                "readCount": 8,
+                "searchCount": 0,
+                "bashCount": 20,
+                "editFileCount": 3,
+                "linesAdded": 203,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01Rc9t4opVKBRPL4VthjUNh2",
+              "turn": 13,
+              "subagent_type": "adws-builder",
+              "requested_model": "sonnet",
+              "run_in_background": false,
+              "prompt_chars": 5453,
+              "prompt_bytes_utf8": 5475,
+              "recoverable": true,
+              "agent_type_reported": "adws-builder",
+              "resolved_model": "claude-sonnet-5",
+              "total_tokens": 153239,
+              "total_tool_use_count": 83,
+              "total_duration_ms": 579560,
+              "tool_stats": {
+                "readCount": 21,
+                "searchCount": 0,
+                "bashCount": 39,
+                "editFileCount": 23,
+                "linesAdded": 392,
+                "linesRemoved": 123,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01VchDDFDTxSqUbZ3uYkvENF",
+              "turn": 16,
+              "subagent_type": "adws-tester",
+              "requested_model": "sonnet",
+              "run_in_background": false,
+              "prompt_chars": 5643,
+              "prompt_bytes_utf8": 5667,
+              "recoverable": true,
+              "agent_type_reported": "adws-tester",
+              "resolved_model": "claude-sonnet-5",
+              "total_tokens": 116771,
+              "total_tool_use_count": 50,
+              "total_duration_ms": 471325,
+              "tool_stats": {
+                "readCount": 13,
+                "searchCount": 0,
+                "bashCount": 34,
+                "editFileCount": 3,
+                "linesAdded": 295,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01Xe2bFUcEbnvHGziczrBmnk",
+              "turn": 19,
+              "subagent_type": "adws-critic",
+              "requested_model": "sonnet",
+              "run_in_background": true,
+              "prompt_chars": 4916,
+              "prompt_bytes_utf8": 4938,
+              "recoverable": false,
+              "reason": "UNRECOVERABLE — async dispatch: the harness returns no totalTokens/totalToolUseCount/totalDurationMs",
+              "agent_id": "a8074266a26d46999",
+              "resolved_model": "claude-sonnet-5",
+              "status": "async_launched",
+              "output_file": "/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/tasks/a8074266a26d46999.output"
+            },
+            {
+              "tool_use_id": "toolu_0172PTok9MnTVcmMa52187Bv",
+              "turn": 19,
+              "subagent_type": "adws-advocate",
+              "requested_model": "sonnet",
+              "run_in_background": true,
+              "prompt_chars": 5068,
+              "prompt_bytes_utf8": 5090,
+              "recoverable": false,
+              "reason": "UNRECOVERABLE — async dispatch: the harness returns no totalTokens/totalToolUseCount/totalDurationMs",
+              "agent_id": "a92f62a53807a3170",
+              "resolved_model": "claude-sonnet-5",
+              "status": "async_launched",
+              "output_file": "/tmp/claude-501/-home-etherealogic-2-adws-pipeline-skill/bfb385d9-578d-4c39-9d79-f72d3f6c42bf/tasks/a92f62a53807a3170.output"
+            }
+          ],
+          "n_dispatches": 5,
+          "n_recoverable": 3,
+          "n_unrecoverable": 2,
+          "total_tokens_recoverable": 372124,
+          "note": "subagent totals are INCOMPLETE; any per-arm subagent comparison is bounded below, never estimated"
+        },
+        "S11_covariates": {
+          "change_set": {
+            "source_turn": 24,
+            "file_count": 4,
+            "files": [
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/artifact-layout.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/phase-gates.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/validator-inputs.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/scripts/execution-report.js"
+              }
+            ],
+            "derivation": "parsed from a `git status --porcelain` tool result in the transcript",
+            "command_preview": "echo \"=== primary checkout status ===\" && git status --porcelain -uall | head -20 && echo \"(empty above = primary untouched)\" && echo && echo \"=== worktree change set (evidence tree excluded) ===\" && "
+          },
+          "change_set_candidates": 1,
+          "per_subagent_tool_counts": [
+            {
+              "subagent_type": "adws-planner",
+              "turn": 10,
+              "total_tool_use_count": 31,
+              "tool_stats": {
+                "readCount": 8,
+                "searchCount": 0,
+                "bashCount": 20,
+                "editFileCount": 3,
+                "linesAdded": 203,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-builder",
+              "turn": 13,
+              "total_tool_use_count": 83,
+              "tool_stats": {
+                "readCount": 21,
+                "searchCount": 0,
+                "bashCount": 39,
+                "editFileCount": 23,
+                "linesAdded": 392,
+                "linesRemoved": 123,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-tester",
+              "turn": 16,
+              "total_tool_use_count": 50,
+              "tool_stats": {
+                "readCount": 13,
+                "searchCount": 0,
+                "bashCount": 34,
+                "editFileCount": 3,
+                "linesAdded": 295,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-critic",
+              "turn": 19,
+              "total_tool_use_count": null,
+              "tool_stats": null
+            },
+            {
+              "subagent_type": "adws-advocate",
+              "turn": 19,
+              "total_tool_use_count": null,
+              "tool_stats": null
+            }
+          ]
+        },
+        "S12_forbidden_reads": {
+          "rule": "arm B: any read of adws-pipeline/** other than references/task-contract.md",
+          "strict_count": 0,
+          "hits": [],
+          "bash_advisory": [
+            {
+              "tool_use_id": "toolu_01C1iNSUF4EkZiUgMCPGkRof",
+              "turn": 2,
+              "via": "Bash(mention-only)",
+              "command_preview": "ls -la && echo \"---SPIKE---\" && ls -la spike/adws-controller/ && echo \"---ADWS---\" && ls -la adws-pipeline/ 2>/dev/null && echo \"---REFS---\" && ls -la adws-pipeline/references/ 2>/dev/null"
+            }
+          ]
+        },
+        "S13_human_turns": {
+          "count": 1,
+          "turns": [
+            {
+              "row_index": 3,
+              "chars": 61,
+              "bytes_utf8": 61,
+              "sha256": "bd93826ec1650b3d2133db0002a105a6250a19c7eae141dfb2c1054c887c36b7",
+              "preview": "examine the implement the following: ~/step5/launch-prompt.md",
+              "origin": {
+                "kind": "human"
+              },
+              "promptSource": "typed"
+            }
+          ]
+        },
+        "S14_terminal_state": {
+          "note": "evidence extracted from the transcript; this script does not adjudicate a terminal state",
+          "verdict_tokens_in_assistant_text": {
+            "TEST_GATE_FAILURE": {
+              "count": 2,
+              "turns": [
+                25,
+                25
+              ]
+            }
+          },
+          "gate_results_in_tool_output": [
+            {
+              "turn": 11,
+              "tool_use_id": "toolu_013BAhCB5iUZkYLkyQc6vLk2",
+              "gate_result": "pass",
+              "context_hint": "plan/attempt_1"
+            },
+            {
+              "turn": 14,
+              "tool_use_id": "toolu_0134s7BnH9pmeTB3gTCoCeMt",
+              "gate_result": "pass",
+              "context_hint": "build/attempt_1"
+            },
+            {
+              "turn": 22,
+              "tool_use_id": "toolu_01Gu7qY6B79S5orv2fCkEoQm",
+              "gate_result": "fail",
+              "context_hint": "test/attempt_1"
+            }
+          ],
+          "last_gate_result": {
+            "turn": 22,
+            "tool_use_id": "toolu_01Gu7qY6B79S5orv2fCkEoQm",
+            "gate_result": "fail",
+            "context_hint": "test/attempt_1"
+          },
+          "final_turn_text_preview": "Run stopped at the declared boundary: the test gate closed. Report below.\n\n---\n\n## 1. Every file I read, and why\n\n| File | Why |\n|---|---|\n| `~/step5/launch-prompt.md` | The assignment. |\n| `spike/adws-controller/thin-skill-sketch.md` | Named as my complete operating instruction. |\n| `adws-pipeline/references/task-contract.md` | Sketch §0 step 1 mandates it by name. |\n| `spike/adws-controller/fixt"
+        },
+        "S15_report_segment": {
+          "turns": 1,
+          "out": 7316,
+          "think": 3130,
+          "pct_of_run_output": 23.7
+        },
+        "S16_excluded_segments": {
+          "S1_excluded": [
+            {
+              "name": "setup",
+              "lo": 0,
+              "hi": 9,
+              "turns": 10,
+              "round_trips": 10,
+              "round_trips_incl_notif": 10,
+              "notif_turns": [],
+              "growth": 20379,
+              "out": 6787,
+              "think": 4753,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Read": 4,
+                "Bash": 6
+              },
+              "non_agent_tool_count": 10,
+              "agents": [],
+              "max_prefix": 50550,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  9
+                ]
+              ]
+            },
+            {
+              "name": "consensus",
+              "lo": 19,
+              "hi": 24,
+              "turns": 6,
+              "round_trips": 5,
+              "round_trips_incl_notif": 6,
+              "notif_turns": [
+                {
+                  "turn": 21,
+                  "out": 55
+                }
+              ],
+              "growth": 13744,
+              "out": 7093,
+              "think": 2101,
+              "disp_chars": 9984,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 81253,
+              "attempts": 1,
+              "parts": [
+                [
+                  19,
+                  24
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 25,
+              "hi": 25,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 7316,
+              "think": 3130,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 82209,
+              "attempts": 1,
+              "parts": [
+                [
+                  25,
+                  25
+                ]
+              ]
+            }
+          ],
+          "S2_excluded": [
+            {
+              "name": "intake+plan",
+              "lo": 0,
+              "hi": 10,
+              "turns": 11,
+              "round_trips": 11,
+              "round_trips_incl_notif": 11,
+              "notif_turns": [],
+              "growth": 24627,
+              "out": 9818,
+              "think": 6149,
+              "disp_chars": 3315,
+              "non_agent_tools": {
+                "Read": 4,
+                "Bash": 6
+              },
+              "non_agent_tool_count": 10,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 51699,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  10
+                ]
+              ]
+            },
+            {
+              "name": "tail",
+              "lo": 20,
+              "hi": 24,
+              "turns": 5,
+              "round_trips": 4,
+              "round_trips_incl_notif": 5,
+              "notif_turns": [
+                {
+                  "turn": 21,
+                  "out": 55
+                }
+              ],
+              "growth": 7927,
+              "out": 2077,
+              "think": 1145,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [],
+              "max_prefix": 81253,
+              "attempts": 1,
+              "parts": [
+                [
+                  20,
+                  24
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 25,
+              "hi": 25,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 7316,
+              "think": 3130,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 82209,
+              "attempts": 1,
+              "parts": [
+                [
+                  25,
+                  25
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "contamination": {
+        "strings_checked": [
+          "thin-skill-sketch",
+          "FINDINGS",
+          "SPIKE_CONTROLLER_PLAN",
+          "job_20260807_0001",
+          "job_20260805_0004",
+          "job_20260812_0001"
+        ],
+        "hits": [
+          {
+            "string": "thin-skill-sketch",
+            "rows_matched": 5,
+            "first_row_indexes": [
+              10,
+              12,
+              13,
+              21,
+              138
+            ]
+          },
+          {
+            "string": "FINDINGS",
+            "rows_matched": 4,
+            "first_row_indexes": [
+              10,
+              13,
+              21,
+              138
+            ]
+          },
+          {
+            "string": "SPIKE_CONTROLLER_PLAN",
+            "rows_matched": 1,
+            "first_row_indexes": [
+              13
+            ]
+          }
+        ],
+        "any": true,
+        "own_job_ids": [
+          "job_20260811_0001"
+        ],
+        "foreign_job_ids_checked": [
+          "job_20260807_0001",
+          "job_20260805_0004",
+          "job_20260812_0001"
+        ]
+      },
+      "run_totals": {
+        "WARNING": "§10.1 — reporting any of these as a headline, a comparison, or \"for context\" is FORBIDDEN by the protocol",
+        "turns": 26,
+        "output_tokens": 30863,
+        "thinking_tokens": 11856,
+        "final_prefix": 82209,
+        "cache_read_total": 1442738,
+        "cache_creation_total": 60210
+      },
+      "void": [],
+      "discrepancies": [
+        {
+          "code": "NOTIF_NEAR_MISS",
+          "detail": "1 turn(s) are zero-tool and under 100 output tokens but are NOT preceded by a <task-notification> user row, so §4.7 does NOT classify them as NOTIF turns. They are counted as round trips. Any statement of the form \"this arm has N NOTIF turns\" must be checked against this list.",
+          "turns": [
+            {
+              "turn": 20,
+              "out": 49,
+              "preceding_user_row_index": 106,
+              "preceding_user_row_kind": "content blocks: tool_result"
+            }
+          ]
+        }
+      ]
+    },
+    "A": {
+      "label": "A",
+      "sources": [
+        {
+          "path": "/Users/etherealogic_2/Dev/adws-pipeline-skill/spike/adws-controller/ab/evidence/armA-orchestrator.jsonl",
+          "bytes": 575306,
+          "sha256": "b9ae9511747c6d4b05bfcd795e789806c43a7c84c61961eda9597b86114ae9cd",
+          "rows_parsed": 154,
+          "rows_unparseable": 0
+        }
+      ],
+      "integrity": {
+        "assistant_rows_total": 66,
+        "assistant_rows_used": 66,
+        "turns": 22,
+        "row_to_turn_inflation": 3,
+        "distinct_message_ids": 22,
+        "distinct_request_ids": 22,
+        "message_id_equals_request_id_count": true,
+        "usage_identical_within_message_id": true,
+        "additivity": {
+          "tolerance": 5,
+          "pairs_checked": 21,
+          "violations": [
+            {
+              "turn": 21,
+              "cache_read": 120314,
+              "prev_prefix": 121549,
+              "delta": -1235
+            }
+          ]
+        },
+        "harness": {
+          "models": [
+            "claude-fable-5"
+          ],
+          "versions": [
+            "2.1.228"
+          ],
+          "efforts": [
+            "high"
+          ],
+          "service_tiers": [
+            "standard"
+          ],
+          "single_valued": true
+        },
+        "inference_iterations_per_turn": {
+          "max": 1,
+          "turns_over_1": []
+        },
+        "sidechain_rows_in_file": 0,
+        "row_type_histogram": {
+          "mode": 11,
+          "file-history-snapshot": 2,
+          "user": 32,
+          "system": 3,
+          "attachment": 8,
+          "ai-title": 11,
+          "assistant": 66,
+          "last-prompt": 10,
+          "permission-mode": 10,
+          "file-history-delta": 1
+        },
+        "permission_modes": [
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto",
+          "auto"
+        ],
+        "modes": [
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal",
+          "normal"
+        ]
+      },
+      "turns": [
+        {
+          "i": 0,
+          "message_id": "msg_011Cdx9hAPEm9N2VwEZ52tDh",
+          "ts": "2026-08-12T03:33:11.481Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 9998,
+          "cr": 21997,
+          "prefix": 31997,
+          "growth": 617,
+          "out": 100,
+          "think": 30,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 1,
+          "message_id": "msg_011Cdx9hPW2a7HiJTLs8wVYN",
+          "ts": "2026-08-12T03:33:16.169Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 617,
+          "cr": 31995,
+          "prefix": 32614,
+          "growth": 11579,
+          "out": 265,
+          "think": 97,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Skill"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 2,
+          "message_id": "msg_011Cdx9hircDbx7gx8FdR6k6",
+          "ts": "2026-08-12T03:33:23.479Z",
+          "rows": 5,
+          "inp": 2,
+          "cc": 11579,
+          "cr": 32612,
+          "prefix": 44193,
+          "growth": 5670,
+          "out": 618,
+          "think": 321,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read",
+            "Read",
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 3,
+          "message_id": "msg_011Cdx9iVbRQa4SDB7Vmo8t8",
+          "ts": "2026-08-12T03:33:47.451Z",
+          "rows": 5,
+          "inp": 2,
+          "cc": 5670,
+          "cr": 44191,
+          "prefix": 49863,
+          "growth": 32734,
+          "out": 1787,
+          "think": 1218,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read",
+            "Read",
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 4,
+          "message_id": "msg_011Cdx9k8zjMwZBYWDqePE45",
+          "ts": "2026-08-12T03:34:13.495Z",
+          "rows": 4,
+          "inp": 2,
+          "cc": 32734,
+          "cr": 49861,
+          "prefix": 82597,
+          "growth": 6491,
+          "out": 1809,
+          "think": 1441,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Read",
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 5,
+          "message_id": "msg_011Cdx9n98UY88Qjnrg1vL6S",
+          "ts": "2026-08-12T03:34:42.132Z",
+          "rows": 3,
+          "inp": 1,
+          "cc": 6492,
+          "cr": 82595,
+          "prefix": 89088,
+          "growth": 2009,
+          "out": 1954,
+          "think": 1485,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 6,
+          "message_id": "msg_011Cdx9pK93S2mw191CKYU9m",
+          "ts": "2026-08-12T03:34:49.322Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 2008,
+          "cr": 89087,
+          "prefix": 91097,
+          "growth": 806,
+          "out": 734,
+          "think": 24,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Write"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 7,
+          "message_id": "msg_011Cdx9pzryU6UMGyPRi2xNn",
+          "ts": "2026-08-12T03:34:59.050Z",
+          "rows": 1,
+          "inp": 2,
+          "cc": 806,
+          "cr": 91095,
+          "prefix": 91903,
+          "growth": 351,
+          "out": 222,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 8,
+          "message_id": "msg_011Cdx9qNJZoGL3jAamPM8s2",
+          "ts": "2026-08-12T03:35:06.266Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 351,
+          "cr": 91901,
+          "prefix": 92254,
+          "growth": 871,
+          "out": 771,
+          "think": 205,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 9,
+          "message_id": "msg_011Cdx9rB6AFR9mcz8M3dFk2",
+          "ts": "2026-08-12T03:35:35.299Z",
+          "rows": 4,
+          "inp": 2,
+          "cc": 871,
+          "cr": 92252,
+          "prefix": 93125,
+          "growth": 2376,
+          "out": 2180,
+          "think": 1595,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Edit",
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 10,
+          "message_id": "msg_011Cdx9tGrERcLmbHsq3Th7M",
+          "ts": "2026-08-12T03:35:53.735Z",
+          "rows": 1,
+          "inp": 2,
+          "cc": 2376,
+          "cr": 93123,
+          "prefix": 95501,
+          "growth": 2605,
+          "out": 1057,
+          "think": 0,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-planner"
+          ],
+          "disp_chars": 2328,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 11,
+          "message_id": "msg_011CdxASygHh5PRwmbfr1Zxf",
+          "ts": "2026-08-12T03:43:08.245Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 2605,
+          "cr": 95499,
+          "prefix": 98106,
+          "growth": 1447,
+          "out": 1067,
+          "think": 106,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 12,
+          "message_id": "msg_011CdxAU2qZzK6eGjkuSfmbp",
+          "ts": "2026-08-12T03:43:22.880Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 1447,
+          "cr": 98104,
+          "prefix": 99553,
+          "growth": 997,
+          "out": 575,
+          "think": 90,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 13,
+          "message_id": "msg_011CdxAUnTASWRzT1rCQyaW4",
+          "ts": "2026-08-12T03:43:38.365Z",
+          "rows": 3,
+          "inp": 1,
+          "cc": 998,
+          "cr": 99551,
+          "prefix": 100550,
+          "growth": 2189,
+          "out": 1273,
+          "think": 649,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 14,
+          "message_id": "msg_011CdxAVzw2oEN9UJ9JKKbwo",
+          "ts": "2026-08-12T03:43:48.158Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 2188,
+          "cr": 100549,
+          "prefix": 102739,
+          "growth": 3243,
+          "out": 1854,
+          "think": 40,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-builder"
+          ],
+          "disp_chars": 4279,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 15,
+          "message_id": "msg_011CdxB7gCQPfQHX2AhnVidH",
+          "ts": "2026-08-12T03:51:53.144Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 3243,
+          "cr": 102737,
+          "prefix": 105982,
+          "growth": 2679,
+          "out": 984,
+          "think": 63,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 16,
+          "message_id": "msg_011CdxB8akkwzAfUgZ78G1C8",
+          "ts": "2026-08-12T03:52:05.728Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 2679,
+          "cr": 105980,
+          "prefix": 108661,
+          "growth": 450,
+          "out": 325,
+          "think": 117,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 17,
+          "message_id": "msg_011CdxB99PoGgKSj7zUjv6uo",
+          "ts": "2026-08-12T03:52:15.805Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 450,
+          "cr": 108659,
+          "prefix": 109111,
+          "growth": 2358,
+          "out": 1805,
+          "think": 319,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 18,
+          "message_id": "msg_011CdxBAac8jjvZ5s6yyNwRh",
+          "ts": "2026-08-12T03:52:32.489Z",
+          "rows": 3,
+          "inp": 2,
+          "cc": 2358,
+          "cr": 109109,
+          "prefix": 111469,
+          "growth": 3786,
+          "out": 2391,
+          "think": 128,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent"
+          ],
+          "agents": [
+            "adws-tester"
+          ],
+          "disp_chars": 5444,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 19,
+          "message_id": "msg_011CdxBtxSiAD2hMogGzZcN2",
+          "ts": "2026-08-12T04:02:19.657Z",
+          "rows": 4,
+          "inp": 2,
+          "cc": 3786,
+          "cr": 111467,
+          "prefix": 115255,
+          "growth": 6294,
+          "out": 3740,
+          "think": 912,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Agent",
+            "Agent"
+          ],
+          "agents": [
+            "adws-critic",
+            "adws-advocate"
+          ],
+          "disp_chars": 6045,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 20,
+          "message_id": "msg_011CdxCE5xSPTRkZD3afwpsR",
+          "ts": "2026-08-12T04:06:47.081Z",
+          "rows": 3,
+          "inp": 1235,
+          "cc": 5061,
+          "cr": 115253,
+          "prefix": 121549,
+          "growth": 3590,
+          "out": 3432,
+          "think": 1506,
+          "iterations": 1,
+          "stop_reason": "tool_use",
+          "tools": [
+            "Bash"
+          ],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": false,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        },
+        {
+          "i": 21,
+          "message_id": "msg_011CdxCH9bYWEBrUw1oB55bP",
+          "ts": "2026-08-12T04:07:47.359Z",
+          "rows": 2,
+          "inp": 2,
+          "cc": 4823,
+          "cr": 120314,
+          "prefix": 125139,
+          "growth": null,
+          "out": 5482,
+          "think": 2495,
+          "iterations": 1,
+          "stop_reason": "end_turn",
+          "tools": [],
+          "agents": [],
+          "disp_chars": 0,
+          "is_notif": false,
+          "notif_clauses": {
+            "zero_tool_use": true,
+            "output_under_threshold": false,
+            "preceded_by_task_notification": false
+          }
+        }
+      ],
+      "notif_near_misses": [],
+      "anchors": [
+        {
+          "i": 10,
+          "label": "plan",
+          "types": [
+            "adws-planner"
+          ]
+        },
+        {
+          "i": 14,
+          "label": "build",
+          "types": [
+            "adws-builder"
+          ]
+        },
+        {
+          "i": 18,
+          "label": "test",
+          "types": [
+            "adws-tester"
+          ]
+        },
+        {
+          "i": 19,
+          "label": "consensus",
+          "types": [
+            "adws-critic",
+            "adws-advocate"
+          ]
+        }
+      ],
+      "raw_anchors": [
+        {
+          "i": 10,
+          "label": "plan",
+          "types": [
+            "adws-planner"
+          ]
+        },
+        {
+          "i": 14,
+          "label": "build",
+          "types": [
+            "adws-builder"
+          ]
+        },
+        {
+          "i": 18,
+          "label": "test",
+          "types": [
+            "adws-tester"
+          ]
+        },
+        {
+          "i": 19,
+          "label": "consensus",
+          "types": [
+            "adws-critic",
+            "adws-advocate"
+          ]
+        }
+      ],
+      "report_cut_turn_index": 21,
+      "segmentations": {
+        "S1": {
+          "rule": "§4.4 anchor OPENS its segment; turns before the first anchor = setup",
+          "tiling": {
+            "ok": true,
+            "total_segment_turns": 22,
+            "n_turns": 22,
+            "doubled": [],
+            "uncovered": []
+          },
+          "segments": [
+            {
+              "name": "setup",
+              "lo": 0,
+              "hi": 9,
+              "turns": 10,
+              "round_trips": 10,
+              "round_trips_incl_notif": 10,
+              "notif_turns": [],
+              "growth": 63504,
+              "out": 10440,
+              "think": 6416,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Read": 6,
+                "Skill": 1,
+                "Bash": 7,
+                "Write": 1,
+                "Edit": 1
+              },
+              "non_agent_tool_count": 16,
+              "agents": [],
+              "max_prefix": 93125,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  9
+                ]
+              ]
+            },
+            {
+              "name": "plan",
+              "lo": 10,
+              "hi": 13,
+              "turns": 4,
+              "round_trips": 4,
+              "round_trips_incl_notif": 4,
+              "notif_turns": [],
+              "growth": 7238,
+              "out": 3972,
+              "think": 845,
+              "disp_chars": 2328,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 100550,
+              "attempts": 1,
+              "parts": [
+                [
+                  10,
+                  13
+                ]
+              ]
+            },
+            {
+              "name": "build",
+              "lo": 14,
+              "hi": 17,
+              "turns": 4,
+              "round_trips": 4,
+              "round_trips_incl_notif": 4,
+              "notif_turns": [],
+              "growth": 8730,
+              "out": 4968,
+              "think": 539,
+              "disp_chars": 4279,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-builder"
+              ],
+              "max_prefix": 109111,
+              "attempts": 1,
+              "parts": [
+                [
+                  14,
+                  17
+                ]
+              ]
+            },
+            {
+              "name": "test",
+              "lo": 18,
+              "hi": 18,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": 3786,
+              "out": 2391,
+              "think": 128,
+              "disp_chars": 5444,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [
+                "adws-tester"
+              ],
+              "max_prefix": 111469,
+              "attempts": 1,
+              "parts": [
+                [
+                  18,
+                  18
+                ]
+              ]
+            },
+            {
+              "name": "consensus",
+              "lo": 19,
+              "hi": 20,
+              "turns": 2,
+              "round_trips": 2,
+              "round_trips_incl_notif": 2,
+              "notif_turns": [],
+              "growth": 9884,
+              "out": 7172,
+              "think": 2418,
+              "disp_chars": 6045,
+              "non_agent_tools": {
+                "Bash": 1
+              },
+              "non_agent_tool_count": 1,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 121549,
+              "attempts": 1,
+              "parts": [
+                [
+                  19,
+                  20
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 21,
+              "hi": 21,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 5482,
+              "think": 2495,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 125139,
+              "attempts": 1,
+              "parts": [
+                [
+                  21,
+                  21
+                ]
+              ]
+            }
+          ],
+          "primary": {
+            "segmentation": "S1",
+            "common_scope": [
+              "plan",
+              "build",
+              "test"
+            ],
+            "per_phase": {
+              "plan": {
+                "growth": 7238,
+                "round_trips": 4,
+                "out": 3972,
+                "think": 845,
+                "disp_chars": 2328,
+                "non_agent_tools": {
+                  "Bash": 3
+                },
+                "attempts": 1,
+                "turns": 4,
+                "max_prefix": 100550,
+                "parts": [
+                  [
+                    10,
+                    13
+                  ]
+                ]
+              },
+              "build": {
+                "growth": 8730,
+                "round_trips": 4,
+                "out": 4968,
+                "think": 539,
+                "disp_chars": 4279,
+                "non_agent_tools": {
+                  "Bash": 3
+                },
+                "attempts": 1,
+                "turns": 4,
+                "max_prefix": 109111,
+                "parts": [
+                  [
+                    14,
+                    17
+                  ]
+                ]
+              },
+              "test": {
+                "growth": 3786,
+                "round_trips": 1,
+                "out": 2391,
+                "think": 128,
+                "disp_chars": 5444,
+                "non_agent_tools": {},
+                "attempts": 1,
+                "turns": 1,
+                "max_prefix": 111469,
+                "parts": [
+                  [
+                    18,
+                    18
+                  ]
+                ]
+              }
+            },
+            "missing_phases": [],
+            "undefined_growth_phases": [],
+            "P": 6584.67,
+            "P_sum": 19754,
+            "within_run_spread_pct": 75.08,
+            "round_trips_mean": 3,
+            "round_trips_mean_over_present_only": 3,
+            "round_trips_per_phase": {
+              "plan": 4,
+              "build": 4,
+              "test": 1
+            },
+            "output_tokens_sum": 11331,
+            "thinking_tokens_sum": 1512,
+            "dispatch_chars_sum": 12051,
+            "attempts_per_phase": {
+              "plan": 1,
+              "build": 1,
+              "test": 1
+            },
+            "max_prefix_per_phase": {
+              "plan": 100550,
+              "build": 109111,
+              "test": 111469
+            },
+            "defined": true
+          }
+        },
+        "S2": {
+          "rule": "§4.11 anchor CLOSES its segment (inclusive)",
+          "tiling": {
+            "ok": true,
+            "total_segment_turns": 22,
+            "n_turns": 22,
+            "doubled": [],
+            "uncovered": []
+          },
+          "segments": [
+            {
+              "name": "intake+plan",
+              "lo": 0,
+              "hi": 10,
+              "turns": 11,
+              "round_trips": 11,
+              "round_trips_incl_notif": 11,
+              "notif_turns": [],
+              "growth": 66109,
+              "out": 11497,
+              "think": 6416,
+              "disp_chars": 2328,
+              "non_agent_tools": {
+                "Read": 6,
+                "Skill": 1,
+                "Bash": 7,
+                "Write": 1,
+                "Edit": 1
+              },
+              "non_agent_tool_count": 16,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 95501,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  10
+                ]
+              ]
+            },
+            {
+              "name": "to-build",
+              "lo": 11,
+              "hi": 14,
+              "turns": 4,
+              "round_trips": 4,
+              "round_trips_incl_notif": 4,
+              "notif_turns": [],
+              "growth": 7876,
+              "out": 4769,
+              "think": 885,
+              "disp_chars": 4279,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-builder"
+              ],
+              "max_prefix": 102739,
+              "attempts": 1,
+              "parts": [
+                [
+                  11,
+                  14
+                ]
+              ]
+            },
+            {
+              "name": "to-test",
+              "lo": 15,
+              "hi": 18,
+              "turns": 4,
+              "round_trips": 4,
+              "round_trips_incl_notif": 4,
+              "notif_turns": [],
+              "growth": 9273,
+              "out": 5505,
+              "think": 627,
+              "disp_chars": 5444,
+              "non_agent_tools": {
+                "Bash": 3
+              },
+              "non_agent_tool_count": 3,
+              "agents": [
+                "adws-tester"
+              ],
+              "max_prefix": 111469,
+              "attempts": 1,
+              "parts": [
+                [
+                  15,
+                  18
+                ]
+              ]
+            },
+            {
+              "name": "to-consensus",
+              "lo": 19,
+              "hi": 19,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": 6294,
+              "out": 3740,
+              "think": 912,
+              "disp_chars": 6045,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 115255,
+              "attempts": 1,
+              "parts": [
+                [
+                  19,
+                  19
+                ]
+              ]
+            },
+            {
+              "name": "tail",
+              "lo": 20,
+              "hi": 20,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": 3590,
+              "out": 3432,
+              "think": 1506,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Bash": 1
+              },
+              "non_agent_tool_count": 1,
+              "agents": [],
+              "max_prefix": 121549,
+              "attempts": 1,
+              "parts": [
+                [
+                  20,
+                  20
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 21,
+              "hi": 21,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 5482,
+              "think": 2495,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 125139,
+              "attempts": 1,
+              "parts": [
+                [
+                  21,
+                  21
+                ]
+              ]
+            }
+          ],
+          "primary": {
+            "segmentation": "S2",
+            "common_scope": [
+              "to-build",
+              "to-test",
+              "to-consensus"
+            ],
+            "per_phase": {
+              "to-build": {
+                "growth": 7876,
+                "round_trips": 4,
+                "out": 4769,
+                "think": 885,
+                "disp_chars": 4279,
+                "non_agent_tools": {
+                  "Bash": 3
+                },
+                "attempts": 1,
+                "turns": 4,
+                "max_prefix": 102739,
+                "parts": [
+                  [
+                    11,
+                    14
+                  ]
+                ]
+              },
+              "to-test": {
+                "growth": 9273,
+                "round_trips": 4,
+                "out": 5505,
+                "think": 627,
+                "disp_chars": 5444,
+                "non_agent_tools": {
+                  "Bash": 3
+                },
+                "attempts": 1,
+                "turns": 4,
+                "max_prefix": 111469,
+                "parts": [
+                  [
+                    15,
+                    18
+                  ]
+                ]
+              },
+              "to-consensus": {
+                "growth": 6294,
+                "round_trips": 1,
+                "out": 3740,
+                "think": 912,
+                "disp_chars": 6045,
+                "non_agent_tools": {},
+                "attempts": 1,
+                "turns": 1,
+                "max_prefix": 115255,
+                "parts": [
+                  [
+                    19,
+                    19
+                  ]
+                ]
+              }
+            },
+            "missing_phases": [],
+            "undefined_growth_phases": [],
+            "P": 7814.33,
+            "P_sum": 23443,
+            "within_run_spread_pct": 38.12,
+            "round_trips_mean": 3,
+            "round_trips_mean_over_present_only": 3,
+            "round_trips_per_phase": {
+              "to-build": 4,
+              "to-test": 4,
+              "to-consensus": 1
+            },
+            "output_tokens_sum": 14014,
+            "thinking_tokens_sum": 2424,
+            "dispatch_chars_sum": 15768,
+            "attempts_per_phase": {
+              "to-build": 1,
+              "to-test": 1,
+              "to-consensus": 1
+            },
+            "max_prefix_per_phase": {
+              "to-build": 102739,
+              "to-test": 111469,
+              "to-consensus": 115255
+            },
+            "defined": true
+          }
+        }
+      },
+      "secondary": {
+        "S1_round_trips": {
+          "S1": {
+            "plan": 4,
+            "build": 4,
+            "test": 1
+          },
+          "S1_mean": 3,
+          "S2": {
+            "to-build": 4,
+            "to-test": 4,
+            "to-consensus": 1
+          },
+          "S2_mean": 3
+        },
+        "S2_output_tokens": {
+          "S1": {
+            "plan": 3972,
+            "build": 4968,
+            "test": 2391
+          },
+          "S1_sum": 11331,
+          "S2_sum": 14014
+        },
+        "S3_thinking_tokens": {
+          "S1": {
+            "plan": 845,
+            "build": 539,
+            "test": 128
+          },
+          "S1_sum": 1512,
+          "S2_sum": 2424
+        },
+        "S4_dispatch_briefing_chars": {
+          "S1": {
+            "plan": 2328,
+            "build": 4279,
+            "test": 5444
+          },
+          "S1_sum": 12051,
+          "per_dispatch": [
+            {
+              "turn": 10,
+              "subagent_type": "adws-planner",
+              "prompt_chars": 2328,
+              "prompt_bytes_utf8": 2330
+            },
+            {
+              "turn": 14,
+              "subagent_type": "adws-builder",
+              "prompt_chars": 4279,
+              "prompt_bytes_utf8": 4301
+            },
+            {
+              "turn": 18,
+              "subagent_type": "adws-tester",
+              "prompt_chars": 5444,
+              "prompt_bytes_utf8": 5476
+            },
+            {
+              "turn": 19,
+              "subagent_type": "adws-critic",
+              "prompt_chars": 3095,
+              "prompt_bytes_utf8": 3103
+            },
+            {
+              "turn": 19,
+              "subagent_type": "adws-advocate",
+              "prompt_chars": 2950,
+              "prompt_bytes_utf8": 2958
+            }
+          ]
+        },
+        "S5_non_agent_tool_calls": {
+          "plan": {
+            "Bash": 3
+          },
+          "build": {
+            "Bash": 3
+          },
+          "test": {}
+        },
+        "S6_intake_mass": {
+          "first_dispatch_turn": 10,
+          "first_dispatch_label": "plan",
+          "I_net": 63504,
+          "I_raw": 73504
+        },
+        "S7_session_baseline": {
+          "prefix": 31997,
+          "input_tokens": 2,
+          "cache_creation_input_tokens": 9998,
+          "cache_read_input_tokens": 21997
+        },
+        "S8_instruction_reads": {
+          "rule": "§3 S8 — Read/Skill of an orchestration document; tokens = turn prefix growth minus that turn output_tokens",
+          "instruction_reads": [
+            {
+              "tool_use_id": "toolu_01HySptXEenzEKqaDX6hMQqT",
+              "source": "Skill",
+              "path": "skill:adws-pipeline",
+              "turn": 1,
+              "turn_out_tokens": 265,
+              "turn_growth_tokens": 11579,
+              "attributed_tokens": 11314,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": null,
+              "content_chars": null,
+              "rendered_result_bytes_utf8": 30,
+              "rendered_result_chars": 30,
+              "content_source": "tool_result(rendered)",
+              "doc_class": "skill-load"
+            },
+            {
+              "tool_use_id": "toolu_016o9JkPgkr2HxUbSgM2dAGz",
+              "source": "Read",
+              "path": "/home/etherealogic_2/.claude/skills/adws-pipeline/references/task-contract.md",
+              "turn": 2,
+              "turn_out_tokens": 618,
+              "turn_growth_tokens": 5670,
+              "attributed_tokens": 5052,
+              "sole_tool_on_turn": false,
+              "other_tools_on_turn": [
+                "Read",
+                "Bash"
+              ],
+              "content_bytes_utf8": 7844,
+              "content_chars": 7793,
+              "rendered_result_bytes_utf8": 8296,
+              "rendered_result_chars": 8245,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "references/*"
+            },
+            {
+              "tool_use_id": "toolu_019BEw3phXY8ussFza2tnKfP",
+              "source": "Read",
+              "path": "/home/etherealogic_2/.claude/skills/adws-pipeline/references/phase-gates.md",
+              "turn": 3,
+              "turn_out_tokens": 1787,
+              "turn_growth_tokens": 32734,
+              "attributed_tokens": 30947,
+              "sole_tool_on_turn": false,
+              "other_tools_on_turn": [
+                "Read",
+                "Bash"
+              ],
+              "content_bytes_utf8": 41195,
+              "content_chars": 40923,
+              "rendered_result_bytes_utf8": 43495,
+              "rendered_result_chars": 43223,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "references/*"
+            },
+            {
+              "tool_use_id": "toolu_019wBuNVKgS2AGsY3ZyZ3uez",
+              "source": "Read",
+              "path": "/home/etherealogic_2/.claude/skills/adws-pipeline/references/artifact-layout.md",
+              "turn": 3,
+              "turn_out_tokens": 1787,
+              "turn_growth_tokens": 32734,
+              "attributed_tokens": 30947,
+              "sole_tool_on_turn": false,
+              "other_tools_on_turn": [
+                "Read",
+                "Bash"
+              ],
+              "content_bytes_utf8": 34632,
+              "content_chars": 34311,
+              "rendered_result_bytes_utf8": 36420,
+              "rendered_result_chars": 36099,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "references/*"
+            },
+            {
+              "tool_use_id": "toolu_01MNueUR5VbUcM7vCDTswjL3",
+              "source": "Read",
+              "path": "/home/etherealogic_2/.claude/skills/adws-pipeline/references/validator-inputs.md",
+              "turn": 4,
+              "turn_out_tokens": 1809,
+              "turn_growth_tokens": 6491,
+              "attributed_tokens": 4682,
+              "sole_tool_on_turn": false,
+              "other_tools_on_turn": [
+                "Bash"
+              ],
+              "content_bytes_utf8": 10325,
+              "content_chars": 10265,
+              "rendered_result_bytes_utf8": 10781,
+              "rendered_result_chars": 10721,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": "references/*"
+            }
+          ],
+          "total_attributed_tokens": 82942,
+          "total_content_bytes_utf8": null,
+          "total_content_chars": null,
+          "unattributed_reads": 0,
+          "other_reads": [
+            {
+              "tool_use_id": "toolu_01CdjzRYuvJFowG8Zxfe9LHx",
+              "source": "Read",
+              "path": "/home/etherealogic_2/step5/launch-prompt.md",
+              "turn": 0,
+              "turn_out_tokens": 100,
+              "turn_growth_tokens": 617,
+              "attributed_tokens": 517,
+              "sole_tool_on_turn": true,
+              "other_tools_on_turn": [],
+              "content_bytes_utf8": 1328,
+              "content_chars": 1322,
+              "rendered_result_bytes_utf8": 1406,
+              "rendered_result_chars": 1400,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": null
+            },
+            {
+              "tool_use_id": "toolu_019BZ1EU7T6FdqgpBsZtoKn8",
+              "source": "Read",
+              "path": "/home/etherealogic_2/step5/live_contract.json",
+              "turn": 2,
+              "turn_out_tokens": 618,
+              "turn_growth_tokens": 5670,
+              "attributed_tokens": 5052,
+              "sole_tool_on_turn": false,
+              "other_tools_on_turn": [
+                "Read",
+                "Bash"
+              ],
+              "content_bytes_utf8": 3388,
+              "content_chars": 3384,
+              "rendered_result_bytes_utf8": 3577,
+              "rendered_result_chars": 3573,
+              "content_source": "toolUseResult.file.content",
+              "doc_class": null
+            }
+          ]
+        },
+        "S9_handshake_volume": {
+          "controller": {
+            "describe": "Bash calls invoking adws-run.js (arm B controller handshake)",
+            "n_calls": 0,
+            "outbound_chars": 0,
+            "outbound_bytes_utf8": 0,
+            "inbound_chars": 0,
+            "inbound_bytes_utf8": 0,
+            "n_calls_pure": 0,
+            "inbound_chars_pure": 0,
+            "inbound_bytes_utf8_pure": 0,
+            "calls": []
+          },
+          "validator": {
+            "describe": "Bash calls invoking a script under adws-pipeline/scripts/ (arm A validators)",
+            "n_calls": 2,
+            "outbound_chars": 3915,
+            "outbound_bytes_utf8": 3917,
+            "inbound_chars": 621,
+            "inbound_bytes_utf8": 621,
+            "n_calls_pure": 0,
+            "inbound_chars_pure": 0,
+            "inbound_bytes_utf8_pure": 0,
+            "calls": [
+              {
+                "tool_use_id": "toolu_01KmYjwi7fuHfvpHSf7WjyxW",
+                "turn": 16,
+                "via": "Bash",
+                "outbound_chars": 176,
+                "outbound_bytes": 176,
+                "inbound_chars": 255,
+                "inbound_bytes": 255,
+                "stdout_bytes": 191,
+                "stderr_bytes": 64,
+                "is_error": false,
+                "mixed": true,
+                "command_preview": "cd /home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001 && git status --porcelain -uall && node --check adws-pipeline/scripts/execution-report.js && …"
+              },
+              {
+                "tool_use_id": "toolu_01F4ff4YnDt7mSSVBCnRkhEy",
+                "turn": 20,
+                "via": "Bash",
+                "outbound_chars": 3739,
+                "outbound_bytes": 3741,
+                "inbound_chars": 366,
+                "inbound_bytes": 366,
+                "stdout_bytes": 366,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": true,
+                "command_preview": "set -e\nJOB=/home/etherealogic_2/adws-pipeline-skill/artifacts/job_20260812_0001\nWT=/home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001\nNOW=$(date -u…"
+              }
+            ]
+          },
+          "evidence_readback": {
+            "describe": "Read (or content-reading Bash) of the job/evidence tree",
+            "n_calls": 2,
+            "outbound_chars": 1339,
+            "outbound_bytes_utf8": 1339,
+            "inbound_chars": 308,
+            "inbound_bytes_utf8": 311,
+            "n_calls_pure": 1,
+            "inbound_chars_pure": 208,
+            "inbound_bytes_utf8_pure": 211,
+            "calls": [
+              {
+                "tool_use_id": "toolu_01HoSDUUwJU9RGK4M44nCPmH",
+                "turn": 5,
+                "via": "Bash",
+                "outbound_chars": 477,
+                "outbound_bytes": 477,
+                "inbound_chars": 100,
+                "inbound_bytes": 100,
+                "stdout_bytes": 100,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": true,
+                "command_preview": "set -e\nREPO=/home/etherealogic_2/adws-pipeline-skill\nJOB=job_20260812_0001\nmkdir -p $REPO/artifacts/$JOB\ncp /home/etherealogic_2/step5/live_contract.json $REPO/…"
+              },
+              {
+                "tool_use_id": "toolu_013oUq3JYVVxEyUT2uhWXaYo",
+                "turn": 8,
+                "via": "Bash",
+                "outbound_chars": 862,
+                "outbound_bytes": 862,
+                "inbound_chars": 208,
+                "inbound_bytes": 211,
+                "stdout_bytes": 211,
+                "stderr_bytes": 0,
+                "is_error": false,
+                "mixed": false,
+                "command_preview": "set -e\nREPO=/home/etherealogic_2/adws-pipeline-skill\nJOB=job_20260812_0001\nmkdir -p $REPO/artifacts/$JOB/pregate/ship-mode-select\nNOW=$(date -u +%Y-%m-%dT%H:%M:…"
+              }
+            ]
+          },
+          "comparable_total": {
+            "n_calls": 4,
+            "inbound_chars": 929,
+            "inbound_bytes_utf8": 932,
+            "outbound_chars": 5254,
+            "outbound_bytes_utf8": 5256
+          }
+        },
+        "S10_subagent_cost": {
+          "dispatches": [
+            {
+              "tool_use_id": "toolu_01L7PkkYaXfj7B4fp8PSCnsp",
+              "turn": 10,
+              "subagent_type": "adws-planner",
+              "requested_model": "opus",
+              "run_in_background": false,
+              "prompt_chars": 2328,
+              "prompt_bytes_utf8": 2330,
+              "recoverable": true,
+              "agent_type_reported": "adws-planner",
+              "resolved_model": "claude-opus-5[1m]",
+              "total_tokens": 82750,
+              "total_tool_use_count": 29,
+              "total_duration_ms": 425514,
+              "tool_stats": {
+                "readCount": 6,
+                "searchCount": 0,
+                "bashCount": 20,
+                "editFileCount": 3,
+                "linesAdded": 235,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01Xc2quPEgTyvDrsBfGG56Pq",
+              "turn": 14,
+              "subagent_type": "adws-builder",
+              "requested_model": "sonnet",
+              "run_in_background": false,
+              "prompt_chars": 4279,
+              "prompt_bytes_utf8": 4301,
+              "recoverable": true,
+              "agent_type_reported": "adws-builder",
+              "resolved_model": "claude-sonnet-5",
+              "total_tokens": 122011,
+              "total_tool_use_count": 47,
+              "total_duration_ms": 458274,
+              "tool_stats": {
+                "readCount": 15,
+                "searchCount": 0,
+                "bashCount": 16,
+                "editFileCount": 16,
+                "linesAdded": 340,
+                "linesRemoved": 67,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01AzAEBQ2jUQp8E1TBp9LTWK",
+              "turn": 18,
+              "subagent_type": "adws-tester",
+              "requested_model": "sonnet",
+              "run_in_background": false,
+              "prompt_chars": 5444,
+              "prompt_bytes_utf8": 5476,
+              "recoverable": true,
+              "agent_type_reported": "adws-tester",
+              "resolved_model": "claude-sonnet-5",
+              "total_tokens": 149479,
+              "total_tool_use_count": 44,
+              "total_duration_ms": 542037,
+              "tool_stats": {
+                "readCount": 7,
+                "searchCount": 0,
+                "bashCount": 31,
+                "editFileCount": 6,
+                "linesAdded": 721,
+                "linesRemoved": 9,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_01RLViuBAGU3KpbdabNMEFKH",
+              "turn": 19,
+              "subagent_type": "adws-critic",
+              "requested_model": "sonnet",
+              "run_in_background": false,
+              "prompt_chars": 3095,
+              "prompt_bytes_utf8": 3103,
+              "recoverable": true,
+              "agent_type_reported": "adws-critic",
+              "resolved_model": "claude-sonnet-5",
+              "total_tokens": 55327,
+              "total_tool_use_count": 28,
+              "total_duration_ms": 225526,
+              "tool_stats": {
+                "readCount": 2,
+                "searchCount": 0,
+                "bashCount": 25,
+                "editFileCount": 1,
+                "linesAdded": 15,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            },
+            {
+              "tool_use_id": "toolu_012HmULn8VJTrvviqW4Bg8X2",
+              "turn": 19,
+              "subagent_type": "adws-advocate",
+              "requested_model": "haiku",
+              "run_in_background": false,
+              "prompt_chars": 2950,
+              "prompt_bytes_utf8": 2958,
+              "recoverable": true,
+              "agent_type_reported": "adws-advocate",
+              "resolved_model": "claude-haiku-4-5-20251001",
+              "total_tokens": 56080,
+              "total_tool_use_count": 17,
+              "total_duration_ms": 123884,
+              "tool_stats": {
+                "readCount": 11,
+                "searchCount": 0,
+                "bashCount": 5,
+                "editFileCount": 1,
+                "linesAdded": 9,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              },
+              "status": "completed"
+            }
+          ],
+          "n_dispatches": 5,
+          "n_recoverable": 5,
+          "n_unrecoverable": 0,
+          "total_tokens_recoverable": 465647,
+          "note": null
+        },
+        "S11_covariates": {
+          "change_set": {
+            "source_turn": 16,
+            "file_count": 4,
+            "files": [
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/artifact-layout.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/phase-gates.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/references/troubleshooting.md"
+              },
+              {
+                "status": "M",
+                "path": "adws-pipeline/scripts/execution-report.js"
+              }
+            ],
+            "derivation": "parsed from a `git status --porcelain` tool result in the transcript",
+            "command_preview": "cd /home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001 && git status --porcelain -uall && node --check adws-pipeline/scripts/execution-report.js && echo \"syntax OK\""
+          },
+          "change_set_candidates": 2,
+          "per_subagent_tool_counts": [
+            {
+              "subagent_type": "adws-planner",
+              "turn": 10,
+              "total_tool_use_count": 29,
+              "tool_stats": {
+                "readCount": 6,
+                "searchCount": 0,
+                "bashCount": 20,
+                "editFileCount": 3,
+                "linesAdded": 235,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-builder",
+              "turn": 14,
+              "total_tool_use_count": 47,
+              "tool_stats": {
+                "readCount": 15,
+                "searchCount": 0,
+                "bashCount": 16,
+                "editFileCount": 16,
+                "linesAdded": 340,
+                "linesRemoved": 67,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-tester",
+              "turn": 18,
+              "total_tool_use_count": 44,
+              "tool_stats": {
+                "readCount": 7,
+                "searchCount": 0,
+                "bashCount": 31,
+                "editFileCount": 6,
+                "linesAdded": 721,
+                "linesRemoved": 9,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-critic",
+              "turn": 19,
+              "total_tool_use_count": 28,
+              "tool_stats": {
+                "readCount": 2,
+                "searchCount": 0,
+                "bashCount": 25,
+                "editFileCount": 1,
+                "linesAdded": 15,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              }
+            },
+            {
+              "subagent_type": "adws-advocate",
+              "turn": 19,
+              "total_tool_use_count": 17,
+              "tool_stats": {
+                "readCount": 11,
+                "searchCount": 0,
+                "bashCount": 5,
+                "editFileCount": 1,
+                "linesAdded": 9,
+                "linesRemoved": 0,
+                "otherToolCount": 0
+              }
+            }
+          ]
+        },
+        "S12_forbidden_reads": {
+          "rule": "arm A: any read of spike/** or docs/**",
+          "strict_count": 0,
+          "hits": [],
+          "bash_advisory": []
+        },
+        "S13_human_turns": {
+          "count": 3,
+          "turns": [
+            {
+              "row_index": 2,
+              "chars": 245,
+              "bytes_utf8": 245,
+              "sha256": "8a1bf3d3e00ac5504b425995c64042cab4111783ecb6c6a385d3bd583552df99",
+              "preview": "<local-command-caveat>Caveat: The messages below were generated by the user while running local commands. DO NOT respond to these messages or otherwise consider them in your response unless the user e",
+              "origin": null,
+              "promptSource": null
+            },
+            {
+              "row_index": 3,
+              "chars": 130,
+              "bytes_utf8": 130,
+              "sha256": "309be6ffa69a1d9474d66432b7d9454ce57241d7ffd774b2a4d0cfdf53dcd960",
+              "preview": "<command-name>/clear</command-name>\n            <command-message>clear</command-message>\n            <command-args></command-args>",
+              "origin": null,
+              "promptSource": null
+            },
+            {
+              "row_index": 6,
+              "chars": 49,
+              "bytes_utf8": 49,
+              "sha256": "d713289e00f4ea060f61c9844bc11ec3cc7891208b906c30100bc9b58b204701",
+              "preview": "implement the following: ~/step5/launch-prompt.md",
+              "origin": {
+                "kind": "human"
+              },
+              "promptSource": "typed"
+            }
+          ]
+        },
+        "S14_terminal_state": {
+          "note": "evidence extracted from the transcript; this script does not adjudicate a terminal state",
+          "verdict_tokens_in_assistant_text": {},
+          "gate_results_in_tool_output": [
+            {
+              "turn": 3,
+              "tool_use_id": "toolu_019wBuNVKgS2AGsY3ZyZ3uez",
+              "gate_result": "null | pass | fail | deferred",
+              "context_hint": null
+            },
+            {
+              "turn": 3,
+              "tool_use_id": "toolu_019wBuNVKgS2AGsY3ZyZ3uez",
+              "gate_result": null,
+              "context_hint": null
+            }
+          ],
+          "last_gate_result": {
+            "turn": 3,
+            "tool_use_id": "toolu_019wBuNVKgS2AGsY3ZyZ3uez",
+            "gate_result": null,
+            "context_hint": null
+          },
+          "final_turn_text_preview": "The test gate is decided: **PASS**. Run halted there by your directive, recorded as `canceled` / `OPERATOR_CANCEL` with a resumable carry-over. Full report follows.\n\n## Verdict and dispatches\n\n**Test gate: PASS** — 4/4 acceptance criteria `verified`, each with a genuine RED pre-change baseline (`assertion-failed-runtime-present`, materialized via `git archive main` into scratch, worktree never tou"
+        },
+        "S15_report_segment": {
+          "turns": 1,
+          "out": 5482,
+          "think": 2495,
+          "pct_of_run_output": 15.92
+        },
+        "S16_excluded_segments": {
+          "S1_excluded": [
+            {
+              "name": "setup",
+              "lo": 0,
+              "hi": 9,
+              "turns": 10,
+              "round_trips": 10,
+              "round_trips_incl_notif": 10,
+              "notif_turns": [],
+              "growth": 63504,
+              "out": 10440,
+              "think": 6416,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Read": 6,
+                "Skill": 1,
+                "Bash": 7,
+                "Write": 1,
+                "Edit": 1
+              },
+              "non_agent_tool_count": 16,
+              "agents": [],
+              "max_prefix": 93125,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  9
+                ]
+              ]
+            },
+            {
+              "name": "consensus",
+              "lo": 19,
+              "hi": 20,
+              "turns": 2,
+              "round_trips": 2,
+              "round_trips_incl_notif": 2,
+              "notif_turns": [],
+              "growth": 9884,
+              "out": 7172,
+              "think": 2418,
+              "disp_chars": 6045,
+              "non_agent_tools": {
+                "Bash": 1
+              },
+              "non_agent_tool_count": 1,
+              "agents": [
+                "adws-critic",
+                "adws-advocate"
+              ],
+              "max_prefix": 121549,
+              "attempts": 1,
+              "parts": [
+                [
+                  19,
+                  20
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 21,
+              "hi": 21,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 5482,
+              "think": 2495,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 125139,
+              "attempts": 1,
+              "parts": [
+                [
+                  21,
+                  21
+                ]
+              ]
+            }
+          ],
+          "S2_excluded": [
+            {
+              "name": "intake+plan",
+              "lo": 0,
+              "hi": 10,
+              "turns": 11,
+              "round_trips": 11,
+              "round_trips_incl_notif": 11,
+              "notif_turns": [],
+              "growth": 66109,
+              "out": 11497,
+              "think": 6416,
+              "disp_chars": 2328,
+              "non_agent_tools": {
+                "Read": 6,
+                "Skill": 1,
+                "Bash": 7,
+                "Write": 1,
+                "Edit": 1
+              },
+              "non_agent_tool_count": 16,
+              "agents": [
+                "adws-planner"
+              ],
+              "max_prefix": 95501,
+              "attempts": 1,
+              "parts": [
+                [
+                  0,
+                  10
+                ]
+              ]
+            },
+            {
+              "name": "tail",
+              "lo": 20,
+              "hi": 20,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": 3590,
+              "out": 3432,
+              "think": 1506,
+              "disp_chars": 0,
+              "non_agent_tools": {
+                "Bash": 1
+              },
+              "non_agent_tool_count": 1,
+              "agents": [],
+              "max_prefix": 121549,
+              "attempts": 1,
+              "parts": [
+                [
+                  20,
+                  20
+                ]
+              ]
+            },
+            {
+              "name": "report",
+              "lo": 21,
+              "hi": 21,
+              "turns": 1,
+              "round_trips": 1,
+              "round_trips_incl_notif": 1,
+              "notif_turns": [],
+              "growth": null,
+              "out": 5482,
+              "think": 2495,
+              "disp_chars": 0,
+              "non_agent_tools": {},
+              "non_agent_tool_count": 0,
+              "agents": [],
+              "max_prefix": 125139,
+              "attempts": 1,
+              "parts": [
+                [
+                  21,
+                  21
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "contamination": {
+        "strings_checked": [
+          "thin-skill-sketch",
+          "FINDINGS",
+          "SPIKE_CONTROLLER_PLAN",
+          "job_20260811_0001"
+        ],
+        "hits": [],
+        "any": false,
+        "own_job_ids": [
+          "job_20260812_0001"
+        ],
+        "foreign_job_ids_checked": [
+          "job_20260811_0001"
+        ]
+      },
+      "run_totals": {
+        "WARNING": "§10.1 — reporting any of these as a headline, a comparison, or \"for context\" is FORBIDDEN by the protocol",
+        "turns": 22,
+        "output_tokens": 34425,
+        "thinking_tokens": 12841,
+        "final_prefix": 125139,
+        "cache_read_total": 1887931,
+        "cache_creation_total": 103140
+      },
+      "void": [],
+      "discrepancies": []
+    }
+  },
+  "comparison": {
+    "note": "Δ = arm A minus arm B; positive Δ_P / Δ_I means the CONTROLLER (arm B) is cheaper",
+    "delta_I": 43125,
+    "I_net": {
+      "A": 63504,
+      "B": 20379
+    },
+    "instrument_1": {
+      "S1": {
+        "P_A": 6584.67,
+        "P_B": 5588.67,
+        "delta_P": 996,
+        "band": "CONFIRM-AT-FLOOR",
+        "n_star": null,
+        "reason": "|Δ_P| < 1000 and Δ_I ≥ 14000",
+        "per_phase_A": {
+          "plan": 7238,
+          "build": 8730,
+          "test": 3786
+        },
+        "per_phase_B": {
+          "plan": 5605,
+          "build": 5485,
+          "test": 5676
+        }
+      },
+      "S2": {
+        "P_A": 7814.33,
+        "P_B": 6111.67,
+        "delta_P": 1702.66,
+        "band": "CONFIRM",
+        "n_star": null,
+        "reason": "Δ_P ≥ 0 and Δ_I > 0: cheaper at intake and per phase; no crossover exists",
+        "per_phase_A": {
+          "to-build": 7876,
+          "to-test": 9273,
+          "to-consensus": 6294
+        },
+        "per_phase_B": {
+          "to-build": 5453,
+          "to-test": 5360,
+          "to-consensus": 7522
+        }
+      }
+    },
+    "instrument_2": {
+      "RT_A": 3,
+      "RT_B": 3,
+      "delta": 0,
+      "kills": false,
+      "confirms": true,
+      "verdict": "CONFIRM",
+      "per_call_context_note": "§5 instrument 2 limb 2 (per-call context) is reported, not banded — see max_prefix_per_phase. §10.2: this re-measures step 4 axis at runtime and is NOT condition 4 answer.",
+      "max_prefix_per_phase": {
+        "A": {
+          "plan": 100550,
+          "build": 109111,
+          "test": 111469
+        },
+        "B": {
+          "plan": 56613,
+          "build": 61796,
+          "test": 67082
+        }
+      }
+    },
+    "vetoes": [
+      {
+        "id": 1,
+        "name": "sign disagreement with output tokens",
+        "fired": false,
+        "detail": {
+          "delta_output_per_phase": 554.67,
+          "delta_P": 996
+        }
+      },
+      {
+        "id": 2,
+        "name": "thinking veto (may veto, may never confirm)",
+        "fired": false,
+        "detail": {
+          "delta_thinking_per_phase": -120,
+          "threshold": 1000
+        }
+      },
+      {
+        "id": 3,
+        "name": "displacement",
+        "fired": null,
+        "status": "UNEVALUATED — DEGENERATE AS WRITTEN",
+        "detail": {
+          "delta_setup_growth": 43125,
+          "delta_I": 43125,
+          "setup_growth_equals_I_net": {
+            "A": true,
+            "B": true
+          },
+          "protocol_defect": "§4.4 setup growth == §3 S6 I_net by construction, so |Δ(setup growth)| ≥ |Δ_I| is |x| ≥ |x| and always true. §5 veto 3 needs an amendment before it can decide anything.",
+          "nondegenerate_reading_for_information_only": {
+            "question": "did the common-scope phases absorb the intake difference?",
+            "delta_common_scope_total": 2988,
+            "would_fire": false,
+            "caveat": "NOT the protocol rule; reported so the amendment can be made with a number in hand, never used in the verdict"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "name": "segmentation disagreement (§4.11 binding rule)",
+        "fired": true,
+        "detail": {
+          "S1": "CONFIRM-AT-FLOOR",
+          "S2": "CONFIRM"
+        }
+      },
+      {
+        "id": 5,
+        "name": "under-briefing (finding 38)",
+        "fired": false,
+        "detail": {
+          "status": "UNDETERMINED",
+          "reason": "subagent totals incomplete (async dispatches are UNRECOVERABLE); this veto cannot be evaluated and must be disclosed as such",
+          "A_unrecoverable": 0,
+          "B_unrecoverable": 2
+        }
+      },
+      {
+        "id": 6,
+        "name": "HUMAN_TURNS(A) > 1 — the run was steered",
+        "fired": true,
+        "detail": {
+          "human_turns_A": 3,
+          "human_turns_B": 1
+        }
+      },
+      {
+        "id": 7,
+        "name": "a VOID assertion fired (§7)",
+        "fired": false,
+        "detail": {
+          "A": [],
+          "B": []
+        }
+      },
+      {
+        "id": 8,
+        "name": "S12 FORBIDDEN_READS > 0 in either arm",
+        "fired": false,
+        "detail": {
+          "A": 0,
+          "B": 0
+        }
+      }
+    ],
+    "unevaluated_vetoes": [
+      {
+        "id": 3,
+        "name": "displacement",
+        "status": "UNEVALUATED — DEGENERATE AS WRITTEN",
+        "why": "§4.4 setup growth == §3 S6 I_net by construction, so |Δ(setup growth)| ≥ |Δ_I| is |x| ≥ |x| and always true. §5 veto 3 needs an amendment before it can decide anything."
+      }
+    ],
+    "any_veto_fired": true,
+    "leave_one_out": {
+      "rows": [
+        {
+          "segmentation": "S1",
+          "dropped": "plan",
+          "P_A": 6258,
+          "P_B": 5580.5,
+          "delta_P": 677.5,
+          "n_star": null,
+          "band": "CONFIRM-AT-FLOOR"
+        },
+        {
+          "segmentation": "S1",
+          "dropped": "build",
+          "P_A": 5512,
+          "P_B": 5640.5,
+          "delta_P": -128.5,
+          "n_star": null,
+          "band": "CONFIRM-AT-FLOOR"
+        },
+        {
+          "segmentation": "S1",
+          "dropped": "test",
+          "P_A": 7984,
+          "P_B": 5545,
+          "delta_P": 2439,
+          "n_star": null,
+          "band": "CONFIRM"
+        },
+        {
+          "segmentation": "S2",
+          "dropped": "to-build",
+          "P_A": 7783.5,
+          "P_B": 6441,
+          "delta_P": 1342.5,
+          "n_star": null,
+          "band": "CONFIRM"
+        },
+        {
+          "segmentation": "S2",
+          "dropped": "to-test",
+          "P_A": 7085,
+          "P_B": 6487.5,
+          "delta_P": 597.5,
+          "n_star": null,
+          "band": "CONFIRM-AT-FLOOR"
+        },
+        {
+          "segmentation": "S2",
+          "dropped": "to-consensus",
+          "P_A": 8574.5,
+          "P_B": 5406.5,
+          "delta_P": 3168,
+          "n_star": null,
+          "band": "CONFIRM"
+        }
+      ],
+      "sign_stable": false,
+      "band_stable": false
+    },
+    "baseline_drift": {
+      "A": 31997,
+      "B": 31320,
+      "delta": 677,
+      "tolerance": 2000,
+      "fired": false
+    },
+    "covariate_bands": {
+      "change_set_files": {
+        "A": 4,
+        "B": 4,
+        "ratio": 1,
+        "band": 2,
+        "fired": false
+      },
+      "subagent_totals": {
+        "status": "UNDETERMINED — subagent totals incomplete"
+      }
+    },
+    "replication": {
+      "n1_sufficient": false,
+      "conditions": {
+        "1_verdict_is_confirm_or_kill": false,
+        "2_abs_delta_P_at_or_above_floor": false,
+        "3_leave_one_out_stable": false,
+        "4_instruments_and_segmentations_agree_no_veto": false,
+        "5_three_matched_phases_equal_attempts": true
+      },
+      "attempts_per_phase": {
+        "A": {
+          "plan": 1,
+          "build": 1,
+          "test": 1
+        },
+        "B": {
+          "plan": 1,
+          "build": 1,
+          "test": 1
+        }
+      },
+      "replicate_forced": true,
+      "which_arm_to_replicate": "A (§6 — the unmeasured arm, and the only one that can produce a run-to-run variance estimate)"
+    },
+    "verdict": "INDETERMINATE (§4.11 binding rule: S1 and S2 returned different bands)",
+    "limits_that_travel_with_any_verdict": [
+      "§8 #7 consensus work-shifting is undetectable here unless the archived subagent JSONLs are recovered",
+      "§8 #8 the two arms reach different terminal states; run totals are forbidden (§10.1)",
+      "§8 #9 advocate tier divergence would make the pair path-divergent",
+      "§8 #10 n=1 with uncontrolled subagent output size",
+      "§9 this experiment sees only the orchestrator, a few percent of the bill"
+    ]
+  },
+  "expectations": null
+}

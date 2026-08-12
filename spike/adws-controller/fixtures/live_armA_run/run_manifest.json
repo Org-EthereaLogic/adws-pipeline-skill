@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "job_id": "job_20260812_0001",
+  "task_id": "tsk_20260811_0002",
+  "started_at": "2026-08-12T03:34:16Z",
+  "completed_at": "2026-08-12T04:07:03Z",
+  "final_status": "canceled",
+  "failure_reason": "OPERATOR_CANCEL",
+  "current_phase": "test",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "worktree_path": "/home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001",
+  "branch_name": "adws/job_20260812_0001/separate-the-non-retriable-termi",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet"
+  },
+  "cross_phase_rewinds": {
+    "test": 0,
+    "verify": 0,
+    "review": 0
+  },
+  "check_defect_repairs": 0,
+  "operator_directed_rewinds": {
+    "test": 0,
+    "review": 0
+  },
+  "carry_over": {
+    "retained": true,
+    "resumable": true,
+    "resumable_reason": null,
+    "worktree_path": "/home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001",
+    "branch_name": "adws/job_20260812_0001/separate-the-non-retriable-termi",
+    "gated_through": "test",
+    "files": [
+      {
+        "path": "adws-pipeline/scripts/execution-report.js",
+        "sha256": "3041c74d8d904005e3b669bdb1b9aa43dbb7d08a6be9d256e0f8b1cc5792b3df"
+      },
+      {
+        "path": "adws-pipeline/references/phase-gates.md",
+        "sha256": "a90dfe3bb89f4125da82f38e80a62cab32c1eafadbbb34872d803bd9bbee2ef4"
+      },
+      {
+        "path": "adws-pipeline/references/artifact-layout.md",
+        "sha256": "b641dba8e2109ccc99ef71a4edb9d1fc39fbdf9153bbe17b7846ceaec70c37f8"
+      },
+      {
+        "path": "adws-pipeline/references/troubleshooting.md",
+        "sha256": "cedf48a785e3308ebe3b0ea9e4dc088ba0d3dec5579168577fdc7dcdde77d78b"
+      }
+    ]
+  },
+  "resumed_from": null,
+  "skill_version": "549226ba94f0",
+  "target_branch": "main",
+  "repo_root": "/home/etherealogic_2/adws-pipeline-skill",
+  "risk_level": "medium",
+  "consensus_tiers": {
+    "critic": "sonnet",
+    "advocate_test": "haiku",
+    "advocate_review": "sonnet",
+    "grader": "opus"
+  },
+  "operator_notes": "Operator-directed partial run: plan -> build -> test only; stop when the test gate is decided. Review/document/ship/verify intentionally not started; execution-report.js intentionally not run. This is an operator decision recorded at intake, not a waived gate. OUTCOME: plan, build, and test gates all PASSED (test gate decided pass at 2026-08-12T04:07:03Z — 4/4 criteria verified with red baselines, criteria-to-checks pass, Critic pass, no Advocate dissent; one gate_weak supplementary parity-corpus check surfaced as a warn: the corpus pins schema_version 1.4.0 and the change bumps it to 1.5.0, decisions/exit codes unchanged). Run then canceled by operator directive before the review phase, per the launch instruction. execution-report.js NOT run and evidence NOT archived, both by explicit operator instruction; worktree retained and resumable."
+}

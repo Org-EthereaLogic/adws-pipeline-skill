@@ -1,0 +1,75 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK001",
+      "check": "Direct verification (node script, run_checks.js) parses adws-pipeline/references/phase-gates.md, locates the '## Failure-reason classes' section, confirms it now contains a markdown table (not the old two-bullet list) whose header carries a retriable/non-retriable-style severity column, and confirms every known reason in the closed vocabulary (CREDENTIAL_FAILURE, OPERATOR_CANCEL, MISSING_UPSTREAM_ARTIFACT, PLAN_COHERENCE_BELOW_THRESHOLD, ADVOCATE_DISSENT, EVIDENCE_INTEGRITY_BREACH, PROTECTED_BRANCH_BLOCKED, PR_DRIFT_SENTINEL_BLOCK, STABILITY_BUDGET_EXCEEDED, and the {PHASE}_GATE_FAILURE family) appears as a row in that same table carrying a retriable/non-retriable value. The reason vocabulary was independently derived by grepping execution-report.js and the other reference docs (SKILL.md, task-contract.md) for every literal reason string, not invented.",
+      "criterion": "The terminal failure reason vocabulary documents, for every reason, whether that reason is retriable or non-retriable, and the severity is stated in the same table the reason is defined in.",
+      "pass": true,
+      "output": "table found under \"## Failure-reason classes\" with 12 row-lines; all 9 known reasons + {PHASE}_GATE_FAILURE family carry a retriable/non-retriable value in the same table",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK002",
+      "check": "Direct verification (node script, run_checks.js), three-part: (1) code-level, severityForReason('ADVOCATE_DISSENT') === 'non-retriable' while severityForReason('TEST_GATE_FAILURE') === severityForReason('REVIEW_GATE_FAILURE') === 'retriable', so the two classes are code-distinguishable; (2) report-level, buildReport() run against a synthetic run_manifest.json with final_status:'failed', failure_reason:'ADVOCATE_DISSENT' yields report.failure_reason === 'ADVOCATE_DISSENT' and report.failure_reason_severity === 'non-retriable', distinct from the same run against failure_reason:'TEST_GATE_FAILURE' (severity 'retriable'); (3) doc-level, phase-gates.md's Consensus rules 2 and 5 and the Failure-reason classes table explicitly state ADVOCATE_DISSENT is non-retriable and 'MUST NOT be recorded as REVIEW_GATE_FAILURE or TEST_GATE_FAILURE'.",
+      "criterion": "An upheld advocate dissent terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "severityForReason('ADVOCATE_DISSENT')='non-retriable' distinct from {PHASE}_GATE_FAILURE family='retriable'; buildReport() report.failure_reason_severity confirms the distinction; phase-gates.md explicitly forbids recording ADVOCATE_DISSENT as REVIEW_GATE_FAILURE/TEST_GATE_FAILURE",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK003",
+      "check": "Direct verification (node script, run_checks.js), same three-part structure as CHK002 but for EVIDENCE_INTEGRITY_BREACH: (1) NO_RETRY_REASONS.has('EVIDENCE_INTEGRITY_BREACH') and QUARANTINE_REASONS.has('EVIDENCE_INTEGRITY_BREACH') are both true, and severityForReason('EVIDENCE_INTEGRITY_BREACH') === 'non-retriable' distinct from severityForReason('BUILD_GATE_FAILURE') === 'retriable'; (2) buildReport() against a synthetic run_manifest.json with failure_reason:'EVIDENCE_INTEGRITY_BREACH' yields report.failure_reason_severity === 'non-retriable'; (3) both phase-gates.md (table row + rule (iii)) and artifact-layout.md's skill_trace transcription-mismatch note state EVIDENCE_INTEGRITY_BREACH is the terminal reason for that breach and MUST NOT / is never recorded as {PHASE}_GATE_FAILURE.",
+      "criterion": "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "EVIDENCE_INTEGRITY_BREACH is a member of NO_RETRY_REASONS and QUARANTINE_REASONS, severityForReason classifies it non-retriable distinctly from BUILD_GATE_FAILURE (retriable), buildReport() confirms it in the report, and both reference docs explicitly forbid recording it as {PHASE}_GATE_FAILURE",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "Direct verification (node script, run_checks.js): severityForReason(r) is confirmed to equal 'non-retriable' for every r in NO_RETRY_REASONS ∪ QUARANTINE_REASONS and 'retriable' for a sample of reasons outside that union (BUILD_GATE_FAILURE, TEST_GATE_FAILURE, PROTECTED_BRANCH_BLOCKED, PR_DRIFT_SENTINEL_BLOCK, STABILITY_BUDGET_EXCEEDED, an unknown string), and null for null/undefined/''. buildReport().report.failure_reason_severity is confirmed to equal severityForReason(failure_reason) exactly (not an independently computed value) across four synthetic run_manifest.json fixtures (ADVOCATE_DISSENT, EVIDENCE_INTEGRITY_BREACH, BUILD_GATE_FAILURE, no failure_reason), and the rendered Markdown carries a matching '- **Failure reason severity:**' line in every case. phase-gates.md's new Sourcing rule (i) and artifact-layout.md are confirmed to state the value is sourced from severityForReason() and 'never re-derives severity by parsing a gate's detail string or a decision_reason sentence.'",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "severityForReason() is a pure function of NO_RETRY_REASONS/QUARANTINE_REASONS membership; buildReport().report.failure_reason_severity equals severityForReason(failure_reason) exactly for every sampled reason (including null); markdown carries the severity line; both reference docs state severity is sourced from severityForReason(), never re-derived from gate detail prose",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "Constraint check (parity fixture corpus, run unmodified): executed `node parity/execution-report-fixtures/run-tests.js` -- the repo's own dedicated execution-report parity harness (25 fixture jobs + 1 CLI-error case), unmodified, against the changed execution-report.js -- and confirmed the constraint 'the parity fixture corpus must keep scoring the same decision and exit code' holds: every decision/warn_flag/exit_code/gate/warning/determinism assertion in the corpus still passes post-change (0 failures of that kind). The corpus's own hardcoded schema_version literal ('1.4.0') is a separate, out-of-scope assertion that now fails on all 25 fixtures because SCHEMA_VERSION was additively bumped to 1.5.0 by this change (documented in the script's own version-history comment and file_change_proposal); that literal lives under parity/, a blocked_path for writes, so it was left unmodified and unread beyond running it, per the operator's constraint. This is a corpus-owned staleness, not a decision/exit-code regression -- the stated constraint is about decision and exit code only. Cross-checked against parity/run-parity.js (the unrelated validator-port parity harness, also run unmodified): 109/109 fixtures identical, 0 failures -- confirms no incidental regression outside execution-report.js.",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "worktree run: exit=1, 25/25 top-level FAIL lines, but every one of those 25 failures is the schema_version literal only (grep for FAIL lines not containing 'schema_version' returns 0 matches) -- decision, warn_flag, exit_code, every expectGate/expectWarning assertion, and both determinism re-runs all pass unchanged. Baseline (main) run: exit=0, 25/25 PASS (schema_version literal matched '1.4.0' pre-change, trivially, since no version bump existed yet). parity/run-parity.js (unrelated validator-port harness): Summary: 109/109 fixtures identical, 0 failures.",
+      "baseline_pass": true,
+      "baseline_reason": null,
+      "falsifiable": false,
+      "verdict": "gate_weak",
+      "classification": null
+    }
+  ],
+  "command_log": [
+    { "command": "node --check <baseline>/adws-pipeline/scripts/execution-report.js", "exit_code": 0 },
+    { "command": "node --check adws-pipeline/scripts/execution-report.js", "exit_code": 0 },
+    { "command": "git archive main | tar -x -C <scratch>/baseline", "exit_code": 0 },
+    { "command": "node <scratch>/run_checks.js <scratch>/baseline", "exit_code": 0 },
+    { "command": "node <scratch>/run_checks.js /home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001", "exit_code": 0 },
+    { "command": "cd <scratch>/baseline && node parity/execution-report-fixtures/run-tests.js", "exit_code": 0 },
+    { "command": "node parity/execution-report-fixtures/run-tests.js", "exit_code": 1 },
+    { "command": "grep '^  FAIL' worktree_parity.txt | grep -v schema_version", "exit_code": 1 },
+    { "command": "node parity/run-parity.js", "exit_code": 0 }
+  ]
+}

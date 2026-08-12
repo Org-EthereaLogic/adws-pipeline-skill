@@ -1,0 +1,40 @@
+{
+  "skill_id": "criteria-to-checks",
+  "version": "installed-549226ba94f0",
+  "started_at": "2026-08-12T03:52:28Z",
+  "completed_at": "2026-08-12T03:52:28Z",
+  "rubric_result": "pass",
+  "latency_ms": 0,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "criteria_count": 4,
+    "verifiable_count": 2,
+    "vague_count": 2,
+    "check_specs": [
+      {
+        "check_id": "CHK001",
+        "criterion": "The terminal failure reason vocabulary documents, for every reason, whether that reason is retriable or non-retriable, and the severity is stated in the same table the reason is defined in.",
+        "check_type": "behavioral"
+      },
+      {
+        "check_id": "CHK002",
+        "criterion": "An upheld advocate dissent terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK003",
+        "criterion": "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+        "check_type": "unclassified"
+      },
+      {
+        "check_id": "CHK004",
+        "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+        "check_type": "behavioral"
+      }
+    ],
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

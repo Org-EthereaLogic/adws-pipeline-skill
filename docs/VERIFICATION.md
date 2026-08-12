@@ -2912,3 +2912,68 @@ says so.
 | `run-ab.sh` | **43 assertions**, 0 failed |
 | `run-step5.sh` | 135 assertions, 0 failed |
 | `make ci` gate / orb | PASS — run_ids `20260811T234939Z` / `20260811T234949Z` |
+
+---
+
+## Arm A ran, and the pre-registration voided the pair (PR #79)
+
+Arm A completed the slice on 2026-08-12: **test gate PASS**, 4/4 acceptance criteria with genuine
+RED pre-change baselines, five dispatches of the ten-cap, Critic pass, Advocate pass with no
+dissent. Zero forbidden reads, zero contamination hits, and the installed skill byte-identical
+before and after — verified by digest, because arm A's own contract edits the files the installed
+skill is made of.
+
+**Then the frozen list fired, and condition 4 stays open.**
+
+| Rule, pre-registered | What it caught |
+|---|---|
+| **§7.4 — VOID** | Arm B ran `claude-opus-5`; arm A ran **`claude-fable-5`**. A `/model` command in an earlier session in that VM had saved Fable 5 as the default *for new sessions*. Effort (`high`) and version (`2.1.228`) matched. Declared from the config check alone, **before** the comparison was computed |
+| §4.11 — binding | S1 → CONFIRM-AT-FLOOR, S2 → CONFIRM. Different bands → INDETERMINATE |
+| §6.3 — leave-one-out | Dropping the build phase flips `Δ_P` to **−128.5** |
+| §5 — resolution floor | `Δ_P` = 996 — **four tokens** under the pre-registered 1,000 floor |
+| §10.7 | Instrument 2 is a **3.00–3.00 tie**; a tie does not discriminate |
+
+Four independent reasons, every one written down before the data existed. That is the whole value:
+each would have been available afterwards as a rationalization, and none of them is now.
+
+### Two results survive the void
+
+**Finding 47 — the prose orchestrator opened every reference.** Given a free choice (the prompt
+deliberately did not steer it) arm A read `SKILL.md` via the Skill tool plus **all four**
+references it names — **124,008 B**, exactly the full-document reading §11 carries as the
+optimistic end of its bracket. It declined the other three references, each for a stated reason.
+Against arm B's 17,544 B that is **7.07×**, and bytes-read is the cross-arm quantity least
+disturbed by the model mismatch. **§12.2's open question is answered**: the pessimistic before —
+30,012 B, a model that opens no reference — is counterfactual for a real prose run.
+
+**Six gaps in the shipped skill**, the mirror of step 5's ten residue events against the sketch:
+the pre-git `ship-mode-select` trace has nowhere defined to live; the jobId date is unspecified
+between local and UTC; the worktree-mechanism preference contradicts the single persistent tree
+that build, test and both assessors must share; there is **no vocabulary for an operator-directed
+partial run**; `skill_trace.version` has no documented content; and the Advocate omitted a key its
+own definition requires. Plus the parity corpus going red on a stale `schema_version` literal
+(correctly recorded `gate_weak`, not laundered into a pass), and **F-17's "structurally unavailable
+telemetry" claim being outdated for this runtime** — the same fact that made arm B's subagent
+accounting possible.
+
+### One defect found after the data, and deliberately not folded in
+
+§5's veto 6 trips on `HUMAN_TURNS > 1`; the metric counts plain-string user rows, and two of arm
+A's three are local-command wrappers for `/clear`. The run was not steered. Amendments A1–A8 were
+made while arm A did not exist; this one was found afterwards, so it is **recorded and labelled
+post-data** rather than amended silently. `PROTOCOL.md` §10.4 is about precisely that difference.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `run-ab.sh` | **57 assertions**, 0 failed — the void and the indeterminate verdict are asserted, not stated |
+| `run-step5.sh` | 135 assertions, 0 failed |
+| all eight drivers | exit 0 |
+| `run-ingest-matrix.js` | exit 0 — 25 ingested, MISMATCH 0 |
+| `make ci` gate / orb | PASS |
+| CodeQL | fail in 1–3s, zero steps executed — [[codeql-billing-lock]] |
+
+**To close condition 4:** one more arm A run on `claude-opus-5`, with the model asserted before the
+first message rather than after the last. `run-ab.sh` now asserts cross-arm model equality, so the
+same drift cannot pass silently twice.

@@ -127,8 +127,37 @@ echo
 echo "### A6 — arm A"
 ARMA="$AB/evidence/armA-orchestrator.jsonl"
 if [ -f "$ARMA" ]; then
-  echo "  arm A transcript present — running the comparison"
-  node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA" || FAILS=$((FAILS+1))
+  assert "arm A has run, and the pre-registration says so" "$(pget arm_a_status)" "RUN 2026-08-12 — VOID on §7.4 (model mismatch); see arm_a"
+  assert "arm A transcript digest" "$(sha "$ARMA")" "$(pget digests.armA_orchestrator_jsonl)"
+  CMP="$(mktemp)"; node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA" --json > "$CMP" 2>/dev/null
+  cget() { jget "$CMP" "$1"; }
+  # §7.4 froze the harness config as EQUAL ACROSS ARMS. The analyzer checks single-valuedness
+  # WITHIN an arm; the cross-arm comparison is asserted here, and it is the assertion that
+  # decides this pair. Arm A ran on claude-fable-5 because a /model command in an earlier VM
+  # session had made Fable 5 the default for new sessions — a setting, not a choice made for
+  # this run, and exactly the class of drift §7.4 exists to catch.
+  MA="$(cget arms.A.integrity.harness.models.0)"; MB="$(cget arms.B.integrity.harness.models.0)"
+  assert "arm A model"  "$MA" "$(pget arm_a.harness.model)"
+  assert "arm B model"  "$MB" "$(pget arm_b.harness.model)"
+  assert "§7.4: the models are EQUAL across arms — this is the VOID" \
+    "$(node -e 'process.stdout.write(String(process.argv[1]===process.argv[2]))' "$MA" "$MB")" \
+    "$(pget arm_a.models_equal_across_arms)"
+  assert "effort matches across arms"  "$(cget arms.A.integrity.harness.efforts.0)"  "$(cget arms.B.integrity.harness.efforts.0)"
+  assert "version matches across arms" "$(cget arms.A.integrity.harness.versions.0)" "$(cget arms.B.integrity.harness.versions.0)"
+  # The pair fails independently of the model, on the rule §4.11 pre-registered as binding.
+  assert "the analyzer's own verdict"   "$(cget comparison.verdict)" "$(pget arm_a.verdict)"
+  assert "S1 band"                      "$(cget comparison.instrument_1.S1.band)" "$(pget arm_a.instrument_1.S1_band)"
+  assert "S2 band"                      "$(cget comparison.instrument_1.S2.band)" "$(pget arm_a.instrument_1.S2_band)"
+  assert "  and they disagree, which §4.11 makes binding" \
+    "$(node -e 'process.stdout.write(String(process.argv[1]!==process.argv[2]))' "$(cget comparison.instrument_1.S1.band)" "$(cget comparison.instrument_1.S2.band)")" "true"
+  # Leave-one-out was pre-registered as "not a formality" (§6.3). Dropping the build phase flips
+  # the sign of Δ_P. One of three phases decides the direction, at n=1.
+  assert "leave-one-out sign stability" "$(cget comparison.leave_one_out.sign_stable)" "false"
+  assert "a replicate is forced"        "$(cget comparison.replication.replicate_forced)" "true"
+  # Clean on everything the run itself controlled.
+  assert "arm A forbidden reads"        "$(cget arms.A.secondary.S12_forbidden_reads.strict_count)" "0"
+  assert "arm A contamination hits"     "$(cget arms.A.contamination.any)" "false"
+  rm -f "$CMP"
 else
   # An absent arm is stated, never assumed away. Condition 4 stays open until this file exists.
   assert "arm A has not run, and the pre-registration says so" "$(pget arm_a_status)" "NOT RUN — the VM is prepared and the prompt is frozen"
@@ -139,13 +168,19 @@ echo
 echo "### $((PASSES+FAILS)) assertions run, $FAILS failed."
 if [ "$FAILS" -eq 0 ]; then
   cat <<'EOF'
-### A/B PASS — arm B's frozen numbers reproduce from the committed transcript under the committed
-###   script: 26 turns (not 61 rows), P_B = 5,589 tokens/phase under S1 and 6,112 under S2,
+### A/B PASS — every frozen number reproduces from the committed transcripts under the committed
+###   script. Arm B: 26 turns (not 61 rows), P_B = 5,589 tokens/phase under S1 and 6,112 under S2,
 ###   3.00 round trips per phase, I_net 20,379, instruction mass 7,294 tok / 17,544 B.
 ###
-### NOT established here: anything about arm A, which has not run; and nothing about which arm is
-###   cheaper overall — subagents are 85% of the run's output tokens and are outside this
-###   instrument entirely.
+### THE PAIR IS NOT A VERDICT, and these assertions are what say so. Arm A ran on
+###   claude-fable-5 against arm B's claude-opus-5 — §7.4 VOID. Independently: the two
+###   segmentations return different bands (§4.11 binding), leave-one-out flips the sign of
+###   delta_P when the build phase is dropped, |delta_P| sits 4 tokens under the pre-registered
+###   resolution floor, and the round-trip instrument is a 3.00-3.00 tie that cannot
+###   discriminate. Condition 4 stays OPEN.
+###
+### NOT established here: which arm is cheaper overall — subagents are ~85% of the run's output
+###   tokens and are outside this instrument entirely.
 EOF
   exit 0
 fi
