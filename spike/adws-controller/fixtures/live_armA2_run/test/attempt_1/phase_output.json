@@ -1,0 +1,112 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK001",
+      "check": "Structural check (scratch script check_reason_table.js) parses adws-pipeline/references/phase-gates.md for a '## Terminal failure-reason table' section and asserts every reason row in it carries a non-empty 'retriable'/'non-retriable' Severity cell in the SAME table the reason is defined in.",
+      "criterion": "The terminal failure reason vocabulary documents, for every reason, whether that reason is retriable or non-retriable, and the severity is stated in the same table the reason is defined in.",
+      "pass": true,
+      "output": "POST-CHANGE (worktree adws-pipeline/references/phase-gates.md): section_found=true, 10 reason rows parsed (CREDENTIAL_FAILURE=non-retriable, OPERATOR_CANCEL=non-retriable, MISSING_UPSTREAM_ARTIFACT=non-retriable, PLAN_COHERENCE_BELOW_THRESHOLD=non-retriable, ADVOCATE_DISSENT=non-retriable, EVIDENCE_INTEGRITY_BREACH=non-retriable, PROTECTED_BRANCH_BLOCKED=retriable, PR_DRIFT_SENTINEL_BLOCK=retriable, STABILITY_BUDGET_EXCEEDED=retriable, {PHASE}_GATE_FAILURE=retriable); reasons_missing_severity=[]; ok=true; exit=0.",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK002",
+      "check": "Ran adws-pipeline/scripts/execution-report.js against a scratch copy of parity fixture quarantine_upheld_dissent/artifacts/job-4e5f6a (an operator-UPHELD Advocate dissent at the review consensus gate; run_manifest.failure_reason is null, final_status=completed). Asserted the consensus gate carries failure_reason='ADVOCATE_DISSENT' as a field, and the report's top-level terminal_failure_reason='ADVOCATE_DISSENT' / failure_severity='non-retriable', distinct from the fixed blanket decision_reason string ('Job reached completed status but at least one gate evaluated to fail; quarantining to preserve evidence.') that this same fixture's pre-change report shared byte-for-byte with an unrelated Critic-fail quarantine fixture (quarantine_critic_fail) -- i.e. pre-change the two were indistinguishable by anything but detail prose.",
+      "criterion": "An upheld advocate dissent terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "POST-CHANGE: decision=QUARANTINE exit_code=2 (unchanged). gates.consensus={result:'fail', failure_reason:'ADVOCATE_DISSENT'}. report.terminal_failure_reason='ADVOCATE_DISSENT'. report.failure_severity='non-retriable'. report.failure_reason (run_manifest passthrough) stayed null, confirming the distinct reason comes from the new field, not a run_manifest change.",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK003",
+      "check": "Ran execution-report.js against a scratch copy of parity fixture quarantine_trace_mismatch/artifacts/job-9b2e14 (skill_trace.json wrapper 'warn' disagrees with its own validator stdout 'fail' -- an evidence-integrity breach via the trace/validator-mismatch branch). Asserted skills_clean gate carries failure_reason='EVIDENCE_INTEGRITY_BREACH', and terminal_failure_reason/failure_severity are populated with the same values, distinct from the blanket decision_reason string.",
+      "criterion": "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "POST-CHANGE: decision=QUARANTINE exit_code=2 (unchanged). gates.skills_clean={result:'fail', failure_reason:'EVIDENCE_INTEGRITY_BREACH'}. report.terminal_failure_reason='EVIDENCE_INTEGRITY_BREACH'. report.failure_severity='non-retriable'.",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK003",
+      "check": "Second sub-case of the same criterion, exercising the OTHER evidence-integrity branch: ran execution-report.js against a scratch copy of parity fixture quarantine_unreadable_manifest/artifacts/job-unr001 with test/attempt_1/consensus/advocate.json chmod'd 0o000 in the scratch copy only (never in the pipeline worktree or parity/), matching the fixture's own declared chmod. Asserted the same failure_reason/terminal_failure_reason/failure_severity fields as the trace-mismatch sub-case.",
+      "criterion": "An evidence integrity breach terminates on a distinct non-retriable failure reason rather than on the blanket phase gate failure reason.",
+      "pass": true,
+      "output": "POST-CHANGE: decision=QUARANTINE exit_code=2 (unchanged). gates.skills_clean={result:'fail', failure_reason:'EVIDENCE_INTEGRITY_BREACH', detail contains 'EACCES' on the chmod'd advocate.json}. report.terminal_failure_reason='EVIDENCE_INTEGRITY_BREACH'. report.failure_severity='non-retriable'.",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "require()'d adws-pipeline/scripts/execution-report.js directly (never spawned as a subprocess) and asserted: (a) failureReasonSeverity and TERMINAL_FAILURE_REASON_PRECEDENCE are exported; (b) failureReasonSeverity(reason) returns 'non-retriable' for EVERY member of the union of the exported NO_RETRY_REASONS and QUARANTINE_REASONS Sets (i.e. it is a pure projection of the same classification decideLifecycle already reads, not a second hand-maintained table); (c) it returns 'retriable' for a reason outside that union (BUILD_GATE_FAILURE); (d) it returns null for null/undefined/''.",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "POST-CHANGE: exports_present=true. union_maps_non_retriable=true (every member of NO_RETRY_REASONS union QUARANTINE_REASONS -> 'non-retriable'). retriable_example=failureReasonSeverity('BUILD_GATE_FAILURE')='retriable'. null_examples=[null,null,null]. precedence=['EVIDENCE_INTEGRITY_BREACH','ADVOCATE_DISSENT'].",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CHK004",
+      "check": "Second sub-case: took the three post-change execution_report.json outputs generated for CHK002/CHK003 (job-4e5f6a, job-9b2e14, job-unr001), parsed each, then DELETED every prose field a reader might parse instead of the typed ones (decision_reason, and every gates[].detail string), and asserted terminal_failure_reason and failure_severity remained fully populated on the stripped object -- i.e. a reader that never reads 'detail' gets the same answer, directly exercising 'not re-derived by an orchestrator parsing gate detail strings'.",
+      "criterion": "The severity of a terminal failure reason is sourced from the classification execution-report.js already computes, not re-derived by an orchestrator parsing gate detail strings.",
+      "pass": true,
+      "output": "POST-CHANGE, all 3 fixtures, after stripping decision_reason and every gates[].detail: job-4e5f6a terminal_failure_reason='ADVOCATE_DISSENT' failure_severity='non-retriable' stillDetermined=true; job-9b2e14 terminal_failure_reason='EVIDENCE_INTEGRITY_BREACH' failure_severity='non-retriable' stillDetermined=true; job-unr001 terminal_failure_reason='EVIDENCE_INTEGRITY_BREACH' failure_severity='non-retriable' stillDetermined=true.",
+      "baseline_pass": false,
+      "baseline_reason": "assertion-failed-runtime-present",
+      "falsifiable": true,
+      "verdict": "verified",
+      "classification": null
+    },
+    {
+      "check_id": "CONSTRAINT-PARITY",
+      "check": "Not a check_specs id -- carried per the task's explicit instruction to also verify contract constraint 4. Ran `node parity/execution-report-fixtures/run-tests.js` directly in the pipeline worktree (post-change), then ran the same 25-fixture + CLI-error-path corpus a second time against the PRE-change execution-report.js (materialized via `git show main:adws-pipeline/scripts/execution-report.js` into scratch) using a scratch COPY of parity/execution-report-fixtures/ + _harness.js with only its CLI constant repointed at the scratch baseline script (the original parity/ tree was never edited). Compared decision/exit_code coverage between the two runs, then checked `git status --porcelain parity/` in the worktree.",
+      "criterion": "contract constraint 4: 'The parity fixture corpus must keep scoring the same decision and exit code.' (not one of the four graded acceptance criteria; reported for completeness per dispatch instructions)",
+      "pass": true,
+      "output": "POST-CHANGE (worktree): 'All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs.' exit_code=0. PRE-CHANGE (scratch copy against baseline script): identical -- 'All fixtures passed (25/25 verdicts + CLI error path), deterministic across re-runs.' exit_code=0. Every individual fixture's decision/warn_flag/exit_code/schema_version matched between the two runs (both runs assert against the SAME pinned expectations in CASES, and both scored 25/25). `git status --porcelain parity/` in the pipeline worktree after the post-change run: empty (execution_report.json/.md are gitignored derived files per .gitignore lines 38-39; the chmod fixture reverts its mode in a `finally` block).",
+      "baseline_pass": true,
+      "baseline_reason": "not-applicable-no-regression-invariant: this is a stability/non-regression constraint (the corpus must keep scoring identically), not a new-capability acceptance criterion, so a green pre-change baseline is the CORRECT and expected result, not a sign of a weak check. See phase_log.md for why this is not scored verified/gate_weak on the AC falsifiability axis.",
+      "falsifiable": false,
+      "verdict": "verified",
+      "classification": null
+    }
+  ],
+  "command_log": [
+    { "command": "mkdir -p /tmp/adws-job_20260812_0001/test/attempt_1/adws-tester/{baseline,post,pre,work}", "exit_code": 0 },
+    { "command": "git show main:adws-pipeline/scripts/execution-report.js > .../baseline/execution-report.js", "exit_code": 0 },
+    { "command": "git show main:adws-pipeline/references/phase-gates.md > .../baseline/phase-gates.md", "exit_code": 0 },
+    { "command": "git show main:adws-pipeline/references/artifact-layout.md > .../baseline/artifact-layout.md", "exit_code": 0 },
+    { "command": "git show main:adws-pipeline/references/validator-inputs.md > .../baseline/validator-inputs.md", "exit_code": 0 },
+    { "command": "node --check .../baseline/execution-report.js", "exit_code": 0 },
+    { "command": "cp -r parity/execution-report-fixtures/{quarantine_upheld_dissent,quarantine_trace_mismatch,quarantine_unreadable_manifest,promote_clean}/artifacts .../post/<fixture>/ (and .../pre/<fixture>/)", "exit_code": 0 },
+    { "command": "node adws-pipeline/scripts/execution-report.js .../post/quarantine_upheld_dissent/artifacts/job-4e5f6a", "exit_code": 2 },
+    { "command": "node .../baseline/execution-report.js .../pre/quarantine_upheld_dissent/artifacts/job-4e5f6a", "exit_code": 2 },
+    { "command": "node adws-pipeline/scripts/execution-report.js .../post/quarantine_trace_mismatch/artifacts/job-9b2e14", "exit_code": 2 },
+    { "command": "node .../baseline/execution-report.js .../pre/quarantine_trace_mismatch/artifacts/job-9b2e14", "exit_code": 2 },
+    { "command": "chmod 000 .../post/quarantine_unreadable_manifest/artifacts/job-unr001/test/attempt_1/consensus/advocate.json && node adws-pipeline/scripts/execution-report.js .../post/quarantine_unreadable_manifest/artifacts/job-unr001 && chmod 644 <same file>", "exit_code": 2 },
+    { "command": "chmod 000 .../pre/quarantine_unreadable_manifest/artifacts/job-unr001/test/attempt_1/consensus/advocate.json && node .../baseline/execution-report.js .../pre/quarantine_unreadable_manifest/artifacts/job-unr001 && chmod 644 <same file>", "exit_code": 2 },
+    { "command": "node -e \"require('adws-pipeline/scripts/execution-report.js') ... failureReasonSeverity/TERMINAL_FAILURE_REASON_PRECEDENCE assertions\"", "exit_code": 0 },
+    { "command": "node -e \"require('.../baseline/execution-report.js') ... exported_keys assertion\"", "exit_code": 0 },
+    { "command": "node -e \"delete decision_reason / gates[].detail from post-change execution_report.json outputs; assert terminal_failure_reason/failure_severity still determined\"", "exit_code": 0 },
+    { "command": "node .../work/check_reason_table.js adws-pipeline/references/phase-gates.md", "exit_code": 0 },
+    { "command": "node .../work/check_reason_table.js .../baseline/phase-gates.md", "exit_code": 1 },
+    { "command": "cd adws-pipeline-skill-adws-job_20260812_0001 && node parity/execution-report-fixtures/run-tests.js", "exit_code": 0 },
+    { "command": "git status --porcelain parity/ (in worktree, after parity run)", "exit_code": 0 },
+    { "command": "cp -r parity/execution-report-fixtures + parity/_harness.js -> .../parity_baseline_run/ ; edit ONLY the scratch copy's CLI constant to point at .../baseline/execution-report.js", "exit_code": 0 },
+    { "command": "node .../parity_baseline_run/execution-report-fixtures/run-tests.js", "exit_code": 0 }
+  ]
+}

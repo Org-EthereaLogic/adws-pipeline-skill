@@ -1,0 +1,20 @@
+{
+  "job_id": "job-2f8c1a",
+  "task_id": "TASK-101",
+  "started_at": "2026-07-10T14:00:00Z",
+  "completed_at": "2026-07-10T15:30:00Z",
+  "final_status": "quarantined",
+  "failure_reason": "PR_DRIFT_SENTINEL_BLOCK",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet"
+  },
+  "schema_version": "1.0.0"
+}

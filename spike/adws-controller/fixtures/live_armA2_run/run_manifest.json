@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "job_id": "job_20260812_0001",
+  "task_id": "tsk_20260811_0002",
+  "started_at": "2026-08-12T04:59:18Z",
+  "completed_at": null,
+  "final_status": null,
+  "failure_reason": null,
+  "current_phase": "test",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "worktree_path": "/home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001",
+  "branch_name": "adws/job_20260812_0001/separate-the-non-retriable-termi",
+  "skill_version": "549226ba94f0",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet",
+    "critic": "sonnet",
+    "advocate_test": "haiku",
+    "advocate_review": "sonnet",
+    "grader": "opus"
+  },
+  "cross_phase_rewinds": {
+    "test": 0,
+    "verify": 0,
+    "review": 0
+  },
+  "check_defect_repairs": 0,
+  "operator_directed_rewinds": {
+    "test": 0,
+    "review": 0
+  },
+  "carry_over": null,
+  "resumed_from": null,
+  "repo_root": "/home/etherealogic_2/adws-pipeline-skill",
+  "target_branch": "main",
+  "risk_level": "medium",
+  "tier_source": "contract.risk_level",
+  "intake": {
+    "hard_failures": [],
+    "soft_warnings": [],
+    "skill_check_exit": 0,
+    "notes": "NO_DOC_PATH_IN_SCOPE not raised: allowed_paths includes adws-pipeline/references/, the repo's documentation location for the skill.",
+    "operator_scope_limit": "Operator directed plan->build->test only; review onward not run. Not a waived gate."
+  },
+  "operator_notes": "Operator scoped this run to plan -> build -> test and directed a stop the moment the test gate was decided. Test gate decided: FAIL (Critic fail, reproduced by the orchestrator). Review, document, ship and verify never started; execution-report.js not run; no evidence archive; the worktree is retained. final_status is left null because the job is halted mid-run by operator direction, not terminated by a gate — carry_over is a terminal-state record and is likewise not written. cross_phase_rewinds.test deliberately NOT incremented: the determined rewind was not run."
+}

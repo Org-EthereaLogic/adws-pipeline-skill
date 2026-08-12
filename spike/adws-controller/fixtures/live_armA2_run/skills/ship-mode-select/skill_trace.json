@@ -1,0 +1,21 @@
+{
+  "skill_id": "ship-mode-select",
+  "version": "2.0.0",
+  "started_at": "2026-08-12T04:58:33Z",
+  "completed_at": "2026-08-12T04:58:34Z",
+  "rubric_result": "pass",
+  "latency_ms": 178472420343262200,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "output_mode": "pr",
+    "mode_valid": true,
+    "policy_consistent": true,
+    "has_branch_name": true,
+    "branch_name_valid": true,
+    "branch_name_problem": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

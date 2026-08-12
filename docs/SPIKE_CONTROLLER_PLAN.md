@@ -748,3 +748,44 @@ a token comparison does:
 **What closing condition 4 now needs:** one more arm A run on `claude-opus-5`, with the model
 asserted **before** the first message. `run-ab.sh` asserts the cross-arm model equality that this
 run failed, so the same drift cannot pass silently twice.
+
+### 13.4 The second arm A run: the model was fixed, the effort drifted (2026-08-12)
+
+**Status: condition 4 is still OPEN. Two runs, two harness drifts, the same cause both times.**
+
+The model VOID was closed — `settings.json` pinned to `claude-opus-5`, the launch carried
+`--model claude-opus-5`, and the model was correct on every turn. **Effort then drifted to
+`xhigh`**, because a `/effort` command in the session saved xhigh as the new default, exactly as
+`/model` had saved Fable 5. §7.4 freezes three keys; fixing one moved the failure to the next.
+
+This is not a technicality. **Effort sets the thinking budget, and thinking is a large share of the
+primary metric** — arm A2's per-phase thinking is 2,240 / 1,380 / 1,793 against arm B's
+1,513 / 89 / 270. The uncontrolled variable inflates the arm predicted to be more expensive, so the
+confound points *at* the expected answer. That is the least defensible kind to accept, and it is
+why the pair is void rather than "close enough".
+
+**Everything else about this pair worked**, recorded as information about the instrument and not
+about the controller (`PROTOCOL.md` §10.13 forbids the other reading):
+
+| | arm A2 | arm B |
+|---|---|---|
+| `P` (S1) / (S2) | 8,656 / 9,437 | 5,589 / 6,112 |
+| Round trips per phase | 3.67 | 3.00 |
+| Terminal state | test gate FAIL | test gate FAIL |
+
+Both segmentations agreed on the band; leave-one-out was sign- **and** band-stable; both
+instruments agreed in direction; and the terminal states matched for the first time — arm A1
+passed the gate arm B failed, and this run failed it too, on a different finding.
+
+**Finding 47 reproduced on a second run and a second model**: the prose orchestrator opened six
+references plus the skill body (128,478 B), declining the same two both times for stated reasons.
+
+**To close condition 4:**
+
+```bash
+orb -m adws-arma -w /home/etherealogic_2/adws-pipeline-skill claude --model claude-opus-5 --effort high
+```
+
+and no in-session `/model` or `/effort` — both drifts came from a settings command whose effect
+outlived the session that issued it. `run-ab.sh` asserts model **and** effort equality across arms,
+so a third drift cannot pass silently either.

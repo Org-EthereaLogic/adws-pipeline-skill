@@ -2,7 +2,7 @@
   "what": "Condition 4 of the §6.2 GO — the reasoning A/B. Everything here is frozen BEFORE arm A runs. Arm B has run; its numbers are computed from the committed transcript by the committed script, and run-ab.sh re-derives every one of them.",
   "protocol": "spike/adws-controller/ab/PROTOCOL.md",
   "registered_at": "2026-08-11",
-  "arm_a_status": "RUN 2026-08-12 — VOID on §7.4 (model mismatch); see arm_a",
+  "arm_a_status": "RUN TWICE 2026-08-12 — both VOID on §7.4 (model, then effort); see arm_a and arm_a2",
   "refrozen": {
     "when": "2026-08-11, after a post-commit audit and while arm A had still not run",
     "why": "three corrections that do not move any result: a chars-vs-bytes comparison in run-ab.sh (amendment A6 — inside the driver that asserts the units rule), an overstated uniqueness claim about the max-per-message-id rule (A7), and a miscount of the rejected-metric table (A8).",
@@ -17,6 +17,7 @@
     "armA_launch_prompt_md": "8064497295f509c5a73856655ef3bd367e04dd80db9862afd283f76e70bad5c1",
     "armB_launch_prompt_md": "4ebeda4a6883acf6e76a8d776260b3b346f1597a0616ce4ac554a49a1e8d7973",
     "armA_orchestrator_jsonl": "b9ae9511747c6d4b05bfcd795e789806c43a7c84c61961eda9597b86114ae9cd",
+    "armA2_orchestrator_jsonl": "487898c3fe62879785caa7c1d02af200881111550b03cc99e36a46be8a632538",
     "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
     "live_contract_json": "999ea1fa52093281a4883c776e959263b4798b1cd733a1863f66162d262543ee",
     "shipped_tree": {
@@ -110,6 +111,37 @@
     "human_turns_measured": 3,
     "human_turns_substantive": 1,
     "human_turns_note": "S13 counts plain-string user rows; two of arm A's three are local-command wrappers for /clear, not instructions. Veto 6 fires as literally written and should not. The metric is a proxy for steering and this is the gap. NOT amended here: the defect was found AFTER the data existed, unlike amendments A1-A8, and PROTOCOL.md 10.4 is about exactly that. It is recorded for the re-run."
+  },
+
+  "arm_a2": {
+    "provenance": "live run 2026-08-12, same VM reset to the arm-B start state, model pinned via settings.json and --model",
+    "harness": { "model": "claude-opus-5", "version": "2.1.228", "effort": "xhigh" },
+    "models_equal_across_arms": "true",
+    "efforts_equal_across_arms": "false",
+    "VOID": "§7.4 froze effort at high, equal across arms. The model was fixed and matched; effort drifted to xhigh because a /effort command in the session saved xhigh as the new default. This is the SECOND harness drift in two runs, both from an in-session settings command whose effect persists. Effort sets the thinking budget, which is a large share of the measured quantity: arm A2's per-phase thinking is 2,240/1,380/1,793 against arm B's 1,513/89/270. The drift plausibly inflates the arm that was predicted to be more expensive, so it biases TOWARD the pre-registered expectation — which is the worst possible direction for a confound to point, and the reason accepting this pair would be indefensible.",
+    "verdict": "VOID on §7.4. The analyzer additionally returned INDETERMINATE because veto 6 fired on the known-defective human-turns proxy (3 of the 4 plain-string user rows are /effort local-command wrappers; see arm_a.human_turns_note).",
+    "observation_not_a_result": {
+      "why_recorded": "The design's own stability checks all passed on this pair, which is information about the INSTRUMENT and not about the controller. It is recorded so that the next run is not the first time anyone sees whether S1 and S2 can agree — and it is labelled here, under a VOID, so that no later reader can quote it as the answer. PROTOCOL.md §10.13 stands: a void pair may not re-price anything.",
+      "P_A2_S1": 8655.67, "delta_P_S1": 3067, "S1_band": "CONFIRM",
+      "P_A2_S2": 9437.33, "delta_P_S2": 3325.66, "S2_band": "CONFIRM",
+      "segmentations_agree": true,
+      "leave_one_out_sign_stable": true,
+      "leave_one_out_band_stable": true,
+      "instrument_2": { "RT_A2": 3.667, "RT_B": 3.0, "per_phase": { "plan": 4, "build": 4, "test": 3 } },
+      "delta_I": 45970
+    },
+    "intake_mass": { "I_net": 66349 },
+    "instruction_reads": {
+      "note": "arm A2 opened SIX reference documents plus the skill body — one more than arm A1, adding agent-shared-blocks.md, and it grepped four validator scripts for a version constant that no validator prints. It declined runtimes.md and troubleshooting.md, each for a stated reason. Finding 47 reproduces on a second run and a different model.",
+      "documents": ["SKILL.md (Skill result)", "references/task-contract.md", "references/phase-gates.md", "references/validator-inputs.md", "references/artifact-layout.md", "references/agent-shared-blocks.md"],
+      "bytes": 128478, "tokens": 90552
+    },
+    "subagents": { "round_trips": 261, "output_tokens": 198063, "thinking_tokens": 106119 },
+    "terminal_state": "test gate FAIL — Critic fail, reproduced by the orchestrator, route determined as rewind-to-build and deliberately NOT executed under the operator stop. Same terminal shape as arm B, which is a better-matched pair than arm A1's PASS.",
+    "forbidden_reads": 0,
+    "contamination_hits": 0,
+    "additivity_violations": 3,
+    "installed_skill_unchanged_after_run": true
   },
 
   "arm_a_setup": {

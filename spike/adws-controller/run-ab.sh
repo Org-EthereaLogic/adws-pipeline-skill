@@ -15,7 +15,8 @@
 #   A3  arm B's primary, both segmentations, re-derived and matched
 #   A4  arm B's secondaries re-derived and matched
 #   A5  the shipped tree arm A reads is unchanged since pre-registration
-#   A6  arm A: present or honestly absent
+#   A6  arm A, first run: present or honestly absent
+#   A7  arm A, second run: the model was fixed and the effort drifted
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 AB="$REPO/spike/adws-controller/ab"
@@ -127,7 +128,7 @@ echo
 echo "### A6 — arm A"
 ARMA="$AB/evidence/armA-orchestrator.jsonl"
 if [ -f "$ARMA" ]; then
-  assert "arm A has run, and the pre-registration says so" "$(pget arm_a_status)" "RUN 2026-08-12 — VOID on §7.4 (model mismatch); see arm_a"
+  assert "arm A has run, and the pre-registration says so" "$(pget arm_a_status)" "RUN TWICE 2026-08-12 — both VOID on §7.4 (model, then effort); see arm_a and arm_a2"
   assert "arm A transcript digest" "$(sha "$ARMA")" "$(pget digests.armA_orchestrator_jsonl)"
   CMP="$(mktemp)"; node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA" --json > "$CMP" 2>/dev/null
   cget() { jget "$CMP" "$1"; }
@@ -158,6 +159,38 @@ if [ -f "$ARMA" ]; then
   assert "arm A forbidden reads"        "$(cget arms.A.secondary.S12_forbidden_reads.strict_count)" "0"
   assert "arm A contamination hits"     "$(cget arms.A.contamination.any)" "false"
   rm -f "$CMP"
+fi
+
+ARMA2="$AB/evidence/armA2-orchestrator.jsonl"
+if [ -f "$ARMA2" ]; then
+  echo
+  echo "### A7 — arm A, second run: the model was fixed and the EFFORT drifted"
+  assert "arm A2 transcript digest" "$(sha "$ARMA2")" "$(pget digests.armA2_orchestrator_jsonl)"
+  CMP2="$(mktemp)"; node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA2" --json > "$CMP2" 2>/dev/null
+  c2() { jget "$CMP2" "$1"; }
+  MA2="$(c2 arms.A.integrity.harness.models.0)"; EA2="$(c2 arms.A.integrity.harness.efforts.0)"
+  EB="$(c2 arms.B.integrity.harness.efforts.0)"
+  assert "arm A2 model — fixed"                "$MA2" "$(pget arm_a2.harness.model)"
+  assert "  and now EQUAL across arms"          "$(node -e 'process.stdout.write(String(process.argv[1]===process.argv[2]))' "$MA2" "$(c2 arms.B.integrity.harness.models.0)")" "$(pget arm_a2.models_equal_across_arms)"
+  # §7.4 freezes THREE keys, not one. Fixing the model moved the drift to the next key rather
+  # than removing it: /effort saved xhigh as the new default exactly as /model had saved fable.
+  # Effort sets the thinking budget, and thinking is a large share of what P measures — arm A2's
+  # per-phase thinking is 2240/1380/1793 against arm B's 1513/89/270 — so this drift plausibly
+  # inflates the arm predicted to be more expensive. A confound pointing AT the expected answer
+  # is the one it is least defensible to accept.
+  assert "arm A2 effort"                        "$EA2" "$(pget arm_a2.harness.effort)"
+  assert "arm B effort"                         "$EB"  "$(pget arm_b.harness.effort)"
+  assert "§7.4: efforts are EQUAL across arms — this is the SECOND VOID" \
+    "$(node -e 'process.stdout.write(String(process.argv[1]===process.argv[2]))' "$EA2" "$EB")" \
+    "$(pget arm_a2.efforts_equal_across_arms)"
+  # Recorded because it is information about the INSTRUMENT, under a void that forbids reading it
+  # as information about the controller (PROTOCOL §10.13).
+  assert "observation: the two segmentations agree" "$(node -e 'process.stdout.write(String(process.argv[1]===process.argv[2]))' "$(c2 comparison.instrument_1.S1.band)" "$(c2 comparison.instrument_1.S2.band)")" "$(pget arm_a2.observation_not_a_result.segmentations_agree)"
+  assert "observation: leave-one-out is sign-stable" "$(c2 comparison.leave_one_out.sign_stable)" "$(pget arm_a2.observation_not_a_result.leave_one_out_sign_stable)"
+  assert "arm A2 forbidden reads"               "$(c2 arms.A.secondary.S12_forbidden_reads.strict_count)" "0"
+  assert "arm A2 contamination hits"            "$(c2 arms.A.contamination.any)" "false"
+  assert "a replicate is still forced"          "$(c2 comparison.replication.replicate_forced)" "true"
+  rm -f "$CMP2"
 else
   # An absent arm is stated, never assumed away. Condition 4 stays open until this file exists.
   assert "arm A has not run, and the pre-registration says so" "$(pget arm_a_status)" "NOT RUN — the VM is prepared and the prompt is frozen"

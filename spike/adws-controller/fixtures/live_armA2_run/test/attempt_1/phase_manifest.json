@@ -1,0 +1,54 @@
+{
+  "phase": "test",
+  "attempt": 1,
+  "job_id": "job_20260812_0001",
+  "started_at": "2026-08-12T05:35:05Z",
+  "completed_at": "2026-08-12T05:36:24Z",
+  "agent": "adws-tester",
+  "model_tier": "sonnet",
+  "tier_input": {
+    "source": "contract.risk_level",
+    "value": "medium"
+  },
+  "gate_result": "fail",
+  "failure_reason": null,
+  "stability_gate": null,
+  "provenance": {
+    "started_at": "2026-08-12T05:27:21Z",
+    "completed_at": "2026-08-12T05:37:56Z",
+    "wall_clock_s": 635,
+    "agent": "adws-tester",
+    "model_tier_requested": "sonnet",
+    "model_id": null,
+    "cost_usd": null,
+    "tokens_in": null,
+    "tokens_out": null,
+    "elapsed_ms": null,
+    "tool_call_count": null,
+    "timeout": false,
+    "cancel": false
+  },
+  "gate_failure_detail": {
+    "cause": "Consensus: Critic verdict \"fail\" (adws-critic, sonnet). Advocate verdict \"pass\", dissent null. The phase agent itself succeeded: criteria-to-checks rubric_result pass, SC-5/F-31 coverage join satisfied (CHK001-CHK004 each present in phase_output.checks), all four criterion rows verified, none gate_weak. The gate fails on the Critic verdict alone.",
+    "orchestrator_reproduction": {
+      "performed_at": "--",
+      "method": "Independent probe authored by the orchestrator under its own scratch root ${TMPDIR:-/tmp}/adws-job_20260812_0001/orchestrator/. Per SC-14/F-82 the Critic's reproduction.command string was READ and reasoned about, never passed to a shell or any evaluating API, and no file from the Critic corpus was sourced as a program. The corpus was treated as data only.",
+      "ran": [
+        "node orchestrator_probe.js <worktree>/adws-pipeline/scripts/execution-report.js   (post-change)",
+        "git show main:adws-pipeline/scripts/execution-report.js > pre_execution-report.js ; node orchestrator_probe.js pre_execution-report.js   (pre-change baseline)",
+        "node -e: decideLifecycle({status:\"quarantined\", failureReason:\"PR_DRIFT_SENTINEL_BLOCK\", gates:[]}) alongside failureReasonSeverity(\"PR_DRIFT_SENTINEL_BLOCK\")",
+        "grep -n PR_DRIFT_SENTINEL_BLOCK <worktree>/adws-pipeline/references/phase-gates.md"
+      ],
+      "observed": "PR_DRIFT_SENTINEL_BLOCK is absent from NO_RETRY_REASONS and from QUARANTINE_REASONS in BOTH the pre-change and the post-change script, so failureReasonSeverity() returns \"retriable\" for it. decideLifecycle's normalizedStatus === \"quarantined\" branch (execution-report.js:937-944) returns QUARANTINE unconditionally, consulting neither Set. So a run terminated the way SKILL.md section 4 documents for this token (second verify drift BLOCK -> terminate \"quarantined\" / PR_DRIFT_SENTINEL_BLOCK) yields decision=QUARANTINE, exit 2, while the newly published failure_severity reads \"retriable\" in the same report. phase-gates.md:493 (the new SC-14 row) states Verdict=RETRY for this reason, while lines 98 and 176 of the same file say the second BLOCK goes to quarantine.",
+      "verdict": "REPRODUCED. The Sets-vs-prose divergence predates this change and the new row discloses it explicitly rather than hiding it, which was a defensible call under constraint 2 (never silently redefine an existing reason). What is NEW is that this change publishes failure_severity as the field a reader is instructed to source (AC-4, constraint 3), and for this reason's only documented trigger that published value contradicts the decision printed in the same report. The Critic finding stands.",
+      "route_determined": "rewind-to-build, per SC-7/F-46 step 2 (reproduced, defect in the CODE). Budget: cross_phase_rewinds.test, cap 1, currently 0 — available. A fix exists inside the change set that redefines no existing reason and flips no live verdict: derive failure_severity consistently with the decision path decideLifecycle actually takes (including the \"quarantined\" status branch), or scope the field and the table row so this trigger is stated rather than contradicted.",
+      "route_executed": false,
+      "route_not_executed_because": "The operator scoped this run to plan -> build -> test and directed a stop the moment the test gate was decided, pass or fail. The gate is decided (fail). Executing the rewind would open build/attempt_2 and re-run forward through test, which is a new cycle the operator did not authorize. cross_phase_rewinds.test was therefore NOT incremented: spending a rewind budget on a rewind that never ran would be false evidence.",
+      "attempt_failure_reason_note": "failure_reason left null deliberately. CRITIC_FAIL_REPAIRED would assert a repair that never happened; TEST_GATE_FAILURE would assert budget exhaustion (test budget is 2 and this is attempt 1). The skill defines no attempt-level reason for a route determined but halted by the operator before remediation ran."
+    },
+    "evidence_drift_observed": [
+      "consensus/critic.json reproduction.files entries are recorded JOB-relative (\"test/attempt_1/consensus/repro/...\") while artifact-layout.md specifies paths relative to the ATTEMPT directory. The mandated resolveWithinRoot check rejected all three as written; the corpus itself is present and genuinely inside consensus/repro/.",
+      "test phase_output.json row CONSTRAINT-PARITY (an extra row, not one of the four check_specs ids) carries a baseline_reason outside the documented enum (assertion-failed-runtime-present | collection-error | not-run) and verdict \"verified\" on a falsifiable:false row, where the falsifiability rule prescribes gate_weak. It is not a criterion spec, so it affects neither the coverage join nor the gate decision."
+    ]
+  }
+}
