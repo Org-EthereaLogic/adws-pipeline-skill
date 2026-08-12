@@ -1499,10 +1499,116 @@ catches it fires at intake of the first job rather than at install time. **Predi
 by a design agent reading `skill-check.js`, then confirmed by running it** — the cheapest defect in
 this spike's history, found for the price of reading the code that was about to run.
 
+### Arm A ran, and the pre-registration voided it
+
+**The pair is not a verdict, and the document said in advance which rule would say so.** Arm A
+completed the slice on 2026-08-12 — test gate **PASS**, 4/4 criteria with genuine RED baselines,
+five dispatches, zero forbidden reads, zero contamination hits, the installed skill byte-identical
+before and after. Then §7.4 fired:
+
+**Finding 46 — the arms ran on different models, and the cause was a saved setting rather than a
+decision.** Arm B ran on `claude-opus-5`. Arm A ran on **`claude-fable-5`**, because a `/model`
+command in an earlier session in that VM had saved Fable 5 as the default *for new sessions*. §7.4
+froze the harness config as "a single value per arm **and equal across arms**", consequence
+**VOID** — and that check is independent of the outcome, so it was declared from the config alone,
+before the comparison was computed. Effort (`high`) and version (`2.1.228`) did match. The
+frozen-list entry that caught this was written because a *design agent* asked what would happen if
+the two arms' harnesses drifted; nothing in the run itself would have surfaced it, and every number
+below would otherwise have been published as a result.
+
+**The pair fails three more ways that have nothing to do with the model**, each pre-registered:
+
+| Rule | What happened |
+|---|---|
+| §4.11, binding | S1 returns **CONFIRM-AT-FLOOR**, S2 returns **CONFIRM**. Different bands → INDETERMINATE, replicate forced |
+| §6.3, leave-one-out | Dropping the **build** phase flips `Δ_P` to **−128.5**. One of three phases decides the direction, at n=1 |
+| §5, resolution floor | `Δ_P` = **996** under S1 — **four tokens** under the pre-registered 1,000-token floor |
+| §10.7 | Instrument 2 is a **3.00 vs 3.00 tie**. A tie does not discriminate, and the protocol says to say so |
+
+The numbers, published as an observation and not as a comparison: `P_A` 6,585 (S1) / 7,814 (S2)
+against `P_B` 5,589 / 6,112; round trips 4 / 4 / 1 against 3 / 3 / 3; `I_net` 63,504 against 20,379.
+
+**Finding 47 — the prose orchestrator opened every reference, and that settles §12.2's open
+question about which "before" a real run resembles.** Given a free choice — the prompt deliberately
+did not steer it — arm A read `SKILL.md` (via the Skill tool) plus **all four** references it
+names: `task-contract.md`, `phase-gates.md`, `artifact-layout.md`, `validator-inputs.md`.
+**124,008 bytes**, which is exactly the full-document reading §11 has always carried as the
+optimistic end of the bracket. It declined `runtimes.md`, `troubleshooting.md` and
+`agent-shared-blocks.md`, each for a stated reason, and never opened a validator script header.
+Against arm B's 17,544 B that is **7.07×**, and bytes-read is the one cross-arm quantity here that
+is not a token count and so is least disturbed by the model mismatch. **The pessimistic before —
+30,012 B, a model that opens no reference — is now known to be counterfactual for a real prose
+run**, at n=1, on a different model, which is exactly as much as one observation is worth.
+
+**Finding 48 — the human-turns veto counts a proxy, and it fired on nothing.** §5's veto 6 trips
+when `HUMAN_TURNS(A) > 1`; the metric counts plain-string `type:"user"` rows, and arm A has three —
+one instruction and **two local-command wrappers for `/clear`**. The run was not steered. The
+defect is recorded and **deliberately not amended**: amendments A1–A8 were made while arm A did not
+exist, and this one was found afterwards. §10.4 is about exactly that difference, so it is fixed
+before the re-run and labelled post-data, not folded in silently.
+
+### The pre-registered predictions, scored
+
+Recorded in `ab/PREREGISTRATION.json` before arm A existed. Scored against a void pair, so this is
+about the predictions and not about the controller.
+
+| Prediction | Outcome |
+|---|---|
+| Arm A uses **more** round trips per phase than 3.00 | **Wrong.** A 3.00–3.00 tie (arm A 4/4/1) |
+| Arm A's per-phase growth exceeds arm B's, by 1.3×–2.5× | **Direction right, magnitude below range** — 1.18× |
+| Arm A's intake mass is 1.5×–6× arm B's | **Above range** — 11.4× in tokens, 7.07× in bytes |
+| The sign is not uniform across phases | **Right.** Plan and build favour the controller; **test favours prose** (3,786 vs 5,676) |
+
+Two of four missed their stated ranges, in opposite directions, which is the argument for stating
+ranges in advance rather than describing the result afterwards as roughly what one expected.
+
+### What arm A found in the SHIPPED skill, which the void does not touch
+
+Arm A is step 5's mirror: ten residue events against the sketch, six against `SKILL.md`. These are
+gaps in the **shipped** document, reported by an orchestrator following it for the first time, and
+they are largely model-independent:
+
+1. **Where the pre-git `ship-mode-select` trace lives.** §1 requires running it *before* the first
+   git command that consumes the branch name, but traces are defined only under an attempt's
+   `skills/{skill_id}/` — and no ship attempt exists at worktree-creation time. Improvised as
+   `artifacts/{jobId}/pregate/ship-mode-select/skill_trace.json`.
+2. **Which date the jobId uses.** "next free `job_YYYYMMDD_NNNN`" with local date Aug 11 and UTC
+   Aug 12. Every timestamp rule in the skill mandates UTC, so UTC was chosen — the skill never says.
+3. **The worktree-mechanism contradiction.** §1 prefers the Agent tool's `isolation: "worktree"`,
+   but build, test and both assessors must see one persistent tree recorded once as
+   `run_manifest.worktree_path`, and per-dispatch worktrees are per-agent and auto-cleaned. The two
+   are never reconciled.
+4. **No vocabulary for an operator-directed partial run.** Mapped to `canceled` / `OPERATOR_CANCEL`
+   with a carry-over record — the closest documented enum. **This is findings 16/17/39's family
+   again**: the reason vocabulary has no member for a thing that happened.
+5. **`skill_trace.version` has no documented content.**
+6. **The Advocate omitted its `resolution: null` key** despite being told to write it. Schema drift,
+   semantics unaffected, correctly not gated.
+
+And four surprises, one of which is a real quality signal:
+
+- **The parity corpus goes red post-change.** `parity/execution-report-fixtures/run-tests.js` exits
+  1 with 25/25 failures — all from the corpus's own hardcoded `schema_version === '1.4.0'`, staled
+  by the build's bump to 1.5.0. Every decision, exit code, warn flag and determinism assertion still
+  passes; the tester and the Critic each ran it independently and agree. The tester recorded it
+  **`gate_weak`** (baseline already green, so not falsifiable) rather than laundering it into a
+  pass. `parity/` is write-blocked by the contract, so the branch would ship with a red runner.
+- **The runtime is less telemetry-blind than the skill claims.** SKILL.md asserts model id, cost,
+  tokens and tool-call count are "structurally unavailable in this runtime and are written as
+  null". The Agent tool returned total tokens, tool-use counts and durations. **F-17's claim is
+  outdated for this runtime** — and it is the same fact that made arm B's subagent accounting
+  possible at all (finding 44).
+- `criteria-to-checks` typed two concrete criteria `unclassified` because its lexical classifier
+  found no outcome verb in "terminates on". Changed nothing under SC-5; shows a narrow verb list.
+- `task-normalize` emitted analytic fields (`delta_r`, `coherence_score`, `synthetic_risk`) that
+  `validator-inputs.md` never documents.
+
 ### What step 6 does not establish, and it is most of it
 
-**Arm A has not run.** Everything above is one arm. The comparison — `Δ_P`, `n*`, the §9 round-trip
-delta, the verdict bands — is defined in `ab/PROTOCOL.md`, frozen, and unanswered. The protocol was
+**The comparison.** Arm A ran, and the pair is void on the model and indeterminate on three
+pre-registered rules besides. `Δ_P`, `n*` and the verdict bands are defined, computed, and
+**not usable**. Condition 4 needs one more arm A run, on `claude-opus-5`, with the model asserted
+before the first message rather than after the last. The protocol was
 written before arm A existed, amended five times where running it against arm B proved a clause
 wrong (`ab/PROTOCOL.md` §0), and committed with a SHA-256 that `run-ab.sh` asserts, so a later edit
 reads as an edit rather than as the original.

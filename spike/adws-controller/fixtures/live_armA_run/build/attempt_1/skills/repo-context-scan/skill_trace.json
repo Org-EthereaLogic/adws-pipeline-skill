@@ -1,0 +1,43 @@
+{
+  "skill_id": "repo-context-scan",
+  "version": "installed-549226ba94f0",
+  "started_at": "2026-08-12T03:52:00Z",
+  "completed_at": "2026-08-12T03:52:00Z",
+  "rubric_result": "pass",
+  "latency_ms": 0,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "files_proposed": 4,
+    "directories_touched": 2,
+    "grouped_files": {
+      "adws-pipeline/scripts": [
+        {
+          "file": "adws-pipeline/scripts/execution-report.js",
+          "action": "modify"
+        }
+      ],
+      "adws-pipeline/references": [
+        {
+          "file": "adws-pipeline/references/phase-gates.md",
+          "action": "modify"
+        },
+        {
+          "file": "adws-pipeline/references/artifact-layout.md",
+          "action": "modify"
+        },
+        {
+          "file": "adws-pipeline/references/troubleshooting.md",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Give the terminal failure-reason vocabulary an explicit severity split, sourced from the classification execution-report.js already computes. Four files change, all inside policy.allowed_paths. (1) adws-pipeline/scripts/execution-report.js gains one new closed-enum reason string, EVIDENCE_INTEGRITY_BREACH, added to both NO_RETRY_REASONS and QUARANTINE_REASONS; a pure classifier severityForReason(reason) derived from exactly those two existing sets (non-retriable when a member of either, retriable otherwise, null for no reason) exported from module.exports; an additive report field failure_reason_severity beside failure_reason in execution_report.json plus one matching line in the Markdown render; and a SCHEMA_VERSION bump 1.4.0 -> 1.5.0 documented in the file's existing additive-change comment block. decideLifecycle's branches, its decision_reason strings, the DECISIONS/GATE_STATUSES vocabularies, the exit codes, and the CLI stdout line are all left byte-identical -- the new reason is a brand-new string no existing fixture carries, so no fixture's decision or exit code can move. (2) adws-pipeline/references/phase-gates.md keeps its 'Failure-reason classes' H2 heading verbatim (SKILL.md, which is outside allowed_paths, cross-references that heading by name) and replaces the two-bullet class list under it with a single reason table whose columns carry the severity: Reason | Terminal severity | Verdict class | In-run retry | Emitted by / note. Every reason gets a row -- CREDENTIAL_FAILURE, OPERATOR_CANCEL, MISSING_UPSTREAM_ARTIFACT, PLAN_COHERENCE_BELOW_THRESHOLD, ADVOCATE_DISSENT, the new EVIDENCE_INTEGRITY_BREACH, PROTECTED_BRANCH_BLOCKED, PR_DRIFT_SENTINEL_BLOCK, STABILITY_BUDGET_EXCEEDED, and the {PHASE}_GATE_FAILURE family -- with a precedence rule that a named reason always wins and {PHASE}_GATE_FAILURE is the default only when no named reason applies, a sourcing rule that the severity column transcribes severityForReason() and the orchestrator reads execution_report.json.failure_reason_severity rather than parsing gate detail prose, and an explicit note that ADVOCATE_DISSENT_REPAIRED and CRITIC_FAIL_REPAIRED are attempt-level annotations that never enter this table. The same file's consensus uphold path and the evidence-integrity path are pinned to their named reasons. (3) adws-pipeline/references/artifact-layout.md states that run_manifest.failure_reason is a closed enum defined by that table and names EVIDENCE_INTEGRITY_BREACH as the terminal reason for the skill_trace transcription breach it already describes. (4) adws-pipeline/references/troubleshooting.md gains a one-line pointer from its existing '{PHASE}_GATE_FAILURE' triage note to the severity table. Existing recorded reasons keep their current meaning: PROTECTED_BRANCH_BLOCKED stays no-retry-in-run but retriable-at-terminal, and PR_DRIFT_SENTINEL_BLOCK keeps its documented quarantine-on-second-BLOCK behaviour, both stated in the table's note column rather than redefined. Two out-of-scope consequences are recorded for the orchestrator rather than acted on: editing shipped skill files invalidates the sha256 digests in adws-pipeline/skill-manifest.json (not in allowed_paths -- the Tier-1 local-ci manifest-currency assert will flag it until an operator regenerates it), and the parity corpus under parity/ (blocked for writes) must be RUN unmodified to prove decisions and exit codes are unchanged.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

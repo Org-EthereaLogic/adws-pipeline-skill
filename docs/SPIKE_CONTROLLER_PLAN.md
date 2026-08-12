@@ -714,3 +714,37 @@ was a tautology; one downgraded a claim this plan would otherwise have published
 - **Quality.** Neither arm's output is scored. An interface that briefs its assessors worse wins a
   token comparison while gating worse — finding 38 is the observed instance, and it sits in the
   segment the primary excludes.
+
+### 13.3 Arm A ran, and the pre-registration voided the pair (2026-08-12)
+
+**Status: condition 4 is still OPEN, and this is the pre-registration working rather than failing.**
+
+Arm A completed the slice — test gate **PASS**, 4/4 criteria with genuine RED baselines, five
+dispatches, zero forbidden reads, zero contamination, the installed skill byte-identical before and
+after. Then the frozen list fired.
+
+| Rule | What it caught |
+|---|---|
+| **§7.4 — VOID** | Arm B ran `claude-opus-5`; arm A ran **`claude-fable-5`**, because a `/model` command in an earlier session in that VM had saved Fable 5 as the default for new sessions. Effort and version matched. Declared from the config check alone, before the comparison was computed |
+| §4.11 — binding | S1 returns CONFIRM-AT-FLOOR, S2 returns CONFIRM. Different bands → INDETERMINATE |
+| §6.3 — leave-one-out | Dropping the build phase flips `Δ_P` to **−128.5** |
+| §5 — resolution floor | `Δ_P` = 996, **four tokens** under the pre-registered 1,000 floor |
+| §10.7 | Instrument 2 is a 3.00–3.00 **tie** and cannot discriminate |
+
+Four independent reasons, all written down before the data existed. Any one of them would have been
+available afterwards as a rationalization; none of them is, now.
+
+**Two results survive the void**, because they do not depend on the orchestrator's model in the way
+a token comparison does:
+
+- **§12.2's open question is answered.** Given a free choice, the prose orchestrator opened
+  `SKILL.md` plus **all four** references it names — **124,008 B**, exactly the full-document
+  reading. The pessimistic before (30,012 B, opening no reference) is counterfactual for a real
+  prose run. One observation, on the wrong model, but the first empirical data on that question.
+- **Six gaps in the SHIPPED skill**, reported by an orchestrator following it for the first time —
+  the mirror of step 5's ten residue events against the sketch. Two are the findings 16/17/39
+  family again: a vocabulary with no member for a thing that happened. Full list in FINDINGS.md.
+
+**What closing condition 4 now needs:** one more arm A run on `claude-opus-5`, with the model
+asserted **before** the first message. `run-ab.sh` asserts the cross-arm model equality that this
+run failed, so the same drift cannot pass silently twice.
