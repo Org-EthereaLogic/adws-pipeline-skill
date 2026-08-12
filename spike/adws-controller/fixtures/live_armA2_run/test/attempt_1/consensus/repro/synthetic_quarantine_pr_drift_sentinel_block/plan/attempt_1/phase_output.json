@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "steps": [
+      "inventory call sites",
+      "implement change",
+      "add regression tests"
+    ],
+    "coherence_score": 0.94
+  }
+}

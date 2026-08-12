@@ -1547,6 +1547,44 @@ defect is recorded and **deliberately not amended**: amendments A1–A8 were mad
 exist, and this one was found afterwards. §10.4 is about exactly that difference, so it is fixed
 before the re-run and labelled post-data, not folded in silently.
 
+### The second arm A run: the model was fixed, and the drift moved to the next frozen key
+
+**Finding 49 — two runs, two harness drifts, the same cause both times.** After the model VOID I
+reset the VM, pinned `model: claude-opus-5` in `settings.json`, and handed over a launch command
+carrying `--model claude-opus-5`. The model was then correct on every turn. **Effort drifted to
+`xhigh`** — because a `/effort` command in the session saved xhigh as the new default, exactly as
+`/model` had saved Fable 5. §7.4 froze three keys and fixing one moved the failure to the next.
+
+The drift is not cosmetic. **Effort sets the thinking budget, and thinking is a large share of what
+the primary metric measures**: arm A2's per-phase thinking is 2,240 / 1,380 / 1,793 against arm B's
+1,513 / 89 / 270. So the uncontrolled variable inflates the arm that was *predicted* to be more
+expensive — a confound pointing directly at the expected answer, which is the least defensible kind
+to accept.
+
+**And this pair is the one where everything else worked.** Recorded as an observation about the
+instrument, under a VOID that forbids reading it as an observation about the controller:
+
+| | arm A2 | arm B |
+|---|---|---|
+| `P` (S1) | 8,656 | 5,589 |
+| `P` (S2) | 9,437 | 6,112 |
+| Round trips / phase | 3.67 (4 / 4 / 3) | 3.00 |
+| Terminal state | **test gate FAIL** (Critic fail, reproduced, rewind determined) | test gate FAIL |
+
+Both segmentations returned the same band. Leave-one-out was sign-stable **and** band-stable.
+Both instruments agreed in direction. The terminal states finally matched, which arm A1's PASS did
+not. Every stability check the protocol asks for passed — on a pair whose treatment was
+contaminated. **`PROTOCOL.md` §10.13 stands: a void pair may not re-price anything**, and the
+numbers above are in this document so that no later reader can quote them as the answer without
+also reading this sentence.
+
+**Finding 47 reproduces.** Arm A2 opened **six** reference documents plus the skill body —
+`task-contract`, `phase-gates`, `validator-inputs`, `artifact-layout`, and `agent-shared-blocks`,
+one more than arm A1 — and additionally grepped four validator scripts hunting the `version`
+constant that `skill_trace.version` requires and no validator prints. It declined `runtimes.md` and
+`troubleshooting.md`, each for a stated reason, on both runs. Two runs, two models: the prose
+orchestrator reads essentially the whole reference set.
+
 ### The pre-registered predictions, scored
 
 Recorded in `ab/PREREGISTRATION.json` before arm A existed. Scored against a void pair, so this is
@@ -1605,10 +1643,11 @@ And four surprises, one of which is a real quality signal:
 
 ### What step 6 does not establish, and it is most of it
 
-**The comparison.** Arm A ran, and the pair is void on the model and indeterminate on three
-pre-registered rules besides. `Δ_P`, `n*` and the verdict bands are defined, computed, and
-**not usable**. Condition 4 needs one more arm A run, on `claude-opus-5`, with the model asserted
-before the first message rather than after the last. The protocol was
+**The comparison.** Arm A ran twice and both pairs are void — the first on the model, the second
+on effort. `Δ_P`, `n*` and the verdict bands are defined, computed twice, and **not usable**.
+Condition 4 needs one more arm A run with `--model claude-opus-5 --effort high` on the command line
+and no in-session `/model` or `/effort`, since both drifts came from a settings command whose
+effect outlived the session that issued it. The protocol was
 written before arm A existed, amended five times where running it against arm B proved a clause
 wrong (`ab/PROTOCOL.md` §0), and committed with a SHA-256 that `run-ab.sh` asserts, so a later edit
 reads as an edit rather than as the original.

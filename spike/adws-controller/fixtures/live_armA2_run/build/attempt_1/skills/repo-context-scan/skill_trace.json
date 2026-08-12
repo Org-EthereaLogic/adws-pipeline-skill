@@ -1,0 +1,43 @@
+{
+  "skill_id": "repo-context-scan",
+  "version": "2.0.0",
+  "started_at": "2026-08-12T05:26:44Z",
+  "completed_at": "2026-08-12T05:26:44Z",
+  "rubric_result": "pass",
+  "latency_ms": 17378560,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "files_proposed": 4,
+    "directories_touched": 2,
+    "grouped_files": {
+      "adws-pipeline/scripts": [
+        {
+          "file": "adws-pipeline/scripts/execution-report.js",
+          "action": "modify"
+        }
+      ],
+      "adws-pipeline/references": [
+        {
+          "file": "adws-pipeline/references/phase-gates.md",
+          "action": "modify"
+        },
+        {
+          "file": "adws-pipeline/references/artifact-layout.md",
+          "action": "modify"
+        },
+        {
+          "file": "adws-pipeline/references/validator-inputs.md",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Give the terminal failure-reason vocabulary an explicit severity split, entirely inside the two allowed paths (adws-pipeline/references/ and adws-pipeline/scripts/execution-report.js).\n\nGrounding observed in the worktree: (a) references/phase-gates.md documents the vocabulary as two PROSE bullet lists (\"Failure-reason classes\", lines 457-471) with no per-reason table and no severity column; (b) run_manifest.failure_reason is described in references/artifact-layout.md (line 52 shape, line 63 reader note) with no enum and no severity; (c) execution-report.js already computes the severity classification in NO_RETRY_REASONS + QUARANTINE_REASONS (lines 53-61) and consumes it in decideLifecycle (lines 899-921), but publishes it NOWHERE machine-readably; (d) a probe run of the shipped CLI over a copy of the canonical upheld-dissent fixture tree (parity/execution-report-fixtures/quarantine_upheld_dissent, job-4e5f6a) returns decision=QUARANTINE exit=2 with run_manifest.failure_reason=null and report.failure_reason=null - the token ADVOCATE_DISSENT exists ONLY inside the consensus gate's free-text `detail` string. The same holds for the evidence-integrity fixtures (job-9b2e14 etc.): failure_reason=null, and the only trace of the breach is the literal prose \"EVIDENCE INTEGRITY: ...\" in the skills_clean gate detail. That is exactly the re-derivation-by-parsing that AC-4 forbids, and it is why an upheld dissent and an integrity breach are today indistinguishable from a retriable {PHASE}_GATE_FAILURE in run_manifest.failure_reason.\n\nThe change has two halves that meet in the middle:\n\n1. execution-report.js becomes the SOURCE of severity. Keep NO_RETRY_REASONS and QUARANTINE_REASONS byte-identical as the single classification (so decideLifecycle is untouched and no verdict moves), and add on top of them: a `failureReasonSeverity(reason)` helper returning 'non-retriable' | 'retriable' | null computed from those same two Sets; one NEW closed-enum member EVIDENCE_INTEGRITY_BREACH added to NO_RETRY_REASONS (additive - no existing reason is redefined); a nullable `failure_reason` property on the gate objects the two non-retriable conditions produce (evalConsensus's blocking-dissent FAIL branch emits ADVOCATE_DISSENT; evalSkillsClean's two integrity FAIL branches emit EVIDENCE_INTEGRITY_BREACH) so the reason is a field rather than a substring of `detail`; and two additive top-level report fields - `terminal_failure_reason` (first non-null gate reason in a documented precedence order, else run_manifest.failure_reason) and `failure_severity` (that reason's severity via the helper). Exports gain `failureReasonSeverity` and `TERMINAL_FAILURE_REASON_PRECEDENCE`.\n\n2. references/ becomes the authoritative, severity-bearing table. phase-gates.md's prose class lists are replaced by ONE canonical table with a row per reason and a Severity column (plus an in-run 'no-retry' column, because PROTECTED_BRANCH_BLOCKED is no-retry yet classified retriable by the script - the two axes must not be conflated), immediately followed by the reason-selection precedence rule that makes ADVOCATE_DISSENT and EVIDENCE_INTEGRITY_BREACH beat the {PHASE}_GATE_FAILURE fallback, and by the sourcing rule (read severity from execution_report.json, never from gate detail prose). artifact-layout.md pins run_manifest.failure_reason as a closed enum owned by that table and documents the new report fields (append-only rule 8 makes an undocumented extra key schema drift, so this is required, not cosmetic). validator-inputs.md's execution-report.js rows carry the same sourcing rule where an orchestrator actually looks up the script.\n\nDeliberate boundaries. No new reference FILE: scripts/local-ci/frontmatter-lint.mjs enforces a BIDIRECTIONAL index (every references/*.md must be named in SKILL.md), and SKILL.md is outside allowed_paths - so a new file would fail Tier-1 CI with no in-scope fix. SCHEMA_VERSION stays '1.4.0': parity/execution-report-fixtures/run-tests.js line 444 asserts it exactly and parity/ is a blocked path, so a bump the file's own additive-change convention would suggest cannot be paired with its fixture update in this job; the builder records that deferral as a comment beside SCHEMA_VERSION where a reviewer reads it. No routing change for any existing reason (constraint 2), no new gate key, no decision/exit-code vocabulary change (non-goal 1), no fixture edits - the corpus keeps scoring the same decision and exit code because no fixture records either affected token in run_manifest and the new fields are additive keys the runner never compares.\n\nOut-of-scope consequence the operator must decide on (NOT planned, because the file is outside allowed_paths): adws-pipeline/skill-manifest.json is a content digest of every shipped file under adws-pipeline/, and scripts/local-ci/skill-manifest.mjs fails the Tier-1 gate when it is stale. Editing four shipped files without regenerating it makes `make local-ci` red on the skill-manifest step alone. See phase_log.md.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

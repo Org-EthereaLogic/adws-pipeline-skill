@@ -2977,3 +2977,73 @@ post-data** rather than amended silently. `PROTOCOL.md` §10.4 is about precisel
 **To close condition 4:** one more arm A run on `claude-opus-5`, with the model asserted before the
 first message rather than after the last. `run-ab.sh` now asserts cross-arm model equality, so the
 same drift cannot pass silently twice.
+
+---
+
+## Arm A, second run: the model was fixed and the effort drifted (PR #80)
+
+The model VOID was closed. `settings.json` pinned to `claude-opus-5`, the launch carried
+`--model claude-opus-5`, and the model was correct on every turn of the run. **Then `effort` came
+back `xhigh` against arm B's `high`** — a `/effort` command in the session had saved xhigh as the
+new default, exactly as `/model` had saved Fable 5 the run before. §7.4 freezes three keys, and
+fixing one moved the failure to the next.
+
+**Effort sets the thinking budget**, which is a large share of what the primary metric measures:
+arm A2's per-phase thinking is 2,240 / 1,380 / 1,793 against arm B's 1,513 / 89 / 270. The
+uncontrolled variable inflates the arm predicted to be more expensive, so this confound points *at*
+the expected answer — the least defensible kind to accept.
+
+### The pair where everything else worked
+
+Recorded as information about the instrument, under a void that forbids reading it as information
+about the controller:
+
+| | arm A2 | arm B |
+|---|---|---|
+| `P` (S1) / (S2) | 8,656 / 9,437 | 5,589 / 6,112 |
+| Round trips per phase | 3.67 | 3.00 |
+| Terminal state | test gate FAIL | test gate FAIL |
+
+Both segmentations agreed on the band. Leave-one-out was sign- and band-stable. Both instruments
+agreed in direction. The terminal states matched for the first time. `PROTOCOL.md` §10.13 stands:
+a void pair may not re-price anything, and these numbers are published with that sentence attached.
+
+### What the run found in the shipped skill, which the void does not touch
+
+Eight more gaps, on top of arm A1's six, and one of them is the sharpest thing either arm produced:
+
+- **`repo-context-scan` validates the plan, not the build.** Its input is
+  `plan_output.file_change_proposal`, so the build gate's only validator never inspects what the
+  builder actually changed. The orchestrator checked the real change set itself — nothing in the
+  skill told it to. **A builder writing outside `allowed_paths` would pass the build gate on the
+  plan's good intentions.**
+- `provenance` defines two disjoint key sets: the documented shape lists eight fields, and the
+  "obtainable, and therefore MANDATORY" list below names five others, none of which appear in the
+  shape.
+- No attempt-level `failure_reason` exists for a route determined but not executed:
+  `CRITIC_FAIL_REPAIRED` asserts a repair that never happened, `TEST_GATE_FAILURE` asserts a budget
+  exhaustion that did not occur. Written `null`, with the reason recorded.
+- No `final_status` for halted-mid-run; the four terminal states do not include one.
+- The mandated `resolveWithinRoot` check rejected all three of the Critic's `reproduction.files`
+  because they were recorded job-relative rather than attempt-relative. **An honest evidence-drift
+  bug is indistinguishable at that check from a path-escape attempt.**
+- `decideLifecycle` answered a mistyped probe confidently — passed the manifest's field names
+  instead of the function's, fell through to the unknown-state branch, and returned QUARANTINE.
+  A wrong answer that looks exactly like a right one.
+- Agent-tool worktree isolation is *available* but semantically wrong (per-agent, auto-cleaned, so
+  it cannot carry the change set across build → test → consensus). §1's "where unavailable, create
+  explicitly" does not cover "available but wrong".
+- `skill_trace.version` still has no source: the orchestrator grepped four validator scripts
+  looking for a constant that none of them prints.
+
+### Checks at merge
+
+| Check | Result |
+|---|---|
+| `run-ab.sh` | **68 assertions**, 0 failed — both voids asserted, not stated |
+| all eight drivers | exit 0; `run-step5.sh` 135/0 |
+| `run-ingest-matrix.js` | exit 0 — 25 ingested, MISMATCH 0 |
+| `make ci` gate / orb | PASS |
+
+**To close condition 4:** `--model claude-opus-5 --effort high` on the command line, and no
+in-session `/model` or `/effort`. `run-ab.sh` now asserts both keys across arms.
