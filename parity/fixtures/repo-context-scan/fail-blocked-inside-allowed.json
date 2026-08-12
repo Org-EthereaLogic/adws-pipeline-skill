@@ -40,10 +40,16 @@
     ],
     "underspecified": false,
     "malformed_entries": 0,
+    "actuals_checked": false,
+    "files_changed": null,
+    "actual_violations": [],
+    "unproposed_changes": [],
+    "unimplemented_proposals": [],
+    "malformed_actual_entries": 0,
     "plan_summary": null,
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null
   },
-  "expected_source": "port@SC-9, v2.0.0"
+  "expected_source": "port@SC-9 + SC-15, v2.1.0"
 }

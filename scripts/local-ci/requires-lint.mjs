@@ -12,6 +12,7 @@ import { builtinModules } from 'node:module';
 const TARGETS = [
   'adws-pipeline/scripts/entropy-gate.js',
   'adws-pipeline/scripts/execution-report.js',
+  'adws-pipeline/scripts/evidence-integrity.js',
   'adws-pipeline/scripts/skill-check.js',
 ];
 const BUILTINS = new Set([...builtinModules, ...builtinModules.map((m) => `node:${m}`)]);

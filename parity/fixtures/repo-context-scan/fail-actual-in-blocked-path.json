@@ -12,16 +12,21 @@
     },
     "policy": {
       "allowed_paths": [
-        "src/"
+        "src/",
+        "infrastructure/"
       ],
       "blocked_paths": [
         "infrastructure/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js",
+      "infrastructure/terraform/main.tf"
+    ]
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\". Renamed under SC-15/F-84: this input carries no actual_changes, and a build gate that never saw the build is no longer a pass. Its sibling pass-actuals-match-proposal.json is the same plan WITH actuals; the pair is the pin that the verdict depends on having seen the build.",
+  "note": "SC-15/F-84 — blocked_paths beats allowed_paths on the ACTUALS, mirroring fail-blocked-inside-allowed on the proposals.",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "fail",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
@@ -35,10 +40,18 @@
     "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
-    "actuals_checked": false,
-    "files_changed": null,
-    "actual_violations": [],
-    "unproposed_changes": [],
+    "actuals_checked": true,
+    "files_changed": 2,
+    "actual_violations": [
+      {
+        "file": "infrastructure/terraform/main.tf",
+        "reason": "in_blocked_path",
+        "blocked_path": "infrastructure/"
+      }
+    ],
+    "unproposed_changes": [
+      "infrastructure/terraform/main.tf"
+    ],
     "unimplemented_proposals": [],
     "malformed_actual_entries": 0,
     "plan_summary": "Add null check",

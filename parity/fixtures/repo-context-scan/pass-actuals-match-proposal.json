@@ -17,11 +17,14 @@
       "blocked_paths": [
         "infrastructure/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js"
+    ]
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\". Renamed under SC-15/F-84: this input carries no actual_changes, and a build gate that never saw the build is no longer a pass. Its sibling pass-actuals-match-proposal.json is the same plan WITH actuals; the pair is the pin that the verdict depends on having seen the build.",
+  "note": "SC-15/F-84 — the builder changed exactly what the plan proposed, in policy: pass with actuals_checked true.",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "pass",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
@@ -35,8 +38,8 @@
     "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
-    "actuals_checked": false,
-    "files_changed": null,
+    "actuals_checked": true,
+    "files_changed": 1,
     "actual_violations": [],
     "unproposed_changes": [],
     "unimplemented_proposals": [],

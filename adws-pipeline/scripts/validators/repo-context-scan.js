@@ -1,20 +1,35 @@
-// INPUT: { plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] } }
+// INPUT: { plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] }, actual_changes: [string] }
 //   NOTE: each proposal's `description` (what changes and why) is read by the
 //   underspecification check below — a proposal with a missing or <3-char
 //   `description` yields `warn`. The planner (adws-planner) MUST emit this field.
+//   NOTE: `actual_changes` is the set of worktree-relative paths the builder REALLY
+//   touched. See the SC-15/F-84 note on the actuals pass below for why its absence is
+//   reported and floors the verdict rather than passing quietly.
 // USAGE: node repo-context-scan.js <input.json | ->   → JSON verdict on stdout (rubric_result: pass|warn|fail)
 'use strict';
 
 const manifest = {
   skill_id: 'repo.context_scan',
-  version: '2.0.0',
+  version: '2.1.0',
   phase_affinity: ['build'],
   rubric: {
-    pass: 'Plan file proposals are well-specified and within policy bounds',
-    warn: 'Plan has minor gaps in file specification or path coverage',
-    fail: 'Plan proposes paths outside policy bounds, unsafe paths, or malformed entries',
+    pass: 'Plan proposals AND the builder\'s actual changes are within policy bounds, and the two agree',
+    warn: 'Minor gaps in file specification, or the actual change set was not supplied, or it diverges from the plan',
+    fail: 'Proposed OR actual paths fall outside policy bounds, are unsafe, or are malformed',
   },
-  metrics: ['files_proposed', 'directories_touched', 'policy_violations', 'underspecified', 'malformed_entries'],
+  metrics: [
+    'files_proposed',
+    'directories_touched',
+    'policy_violations',
+    'underspecified',
+    'malformed_entries',
+    'actuals_checked',
+    'files_changed',
+    'actual_violations',
+    'unproposed_changes',
+    'unimplemented_proposals',
+    'malformed_actual_entries',
+  ],
 };
 
 // SC-9/A1(c). Prefix matching is SEGMENT-aware. `startsWith` is a raw substring
@@ -71,6 +86,7 @@ function execute(input) {
   // build-phase policy gate was skipped, not failed. Reproduced at exit 3.
   // task-normalize.js:26 already used this pattern.
   const groupedFiles = Object.create(null);
+  const proposedPaths = new Set();
   let malformedEntries = 0;
   let underspecifiedDescriptions = 0;
 
@@ -107,6 +123,7 @@ function execute(input) {
     }
 
     // --- then bookkeeping ---------------------------------------------------
+    proposedPaths.add(filePath);
     const parts = filePath.split('/');
     const dir = parts.length > 1 ? parts.slice(0, -1).join('/') : '.';
     directoriesSet.add(dir);
@@ -116,12 +133,75 @@ function execute(input) {
     groupedFiles[dir].push({ file: filePath, action: (isEntry && proposal.action) || 'unknown' });
   }
 
+  // --- the actuals pass (SC-15/F-84) ---------------------------------------
+  // This script IS the build gate's only validator, and until now its only input was
+  // the PLAN. A builder that wrote outside `allowed_paths` passed the build gate on the
+  // plan's good intentions, because nothing here ever looked at the worktree. Live run
+  // job_20260812_0001 caught it by hand: the orchestrator diffed the change set against
+  // the policy itself and recorded that nothing in the skill had told it to.
+  //
+  // Neither half of the old design was wrong — SKILL.md correctly declared this the
+  // build gate's validator, and the header correctly declared its input the plan. The
+  // defect was the composition, which is why absence is REPORTED rather than assumed:
+  // `actuals_checked: false` floors the verdict at `warn`, because a build gate that
+  // never saw the build is not a pass. A conforming run always supplies the key and
+  // never sees that floor.
+  const actualsSupplied = Array.isArray(input && input.actual_changes);
+  const actualViolations = [];
+  const unproposedChanges = [];
+  const unimplementedProposals = [];
+  const changedPaths = new Set();
+  let malformedActualEntries = 0;
+
+  if (actualsSupplied) {
+    for (const entry of input.actual_changes) {
+      const actualPath = typeof entry === 'string' ? entry.trim() : '';
+      // Strings only, deliberately. An object shape would have to guess which key
+      // carries the path, and a guess that lands on the wrong key reads as "no
+      // changes" — the exact silence this pass exists to remove.
+      if (actualPath === '') {
+        malformedActualEntries += 1;
+        continue;
+      }
+      // Policy first, for the same reason the proposals loop does it: no bookkeeping
+      // below may be able to skip the gate by throwing.
+      if (!isSafeRelativePath(actualPath)) {
+        actualViolations.push({ file: actualPath, reason: 'unsafe_path' });
+      }
+      if (allowedPaths.length > 0 && !allowedPaths.some((ap) => underPrefix(actualPath, ap))) {
+        actualViolations.push({ file: actualPath, reason: 'outside_allowed_paths' });
+      }
+      for (const bp of blockedPaths) {
+        if (underPrefix(actualPath, bp)) {
+          actualViolations.push({ file: actualPath, reason: 'in_blocked_path', blocked_path: bp });
+        }
+      }
+      changedPaths.add(actualPath);
+      if (!proposedPaths.has(actualPath)) unproposedChanges.push(actualPath);
+    }
+    for (const p of proposedPaths) {
+      if (!changedPaths.has(p)) unimplementedProposals.push(p);
+    }
+  }
+
   const underspecified = proposals.length === 0;
+  // Divergence is a FACT, but its badness is a judgement: a builder legitimately touches
+  // a lockfile or a generated file the plan did not name, and an in-policy unplanned
+  // edit is not a policy breach. So divergence is `warn` and a policy breach on the
+  // ACTUALS is `fail` — the SC-8 house rule (heuristic -> warn, fact -> fail) applied to
+  // the right fact. Failing on divergence would make this gate noisy enough to be routed
+  // around, which is a worse outcome than the warn it replaces.
+  const diverges = unproposedChanges.length > 0 || unimplementedProposals.length > 0;
 
   let rubric_result;
-  if (policyViolations.length > 0 || malformedEntries > 0) {
+  if (
+    policyViolations.length > 0 ||
+    malformedEntries > 0 ||
+    actualViolations.length > 0 ||
+    malformedActualEntries > 0
+  ) {
     rubric_result = 'fail';
-  } else if (underspecified || underspecifiedDescriptions > 0) {
+  } else if (underspecified || underspecifiedDescriptions > 0 || !actualsSupplied || diverges) {
     rubric_result = 'warn';
   } else {
     rubric_result = 'pass';
@@ -135,6 +215,12 @@ function execute(input) {
     policy_violations: policyViolations,
     underspecified,
     malformed_entries: malformedEntries,
+    actuals_checked: actualsSupplied,
+    files_changed: actualsSupplied ? changedPaths.size : null,
+    actual_violations: actualViolations,
+    unproposed_changes: unproposedChanges,
+    unimplemented_proposals: unimplementedProposals,
+    malformed_actual_entries: malformedActualEntries,
     plan_summary: planOutput.plan_summary || null,
     cost_usd: 0,
     token_count: 0,

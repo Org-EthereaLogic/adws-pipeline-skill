@@ -38,7 +38,7 @@ artifacts/{jobId}/
     │   ├── critic.json
     │   ├── advocate.json
     │   └── repro/                  # SC-13/F-77 — corpus files for a reproduced finding
-    ├── grader/                     # verify phase only
+    ├── grader/                     # ship phase only (SC-15/F-85 — was verify)
     │   └── grader_verdict.json
     └── skills/{skill_id}/
         └── skill_trace.json
@@ -55,8 +55,16 @@ artifacts/{jobId}/
   "cross_phase_rewinds": { "test": 0, "verify": 0, "review": 0 },
   "check_defect_repairs": 0,
   "operator_directed_rewinds": { "test": 0, "review": 0 },
+  "candidate_sha256": null, "receipt": null,
   "carry_over": null, "resumed_from": null }
 ```
+`candidate_sha256` (SC-15/F-85) is the SHA-256 of the composed patch at the moment the
+drift gate passed, written at ship BEFORE the first git action. `receipt` is verify's
+comparison of the PUBLISHED artifact against it:
+`{ "verified": true|false, "sha256": "", "candidate_sha256": "" }`. The pair is what makes
+"the thing that shipped is the thing that was graded" a checked claim rather than an
+assumption — grading happens on bytes in a worktree, publishing happens over a network,
+and nothing else in the tree connects them.
 These are the keys the pipeline DEFINES; the shape is a floor, not a ceiling. A run may
 carry additional orchestrator bookkeeping (`source_ref`, `repo_root`, `target_branch`,
 `risk_level`, `intake`, `tier_source`, per-phase `phases` rollups, free-text
@@ -402,6 +410,9 @@ because nothing asserted it.
 `grader/grader_verdict.json` — the adws-grader agent's output (same shape as the
 original `pr.drift_sentinel.spec` result): `rubric_result`, `criteria_results[]` with
 per-criterion `satisfied | partial | unaddressed | contradicted` verdicts, `summary`.
+Written under `ship/attempt_{n}/` since SC-15/F-85: the grader is the last gate before
+publication, not the first after it. Trees recorded before that carry it under
+`verify/attempt_{n}/`, which is where a reader of an older job should look.
 
 `entropy_history.jsonl` — X-2 regulator signal. One JSON object per line:
 ```json
@@ -470,4 +481,12 @@ in that attempt's `phase_manifest.json`.
    `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing — never estimated, copied
    from another file, or a placeholder. A midnight `T00:00:00Z` stamp reads as
    fabricated evidence: PASS claims built on low-integrity timestamps do not meet the
-   dual-evidence bar.
+   dual-evidence bar. `null` is not a placeholder — it is an honest "not known yet"
+   (`completed_at` while a phase runs, the structurally-unavailable provenance keys) and
+   is always permitted; `"--"` is the opposite, a field claiming a value it does not have.
+   **Enforced by `scripts/evidence-integrity.js` since SC-15/F-84b**, which the
+   orchestrator runs over `artifacts/{jobId}/` at the terminal report. Between SC-13 and
+   then this rule was prose only, and a live run wrote `"performed_at": "--"` into a
+   reproduction record that passed every gate the skill has. Rule 8's strict-writer half
+   and the write-once discipline of FR-4 are still prose: both are rules about WHO WROTE a
+   field, and a finished tree does not record authorship, so no reader can decide them.

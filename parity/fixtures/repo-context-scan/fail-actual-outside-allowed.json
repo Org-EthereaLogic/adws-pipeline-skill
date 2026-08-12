@@ -17,11 +17,15 @@
       "blocked_paths": [
         "infrastructure/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js",
+      "scripts/deploy.sh"
+    ]
   },
-  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\". Renamed under SC-15/F-84: this input carries no actual_changes, and a build gate that never saw the build is no longer a pass. Its sibling pass-actuals-match-proposal.json is the same plan WITH actuals; the pair is the pin that the verdict depends on having seen the build.",
+  "note": "SC-15/F-84 — THE FINDING. The plan is clean and in policy; the builder also wrote scripts/deploy.sh, outside allowed_paths. Before the actuals pass this input was a build-gate PASS.",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "fail",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
@@ -35,10 +39,17 @@
     "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
-    "actuals_checked": false,
-    "files_changed": null,
-    "actual_violations": [],
-    "unproposed_changes": [],
+    "actuals_checked": true,
+    "files_changed": 2,
+    "actual_violations": [
+      {
+        "file": "scripts/deploy.sh",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "unproposed_changes": [
+      "scripts/deploy.sh"
+    ],
     "unimplemented_proposals": [],
     "malformed_actual_entries": 0,
     "plan_summary": "Add null check",

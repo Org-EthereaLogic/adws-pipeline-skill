@@ -13,9 +13,12 @@
       "allowed_paths": [
         "src/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js"
+    ]
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when proposals have short descriptions\"",
+  "note": "tests/skill-modules.test.js — \"returns warn when a description is too short\". SC-15/F-84: actual_changes added so the short description is the ONLY reason this is a warn. Without it the actuals-absent floor produced the same verdict and guard-ablation reported the description rule as unpinned — a fixture whose name no longer described what it caught.",
   "expected": {
     "rubric_result": "warn",
     "files_proposed": 1,
@@ -31,10 +34,16 @@
     "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
+    "actuals_checked": true,
+    "files_changed": 1,
+    "actual_violations": [],
+    "unproposed_changes": [],
+    "unimplemented_proposals": [],
+    "malformed_actual_entries": 0,
     "plan_summary": null,
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null
   },
-  "expected_source": "port@SC-9, v2.0.0"
+  "expected_source": "port@SC-9 + SC-15, v2.1.0"
 }
