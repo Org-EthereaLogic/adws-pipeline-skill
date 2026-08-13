@@ -59,6 +59,38 @@ const CASES = [
     exit_code: 2,
   },
   {
+    // SC-16/F-86. The operator stopped a healthy run: test gate PASSED, the next step
+    // was determined ("proceed-to-review") and never taken. Before `halted` existed this
+    // had to be recorded as `canceled`, whose branch answers QUARANTINE / "human
+    // investigation required" about a run with nothing to investigate — three live arm A
+    // runs hit exactly this and all three recorded that the vocabulary had no honest
+    // member. RETRY is the honest verdict: resuming is the expected next step, and
+    // `carry_over.resumable: true` (unreachable before this change) says the tree can
+    // carry forward.
+    name: 'retry_operator_halt',
+    jobId: 'job-h41ta7',
+    decision: 'RETRY',
+    warn_flag: false,
+    exit_code: 1,
+  },
+  {
+    // The other half, and the one that keeps `halted` from being a laundering route: a
+    // halt does NOT clear a gate that failed. Same lifecycle value, same OPERATOR_HALT
+    // reason, test gate `fail` — QUARANTINE.
+    //
+    // This pair is also the anti-vacuity check on the guard itself. The guard cannot be
+    // the plain `gateFail` the `completed` branch uses, because `pipeline_completion`
+    // returns FAIL for EVERY non-completed run by construction — so a naive guard sends
+    // 100% of halts here and this fixture would pass while `retry_operator_halt` failed.
+    // Both cases must hold at once or the state is decorative in one direction and
+    // useless in the other.
+    name: 'quarantine_halt_with_failed_gate',
+    jobId: 'job-h9f41d',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+  },
+  {
     name: 'promote_unverified',
     jobId: 'job-4b7e1c',
     decision: 'PROMOTE',

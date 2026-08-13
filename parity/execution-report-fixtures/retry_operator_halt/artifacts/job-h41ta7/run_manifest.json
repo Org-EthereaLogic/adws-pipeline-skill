@@ -1,0 +1,32 @@
+{
+  "job_id": "job-h41ta7",
+  "task_id": "TASK-103",
+  "started_at": "2026-07-10T14:00:00Z",
+  "completed_at": "2026-07-10T16:20:00Z",
+  "final_status": "halted",
+  "failure_reason": "OPERATOR_HALT",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet"
+  },
+  "carry_over": {
+    "retained": true,
+    "resumable": true,
+    "resumable_reason": null,
+    "worktree_path": "/tmp/adws-wt/job-h41ta7",
+    "branch_name": "adws/job-h41ta7",
+    "gated_through": "test",
+    "files": [
+      { "path": "src/tokenizer.js", "sha256": "9f2c1d8b4a6e0357c9b1de2f4083a7561c0e9d3b28f4a615d7c8092b3ef14a6d" }
+    ]
+  },
+  "resumed_from": null,
+  "schema_version": "1.0.0"
+}
