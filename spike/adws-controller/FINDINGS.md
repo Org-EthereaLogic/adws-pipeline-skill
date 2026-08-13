@@ -1828,7 +1828,7 @@ you which you have.
 
 Arm A3 raised **seven** places the document does not say what to do. Four reproduce (the pre-git
 `ship-mode-select` trace — now three for three; `skill_trace.version`; the `provenance`
-contradiction; `NO_DOC_PATH_IN_SCOPE`), which takes the union to **eleven distinct gaps**. Three
+contradiction; `NO_DOC_PATH_IN_SCOPE`), which takes the union to **twelve distinct gaps**. Three
 are new, and the last of them blocks rather than merely requiring improvisation:
 
 10. **The canonical skill ids are DOTTED, and nothing says so.** `skill_trace.json` needs a
@@ -1877,6 +1877,34 @@ And the surprises, of which one is a near-miss on the evidence itself:
 **Arm A3's evidence tree is rule-9 clean**: 13 JSON files, 24 `*_at` fields, zero violations and
 zero warnings under `scripts/evidence-integrity.js`. Arm A2's carried the placeholder that produced
 finding 50. Three trees clean, one dirty, and the check separates them.
+
+**Finding 54 — the gap count was wrong, and a claim about which gaps were FIXED was wrong in the
+same sentence, in three files.** The union after arm A2 was nine; arm A3 added three; the numbered
+list runs 1 through 12. Three documents nonetheless read **eleven**, and two of them —
+[`docs/SPIKE_CONTROLLER_PLAN.md`](../../docs/SPIKE_CONTROLLER_PLAN.md) §13.5 and
+[`docs/VERIFICATION.md`](../../docs/VERIFICATION.md) — went further and said "three of the eleven
+documented gaps are fixed in SC-15." **Zero of the twelve were.** What SC-15 fixed was a *surprise*
+(`repo-context-scan` reading the plan, arm A2 and arm A3 both, never on any gap list), an ordering
+defect found by reading `SKILL.md` rather than by any arm A run, and finding 50. All three are real
+fixes; none of them is a numbered gap, and the sentence that bundled them under one count was
+written without re-reading the list it was counting.
+
+Two things make this worth a finding rather than an erratum. First, **it is finding 51's shape in
+prose**: the gap list is correct, the SC-15 changelog is correct, and the defect is entirely in the
+composition — a summary that joined two accurate records on a relation neither of them asserts.
+Second, **the false half was load-bearing**. §13.5 uses the number to argue that the arm A re-run
+must read the corrected skill. That argument survives — the three fixes are real and one of them is
+the largest defect either arm found — but it was resting on a premise that would not have held if
+anyone had checked it, which is the failure mode this document has now catalogued fourteen times
+against other people's artifacts.
+
+The correction is applied in place, and the superseded wording is named here rather than only
+overwritten: an amendment that erases what it amends is the thing §10.4 exists to prevent.
+
+**Nothing downstream moves.** No count feeds a gate, a metric, or a void; the twelve gaps are prose
+findings against a shipped document. The corrected statement is: **twelve documented gaps, zero
+fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
+state) and gaps 5/10 (one validator envelope).
 
 ### What step 6 does not establish, and it is most of it
 
