@@ -59,7 +59,7 @@ const CASES = [
     exit_code: 2,
   },
   {
-    // SC-16/F-86. The operator stopped a healthy run: test gate PASSED, the next step
+    // SC-16/F-88. The operator stopped a healthy run: test gate PASSED, the next step
     // was determined ("proceed-to-review") and never taken. Before `halted` existed this
     // had to be recorded as `canceled`, whose branch answers QUARANTINE / "human
     // investigation required" about a run with nothing to investigate — three live arm A

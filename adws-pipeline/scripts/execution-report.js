@@ -44,7 +44,7 @@ const path = require('path');
 // F-38 closed the hole for one half of consensus and left the other open — a Critic fail
 // is now a rewind origin (F-46), so the clean later round it produces was exactly what
 // hid it. Additive: same gate key, same decisions, same exit codes.
-// 1.4.0 also reads `final_status: "halted"` (SC-16/F-86) — a run the operator stopped
+// 1.4.0 also reads `final_status: "halted"` (SC-16/F-88) — a run the operator stopped
 // while it was healthy. It routes to the EXISTING RETRY verdict on the EXISTING exit
 // code 1, and to QUARANTINE when a gate failed, so it adds no decision, no exit code,
 // and no gate key. That is why it is not a version bump: the report's contract with its
@@ -937,7 +937,7 @@ function decideLifecycle({ status, failureReason, gates }) {
     };
   }
 
-  // SC-16/F-86. A halt is a fact about how the run ENDED, never a verdict on what it
+  // SC-16/F-88. A halt is a fact about how the run ENDED, never a verdict on what it
   // CONTAINS: the gate check comes first, so stopping a run cannot bury a gate that
   // failed. Without it, `halted` would be a laundering route out of QUARANTINE rather
   // than the missing vocabulary it is meant to be.

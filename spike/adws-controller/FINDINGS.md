@@ -1620,7 +1620,7 @@ model-independent. Arm A1's six:
 4. **No vocabulary for an operator-directed partial run.** Mapped to `canceled` / `OPERATOR_CANCEL`
    with a carry-over record — the closest documented enum. **This is findings 16/17/39's family
    again**: the reason vocabulary has no member for a thing that happened.
-   **CLOSED by SC-16/F-86** — `final_status: "halted"` / `OPERATOR_HALT`, with gap 8 and gap 12.
+   **CLOSED by SC-16/F-88** — `final_status: "halted"` / `OPERATOR_HALT`, with gap 8 and gap 12.
 5. **`skill_trace.version` has no documented content.**
 6. **The Advocate omitted its `resolution: null` key** despite being told to write it. Schema drift,
    semantics unaffected, correctly not gated.
@@ -1662,7 +1662,7 @@ two lists rather than merging them, and is corrected here. The three that are ne
    `TEST_GATE_FAILURE` asserts a budget exhaustion that did not occur (test budget 2, this was
    attempt 1). Both documented values are false, so arm A2 wrote `null` and recorded why —
    **the attempt-level twin of gap 4**, which was the job-level version of the same hole.
-   **CLOSED by SC-16/F-86** — the attempt-level `ROUTE_NOT_EXECUTED` with `route_determined`.
+   **CLOSED by SC-16/F-88** — the attempt-level `ROUTE_NOT_EXECUTED` with `route_determined`.
 9. **`NO_DOC_PATH_IN_SCOPE` is a judgment call wearing a rule's clothes.** "No `allowed_paths`
    entry admits a documentation location (README\*, CHANGELOG\*, `docs/`, or the repo's
    equivalent)" — and `adws-pipeline/references/` is this repo's equivalent, which the
@@ -1850,7 +1850,7 @@ are new, and the last of them blocks rather than merely requiring improvisation:
     one. So the deliberately-truncated run — the exact shape every arm A run has taken — is
     unresumable by construction. **This is gap 4's family reaching its conclusion**: the
     vocabulary had no member for a halted run, and now the *mechanism* has no path for one either.
-    **CLOSED by SC-16/F-86** — `halted` IS a terminal state, so `SKILL.md` §5 step 4 runs and the
+    **CLOSED by SC-16/F-88** — `halted` IS a terminal state, so `SKILL.md` §5 step 4 runs and the
     existing shipped/not-shipped rule decides `resumable` without being changed at all. The hole
     was never a policy; it was a record written at a terminal state and a stop that produced none.
 
@@ -1943,7 +1943,7 @@ fixed**, and the two closed by the work that follows this finding are gaps 4/8/1
 state) and gaps 5/10 (one validator envelope).
 
 **Running total as of this commit: twelve documented, three closed** — 4, 8 and 12, all by
-SC-16/F-86, because all three were one root cause. Nine remain open: 1, 2, 3, 5, 6, 7, 9, 10, 11.
+SC-16/F-88, because all three were one root cause. Nine remain open: 1, 2, 3, 5, 6, 7, 9, 10, 11.
 Stated as a number here so the next reader can check it against the list rather than inherit it —
 which is the whole lesson of the finding above.
 

@@ -75,7 +75,7 @@ keys are.
 `final_status` is null while running; set once to one of
 `completed | failed | quarantined | canceled | halted` at terminal state.
 
-`halted` (SC-16/F-86) is a run the OPERATOR stopped while it was healthy — not a failure, not a
+`halted` (SC-16/F-88) is a run the OPERATOR stopped while it was healthy — not a failure, not a
 cancellation. It is the fifth value because the other four all assert something a deliberate stop
 does not: `completed` claims seven gates passed, `failed` and `quarantined` claim a defect, and
 `canceled` routes to QUARANTINE with "human investigation required" over a run nobody needs to
@@ -131,7 +131,7 @@ artifact before anything resumes. The alternative — extending this record to d
 commit and ship state — would make it claim authority over things it was never designed
 to carry, and `ship/attempt_{n}/phase_output.json` already holds them.
 
-**A halted run reaches this record (SC-16/F-86).** Before `halted` existed, `carry_over` was written
+**A halted run reaches this record (SC-16/F-88).** Before `halted` existed, `carry_over` was written
 only at a terminal state and an operator-halted run never reached one, so the rule above could not
 be evaluated and `resumable: true` was unreachable for the one case that most obviously deserves
 it: a healthy run, stopped on purpose, with everything it built still in the tree. That was not a
@@ -184,7 +184,7 @@ schema.
 this level (`CRITIC_FAIL_REPAIRED`, `ADVOCATE_DISSENT_REPAIRED`) and never reach the terminal
 record.
 
-`ROUTE_NOT_EXECUTED` (SC-16/F-86) belongs to that attempt-only set: **the gate evaluated, a route
+`ROUTE_NOT_EXECUTED` (SC-16/F-88) belongs to that attempt-only set: **the gate evaluated, a route
 was determined from its result, and the route did not run** — because the job halted first. Record
 it with `route_determined` naming what would have happened (`"rewind-to-build"`,
 `"retry-attempt-2"`, `"terminate"`), so the evidence says *we knew the next step and did not take

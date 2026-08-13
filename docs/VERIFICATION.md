@@ -3273,10 +3273,17 @@ to confirm it.
 because a run needed them, not to move the number: gaps 4/8/12 with one lifecycle state for a
 deliberate stop, and gaps 5/10 with one validator output envelope.
 
-## SC-16/F-86 — a lifecycle state for a deliberate stop
+## SC-16/F-88 — a lifecycle state for a deliberate stop
 
 Closes arm A gaps **4, 8 and 12** — the only three of the twelve that share one root cause: the
 skill had no concept of a run that stopped on purpose while healthy.
+
+*(Numbered F-88, not F-86. This work was drafted as F-86 and renumbered before merge: **F-86 and
+F-87 were already allocated** to the 2026-08-09 audit and closed under SC-14 — F-86 is "all 19
+accepted survivors are unverified rules", cited in `run-parity.js` and `WBS.md`. Caught by grepping
+the allocated range rather than assuming the next number was free, which is the check worth keeping:
+the register has no allocator, so the only thing standing between two findings and one number is
+someone looking.)*
 
 | Gap | Hole | Close |
 |---|---|---|
