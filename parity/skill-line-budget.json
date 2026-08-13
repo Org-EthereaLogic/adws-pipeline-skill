@@ -40,7 +40,7 @@
     "Lowering `budget` toward SC-10's 337 floor is a separate decision with a real prose",
     "task attached; SC-14 deliberately did not take it. See DPPD.md section 23 (M-6)."
   ],
-  "budget": 456,
+  "budget": 468,
   "target_advisory": 350,
   "nfr3_ceiling": 500,
   "history": [
@@ -58,6 +58,11 @@
       "value": 456,
       "set_by": "SC-15",
       "reason": "+27 across three defects two live arm-A runs surfaced, all of which are rules the orchestrator must apply and therefore cannot live only in references/. +5 for the build gate assembling repo-context-scan's actual_changes from the worktree (F-84): the gate read the PLAN, so a builder writing outside allowed_paths passed on the plan's good intentions, and the live orchestrator caught it only because it checked the change set on its own initiative. +11 moving the drift gate ahead of the first git action and adding the receipt binding (F-85): grading the SHIPPED diff meant a BLOCK rewound a change that already had commits and a live PR, and no rewind can un-publish. +6 for running evidence-integrity.js at the terminal report (F-84b), which makes artifact-layout rule 9 executable after a live run wrote a placeholder timestamp that passed every gate. +5 on the validator map and the resumable prose the ordering change made wrong. This is the largest single raise since the ratchet was seeded and the first to buy safety ordering rather than a rule statement; the alternative was leaving three known-live defects documented but unenforced."
+    },
+    {
+      "value": 468,
+      "set_by": "SC-16",
+      "reason": "+12 for the halt lifecycle state (F-86), closing arm A gaps 4, 8 and 12 -- the only three of the twelve documented gaps that share one root cause. +9 for the section 5 preamble routing an operator halt INTO the terminal report, and +3 on the relay line. Both lines are orchestrator behaviour and cannot live only in references/: the orchestrator is the thing that must not abandon the tree mid-phase, and it is the thing that must tell the operator a RETRY verdict on their own deliberate stop means nothing failed. The mechanism this buys is gap 12's: carry_over is written at a terminal state, an operator halt produced no terminal state, so resumable:true was unreachable for a healthy run stopped on purpose -- the single best resume candidate the pipeline can produce. No policy said a halted run may not resume; there was simply no path to the record that would have said it could. The alternative to spending these lines was leaving three live runs' worth of evidence pointing at a hole nobody could reach from inside the document."
     }
   ]
 }

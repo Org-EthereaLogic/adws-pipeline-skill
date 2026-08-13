@@ -44,6 +44,15 @@ const path = require('path');
 // F-38 closed the hole for one half of consensus and left the other open — a Critic fail
 // is now a rewind origin (F-46), so the clean later round it produces was exactly what
 // hid it. Additive: same gate key, same decisions, same exit codes.
+// 1.4.0 also reads `final_status: "halted"` (SC-16/F-86) — a run the operator stopped
+// while it was healthy. It routes to the EXISTING RETRY verdict on the EXISTING exit
+// code 1, and to QUARANTINE when a gate failed, so it adds no decision, no exit code,
+// and no gate key. That is why it is not a version bump: the report's contract with its
+// readers is the decision vocabulary and the exit codes, and a fifth input value that
+// maps onto existing outputs does not change it. Before this, an operator-directed stop
+// had to be recorded as `canceled`, whose branch says "human investigation required"
+// about a run nobody needs to investigate — three live runs hit it and all three
+// recorded that the vocabulary had no honest member.
 const SCHEMA_VERSION = '1.4.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
@@ -924,6 +933,46 @@ function decideLifecycle({ status, failureReason, gates }) {
     return {
       decision: DECISIONS.QUARANTINE,
       decision_reason: 'Job was canceled before reaching a terminal completion; treated as non-promotable.',
+      warn_flag: false,
+    };
+  }
+
+  // SC-16/F-86. A halt is a fact about how the run ENDED, never a verdict on what it
+  // CONTAINS: the gate check comes first, so stopping a run cannot bury a gate that
+  // failed. Without it, `halted` would be a laundering route out of QUARANTINE rather
+  // than the missing vocabulary it is meant to be.
+  //
+  // But it CANNOT be the plain `gateFail` the `completed` branch uses, and the reason is
+  // the whole trap: `pipeline_completion` returns FAIL whenever `finalStatus !==
+  // 'completed'` OR any phase lacks evidence (evalPipelineCompletion above) — both true
+  // of every deliberate stop, by construction. Reusing `gateFail` here would quarantine
+  // 100% of halts and leave the state decorative. So the guard reads the gates that
+  // actually EVALUATED something and skips the one that only restates "this run did not
+  // finish", which is the premise rather than a finding.
+  //
+  // This is finding 51's shape and it was nearly shipped here: the guard was correct
+  // read alone, `evalPipelineCompletion` is correct read alone, and the composition was
+  // wrong. It was caught by reading the gate builder, not by running the fixture — the
+  // fixture would have passed a QUARANTINE assertion just as happily.
+  if (normalizedStatus === 'halted') {
+    const substantiveFail =
+      Array.isArray(gates) &&
+      gates.some((g) => g && g.status === GATE_STATUSES.FAIL && g.key !== 'pipeline_completion');
+    if (substantiveFail) {
+      return {
+        decision: DECISIONS.QUARANTINE,
+        decision_reason:
+          'Job was halted by the operator, but a gate that evaluated recorded fail; the halt does not clear the failure, so the job quarantines to preserve evidence.',
+        warn_flag: false,
+      };
+    }
+    const why = reason ? ` (reason: ${reason})` : '';
+    // RETRY, not QUARANTINE: nothing is wrong with this run, it just stopped. The warn
+    // flag stays false because a deliberate stop is not an anomaly — the report says so
+    // in words, and `carry_over.resumable` says whether the tree can be picked back up.
+    return {
+      decision: DECISIONS.RETRY,
+      decision_reason: `Job was halted by the operator with no failed gate${why}; nothing is wrong with the run and resuming it is the expected next step. See run_manifest.carry_over.resumable for whether the retained worktree can be adopted.`,
       warn_flag: false,
     };
   }
