@@ -3172,8 +3172,11 @@ from the outcome the experimenter wants.
 **PR #81 is unblocked** *(and has since merged as `6b84b47`)*. It was held because merging would replace the tree arm A3 reads. Arm A3
 has now run against the frozen tree, so that risk is discharged; and since condition 4 now requires
 a fresh both-arms window with its own freeze, the old `fe1657c8…` digest no longer gates anything.
-The re-run should read the corrected skill — three of the eleven documented gaps are fixed in that
-branch, including the one two of three arm A runs found on their own.
+The re-run should read the corrected skill — that branch fixes three real defects in the shipped
+document, including the one two of three arm A runs found on their own. *(Corrected 2026-08-12,
+finding 54: this line read "three of the eleven documented gaps are fixed". The union is twelve,
+and none of the three was a numbered gap — they were a surprise, an ordering defect, and finding
+50. The recommendation stands; the arithmetic behind it did not.)*
 
 ## Post-merge sync for PRs #81 and #82 (SC-15 + the arm A3 void)
 
@@ -3230,3 +3233,42 @@ Arm B is a recording on Claude Code 2.1.228, which no longer exists, so no furth
 can close it. The next attempt needs one window containing a fresh arm B on the thin sketch and a
 fresh arm A on the shipped skill — and arm A should read the **corrected** skill at `842ab33`, since
 pricing the prose arm against defects that are already fixed would measure the wrong artifact.
+
+## Finding 54 — the gap count, corrected
+
+Found on 2026-08-12 while auditing what the sprint left open, by reading the gap list against the
+sentence that summarized it.
+
+| | Was | Is |
+|---|---|---|
+| Union of documented gaps | eleven | **twelve** (nine after arm A2, plus arm A3's three; the list numbers 1–12) |
+| Closed by SC-15 | "three of the eleven" | **zero** |
+
+The arithmetic error and the false claim occupied the same sentence in
+[`docs/SPIKE_CONTROLLER_PLAN.md`](SPIKE_CONTROLLER_PLAN.md) §13.5 and in this document, and the
+count alone in [`FINDINGS.md`](../spike/adws-controller/FINDINGS.md). All three are corrected in
+place, and each names what it used to say.
+
+**What SC-15 actually fixed**, none of which is a numbered gap:
+
+| Fix | Where it came from |
+|---|---|
+| `repo-context-scan` reads the build, not the plan | a *surprise*, recorded by arm A2 and again by arm A3 — never on a gap list |
+| The drift gate runs before publication | reading `SKILL.md`, not from any arm A run |
+| `artifact-layout.md` rule 9 becomes executable | finding 50, from arm A2's evidence tree |
+
+**Verification of the corrected number.** The twelve are: gaps 1–6 from arm A1, 7–9 new in arm A2
+(five of A1's six reproduced), 10–12 new in arm A3 (four of the nine reproduced). Each is a
+numbered item under "What arm A{1,2,3} found in the SHIPPED skill" in `FINDINGS.md`. Checked
+against the shipped tree at `3d09d03`: gap 1's trace location is still undefined (`SKILL.md:150`
+requires the pre-git run and names no path for its trace), and `skill_trace.version` — gap 5 — is
+still an empty string in the shape at `artifact-layout.md:393` with no documented content. Both
+would have had to close for the old claim to be even partly true.
+
+**Nothing recomputed.** No gate, metric, veto, or void reads a gap count; `make local-ci`,
+`run-ab.sh`, `run-step5.sh`, and the parity corpus are untouched by this correction and were re-run
+to confirm it.
+
+**The two gaps this sprint does close** are handled in the work that follows, and they are closed
+because a run needed them, not to move the number: gaps 4/8/12 with one lifecycle state for a
+deliberate stop, and gaps 5/10 with one validator output envelope.

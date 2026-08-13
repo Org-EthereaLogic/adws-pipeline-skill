@@ -810,10 +810,17 @@ Two things follow for whoever schedules that window:
 1. **Run them adjacently, and treat the gap between them as the primary risk.** Confound 18 gave
    model-serving drift an UNKNOWN direction and mitigated it with "as soon as possible", which is
    not a mechanism. The mechanism is one window.
-2. **Re-run arm A against the CORRECTED skill.** Three of the eleven documented gaps are fixed in
-   SC-15 (PR #81, merged `6b84b47`), including `repo-context-scan` reading the plan instead of the build — which
-   two of the three arm A runs found unprompted. Measuring the prose arm against a document with
-   known, already-fixed defects would price the wrong artifact.
+2. **Re-run arm A against the CORRECTED skill.** SC-15 (PR #81, merged `6b84b47`) fixed three real
+   defects in the shipped document, the largest being `repo-context-scan` reading the plan instead
+   of the build — which two of the three arm A runs found unprompted. Measuring the prose arm
+   against a document with known, already-fixed defects would price the wrong artifact.
+
+   **None of those three is one of the numbered documentation gaps** (finding 54 — an earlier
+   version of this line said "three of the eleven documented gaps are fixed" and was wrong twice
+   over: the union is **twelve**, and **zero** of them were closed by SC-15). The three were a
+   surprise, an ordering defect found by reading `SKILL.md`, and finding 50. The conclusion is
+   unaffected — the fixes are real and the re-run should read the corrected skill — but the reason
+   is the fixes themselves, not a count of gaps they did not touch.
 
 The full accounting is `spike/adws-controller/FINDINGS.md` findings 52 and 53; the second is the
 analyzer returning CONFIRM on this pair because §7.4's cross-arm half lived only in the driver.
