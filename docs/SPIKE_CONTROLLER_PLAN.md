@@ -811,7 +811,7 @@ Two things follow for whoever schedules that window:
    model-serving drift an UNKNOWN direction and mitigated it with "as soon as possible", which is
    not a mechanism. The mechanism is one window.
 2. **Re-run arm A against the CORRECTED skill.** Three of the eleven documented gaps are fixed in
-   the SC-15 branch, including `repo-context-scan` reading the plan instead of the build — which
+   SC-15 (PR #81, merged `6b84b47`), including `repo-context-scan` reading the plan instead of the build — which
    two of the three arm A runs found unprompted. Measuring the prose arm against a document with
    known, already-fixed defects would price the wrong artifact.
 
