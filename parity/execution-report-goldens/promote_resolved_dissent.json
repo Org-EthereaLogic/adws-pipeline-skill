@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-1b2c3d",
+  "task_id": "TASK-501",
+  "decision": "PROMOTE",
+  "decision_reason": "Job completed successfully with gate warnings; promoting with warn flag for operator awareness.",
+  "warn_flag": true,
+  "exit_code": 10,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "7/7 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "pass",
+      "detail": "pass"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "pass",
+      "detail": "PASS"
+    },
+    {
+      "gate": "consensus",
+      "result": "warn",
+      "detail": "1 operator-overridden dissent(s) — Advocate dissent in review/attempt_1 operator-resolved (override) — promotes with a permanent warning — False positive: staging happens only at ship, so an untracked change-set file at the review gate is expected pipeline state (F-4). The change is complete."
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    },
+    {
+      "phase": "review",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "fail",
+      "dissent": "The build's new helper file is untracked in the worktree at review; the operator asked for a committed change, so this looks unfinished and must not promote.",
+      "resolution": {
+        "resolved_by": "operator",
+        "action": "override",
+        "rationale": "False positive: staging happens only at ship, so an untracked change-set file at the review gate is expected pipeline state (F-4). The change is complete.",
+        "resolved_at": "2026-07-16T12:00:00Z"
+      }
+    }
+  ],
+  "superseded_consensus": [],
+  "warnings": [
+    "Consensus dissent in review/attempt_1: The build's new helper file is untracked in the worktree at review; the operator asked for a committed change, so this looks unfinished and must not promote. [operator override: False positive: staging happens only at ship, so an untracked change-set file at the review gate is expected pipeline state (F-4). The change is complete.]",
+    "Gate \"consensus\" evaluated to warn: Advocate dissent in review/attempt_1 operator-resolved (override) — promotes with a permanent warning — False positive: staging happens only at ship, so an untracked change-set file at the review gate is expected pipeline state (F-4). The change is complete."
+  ],
+  "evidence_root": "<evidence_root>"
+}

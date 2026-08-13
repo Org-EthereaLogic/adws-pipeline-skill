@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-7c3e91",
+  "task_id": "TASK-604",
+  "decision": "PROMOTE",
+  "decision_reason": "Job completed successfully with gate warnings; promoting with warn flag for operator awareness.",
+  "warn_flag": true,
+  "exit_code": 10,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "7/7 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "pass",
+      "detail": "pass"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "pass",
+      "detail": "PASS"
+    },
+    {
+      "gate": "consensus",
+      "result": "warn",
+      "detail": "2 latest round(s) clean, 1 superseded objection(s) — Advocate dissent in review/attempt_1 (operator repair) was superseded by a later clean round — promotes with a permanent warning — Dissent CONFIRMED on inspection, not overridden. Rewound to build to carry the four dropped findings into the deliverable; the corrections were written to build/attempt_2/corrections.json and the review gate re-run."
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "test",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 2,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 2,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 2,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    },
+    {
+      "phase": "review",
+      "attempt": 2,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [
+    {
+      "phase": "review",
+      "attempt": 1,
+      "advocate": "fail",
+      "dissent": "The change set drops four findings the research record marks VERIFIED, one of them tagged a direct NFR-1 input. They are not deferred and not recorded as open items — they are simply absent, and because the evidence tree is gitignored in the target repo this document is their only durable record. Dropping them silently is the failure mode the operator asked this task to prevent.",
+      "critic": "pass",
+      "critic_issue": null,
+      "critic_finding": null,
+      "resolution": {
+        "resolved_by": "operator",
+        "action": "repair",
+        "rationale": "Dissent CONFIRMED on inspection, not overridden. Rewound to build to carry the four dropped findings into the deliverable; the corrections were written to build/attempt_2/corrections.json and the review gate re-run.",
+        "resolved_at": "2026-08-06T01:55:00Z"
+      }
+    }
+  ],
+  "warnings": [
+    "Consensus dissent in review/attempt_1 (superseded): The change set drops four findings the research record marks VERIFIED, one of them tagged a direct NFR-1 input. They are not deferred and not recorded as open items — they are simply absent, and because the evidence tree is gitignored in the target repo this document is their only durable record. Dropping them silently is the failure mode the operator asked this task to prevent. [operator repair: Dissent CONFIRMED on inspection, not overridden. Rewound to build to carry the four dropped findings into the deliverable; the corrections were written to build/attempt_2/corrections.json and the review gate re-run.]",
+    "Gate \"consensus\" evaluated to warn: Advocate dissent in review/attempt_1 (operator repair) was superseded by a later clean round — promotes with a permanent warning — Dissent CONFIRMED on inspection, not overridden. Rewound to build to carry the four dropped findings into the deliverable; the corrections were written to build/attempt_2/corrections.json and the review gate re-run.",
+    "Phase \"build\" passed on attempt 2 (attempt(s) 1..1 superseded or gate-failed — attempt 1: superseded (gate_result=pass)).",
+    "Phase \"review\" passed on attempt 2 (attempt(s) 1..1 gate-failed — attempt 1: ADVOCATE_DISSENT_REPAIRED).",
+    "Phase \"test\" passed on attempt 2 (attempt(s) 1..1 superseded or gate-failed — attempt 1: superseded (gate_result=pass))."
+  ],
+  "evidence_root": "<evidence_root>"
+}

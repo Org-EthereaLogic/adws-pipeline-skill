@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-5c9a2d",
+  "task_id": "TASK-201",
+  "decision": "QUARANTINE",
+  "decision_reason": "Job reached completed status but at least one gate evaluated to fail; quarantining to preserve evidence.",
+  "warn_flag": false,
+  "exit_code": 2,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "7/7 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "fail",
+      "detail": "fail — Grader verdict recorded fail — AC-coverage drift BLOCK (PR_DRIFT_SENTINEL_BLOCK)"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "pass",
+      "detail": "PASS"
+    },
+    {
+      "gate": "consensus",
+      "result": "pass",
+      "detail": "2 round(s) clean"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    },
+    {
+      "phase": "review",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [],
+  "warnings": [
+    "Gate \"grader_verdict\" evaluated to fail: Grader verdict recorded fail — AC-coverage drift BLOCK (PR_DRIFT_SENTINEL_BLOCK)"
+  ],
+  "evidence_root": "<evidence_root>"
+}

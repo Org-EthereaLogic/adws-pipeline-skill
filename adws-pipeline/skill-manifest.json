@@ -12,13 +12,13 @@
     "The installed copy carries this file, which is what lets scripts/skill-check.js",
     "verify an install against itself and `make check-installs` compare it to source."
   ],
-  "skill_version": "8a351b399aed",
+  "skill_version": "cc3d347d9669",
   "file_count": 31,
-  "git_commit": "3a00f1c959d24fc1dafdac713bd6938622f9d818",
+  "git_commit": "fe8b680f2ddbd199de1c17835788be0aeaa68e2a",
   "skill": {
     "SKILL.md": "870d9ba8ae16f0cfb185983f88aa99860b6468bc64e34c44f3c87e500b4da7e8",
     "references/agent-shared-blocks.md": "f63714624eea0ee6dc640804b8a3e47aee985297cded69aa7761f928d82f3478",
-    "references/artifact-layout.md": "fe1af1ff1ba56935799341142f189c7bc4017cdb7da70e6e57c65a93bd1e7c2b",
+    "references/artifact-layout.md": "bd36c74c3e426490e5ffa7742ce1a31936926cf6f1f26dbc0b630413f87ba200",
     "references/phase-gates.md": "35a83104385e0ba3ca55edca11b7efae51bf36d4d13db01350617e611ee193bd",
     "references/runtimes.md": "67c3412497969af83564d9d85f7ddd19e0b6c3ac22e31cfc07d3b6738a5d06b8",
     "references/task-contract.md": "57dabe646d35cbf3098527476bd4bd51c670a145f1d7d14823992e55270c0a87",

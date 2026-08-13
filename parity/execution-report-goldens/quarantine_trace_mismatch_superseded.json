@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-8c4a19",
+  "task_id": "TASK-721",
+  "decision": "QUARANTINE",
+  "decision_reason": "Job reached completed status but at least one gate evaluated to fail; quarantining to preserve evidence.",
+  "warn_flag": false,
+  "exit_code": 2,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "7/7 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "pass",
+      "detail": "pass"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "pass",
+      "detail": "PASS"
+    },
+    {
+      "gate": "consensus",
+      "result": "warn",
+      "detail": "2 latest round(s) clean, 1 superseded objection(s) — Critic fail in review/attempt_1 (superseded by a later attempt) was superseded by a later clean round — promotes with a permanent warning: Self-entry excluded from the forward existence check, so a broken self-entry passes silently"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "fail",
+      "detail": "1 evidence-integrity mismatch(es), 0 fail, 0 warn — 1 skill_trace.json verdict(s) disagree with their own validator output — review-risk-assess in build/attempt_1 (trace \"warn\" vs validator \"fail\")"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "test",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 2,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 2,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 2,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 2,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    },
+    {
+      "phase": "review",
+      "attempt": 2,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [
+    {
+      "phase": "review",
+      "attempt": 1,
+      "advocate": "pass",
+      "dissent": null,
+      "critic": "fail",
+      "critic_issue": "Self-entry excluded from the forward existence check, so a broken self-entry passes silently",
+      "critic_finding": "Self-entry excluded from the forward existence check, so a broken self-entry passes silently (gate-self-test.js:204-245 iterates siblingEntries (self-slug filtered out) when checking registry-entry-without-fixture; a self-entry whose fixture_root is absent is never flagged. Reproduced: broken self-entry + one valid sibling returns pass/exit 0.)",
+      "resolution": null
+    }
+  ],
+  "warnings": [
+    "Critic fail in review/attempt_1 (superseded): Self-entry excluded from the forward existence check, so a broken self-entry passes silently [superseded by a later attempt]",
+    "EVIDENCE INTEGRITY: skill_trace.json for \"review-risk-assess\" in build/attempt_1 (SUPERSEDED attempt) records rubric_result=\"warn\" but its own output.rubric_result is \"fail\". A later attempt cannot un-write a verdict no validator produced, so this fails the gate from a superseded attempt.",
+    "Gate \"consensus\" evaluated to warn: Critic fail in review/attempt_1 (superseded by a later attempt) was superseded by a later clean round — promotes with a permanent warning: Self-entry excluded from the forward existence check, so a broken self-entry passes silently",
+    "Gate \"skills_clean\" evaluated to fail: 1 skill_trace.json verdict(s) disagree with their own validator output — review-risk-assess in build/attempt_1 (trace \"warn\" vs validator \"fail\")",
+    "Phase \"build\" passed on attempt 2 (attempt(s) 1..1 superseded or gate-failed — attempt 1: superseded (gate_result=pass)).",
+    "Phase \"review\" passed on attempt 2 (attempt(s) 1..1 gate-failed — attempt 1: CRITIC_FAIL_REPAIRED).",
+    "Phase \"test\" passed on attempt 2 (attempt(s) 1..1 superseded or gate-failed — attempt 1: superseded (gate_result=pass))."
+  ],
+  "evidence_root": "<evidence_root>"
+}

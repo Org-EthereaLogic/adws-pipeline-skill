@@ -1,0 +1,11 @@
+{
+  "phase": "document",
+  "attempt": 1,
+  "job_id": "job-skf001",
+  "started_at": "2026-07-10T18:00:00Z",
+  "completed_at": "2026-07-10T18:12:00Z",
+  "agent": "documenter",
+  "model_tier": "haiku",
+  "gate_result": "pass",
+  "failure_reason": null
+}

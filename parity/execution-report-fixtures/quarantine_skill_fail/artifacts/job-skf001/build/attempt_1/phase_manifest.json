@@ -1,0 +1,11 @@
+{
+  "phase": "build",
+  "attempt": 1,
+  "job_id": "job-skf001",
+  "started_at": "2026-07-10T15:00:00Z",
+  "completed_at": "2026-07-10T15:12:00Z",
+  "agent": "builder",
+  "model_tier": "sonnet",
+  "gate_result": "pass",
+  "failure_reason": null
+}

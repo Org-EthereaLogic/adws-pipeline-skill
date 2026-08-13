@@ -822,5 +822,14 @@ Two things follow for whoever schedules that window:
    unaffected — the fixes are real and the re-run should read the corrected skill — but the reason
    is the fixes themselves, not a count of gaps they did not touch.
 
+   **SC-16 has since moved the tree three more times, and the reason is now larger than SC-15
+   alone.** F-88 added the `halted` lifecycle state (arm A gaps 4, 8, 12), F-88b corrected its
+   anti-laundering guard (finding 56), and F-89 gave every validator verdict a `skill_id` /
+   `tool_version` envelope (gaps 5, 10). **Five of the twelve gaps the arm A runs found are now
+   closed in the document those runs were reading.** Whoever schedules the window should re-read
+   this item against the `shipped_tree` digest in `ab/PREREGISTRATION.json` at that moment rather
+   than against this paragraph — the digest is the authority on which tree arm A will read, and
+   this list is a convenience that will go stale again.
+
 The full accounting is `spike/adws-controller/FINDINGS.md` findings 52 and 53; the second is the
 analyzer returning CONFIRM on this pair because §7.4's cross-arm half lived only in the driver.
