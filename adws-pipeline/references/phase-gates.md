@@ -22,7 +22,7 @@ plan → build → test → review → document → ship → verify → COMPLETE
 
 No phase may be skipped. No later phase may start while an earlier gate is failing.
 The only terminal states are `completed`, `failed`, `quarantined`, `canceled`, and —
-since SC-16/F-86 — `halted`, the operator's deliberate stop. `halted` is terminal in the
+since SC-16/F-88 — `halted`, the operator's deliberate stop. `halted` is terminal in the
 sense that matters here: it closes the record, writes `carry_over`, and runs the terminal
 report. It is the one terminal state whose expected sequel is a resume rather than a
 repair.
@@ -480,7 +480,7 @@ never silent.
 - Anything else terminating the job (budget exhaustion, recorded as
   `{PHASE}_GATE_FAILURE`, or a second test rewind → `TEST_GATE_FAILURE`) → RETRY
   verdict.
-- **`OPERATOR_HALT` (SC-16/F-86) is in NEITHER class.** It is not no-retry — resuming is
+- **`OPERATOR_HALT` (SC-16/F-88) is in NEITHER class.** It is not no-retry — resuming is
   the expected outcome — and it is not quarantine-class, because nothing about a
   deliberate stop needs investigating. It rides the ordinary RETRY path with
   `final_status: "halted"`. Distinguish it from `OPERATOR_CANCEL`, which is both no-retry
@@ -493,7 +493,7 @@ never silent.
   operator's stop is a fact about the run's *ending*, not a verdict on its *contents*, and
   a lifecycle value that could bury a failed gate would be a laundering route rather than
   a vocabulary fix.
-- **`ROUTE_NOT_EXECUTED` (SC-16/F-86) is ATTEMPT-level only** — like
+- **`ROUTE_NOT_EXECUTED` (SC-16/F-88) is ATTEMPT-level only** — like
   `CRITIC_FAIL_REPAIRED` and `ADVOCATE_DISSENT_REPAIRED`, it is never written to
   `run_manifest.failure_reason` and is in no terminal class. It records that a gate
   evaluated, a route was determined from the result, and the halt landed before the route

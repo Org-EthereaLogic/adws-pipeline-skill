@@ -361,7 +361,7 @@ ran at step 3. A failure here is about the PUBLICATION, never the change set:
 
 ### 5 — Terminal report (FR-10)
 
-**Every ending arrives here, including a stop (SC-16/F-86).** On an operator halt, do not
+**Every ending arrives here, including a stop (SC-16/F-88).** On an operator halt, do not
 abandon the tree mid-phase: enter §5 with `final_status: "halted"` /
 `failure_reason: "OPERATOR_HALT"`, close the open attempt with the ATTEMPT-level
 `failure_reason: "ROUTE_NOT_EXECUTED"` and `route_determined` naming the step the halt
