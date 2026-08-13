@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "job_id": "job_20260812_0001",
+  "task_id": "tsk_20260811_0002",
+  "started_at": "2026-08-13T01:07:14Z",
+  "completed_at": null,
+  "final_status": null,
+  "failure_reason": null,
+  "current_phase": "review",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "worktree_path": "/home/etherealogic_2/adws-pipeline-skill-adws-job_20260812_0001",
+  "branch_name": "adws/job_20260812_0001/separate-the-non-retriable-termi",
+  "skill_version": "549226ba94f0",
+  "model_tiers": {
+    "plan": "opus",
+    "build": "sonnet",
+    "test": "sonnet",
+    "review": "opus",
+    "document": "haiku",
+    "ship": "sonnet",
+    "verify": "sonnet",
+    "critic": "sonnet",
+    "advocate_test": "haiku",
+    "advocate_review": "sonnet",
+    "grader": "opus"
+  },
+  "tier_source": "contract.risk_level=medium",
+  "cross_phase_rewinds": {
+    "test": 0,
+    "verify": 0,
+    "review": 0
+  },
+  "check_defect_repairs": 0,
+  "operator_directed_rewinds": {
+    "test": 0,
+    "review": 0
+  },
+  "carry_over": null,
+  "resumed_from": null,
+  "repo_root": "/home/etherealogic_2/adws-pipeline-skill",
+  "target_branch": "main",
+  "risk_level": "medium",
+  "intake": {
+    "hard_failures": [],
+    "soft_warnings": [
+      "NO_DOC_PATH_IN_SCOPE — allowed_paths admits no README*/CHANGELOG*/docs/ location; adws-pipeline/references/ is the repo's documentation equivalent and IS in scope, so this is recorded as a judgment call rather than a clean match. Consequence would land at the document phase, which this operator-truncated run does not reach."
+    ],
+    "skill_check": {
+      "exit_code": 0,
+      "intact": true,
+      "skill_version": "549226ba94f0",
+      "git_commit": "8cd1cd76bec3c78fea6911657552ef6a98b24ad9"
+    },
+    "pre_git_ship_mode_select": {
+      "rubric_result": "pass",
+      "branch_name_valid": true,
+      "run_at": "2026-08-13T01:07:14Z",
+      "note": "SKILL.md §1 requires this before the first git command consuming branch_name; the layout defines no attempt directory at that point, so the verdict is recorded here as orchestrator bookkeeping."
+    }
+  },
+  "operator_notes": "Operator truncated this run at the test gate: plan -> build -> test only. Review, execution-report.js, and archival are deliberately not run. The truncation is an operator decision, not a waived gate.",
+  "halt": {
+    "halted_by": "operator",
+    "halted_after_gate": "test",
+    "halted_at": "2026-08-13T01:44:15Z",
+    "reason": "Operator scoped this run to plan -> build -> test and directed a stop the moment the test gate was decided. review/document/ship/verify were never dispatched, execution-report.js was not run, no archive was written, and the worktree is retained. current_phase advanced to review per the skill gate rule (a passed gate advances the pointer); no review attempt directory exists.",
+    "gates_passed": [
+      "plan",
+      "build",
+      "test"
+    ],
+    "final_status_intentionally_null": true
+  },
+  "gate_warnings": [
+    "test/attempt_1/consensus/advocate.json omits the defined key \"resolution\" (artifact-layout.md: advocate.json carries resolution: null). Written at haiku tier despite an explicit instruction to include it. Non-blocking: resolution is a designated post-hoc field the orchestrator may write ONLY on an operator dissent resolution, and there is no dissent, so it was NOT back-filled.",
+    "test/attempt_1 carries 4 supplementary gate_weak check rows (the parity regression suite, which passes both pre- and post-change and so is unfalsifiable by construction). Every one of CHK001-CHK004 independently carries a verified row with baseline_reason assertion-failed-runtime-present, so no criterion is unverified. Surfaced as a warn, never counted as a pass."
+  ]
+}

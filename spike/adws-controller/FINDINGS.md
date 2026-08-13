@@ -1745,13 +1745,147 @@ live. Whether it deserves quarantine-class is a real question and it is deferred
 rather than answered by inventing an enum member mid-experiment. Gaps 4 and 8 are about a
 vocabulary with no member for what happened; the response to that is not to mint members casually.
 
+### The third arm A run: both operator keys were fixed, and the harness moved underneath
+
+**Finding 52 — three runs, three VOIDs, one per frozen key, and the third one nobody controls.**
+Arm A3 ran on 2026-08-12 with `--model claude-opus-5 --effort high` on the command line and both
+values pinned in `settings.json`. Model: correct on all 81 assistant rows, and **equal to arm B's**.
+Effort: `high` on all 81 rows, and **equal to arm B's**. §7.4 freezes three keys. The third is
+`version`, and arm A3 ran on Claude Code **2.1.229** against arm B's **2.1.228** — the CLI updated
+itself between 2026-08-11 and 2026-08-12.
+
+| run | key that drifted | cause |
+|---|---|---|
+| A1 | model — `claude-fable-5` vs `claude-opus-5` | a `/model` command had saved a new default |
+| A2 | effort — `xhigh` vs `high` | a `/effort` command had saved a new default |
+| A3 | **version — `2.1.229` vs `2.1.228`** | **the harness updated itself overnight** |
+
+The first two were operator error, and pinning fixed them — each time, exactly, and each time the
+failure moved to the next key. The third is different in kind. §7.4 names the literal string
+`version == "2.1.228"`, and **2.1.228 no longer exists to run against**. The protocol saw this
+coming: confound 18 is "model-serving drift between the two run dates", direction **UNKNOWN**,
+mitigated only by "run arm A as soon as possible; assert §7.4". That mitigation failed for a reason
+the protocol could not have priced — arm A took three attempts across two days, and every attempt
+spent to fix one drift bought time for the next.
+
+**So the pre-registered remedy is not another arm A run.** §7.4 row 4 says: *mismatch → VOID,
+**re-run both arms inside the same window***. Not re-run arm A. Both. Arm B is a recording from
+2026-08-11 on a version that is gone, so **no arm-A-only run can ever close condition 4 again** —
+the incremental path this spike has been walking for three runs is closed, and was closed the
+moment the CLI updated. That is a structural fact about the design, not about this run: **the
+frozen list contains a key the experimenter does not control, and its drift probability rises with
+every day between the arms.**
+
+**Finding 53 — and the analyzer said CONFIRM.** Before the amendment recorded below,
+`measure-ab.js` returned `verdict: "CONFIRM"` on this pair, with **zero vetoes fired**. It checked
+that each arm's harness config was *single-valued within that arm* (line ~849) and never compared
+the two arms to each other. §7.4's other half — "**and equal across arms**" — lived in
+`run-ab.sh`, as an assertion hand-written once per arm-A run, and for arm A3 that assertion did
+not exist yet. Both halves were correct. The analyzer held both transcripts, had every byte needed
+to decide the question, and never asked it.
+
+**This is finding 51's shape inside the instrument written to police it** — the third instance in
+a week, after `repo-context-scan` and TAC-7's `|| true` hooks, and the first one that was mine.
+The composition is a third artifact that nothing reviews, and here the composition's failure mode
+was to publish a result. Fixed: `measure-ab.js` now compares all three keys across arms and routes
+any mismatch into veto 7, which §5 already maps to VOID.
+
+**The amendment is post-data, and §10.4 normally forbids that.** It is permitted here on a
+directional test: it can only **add** voids. It cannot turn a VOID into a verdict, move a band, or
+change a number — verified by recomputing both arms under the new script and diffing the full arm
+blocks, which are byte-identical. It moved this pair from CONFIRM to VOID: **away** from the
+outcome the experimenter wants. An amendment that can only cost you the answer is not a
+rationalization. The `measure_ab_js` digest changed with it, which is the freeze working, and
+`run-ab.sh` now runs 91 assertions where it ran 68.
+
+**And this is the pair that passed everything.** Recorded under §10.13, which forbids a void pair
+from re-pricing anything:
+
+| | arm A3 | arm B |
+|---|---|---|
+| `P` (S1) | 10,398.67 | 5,588.67 |
+| `P` (S2) | 12,370 | 6,111.67 |
+| Band, S1 / S2 | **CONFIRM / CONFIRM — they agree** | — |
+| Round trips / phase | 5.33 | 3.00 |
+| `I_net` | 65,514 | 20,379 |
+| Terminal state | test gate **PASS** | test gate FAIL |
+
+Both segmentations returned the same band — the first pair to do so and the rule §4.11 made
+binding. Leave-one-out was sign- **and** band-stable across all six drops. Both instruments agreed.
+Baseline drift was 253 against a 2,000 tolerance. Attempts were matched at 1/1/1, the first pair
+with matched attempt counts. **Four of §6's five n=1-sufficiency conditions hold, and the fifth
+fails for exactly one reason: veto 7, the harness void.** Every stability check the protocol asks
+for passed, on a pair whose harness was uncontrolled.
+
+That is the argument for freezing the harness in a section *separate* from the stability checks,
+and it is worth stating plainly because the temptation runs the other way: **stability is not
+validity.** A pair can be perfectly self-consistent, reproduce under both segmentations, survive
+every ablation, and still not be a comparison — because self-consistency is a property of the
+measurement and validity is a property of what was held fixed. Nothing inside the data can tell
+you which you have.
+
+### What arm A3 found in the shipped skill
+
+Arm A3 raised **seven** places the document does not say what to do. Four reproduce (the pre-git
+`ship-mode-select` trace — now three for three; `skill_trace.version`; the `provenance`
+contradiction; `NO_DOC_PATH_IN_SCOPE`), which takes the union to **eleven distinct gaps**. Three
+are new, and the last of them blocks rather than merely requiring improvisation:
+
+10. **The canonical skill ids are DOTTED, and nothing says so.** `skill_trace.json` needs a
+    `skill_id`, and the ids are `task.normalize`, `repo.context_scan`, `criteria.to_checks` — not
+    the filenames. An orchestrator that guessed from `task-normalize.js` would build
+    `skills/task-normalize/` and get the directory name wrong on **every trace in the tree**. Arm
+    A3 read three validator sources to find them. This sharpens gap 5 from a missing version
+    string to a missing id map.
+11. **A criterion carrying both a `verified` and a `gate_weak` check row has no defined verdict.**
+    SC-5/F-31 explicitly permits several checks to share one `check_id`, and `verdict` is
+    per-check — but the gate is stated per *criterion*. Arm A3's tester returned exactly this: 4
+    verified rows plus 4 supplementary `gate_weak` rows. It ruled that ≥1 verified row makes the
+    criterion verified and surfaced the rest as warns. Nothing in the skill says that.
+12. **A halted run can never be resumed, by the skill's own rules.** §0 step 5 admits
+    `execution.resume_from_job` only when the predecessor recorded `carry_over.resumable: true`,
+    and `carry_over` is written **only at a terminal state**. An operator-halted run never reaches
+    one. So the deliberately-truncated run — the exact shape every arm A run has taken — is
+    unresumable by construction. **This is gap 4's family reaching its conclusion**: the
+    vocabulary had no member for a halted run, and now the *mechanism* has no path for one either.
+
+And the surprises, of which one is a near-miss on the evidence itself:
+
+- **The scratch root has an owner but not a fresh identity, and it nearly poisoned the
+  falsifiability evidence.** F-77's convention `${TMPDIR:-/tmp}/adws-{jobId}/{phase}/attempt_{n}/{agent}/`
+  is a pure function of four values with **no run nonce**, so a re-run under the same job id
+  silently inherits the previous run's scratch. Arm A3's tester found a stale check script there
+  from 2026-08-11 asserting against a non-existent API, refused to reuse it, wrote a fresh one, and
+  logged the discrepancy — verified independently by the orchestrator. **Had it reused that script,
+  the pre-change baseline would have gone red for the wrong reason and the falsifiability evidence
+  would have looked green while proving nothing.** That is SC-3's whole apparatus defeated by a
+  path template.
+- **`repo-context-scan` validates the plan, not the build — found independently a second time**
+  (arm A2 first). Two of three arm A runs found it without being told to look. Fixed in the SC-15
+  branch.
+- **`task-normalize` reported `has_policy: false, has_risk: false` on a contract that has both**,
+  because the assembly table sends only `task.*` fields. The validator faithfully reports the
+  absence of fields it was never given; it reads at a glance as a contract defect.
+- `criteria-to-checks` typed the two most concretely testable criteria `unclassified` — the third
+  run in a row, and the same inverse-to-importance pattern arm A2 recorded.
+- The haiku Advocate again omitted `resolution: null` (arm A1's gap 6, reproduced).
+- Telemetry the layout calls structurally unavailable was again returned by the runtime (arm A1's
+  surprise, reproduced) — arm A3 recorded the real values rather than writing a mandated `null`
+  over data it had, and left `tokens_in`/`tokens_out` null because the runtime returns a combined
+  count and a split would have been fabricated.
+
+**Arm A3's evidence tree is rule-9 clean**: 13 JSON files, 24 `*_at` fields, zero violations and
+zero warnings under `scripts/evidence-integrity.js`. Arm A2's carried the placeholder that produced
+finding 50. Three trees clean, one dirty, and the check separates them.
+
 ### What step 6 does not establish, and it is most of it
 
-**The comparison.** Arm A ran twice and both pairs are void — the first on the model, the second
-on effort. `Δ_P`, `n*` and the verdict bands are defined, computed twice, and **not usable**.
-Condition 4 needs one more arm A run with `--model claude-opus-5 --effort high` on the command line
-and no in-session `/model` or `/effort`, since both drifts came from a settings command whose
-effect outlived the session that issued it. The protocol was
+**The comparison.** Arm A ran **three** times and all three pairs are void — model, then effort,
+then version. `Δ_P`, `n*` and the verdict bands are defined, computed three times, and **not
+usable**. Condition 4 no longer needs "one more arm A run": §7.4's pre-registered remedy is to
+**re-run both arms inside the same window**, and arm B's 2.1.228 recording cannot be reproduced,
+so an arm-A-only run cannot close it however carefully the operator pins things (finding 52). The
+protocol was
 written before arm A existed, amended five times where running it against arm B proved a clause
 wrong (`ab/PROTOCOL.md` §0), and committed with a SHA-256 that `run-ab.sh` asserts, so a later edit
 reads as an edit rather than as the original.

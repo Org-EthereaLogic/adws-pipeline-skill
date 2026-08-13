@@ -2,17 +2,16 @@
   "what": "Condition 4 of the §6.2 GO — the reasoning A/B. Everything here is frozen BEFORE arm A runs. Arm B has run; its numbers are computed from the committed transcript by the committed script, and run-ab.sh re-derives every one of them.",
   "protocol": "spike/adws-controller/ab/PROTOCOL.md",
   "registered_at": "2026-08-11",
-  "arm_a_status": "RUN TWICE 2026-08-12 — both VOID on §7.4 (model, then effort); see arm_a and arm_a2",
+  "arm_a_status": "RUN THREE TIMES 2026-08-12 — all THREE VOID on §7.4, one per frozen key: model, then effort, then version; see arm_a, arm_a2, arm_a3",
   "refrozen": {
     "when": "2026-08-11, after a post-commit audit and while arm A had still not run",
     "why": "three corrections that do not move any result: a chars-vs-bytes comparison in run-ab.sh (amendment A6 — inside the driver that asserts the units rule), an overstated uniqueness claim about the max-per-message-id rule (A7), and a miscount of the rejected-metric table (A8).",
     "what_changed": "PROTOCOL.md digest below is the re-frozen one. The previous digest was da8adbca0948aa2647d9ea5a2a6294c17f90133208ab05964bd49bd0a5db1c92.",
     "note": "The freeze worked as designed: editing PROTOCOL.md broke run-ab.sh's digest assertion, so the edit could not be silent. Re-freezing before arm A exists is a correction; re-freezing after would be a rationalization."
   },
-
   "digests": {
-    "note": "SHA-256, never a size. Finding 27 is why: 'finalize' -> 'terminal' was the same byte length and walked straight through a size stamp.",
-    "measure_ab_js": "144a65873ea1102b560d5f9a0d7e853373a74fc83f8fed963de2f0477f25ee90",
+    "note": "SHA-256, never a size. Finding 27 is why: 'finalize' -> 'terminal' was the same byte length and walked straight through a size stamp. The measure_ab_js digest CHANGED on 2026-08-12 under the post-arm-A3 amendment recorded in `amendment_cross_arm_harness`; arm B's complete numbers were recomputed under the new script and verified byte-identical to the frozen ones.",
+    "measure_ab_js": "6bc7c9812da5a3006117356b1989a1f8bf75ec836074fc0f86750cb5aa19f6fa",
     "PROTOCOL_md": "501cb5bab06a920d3c8bf33aa5f4936a3c837c632020a2fda9747a71043ccd22",
     "armA_launch_prompt_md": "8064497295f509c5a73856655ef3bd367e04dd80db9862afd283f76e70bad5c1",
     "armB_launch_prompt_md": "4ebeda4a6883acf6e76a8d776260b3b346f1597a0616ce4ac554a49a1e8d7973",
@@ -21,15 +20,27 @@
     "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
     "live_contract_json": "999ea1fa52093281a4883c776e959263b4798b1cd733a1863f66162d262543ee",
     "shipped_tree": {
-      "value": "fe1657c8586eece65484be49e2b1b28c514c2a8cb416c01d5fb040facf058fd1",
+      "value": "66fab10d5b0e59ad7d25e78e0cba50f1bc07165358b9bdbb89dd142adab14f33",
       "over": "adws-pipeline/ + .claude/agents/, sorted, sha256 of the sha256 list",
-      "why": "arm A reads this tree as its operating instruction. If it changes between pre-registration and the end of arm A, the arms did not read the same document and the pair is VOID."
-    }
+      "why": "arm A reads this tree as its operating instruction. If it changes between pre-registration and the end of arm A, the arms did not read the same document and the pair is VOID.",
+      "re_frozen": "2026-08-12, when SC-15 (PR #81) landed. This digest now pins the tree for the FUTURE both-arms window that §7.4 requires; it pins nothing about the three arm A runs already recorded.",
+      "superseded": {
+        "value": "fe1657c8586eece65484be49e2b1b28c514c2a8cb416c01d5fb040facf058fd1",
+        "read_by": "arm A runs 1, 2 and 3 — all three read this tree, verified in the VM before each transcript was pulled",
+        "why_it_changed": "PR #81 fixed three defects those runs found: repo-context-scan reading the plan instead of the build (found unprompted by two of the three), the drift gate running after publication, and artifact-layout rule 9 being unenforced prose.",
+        "note": "Kept rather than overwritten. A5 fired on this change while PR #81 was still a branch and was deliberately not updated then — the assertion was doing its job, and defeating it would have been the third harness drift, self-inflicted. It is updated now because arm A3 has run and the pair it protected is void on §7.4 regardless."
+      }
+    },
+    "armA3_orchestrator_jsonl": "7959cc34f5ef594ed41641942ebda7fc56986171d9176d16c7e496bcbf9667e8"
   },
-
   "arm_b": {
     "provenance": "step 5's live run, 2026-08-11, OrbStack VM adws-step5, repo at 80f1e95, no adws-pipeline skill installed",
-    "harness": { "model": "claude-opus-5", "version": "2.1.228", "effort": "high", "service_tier": "standard" },
+    "harness": {
+      "model": "claude-opus-5",
+      "version": "2.1.228",
+      "effort": "high",
+      "service_tier": "standard"
+    },
     "integrity": {
       "assistant_rows": 61,
       "turns": 26,
@@ -42,34 +53,83 @@
     },
     "primary_S1": {
       "P": 5588.67,
-      "per_phase_growth": { "plan": 5605, "build": 5485, "test": 5676 },
+      "per_phase_growth": {
+        "plan": 5605,
+        "build": 5485,
+        "test": 5676
+      },
       "within_run_spread_pct": 3.42
     },
     "primary_S2": {
       "P": 6111.67,
-      "per_phase_growth": { "to-build": 5453, "to-test": 5360, "to-consensus": 7522 },
+      "per_phase_growth": {
+        "to-build": 5453,
+        "to-test": 5360,
+        "to-consensus": 7522
+      },
       "within_run_spread_pct": 35.37
     },
-    "round_trips_per_phase": { "plan": 3, "build": 3, "test": 3, "mean": 3.0 },
-    "output_tokens_per_phase": { "plan": 3564, "build": 2946, "test": 3157 },
-    "thinking_tokens_per_phase": { "plan": 1513, "build": 89, "test": 270 },
-    "intake_mass": { "I_net": 20379, "I_raw": 29701 },
+    "round_trips_per_phase": {
+      "plan": 3,
+      "build": 3,
+      "test": 3,
+      "mean": 3
+    },
+    "output_tokens_per_phase": {
+      "plan": 3564,
+      "build": 2946,
+      "test": 3157
+    },
+    "thinking_tokens_per_phase": {
+      "plan": 1513,
+      "build": 89,
+      "test": 270
+    },
+    "intake_mass": {
+      "I_net": 20379,
+      "I_raw": 29701
+    },
     "session_baseline_prefix": 31320,
     "instruction_reads": {
-      "thin-skill-sketch.md": { "tokens": 3862, "bytes": 9700 },
-      "references/task-contract.md": { "tokens": 3432, "bytes": 7844 },
-      "total": { "tokens": 7294, "bytes": 17544 }
+      "thin-skill-sketch.md": {
+        "tokens": 3862,
+        "bytes": 9700
+      },
+      "references/task-contract.md": {
+        "tokens": 3432,
+        "bytes": 7844
+      },
+      "total": {
+        "tokens": 7294,
+        "bytes": 17544
+      }
     },
     "handshake": {
-      "as_run": { "calls": 11, "inbound_bytes": 12695, "inbound_chars": 12687, "outbound_bytes": 2708 },
-      "pure": { "calls": 9, "inbound_bytes": 7497, "inbound_chars": 7493, "note": "2 of the 11 calls bundle non-handshake work; see amendment A4. Bytes are the figure compared against step4_replayed_seven_phase_bytes; the driver compared chars until amendment A6." },
+      "as_run": {
+        "calls": 11,
+        "inbound_bytes": 12695,
+        "inbound_chars": 12687,
+        "outbound_bytes": 2708
+      },
+      "pure": {
+        "calls": 9,
+        "inbound_bytes": 7497,
+        "inbound_chars": 7493,
+        "note": "2 of the 11 calls bundle non-handshake work; see amendment A4. Bytes are the figure compared against step4_replayed_seven_phase_bytes; the driver compared chars until amendment A6."
+      },
       "step4_replayed_seven_phase_bytes": 9146
     },
     "subagents": {
       "note": "recovered from the VM's own sidechain transcripts, which the harness does not expose for async dispatches; deduped by message.id, max-usage record per id",
       "round_trips": 236,
       "output_tokens": 177047,
-      "per_agent_output": { "adws-planner": 34273, "adws-builder": 48741, "adws-tester": 41592, "adws-critic": 20514, "adws-advocate": 31927 },
+      "per_agent_output": {
+        "adws-planner": 34273,
+        "adws-builder": 48741,
+        "adws-tester": 41592,
+        "adws-critic": 20514,
+        "adws-advocate": 31927
+      },
       "orchestrator_share_of_run_output_pct": 14.85
     },
     "forbidden_reads": 0,
@@ -77,73 +137,143 @@
     "terminal_state": "TEST_GATE_FAILURE",
     "run_totals_DO_NOT_HEADLINE": {
       "why": "PROTOCOL.md §10.1 forbids reporting these as a headline or a comparison — the arms end in different terminal states doing different amounts of work",
-      "turns": 26, "output_tokens": 30863, "thinking_tokens": 11856, "final_prefix": 82209
+      "turns": 26,
+      "output_tokens": 30863,
+      "thinking_tokens": 11856,
+      "final_prefix": 82209
     }
   },
-
   "arm_a": {
     "provenance": "live run 2026-08-12, OrbStack VM adws-arma, repo at 80f1e95, skill installed at ~/.claude/skills via install.sh --global",
-    "harness": { "model": "claude-fable-5", "version": "2.1.228", "effort": "high" },
+    "harness": {
+      "model": "claude-fable-5",
+      "version": "2.1.228",
+      "effort": "high"
+    },
     "models_equal_across_arms": "false",
     "VOID": "§7.4 froze the harness config as a single value per arm AND EQUAL ACROSS ARMS. Arm B ran on claude-opus-5; arm A ran on claude-fable-5, because a /model command in an earlier session in that VM had saved Fable 5 as the default for new sessions. The pre-registered consequence is VOID, and it was declared from the config check alone, before the comparison was computed.",
-    "verdict": "INDETERMINATE (§4.11 binding rule: S1 and S2 returned different bands)",
+    "verdict": "VOID",
     "independent_of_the_model_the_pair_also_fails": [
       "§4.11: S1 returns CONFIRM-AT-FLOOR and S2 returns CONFIRM — different bands, which the protocol pre-registered as binding",
       "§6.3 leave-one-out: dropping the build phase flips the sign of delta_P to -128.5. One of three phases decides the direction",
       "|delta_P| = 996 under S1, four tokens under the pre-registered 1,000-token resolution floor",
       "instrument 2 is a tie at 3.00 round trips per phase in both arms, and §10.7 says a tie does not discriminate"
     ],
-    "instrument_1": { "P_A_S1": 6584.67, "P_B_S1": 5588.67, "delta_P_S1": 996, "S1_band": "CONFIRM-AT-FLOOR", "P_A_S2": 7814.33, "P_B_S2": 6111.67, "delta_P_S2": 1702.66, "S2_band": "CONFIRM" },
-    "instrument_2": { "RT_A": 3.0, "RT_B": 3.0, "per_phase_A": { "plan": 4, "build": 4, "test": 1 }, "discriminates": false },
-    "intake_mass": { "I_net": 63504, "delta_I": 43125 },
+    "instrument_1": {
+      "P_A_S1": 6584.67,
+      "P_B_S1": 5588.67,
+      "delta_P_S1": 996,
+      "S1_band": "CONFIRM-AT-FLOOR",
+      "P_A_S2": 7814.33,
+      "P_B_S2": 6111.67,
+      "delta_P_S2": 1702.66,
+      "S2_band": "CONFIRM"
+    },
+    "instrument_2": {
+      "RT_A": 3,
+      "RT_B": 3,
+      "per_phase_A": {
+        "plan": 4,
+        "build": 4,
+        "test": 1
+      },
+      "discriminates": false
+    },
+    "intake_mass": {
+      "I_net": 63504,
+      "delta_I": 43125
+    },
     "instruction_reads": {
       "note": "the one cross-arm quantity that is not a token count: arm A opened SKILL.md via the Skill tool plus all four references it names — 124,008 B, which is exactly the full-document before-reading §11 has always carried as its optimistic end. §12.2 asked which of the two consistent befores a real run resembles. This one resembles the full-document reading, not the 30,012 B no-reference one.",
-      "documents": ["SKILL.md (Skill result)", "references/task-contract.md", "references/phase-gates.md", "references/artifact-layout.md", "references/validator-inputs.md"],
-      "bytes": 124008, "tokens": 82942,
-      "arm_b_for_comparison": { "bytes": 17544, "tokens": 7294 },
+      "documents": [
+        "SKILL.md (Skill result)",
+        "references/task-contract.md",
+        "references/phase-gates.md",
+        "references/artifact-layout.md",
+        "references/validator-inputs.md"
+      ],
+      "bytes": 124008,
+      "tokens": 82942,
+      "arm_b_for_comparison": {
+        "bytes": 17544,
+        "tokens": 7294
+      },
       "ratio_bytes": 7.07
     },
-    "subagents": { "round_trips": 152, "output_tokens": 144022, "arm_b_output_tokens": 177047 },
+    "subagents": {
+      "round_trips": 152,
+      "output_tokens": 144022,
+      "arm_b_output_tokens": 177047
+    },
     "terminal_state": "test gate PASS, 4/4 criteria verified, halted by operator directive (recorded canceled / OPERATOR_CANCEL with a resumable carry-over)",
     "forbidden_reads": 0,
     "contamination_hits": 0,
     "installed_skill_unchanged_after_run": true,
     "human_turns_measured": 3,
     "human_turns_substantive": 1,
-    "human_turns_note": "S13 counts plain-string user rows; two of arm A's three are local-command wrappers for /clear, not instructions. Veto 6 fires as literally written and should not. The metric is a proxy for steering and this is the gap. NOT amended here: the defect was found AFTER the data existed, unlike amendments A1-A8, and PROTOCOL.md 10.4 is about exactly that. It is recorded for the re-run."
+    "human_turns_note": "S13 counts plain-string user rows; two of arm A's three are local-command wrappers for /clear, not instructions. Veto 6 fires as literally written and should not. The metric is a proxy for steering and this is the gap. NOT amended here: the defect was found AFTER the data existed, unlike amendments A1-A8, and PROTOCOL.md 10.4 is about exactly that. It is recorded for the re-run.",
+    "verdict_note": "VOID (§7.4 model mismatch, now seen by the analyzer itself — see amendment_cross_arm_harness; previously recorded as the §4.11 INDETERMINATE, which is still true and still listed below)"
   },
-
   "arm_a2": {
     "provenance": "live run 2026-08-12, same VM reset to the arm-B start state, model pinned via settings.json and --model",
-    "harness": { "model": "claude-opus-5", "version": "2.1.228", "effort": "xhigh" },
+    "harness": {
+      "model": "claude-opus-5",
+      "version": "2.1.228",
+      "effort": "xhigh"
+    },
     "models_equal_across_arms": "true",
     "efforts_equal_across_arms": "false",
     "VOID": "§7.4 froze effort at high, equal across arms. The model was fixed and matched; effort drifted to xhigh because a /effort command in the session saved xhigh as the new default. This is the SECOND harness drift in two runs, both from an in-session settings command whose effect persists. Effort sets the thinking budget, which is a large share of the measured quantity: arm A2's per-phase thinking is 2,240/1,380/1,793 against arm B's 1,513/89/270. The drift plausibly inflates the arm that was predicted to be more expensive, so it biases TOWARD the pre-registered expectation — which is the worst possible direction for a confound to point, and the reason accepting this pair would be indefensible.",
     "verdict": "VOID on §7.4. The analyzer additionally returned INDETERMINATE because veto 6 fired on the known-defective human-turns proxy (3 of the 4 plain-string user rows are /effort local-command wrappers; see arm_a.human_turns_note).",
     "observation_not_a_result": {
       "why_recorded": "The design's own stability checks all passed on this pair, which is information about the INSTRUMENT and not about the controller. It is recorded so that the next run is not the first time anyone sees whether S1 and S2 can agree — and it is labelled here, under a VOID, so that no later reader can quote it as the answer. PROTOCOL.md §10.13 stands: a void pair may not re-price anything.",
-      "P_A2_S1": 8655.67, "delta_P_S1": 3067, "S1_band": "CONFIRM",
-      "P_A2_S2": 9437.33, "delta_P_S2": 3325.66, "S2_band": "CONFIRM",
+      "P_A2_S1": 8655.67,
+      "delta_P_S1": 3067,
+      "S1_band": "CONFIRM",
+      "P_A2_S2": 9437.33,
+      "delta_P_S2": 3325.66,
+      "S2_band": "CONFIRM",
       "segmentations_agree": true,
       "leave_one_out_sign_stable": true,
       "leave_one_out_band_stable": true,
-      "instrument_2": { "RT_A2": 3.667, "RT_B": 3.0, "per_phase": { "plan": 4, "build": 4, "test": 3 } },
+      "instrument_2": {
+        "RT_A2": 3.667,
+        "RT_B": 3,
+        "per_phase": {
+          "plan": 4,
+          "build": 4,
+          "test": 3
+        }
+      },
       "delta_I": 45970
     },
-    "intake_mass": { "I_net": 66349 },
+    "intake_mass": {
+      "I_net": 66349
+    },
     "instruction_reads": {
       "note": "arm A2 opened SIX reference documents plus the skill body — one more than arm A1, adding agent-shared-blocks.md, and it grepped four validator scripts for a version constant that no validator prints. It declined runtimes.md and troubleshooting.md, each for a stated reason. Finding 47 reproduces on a second run and a different model.",
-      "documents": ["SKILL.md (Skill result)", "references/task-contract.md", "references/phase-gates.md", "references/validator-inputs.md", "references/artifact-layout.md", "references/agent-shared-blocks.md"],
-      "bytes": 128478, "tokens": 90552
+      "documents": [
+        "SKILL.md (Skill result)",
+        "references/task-contract.md",
+        "references/phase-gates.md",
+        "references/validator-inputs.md",
+        "references/artifact-layout.md",
+        "references/agent-shared-blocks.md"
+      ],
+      "bytes": 128478,
+      "tokens": 90552
     },
-    "subagents": { "round_trips": 261, "output_tokens": 198063, "thinking_tokens": 106119 },
+    "subagents": {
+      "round_trips": 261,
+      "output_tokens": 198063,
+      "thinking_tokens": 106119
+    },
     "terminal_state": "test gate FAIL — Critic fail, reproduced by the orchestrator, route determined as rewind-to-build and deliberately NOT executed under the operator stop. Same terminal shape as arm B, which is a better-matched pair than arm A1's PASS.",
     "forbidden_reads": 0,
     "contamination_hits": 0,
     "additivity_violations": 3,
     "installed_skill_unchanged_after_run": true
   },
-
   "arm_a_setup": {
     "vm": "adws-arma — an OrbStack clone of adws-step5, so the two arms run on a byte-identical machine",
     "sanitized": [
@@ -154,11 +284,14 @@
     ],
     "installed": "./install.sh --global — skill to ~/.claude/skills/adws-pipeline, agents to ~/.claude/agents",
     "why_the_installer_and_not_a_copy": "copying adws-pipeline/ alone yields skill-check.js intact:false / agents_dir:null / exit 1, and SKILL.md §0.3 says do NOT start the job. A hand-copied install would have ended arm A at zero dispatches. Verified before and after.",
-    "skill_check": { "intact": true, "agents_checked": 10, "exit": 0 },
+    "skill_check": {
+      "intact": true,
+      "agents_checked": 10,
+      "exit": 0
+    },
     "single_variable": "adws-step5 and adws-arma differ in the presence of the installed skill and agents, and in nothing else that either arm reads",
     "install_baseline_sha256": "recorded at spike/adws-controller/ab/armA-install-baseline.sha256 — re-checked after the run, because arm A's own contract edits the files the installed skill is made of"
   },
-
   "predictions": {
     "why_recorded": "PROTOCOL.md §10 names the ways this result could be spun afterwards. A prediction written before the data exists is the cheapest defence against the one it cannot name: quietly discovering that whatever happened is what was expected.",
     "by_claude_before_arm_a": [
@@ -168,5 +301,50 @@
       "The sign is NOT uniform across phases: finding 25's mechanism predicts arm B loses at the consensus gate, where its briefing had to be re-derived rather than read (finding 38). Consensus is outside the common scope, so the primary will not see it, and that is a limit of this design and not a result."
     ],
     "what_would_falsify_the_controller": "arm A at or below arm B on either instrument. §5's KILL band is a reachable answer, and the setup was built to let it happen."
+  },
+  "amendment_cross_arm_harness": {
+    "when": "2026-08-12, AFTER arm A3 ran and after its numbers were computed",
+    "what": "measure-ab.js now compares model/version/effort ACROSS arms and routes any mismatch into veto 7, which §5 already maps to VOID.",
+    "why": "§7.4 freezes those three keys as \"single value per arm AND EQUAL ACROSS ARMS\". Only the first half was implemented in the analyzer; the second half lived in run-ab.sh as an assertion hand-written once per arm-A run. Each half was correct in isolation. The composition meant the analyzer could hold both transcripts, have every byte needed to decide, and print CONFIRM on a void pair — which is exactly what it did for arm A3.",
+    "why_this_is_not_a_rationalization": "§10.4 forbids post-data amendment because amendments then rationalize. The test is directional: this one can only ADD voids. It cannot turn a VOID into a verdict, move a band, or change any number — verified by recomputing both arms under the new script and diffing the full arm blocks (identical). It moved this pair from CONFIRM to VOID, i.e. away from the outcome the experimenter wants. An amendment that can only cost you the answer is not a rationalization.",
+    "side_effect": "arm A1's recorded analyzer verdict changes from \"INDETERMINATE (§4.11 …)\" to \"VOID\", because the analyzer now sees the model mismatch itself instead of leaving it to the driver. The §4.11 band disagreement is still true and still recorded under arm_a.independent_of_the_model_the_pair_also_fails."
+  },
+  "arm_a3": {
+    "provenance": "live run 2026-08-12, same VM reset to the arm-B start state, model AND effort pinned in settings.json and on the command line",
+    "harness": {
+      "model": "claude-opus-5",
+      "version": "2.1.229",
+      "effort": "high"
+    },
+    "models_equal_across_arms": "true",
+    "efforts_equal_across_arms": "true",
+    "versions_equal_across_arms": "false",
+    "VOID": "§7.4 froze three keys. The two the operator controls were finally both correct and both equal across arms. `version` was not: arm B ran on Claude Code 2.1.228 on 2026-08-11 and arm A3 on 2.1.229 on 2026-08-12, because the CLI updated itself between the two run dates. This is confound 18 (\"model-serving drift between the two run dates\"), pre-registered with direction UNKNOWN and mitigated only by \"run arm A as soon as possible\" — a mitigation that failed because arm A took three attempts across two days. The first two drifts were operator error and were fixable by pinning. This one is not: the experimenter does not control when the harness updates, and §7.4 names the literal string \"2.1.228\", which no longer exists to run against.",
+    "pre_registered_remedy": "§7.4 row 4 says \"mismatch → VOID, re-run both arms inside the same window\". Not re-run arm A — re-run BOTH. Arm B cannot be reproduced at 2.1.228, so no further arm-A-only run can ever close condition 4. The design requires one window containing both arms.",
+    "terminal_state": "test gate PASS — 3 gates, 5 dispatches, all first-attempt, zero retries, zero rewinds, zero parse failures",
+    "observation_not_a_result": {
+      "note": "PROTOCOL §10.13: a void pair may not re-price anything. These are recorded as facts about the instrument, under a VOID that forbids reading them as facts about the controller. This is the first pair to satisfy EVERY stability condition the protocol asks for.",
+      "P_S1_A": 10398.67,
+      "P_S1_B": 5588.67,
+      "delta_P_S1": 4810,
+      "P_S2_A": 12370,
+      "P_S2_B": 6111.67,
+      "delta_P_S2": 6258.33,
+      "band_S1": "CONFIRM",
+      "band_S2": "CONFIRM",
+      "segmentations_agree": "true",
+      "leave_one_out_sign_stable": "true",
+      "leave_one_out_band_stable": "true",
+      "round_trips_per_phase_A": 5.3333,
+      "round_trips_per_phase_B": 3,
+      "delta_I": 45135,
+      "baseline_drift": 253,
+      "any_veto_fired_before_the_amendment": "false",
+      "verdict_before_the_amendment": "CONFIRM",
+      "verdict_after_the_amendment": "VOID",
+      "why_this_matters": "Every stability check the protocol asks for passed, on a pair whose harness was uncontrolled. That is the argument for pre-registering the frozen list separately from the stability checks: stability is not validity, and a pair can be perfectly self-consistent and still not be a comparison.",
+      "n1_conditions": "four of §6’s five hold (verdict, |delta_P| over floor, leave-one-out stable, matched phases at 1/1/1 attempts). The fifth — “instruments and segmentations agree, no veto” — fails for exactly one reason: veto 7, the harness void. A replicate is forced by the VOID, not by any instability in the measurement."
+    },
+    "evidence_integrity": "rule 9 clean — 13 JSON files, 24 *_at fields, 0 violations, 0 warnings under scripts/evidence-integrity.js (arm A2 by contrast carried one placeholder)"
   }
 }

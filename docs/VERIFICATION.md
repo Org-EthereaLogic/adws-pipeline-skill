@@ -3100,3 +3100,77 @@ condition 4 → merge this → re-freeze A5's digest in the same commit.
 
 **To close condition 4:** `--model claude-opus-5 --effort high` on the command line, and no
 in-session `/model` or `/effort`.
+## Arm A, run 3 — the two operator keys were fixed, and the harness moved
+
+**VOID on §7.4, third run, third key.** Model `claude-opus-5` and effort `high` on all 81 assistant
+rows, both **equal to arm B's** — the two drifts the operator controls are closed. `version` was
+`2.1.229` against arm B's `2.1.228`: the CLI updated itself between 2026-08-11 and 2026-08-12.
+
+| run | drifted key | cause | fixable by pinning? |
+|---|---|---|---|
+| A1 | model | a saved `/model` default | yes — and it was |
+| A2 | effort | a saved `/effort` default | yes — and it was |
+| A3 | **version** | **the harness updated itself** | **no** |
+
+**The incremental path is closed.** §7.4 row 4's pre-registered remedy is "mismatch → VOID, re-run
+**both arms** inside the same window". Arm B is a recording on a version that no longer exists, so
+no arm-A-only run can close condition 4 again, however carefully it is pinned. Confound 18
+anticipated this ("model-serving drift between the two run dates", direction UNKNOWN) and mitigated
+it only with "run arm A as soon as possible" — which failed because arm A took three attempts, and
+every attempt spent fixing one drift bought time for the next.
+
+### The pair that passed everything
+
+Recorded under §10.13, which forbids a void pair from re-pricing anything:
+
+| | arm A3 | arm B |
+|---|---|---|
+| `P` (S1) / (S2) | 10,398.67 / 12,370 | 5,588.67 / 6,111.67 |
+| Band S1 / S2 | **CONFIRM / CONFIRM — they agree** | — |
+| Round trips per phase | 5.33 | 3.00 |
+| `I_net` | 65,514 | 20,379 |
+| Terminal state | test gate **PASS**, 5 dispatches, 0 retries | test gate FAIL |
+
+Both segmentations agreed (§4.11's binding rule, satisfied for the first time). Leave-one-out was
+sign- **and** band-stable across all six drops. Baseline drift 253 of 2,000. Attempts matched at
+1/1/1. Four of §6's five n=1 conditions hold; the fifth fails **only** because veto 7 fired.
+Every stability check the protocol asks for passed, on a pair whose harness was uncontrolled —
+which is the case for keeping the harness freeze in a different section from the stability checks.
+Stability is not validity.
+
+### The analyzer returned CONFIRM on it
+
+`measure-ab.js` checked that each arm's harness was single-valued *within that arm* and never
+compared the arms to each other. §7.4's "**and equal across arms**" lived only in `run-ab.sh`, as an
+assertion hand-written once per arm-A run — and arm A3's did not exist yet. Both halves were
+correct; the analyzer held both transcripts and never asked the question. It printed
+`verdict: "CONFIRM"` with zero vetoes fired.
+
+That is the composition defect from PR #81's finding 51, third instance in a week, first one that
+was ours. Amended: the analyzer now compares model/version/effort across arms and routes any
+mismatch into veto 7 (→ VOID).
+
+**Why the post-data amendment is not a rationalization.** §10.4 forbids amending after the data.
+This one passes a directional test: it can only **add** voids — it cannot turn a VOID into a
+verdict, move a band, or change a number, verified by recomputing both arms under the new script
+and diffing the full arm blocks (byte-identical). It moved this pair from CONFIRM to VOID, away
+from the outcome the experimenter wants.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `run-ab.sh` | **91 assertions, 0 failed** (was 68; +23 for the A8 block and the amended verdicts) |
+| `run-step5.sh` | 135 / 0 |
+| `make local-ci` | PASS |
+| transcript transfer | `orbctl pull`, SHA-256 verified identical host and VM (`7959cc34…`) |
+| arm A3 evidence tree | rule-9 **clean** — 13 files, 24 `*_at` fields, 0 violations |
+| arm B numbers under the amended script | byte-identical to the frozen ones |
+
+### Consequence for PR #81
+
+**PR #81 is unblocked.** It was held because merging would replace the tree arm A3 reads. Arm A3
+has now run against the frozen tree, so that risk is discharged; and since condition 4 now requires
+a fresh both-arms window with its own freeze, the old `fe1657c8…` digest no longer gates anything.
+The re-run should read the corrected skill — three of the eleven documented gaps are fixed in that
+branch, including the one two of three arm A runs found on their own.

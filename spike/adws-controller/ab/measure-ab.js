@@ -1096,6 +1096,49 @@ function compare(A, B) {
   out.delta_I = dI;
   out.I_net = { A: A.secondary.S6_intake_mass.I_net, B: B.secondary.S6_intake_mass.I_net };
 
+  /* §7.4 cross-arm harness equality — AMENDED 2026-08-12 after arm A3, see the block
+     comment below before reading this as a rationalization.
+
+     §7.4 freezes model/version/effort as "single value per arm AND EQUAL ACROSS ARMS".
+     Only the first half lived here (the per-arm single-valued check that pushes
+     HARNESS_CONFIG_NOT_SINGLE_VALUED); the second half lived in run-ab.sh as an assertion
+     hand-written once per arm-A run. Each half was correct. The composition meant this
+     script could hold both transcripts, have every byte needed to decide the question, and
+     print a full verdict on a void pair — which is exactly what it did for arm A3: model
+     and effort finally matched, `version` did not (2.1.229 against arm B's 2.1.228, the CLI
+     having updated itself between the two run dates — confound 18, "model-serving drift",
+     which the protocol flagged as UNKNOWN direction and mitigated only with "run arm A as
+     soon as possible"). The analyzer returned CONFIRM. Nothing but a driver assertion that
+     did not exist yet stood between that and a published result.
+
+     This is finding 51's shape — a gate declared in one file, implemented in another,
+     correct in both, broken by neither — found inside the instrument that was written to
+     police it.
+
+     §10.4 forbids amending after the data because amendments then rationalize. This one is
+     permitted, and the reason is directional: it can only ADD voids. It cannot turn a VOID
+     into a verdict, cannot move a band, and cannot change a single number — it moves the
+     result AWAY from the outcome the experimenter wants. An amendment that can only cost
+     you the answer is not a rationalization. The measure-ab.js digest in
+     PREREGISTRATION.json changes with this edit, which is the freeze working, and arm B's
+     frozen numbers were recomputed under the new digest and verified identical. */
+  const crossArmVoid = [];
+  for (const [key, a, b] of [
+    ['MODEL', A.integrity.harness.models, B.integrity.harness.models],
+    ['VERSION', A.integrity.harness.versions, B.integrity.harness.versions],
+    ['EFFORT', A.integrity.harness.efforts, B.integrity.harness.efforts],
+  ]) {
+    if (JSON.stringify(a) !== JSON.stringify(b)) {
+      crossArmVoid.push('HARNESS_' + key + '_NOT_EQUAL_ACROSS_ARMS (§7.4) A=' + JSON.stringify(a) + ' B=' + JSON.stringify(b));
+    }
+  }
+  out.cross_arm_harness = {
+    equal: crossArmVoid.length === 0,
+    mismatches: crossArmVoid,
+    A: A.integrity.harness,
+    B: B.integrity.harness,
+  };
+
   out.instrument_1 = {};
   for (const tag of ['S1', 'S2']) {
     const pa = A.segmentations[tag].primary;
@@ -1178,7 +1221,12 @@ function compare(A, B) {
   });
 
   v.push({ id: 6, name: 'HUMAN_TURNS(A) > 1 — the run was steered', fired: A.secondary.S13_human_turns.count > 1, detail: { human_turns_A: A.secondary.S13_human_turns.count, human_turns_B: B.secondary.S13_human_turns.count } });
-  v.push({ id: 7, name: 'a VOID assertion fired (§7)', fired: (A.void.length + B.void.length) > 0, detail: { A: A.void, B: B.void } });
+  v.push({
+    id: 7,
+    name: 'a VOID assertion fired (§7)',
+    fired: (A.void.length + B.void.length + crossArmVoid.length) > 0,
+    detail: { A: A.void, B: B.void, cross_arm: crossArmVoid },
+  });
   v.push({ id: 8, name: 'S12 FORBIDDEN_READS > 0 in either arm', fired: (A.secondary.S12_forbidden_reads.strict_count || 0) + (B.secondary.S12_forbidden_reads.strict_count || 0) > 0, detail: { A: A.secondary.S12_forbidden_reads.strict_count, B: B.secondary.S12_forbidden_reads.strict_count } });
   out.vetoes = v;
   const fired = v.filter((x) => x.fired === true);

@@ -654,7 +654,7 @@ reduction, and the prose arm becomes mandatory regardless of where Z′ lands.
 
 ## 13. Step 6 — the reasoning A/B (condition 4)
 
-**Status (2026-08-11): arm B MEASURED, arm A PRE-REGISTERED AND UNRUN.**
+**Status (2026-08-11): arm B MEASURED, arm A PRE-REGISTERED AND UNRUN.** Superseded by §13.5 — arm A has since run three times and all three pairs are VOID on §7.4. This section is kept as written because it is what the pre-registration said before the data.
 
 | | |
 |---|---|
@@ -789,3 +789,31 @@ orb -m adws-arma -w /home/etherealogic_2/adws-pipeline-skill claude --model clau
 and no in-session `/model` or `/effort` — both drifts came from a settings command whose effect
 outlived the session that issued it. `run-ab.sh` asserts model **and** effort equality across arms,
 so a third drift cannot pass silently either.
+
+### 13.5 Arm A ran a third time, and condition 4 stopped being closable this way
+
+**Status (2026-08-12): arm A RUN THREE TIMES, all three VOID on §7.4 — model, then effort, then
+version.** The command above worked: arm A3's model and effort were correct on every one of its 81
+assistant rows and **equal to arm B's**. The key that drifted was the one no pin reaches. Arm A3
+ran on Claude Code **2.1.229**; arm B is a recording from the previous day on **2.1.228**, and §7.4
+names that literal.
+
+**§7.4 row 4's pre-registered remedy is "re-run BOTH arms inside the same window."** Not re-run arm
+A. Arm B cannot be reproduced at 2.1.228, so **no arm-A-only run can close condition 4**, and the
+three-run incremental path this section describes is finished. What condition 4 now costs is a
+fresh window containing both arms — a new arm B on the thin sketch and a new arm A on the shipped
+skill, run back to back, with the harness version recorded at that moment rather than pinned to a
+literal that will expire.
+
+Two things follow for whoever schedules that window:
+
+1. **Run them adjacently, and treat the gap between them as the primary risk.** Confound 18 gave
+   model-serving drift an UNKNOWN direction and mitigated it with "as soon as possible", which is
+   not a mechanism. The mechanism is one window.
+2. **Re-run arm A against the CORRECTED skill.** Three of the eleven documented gaps are fixed in
+   the SC-15 branch, including `repo-context-scan` reading the plan instead of the build — which
+   two of the three arm A runs found unprompted. Measuring the prose arm against a document with
+   known, already-fixed defects would price the wrong artifact.
+
+The full accounting is `spike/adws-controller/FINDINGS.md` findings 52 and 53; the second is the
+analyzer returning CONFIRM on this pair because §7.4's cross-arm half lived only in the driver.

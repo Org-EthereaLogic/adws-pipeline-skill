@@ -1,0 +1,29 @@
+{
+  "phase": "plan",
+  "attempt": 1,
+  "job_id": "job_20260812_0001",
+  "started_at": "2026-08-13T01:08:47Z",
+  "completed_at": "2026-08-13T01:16:23Z",
+  "agent": "adws-planner",
+  "model_tier": "opus",
+  "tier_input": { "source": "contract.risk_level", "value": "medium" },
+  "gate_result": "pass",
+  "failure_reason": null,
+  "stability_gate": null,
+  "provenance": {
+    "started_at": "2026-08-13T01:08:47Z",
+    "completed_at": "2026-08-13T01:16:23Z",
+    "wall_clock_s": 456,
+    "agent": "adws-planner",
+    "model_tier_requested": "opus",
+    "model_id": null,
+    "cost_usd": null,
+    "tokens_in": null,
+    "tokens_out": null,
+    "elapsed_ms": 494750,
+    "tool_call_count": 29,
+    "timeout": false,
+    "cancel": false,
+    "note": "This runtime DOES expose elapsed_ms and tool_call_count for a dispatched subagent, which artifact-layout.md (SC-11/A3) lists as structurally unavailable. Recorded as observed rather than as a mandated null. A combined subagent token figure (137661) was also exposed but is not split in/out, so tokens_in/tokens_out stay null rather than carry a fabricated split."
+  }
+}
