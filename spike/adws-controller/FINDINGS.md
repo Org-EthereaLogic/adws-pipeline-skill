@@ -1622,6 +1622,8 @@ model-independent. Arm A1's six:
    again**: the reason vocabulary has no member for a thing that happened.
    **CLOSED by SC-16/F-88** — `final_status: "halted"` / `OPERATOR_HALT`, with gap 8 and gap 12.
 5. **`skill_trace.version` has no documented content.**
+   **CLOSED by SC-16/F-89** — every validator now prints `tool_version`, which is what the wrapper
+   transcribes. Found three times across three runs; with gap 10.
 6. **The Advocate omitted its `resolution: null` key** despite being told to write it. Schema drift,
    semantics unaffected, correctly not gated.
 
@@ -1839,6 +1841,10 @@ are new, and the last of them blocks rather than merely requiring improvisation:
     `skills/task-normalize/` and get the directory name wrong on **every trace in the tree**. Arm
     A3 read three validator sources to find them. This sharpens gap 5 from a missing version
     string to a missing id map.
+    **CLOSED by SC-16/F-89** — every validator now prints its own `skill_id` as the first key of
+    its verdict, and `validator-inputs.md` carries the map for readers who need it before the
+    first run. Pinned literally in `cli-contract`, including an assertion that the id does NOT
+    equal the filename, since that equality is the mistake the gap describes.
 11. **A criterion carrying both a `verified` and a `gate_weak` check row has no defined verdict.**
     SC-5/F-31 explicitly permits several checks to share one `check_id`, and `verdict` is
     per-check — but the gate is stated per *criterion*. Arm A3's tester returned exactly this: 4
@@ -1992,10 +1998,18 @@ findings against a shipped document. The corrected statement is: **twelve docume
 fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
 state) and gaps 5/10 (one validator envelope).
 
-**Running total as of this commit: twelve documented, three closed** — 4, 8 and 12, all by
-SC-16/F-88, because all three were one root cause. Nine remain open: 1, 2, 3, 5, 6, 7, 9, 10, 11.
-Stated as a number here so the next reader can check it against the list rather than inherit it —
-which is the whole lesson of the finding above.
+**Running total: twelve documented, five closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
+and 10 by SC-16/F-89 (one root cause). **Seven remain open: 1, 2, 3, 6, 7, 9, 11.** Stated as a
+number here so the next reader can check it against the list rather than inherit it — which is the
+whole lesson of the finding above.
+
+Both closures have the same shape, and it is worth naming because it is the third time this
+document has described it: **the value already existed and nothing carried it across a boundary.**
+`carry_over`'s `resumable` rule was correct and unreachable; `manifest.version` and
+`manifest.skill_id` were present in all nine validators and printed by none. Neither fix invented a
+rule. Both connected two halves that were already right — which is finding 51 read forward instead
+of backward, and suggests the productive question about a documented gap is less "what is missing"
+than "what exists but does not travel".
 
 ### What step 6 does not establish, and it is most of it
 

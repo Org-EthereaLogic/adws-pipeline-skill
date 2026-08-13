@@ -103,5 +103,13 @@ if (require.main === module) {
     console.error('adws-validator: execute failed: ' + err.message);
     process.exit(3);
   }
-  console.log(JSON.stringify(result, null, 2));
+  // SC-16/F-89. The identity of the tool travels WITH the verdict. `manifest.skill_id`
+  // and `manifest.version` have existed in every validator since the port and reached
+  // stdout in NONE of them, so `skill_trace.skill_id` and `.version` — both mandatory —
+  // had no documented source: a live run read three validator SOURCES to recover the
+  // dotted ids. Emitted at the CLI boundary, not inside execute(), because this is
+  // ENVELOPE, not verdict — execute()'s contract and the parity corpus are untouched.
+  console.log(
+    JSON.stringify({ skill_id: manifest.skill_id, tool_version: manifest.version, ...result }, null, 2)
+  );
 }

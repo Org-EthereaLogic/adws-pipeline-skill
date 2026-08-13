@@ -19,11 +19,40 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 
 ## Contents
 
+- Canonical skill ids (SC-16/F-89)
 - Per-validator assembly table
 - Outputs worth naming
 - Non-validator scripts
 - Reader/writer discipline
 - Verdict vocabularies and exit codes (SC-11/A2)
+
+## Canonical skill ids — DOTTED, and not the filenames (SC-16/F-89)
+
+**Do not derive the trace directory from the script filename.** The ids are dotted and the
+filenames are hyphenated, so a filename-derived path is wrong for **every** validator — uniformly,
+and therefore invisibly. A live orchestrator read three validator sources mid-run to recover them.
+
+| Script | Canonical `skill_id` — the `skills/{skill_id}/` directory |
+|---|---|
+| `task-normalize.js` | `task.normalize` |
+| `repo-context-scan.js` | `repo.context_scan` |
+| `criteria-to-checks.js` | `criteria.to_checks` |
+| `review-risk-assess.js` | `review.risk_assess` |
+| `document-coverage-map.js` | `document.coverage_map` |
+| `ship-mode-select.js` | `ship.mode_select` |
+| `patch-compose.js` | `patch.compose` |
+| `verify-evidence-map.js` | `verify.evidence_map` |
+| `drift-sentinel.js` | `drift.sentinel` |
+
+**This table is a convenience, exactly like the assembly table below — the RUNNING VALIDATOR is the
+authority.** Every verdict now opens with its own `skill_id` and `tool_version`, so read them from
+the output you already have rather than from this list. The table exists so the ids can be known
+before the first run; it is the second copy of a fact, and the first copy wins. If they ever
+disagree, the table is the bug.
+
+`tool_version` is each script's `manifest.version` and is what `skill_trace.version` transcribes.
+Both values existed in every validator since the port; neither reached stdout until SC-16, which is
+why two mandatory trace fields had no source.
 
 ## Per-validator assembly table
 

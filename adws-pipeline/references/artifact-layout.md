@@ -446,6 +446,26 @@ a successful repair — can make a dissent disappear from the record.
 ```
 `output` is the full JSON object printed by the validator script.
 
+**`skill_id` and `version` are TRANSCRIBED, never guessed (SC-16/F-89).** Every validator prints
+`skill_id` and `tool_version` as the first two keys of its verdict:
+
+| Wrapper key | Source | Note |
+|---|---|---|
+| `skill_id` | `output.skill_id` | also the `skills/{skill_id}/` directory name |
+| `version` | `output.tool_version` | the validator's own `manifest.version` |
+
+**The ids are DOTTED and do not match the filenames.** `task-normalize.js` announces
+`task.normalize`; `repo-context-scan.js` announces `repo.context_scan`. An orchestrator that
+derived the directory from the filename would write `skills/task-normalize/` and be wrong on
+**every trace in the tree** — one path convention, applied uniformly, silently. The canonical list
+is in `references/validator-inputs.md`, and the authority is the running validator: read
+`output.skill_id`.
+
+Before this, both keys were mandatory with no documented source. `version` had none at all, and a
+live orchestrator recovered the ids by reading three validator SOURCE files mid-run. The values
+always existed in each script's `manifest`; nothing printed them. This is the same shape as
+`repo-context-scan` reading the plan — two correct halves, never connected.
+
 **The wrapper is a transcription, never a judgment (SC-8/F-55).** `rubric_result` MUST be
 exactly the verdict the validator printed — the same value `output.rubric_result` carries —
 and `error` holds the validator's own error or `null`, never an override, annotation, or
