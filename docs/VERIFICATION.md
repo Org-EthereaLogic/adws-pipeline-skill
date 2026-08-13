@@ -3272,3 +3272,123 @@ to confirm it.
 **The two gaps this sprint does close** are handled in the work that follows, and they are closed
 because a run needed them, not to move the number: gaps 4/8/12 with one lifecycle state for a
 deliberate stop, and gaps 5/10 with one validator output envelope.
+
+## SC-16/F-88 — a lifecycle state for a deliberate stop
+
+Closes arm A gaps **4, 8 and 12** — the only three of the twelve that share one root cause: the
+skill had no concept of a run that stopped on purpose while healthy.
+
+*(Numbered F-88, not F-86. This work was drafted as F-86 and renumbered before merge: **F-86 and
+F-87 were already allocated** to the 2026-08-09 audit and closed under SC-14 — F-86 is "all 19
+accepted survivors are unverified rules", cited in `run-parity.js` and `WBS.md`. Caught by grepping
+the allocated range rather than assuming the next number was free, which is the check worth keeping:
+the register has no allocator, so the only thing standing between two findings and one number is
+someone looking.)*
+
+| Gap | Hole | Close |
+|---|---|---|
+| 4 (job) | `final_status` had no honest member; `canceled`/`OPERATOR_CANCEL` is no-retry AND quarantine-class | `halted` / `OPERATOR_HALT`, in neither class |
+| 8 (attempt) | a route determined and not executed had no reason; `CRITIC_FAIL_REPAIRED` asserts a repair that never ran | attempt-level `ROUTE_NOT_EXECUTED` + `route_determined` |
+| 12 (mechanism) | `carry_over` is written at a terminal state; a halt produced none, so `resumable: true` was unreachable | `halted` IS terminal, so §5 step 4 runs |
+
+**Gap 12 needed no new rule.** The shipped/not-shipped test for `resumable` was already correct and
+already unreachable — a halt before ship is `resumable: true`, a halt after ship is `false` with the
+reason, and neither line changed. What was missing was a terminal state to evaluate it from.
+
+### The guard, and why it is not the obvious one
+
+`halted` must not become a way to walk a failed gate out of QUARANTINE. The obvious guard is the
+`gateFail` the `completed` branch uses. It is wrong here, and the fixture would not have said so.
+
+`evalPipelineCompletion` returns FAIL whenever `final_status !== "completed"` or any phase lacks
+evidence — both true of every halt, by construction. The naive guard therefore quarantines 100% of
+halts.
+
+> **The next sentence originally read: "The shipped guard skips `pipeline_completion` and reads only
+> gates that evaluated something."** That was wrong, and it is corrected below rather than
+> overwritten (§10.4). It skipped a finding along with the premise.
+
+### F-88b — the correction (finding 56)
+
+`pipeline_completion` does not answer one question. It answers two in a single status:
+
+| Question | For a halt |
+|---|---|
+| Did this run **finish**? | Always no — the premise of the state, no finding at all |
+| Did this run **lose a phase**? | A finding, and one a stop does not explain |
+
+Excluding the gate excluded both. Reproduced on the shipped guard by taking the existing
+`quarantine_skipped_phase` tree — `review` has no attempt while `document`, a **later** phase, does
+— and setting `final_status: "halted"`:
+
+```
+decision: RETRY   exit_code: 1
+reason:  Job was halted by the operator with no failed gate (reason: OPERATOR_HALT);
+         nothing is wrong with the run and resuming it is the expected next step.
+gates:   pipeline_completion fail | 4/7 — Missing phase evidence:
+         review (no attempt recorded), ship (not reached — job terminated at document), …
+```
+
+A phase was lost and the halt carried it out of QUARANTINE — the laundering route this guard exists
+to close.
+
+**The distinction was already computed and discarded.** `missingPhaseEvidence` has separated these
+cases since SC-13/F-78 — that is what *"not reached — job terminated at X"* versus *"no attempt
+recorded"* means — and flattened them into prose. The consumer had nothing structural to read and
+reached for the gate key. The fix keeps the kind: `phaseEvidenceGaps` classifies each gap
+`not_reached` / `skipped` / `unreadable`, the gate carries `unexplained_by_stop` (the non-trailing
+gaps, empty exactly when the stop is the whole story), and the guard reads that. Not serialized —
+the report projects gates to `{gate, result, detail}`, so no fixture output changed.
+
+No new rule, no new decision, no new exit code.
+
+**Ablation, two-directional.** Both must hold at once:
+
+| Fixture | Shipped | `gateFail` (no exclusion) | Wholesale exclusion (the F-88 bug) |
+|---|---|---|---|
+| `retry_operator_halt` | RETRY, 1 | **QUARANTINE, 2 — breaks** | RETRY, 1 — green |
+| `quarantine_halt_with_failed_gate` | QUARANTINE, 2 | QUARANTINE, 2 — green | QUARANTINE, 2 — green |
+| `quarantine_halt_skipped_phase` | QUARANTINE, 2 | QUARANTINE, 2 — green | **RETRY, 1 — breaks** |
+
+Read the third column: under the defect that actually shipped, **both original fixtures stay
+green.** That is the measurement of how vacuous the pair was — finding 55 credited it with
+distinguishing two guards, which it did, and it could not see a third. Neither tree had a gap
+*behind* the stop; every missing phase in both was trailing. `quarantine_halt_skipped_phase` carries
+both gap kinds in one tree.
+
+`decision_reason` is now asserted too (`expectReason`), because two defects can both be
+QUARANTINE / exit 2 while telling the operator opposite things. The failed-gate case names the gate;
+the lost-phase case names the gap and does **not** claim a gate failed, since none that evaluated
+did.
+
+**How it was caught: not here.** Finding 55 closes on "what actually caught it was reading the
+callee", and that reading was not deep enough — `evalPipelineCompletion` was read for *when* it
+returns FAIL, not for *what the FAIL is about*. An independent review of the branch found it. Two
+consecutive fixes to the same twenty lines shipped the same defect class, each authored while
+explicitly reasoning about that defect class. Finding 51's fifth instance, and the first found by a
+reader who had not written it.
+
+### No schema bump
+
+`SCHEMA_VERSION` stays `1.4.0`. `halted` maps onto the EXISTING decisions and exit codes — RETRY/1
+clean, QUARANTINE/2 with a substantive failed gate. The report's contract with its readers is the
+decision vocabulary and the exit codes; a fifth accepted input value that produces no new output
+does not change it.
+
+### State
+
+| Check | Result |
+|---|---|
+| `make local-ci` | PASS, 17/17 |
+| execution-report fixtures | **28/28** (was 25) + CLI error path, deterministic |
+| `run-ab.sh` | 91 assertions, 0 failed |
+| `run-step5.sh` | 135 assertions, 0 failed |
+| parity corpus | 116/116 |
+| `SKILL.md` | 469 lines; budget 456 → 468 (F-88), → 469 (F-88b), each with a reason |
+
+`run-ab.sh` §A5 fired on the tree change, as designed. The digest is re-frozen in the same commit
+that caused it, with the prior value kept under `superseded.prior` — the second re-freeze, and both
+are now a chain rather than an overwrite. It pins the tree for the future both-arms window; it pins
+nothing about the three recorded arm A runs, each void on §7.4 independently.
+
+**Gap ledger: twelve documented, three closed (4, 8, 12). Nine open: 1, 2, 3, 5, 6, 7, 9, 10, 11.**

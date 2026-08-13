@@ -1620,6 +1620,7 @@ model-independent. Arm A1's six:
 4. **No vocabulary for an operator-directed partial run.** Mapped to `canceled` / `OPERATOR_CANCEL`
    with a carry-over record — the closest documented enum. **This is findings 16/17/39's family
    again**: the reason vocabulary has no member for a thing that happened.
+   **CLOSED by SC-16/F-88** — `final_status: "halted"` / `OPERATOR_HALT`, with gap 8 and gap 12.
 5. **`skill_trace.version` has no documented content.**
 6. **The Advocate omitted its `resolution: null` key** despite being told to write it. Schema drift,
    semantics unaffected, correctly not gated.
@@ -1661,6 +1662,7 @@ two lists rather than merging them, and is corrected here. The three that are ne
    `TEST_GATE_FAILURE` asserts a budget exhaustion that did not occur (test budget 2, this was
    attempt 1). Both documented values are false, so arm A2 wrote `null` and recorded why —
    **the attempt-level twin of gap 4**, which was the job-level version of the same hole.
+   **CLOSED by SC-16/F-88** — the attempt-level `ROUTE_NOT_EXECUTED` with `route_determined`.
 9. **`NO_DOC_PATH_IN_SCOPE` is a judgment call wearing a rule's clothes.** "No `allowed_paths`
    entry admits a documentation location (README\*, CHANGELOG\*, `docs/`, or the repo's
    equivalent)" — and `adws-pipeline/references/` is this repo's equivalent, which the
@@ -1848,6 +1850,9 @@ are new, and the last of them blocks rather than merely requiring improvisation:
     one. So the deliberately-truncated run — the exact shape every arm A run has taken — is
     unresumable by construction. **This is gap 4's family reaching its conclusion**: the
     vocabulary had no member for a halted run, and now the *mechanism* has no path for one either.
+    **CLOSED by SC-16/F-88** — `halted` IS a terminal state, so `SKILL.md` §5 step 4 runs and the
+    existing shipped/not-shipped rule decides `resumable` without being changed at all. The hole
+    was never a policy; it was a record written at a terminal state and a stop that produced none.
 
 And the surprises, of which one is a near-miss on the evidence itself:
 
@@ -1901,10 +1906,96 @@ against other people's artifacts.
 The correction is applied in place, and the superseded wording is named here rather than only
 overwritten: an amendment that erases what it amends is the thing §10.4 exists to prevent.
 
+**Finding 55 — the fix for gaps 4/8/12 nearly shipped finding 51 a fourth time, and the fixture
+would not have caught it.** `halted` needs a guard, or it is a laundering route: an orchestrator
+that can write `halted` could otherwise walk a failed gate out of QUARANTINE. The obvious guard is
+the one the `completed` branch already uses — `gateFail`, "did any gate evaluate to fail" — and it
+is wrong here for a reason neither file states.
+
+`evalPipelineCompletion` returns **FAIL whenever `final_status !== "completed"`**, and again when
+any phase lacks evidence. Both are true of every deliberate stop *by construction*. So the obvious
+guard sends **100% of halts to QUARANTINE** — the exact verdict the state exists to avoid — and the
+new lifecycle value becomes decorative. Neither half is wrong: `evalPipelineCompletion` correctly
+reports that a halted run did not complete, and the guard correctly refuses to bury a failed gate.
+**The composition asks a question neither was answering**: it reads "this run did not finish", which
+is the halt's premise, as if it were a finding about the run's contents.
+
+The corrected guard skips `pipeline_completion` and reads only gates that evaluated something.
+
+> **Superseded by finding 56.** That sentence is the wording this record originally shipped, and
+> it is wrong in the same direction it was written to correct: skipping the gate skipped a real
+> finding along with the premise. It is left standing rather than rewritten, per §10.4. The rule
+> that actually holds is stated below.
+
+Two things about how this was caught are worth more than the fix. **First, it was found by reading
+the gate builder, not by running the test.** The QUARANTINE fixture passes under BOTH guards — it
+has a genuinely failed phase gate — so a suite containing only the anti-laundering case would have
+gone green on a guard that broke the feature. Only the pair distinguishes them, which is
+guard-ablation's argument arriving in a place nobody had run guard-ablation. Verified by ablating
+the exclusion and re-running: `retry_operator_halt` flips to QUARANTINE/exit 2 while
+`quarantine_halt_with_failed_gate` stays green.
+
+**Second, it is the fourth instance of finding 51 and the first one authored here.** The other
+three were found in shipped artifacts — `repo-context-scan`, TAC-7's hooks, `measure-ab.js`. This
+one was written while holding the finding in mind, in the commit that closes three gaps *about*
+vocabulary holes, by someone who had just corrected a claim (finding 54) that failed the same way.
+That is the honest measure of how weak "be careful about composition" is as a control: the defect
+class survives full knowledge of itself, and what actually caught it was reading the callee.
+
+**Finding 56 — the fix in finding 55 shipped finding 51 a fifth time, and this time the fixtures
+did not catch it either.** Finding 55 diagnosed the trap correctly and then over-corrected. Its
+guard excluded `pipeline_completion` **wholesale**, and that gate does not answer one question. It
+answers two, in a single status:
+
+| Question the gate answers | For a halt |
+|---|---|
+| Did this run *finish*? | Always no. The premise of the state, and no finding at all. |
+| Did this run *lose a phase*? | A finding, and one a stop does not explain. |
+
+Excluding the gate excluded both. The counterexample is one line of fixture: take the existing
+`quarantine_skipped_phase` tree — `review` has no attempt while `document`, a **later** phase,
+does — and set `final_status: "halted"`. The shipped guard returns **RETRY / exit 1** with the
+words *"nothing is wrong with the run and resuming it is the expected next step."* A phase was
+lost, and the halt carried it out of QUARANTINE. That is precisely the laundering route finding 55
+was written to close, reintroduced by the sentence that closed it.
+
+The distinction was **already computed** and thrown away. `missingPhaseEvidence` has classified
+these two cases since SC-13/F-78 — that is what "not reached — job terminated at X" versus "no
+attempt recorded" *means* — and it flattened the classification into prose. The consumer then had
+nothing structural to read and reached for the gate key instead. The fix keeps the kind: the gate
+carries `unexplained_by_stop`, empty exactly when the trailing tail is the whole story, and the
+guard reads that. No new rule, no new decision, no new exit code — the same shape as the two
+closures this work package already made.
+
+**What the fixtures were worth.** Nothing, against this. Both halt fixtures passed the broken
+guard, because neither tree had a hole *behind* the stop — every missing phase in both was
+trailing. Finding 55 congratulated the pair for distinguishing two guards and it did; it simply
+could not see a third. The regression that can is `quarantine_halt_skipped_phase`, which carries
+both gap kinds in one tree, and the ablation is now two-directional: revert to `gateFail` and
+`retry_operator_halt` flips to QUARANTINE; revert to the wholesale exclusion and *only*
+`quarantine_halt_skipped_phase` fails, both other halt fixtures staying green — which is the
+measurement of how vacuous they were.
+
+**This one was not caught here at all.** Finding 55 closes on "what actually caught it was reading
+the callee", and the reading was not deep enough: `evalPipelineCompletion` was read for *when* it
+returns FAIL and not for *what the FAIL is about*. It was caught by an independent review of the
+branch, which is the control that worked — the fifth instance of finding 51 found by the first
+reader who had not written it. Two consecutive fixes to the same twenty lines both shipped the
+same defect class, each while its author was explicitly reasoning about that defect class. The
+useful conclusion is not "look harder at compositions." It is that a boundary crossed by a value
+whose *meaning* is compressed — one status carrying two questions — will keep producing this, and
+the durable fix is to stop compressing: carry the distinction across the boundary, do not make the
+consumer re-derive it from a key name.
+
 **Nothing downstream moves.** No count feeds a gate, a metric, or a void; the twelve gaps are prose
 findings against a shipped document. The corrected statement is: **twelve documented gaps, zero
 fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
 state) and gaps 5/10 (one validator envelope).
+
+**Running total as of this commit: twelve documented, three closed** — 4, 8 and 12, all by
+SC-16/F-88, because all three were one root cause. Nine remain open: 1, 2, 3, 5, 6, 7, 9, 10, 11.
+Stated as a number here so the next reader can check it against the list rather than inherit it —
+which is the whole lesson of the finding above.
 
 ### What step 6 does not establish, and it is most of it
 

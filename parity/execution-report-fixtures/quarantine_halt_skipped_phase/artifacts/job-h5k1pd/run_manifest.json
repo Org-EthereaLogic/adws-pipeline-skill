@@ -1,0 +1,24 @@
+{
+  "job_id": "job-h5k1pd",
+  "task_id": "TASK-116",
+  "started_at": "2026-08-11T09:00:00Z",
+  "completed_at": "2026-08-11T09:40:00Z",
+  "final_status": "halted",
+  "failure_reason": "OPERATOR_HALT",
+  "output_mode": "pr",
+  "isolation_mode": "worktree",
+  "model_tiers": { "plan": "opus", "build": "sonnet", "test": "sonnet", "document": "haiku" },
+  "carry_over": {
+    "retained": true,
+    "resumable": true,
+    "resumable_reason": null,
+    "worktree_path": "/tmp/adws-wt/job-h5k1pd",
+    "branch_name": "adws/job-h5k1pd",
+    "gated_through": "document",
+    "files": [
+      { "path": "docs/tokenizer.md", "sha256": "4b1e7d0a92c3f586e0d4a71b9c28f36540ae91d7b3c82f6045e19da7c30b8f2e" }
+    ]
+  },
+  "resumed_from": null,
+  "schema_version": "1.0.0"
+}

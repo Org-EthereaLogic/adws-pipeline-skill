@@ -73,7 +73,31 @@ carry additional orchestrator bookkeeping (`source_ref`, `repo_root`, `target_br
 operator and the audit trail. Extra keys are therefore not schema drift. Missing DEFINED
 keys are.
 `final_status` is null while running; set once to one of
-`completed | failed | quarantined | canceled` at terminal state.
+`completed | failed | quarantined | canceled | halted` at terminal state.
+
+`halted` (SC-16/F-88) is a run the OPERATOR stopped while it was healthy — not a failure, not a
+cancellation. It is the fifth value because the other four all assert something a deliberate stop
+does not: `completed` claims seven gates passed, `failed` and `quarantined` claim a defect, and
+`canceled` routes to QUARANTINE with "human investigation required" over a run nobody needs to
+investigate. Three live runs mapped an operator-directed partial run to `canceled`/`OPERATOR_CANCEL`
+and each recorded that it was the closest available lie.
+
+**A halt cannot launder a failure.** `halted` is honest only about the *stopping*; it makes no claim
+about the gates. A halted run carrying a `fail` gate still QUARANTINEs, exactly as a `completed` run
+carrying one does — the two branches are deliberately the same shape. What `halted` buys is the
+other case: a run stopped mid-flight with nothing wrong is RETRY-and-resumable instead of
+quarantined, and its worktree carries forward.
+
+**Nor a lost phase (SC-16/F-88b).** A stop accounts for the phases AFTER it and for nothing else.
+Phases with no attempt beyond the last one that produced evidence are *not reached* — expected, and
+the ordinary shape of every halt. A phase with no attempt while a LATER phase has one was *skipped*,
+and an attempt that wrote no readable manifest or output LOST its evidence; neither is explained by
+stopping, and a halt carrying either QUARANTINEs on the same principle as the failed gate above.
+The first guard shipped for this branch missed the distinction — `pipeline_completion` fails for
+every non-`completed` run by construction, so it was excluded wholesale, and it answers two
+questions in one status: *did this run finish* (the premise of every halt) and *did this run lose a
+phase* (a finding). Excluding it excluded both, and a halted run with a skipped `review` reported
+RETRY and "nothing is wrong with the run" (finding 56).
 `cross_phase_rewinds` counts the GATE-AUTOMATIC rewinds to `build`, each capped at 1 and
 independent of the others: `test` (checks fail, tester classifies `code`), `verify`
 (grader drift BLOCK), and — since SC-7/F-46 — `review` (a Critic `fail` at the review
@@ -118,6 +142,15 @@ artifact before anything resumes. The alternative — extending this record to d
 commit and ship state — would make it claim authority over things it was never designed
 to carry, and `ship/attempt_{n}/phase_output.json` already holds them.
 
+**A halted run reaches this record (SC-16/F-88).** Before `halted` existed, `carry_over` was written
+only at a terminal state and an operator-halted run never reached one, so the rule above could not
+be evaluated and `resumable: true` was unreachable for the one case that most obviously deserves
+it: a healthy run, stopped on purpose, with everything it built still in the tree. That was not a
+policy — nothing anywhere says a halted run may not resume — it was a gap between a record written
+at terminal state and a stop that produced no terminal state. `halted` closes it by being one, and
+the shipped/not-shipped test then applies unchanged: a halt before ship is `resumable: true`, a halt
+after ship is `resumable: false` with the reason.
+
 `resumed_from` (SC-13/F-73) is the CONSUMER record, written at intake by a job whose
 contract names `execution.resume_from_job`, and `null` for every other job:
 ```json
@@ -157,6 +190,23 @@ schema.
   "gate_result": "null | pass | fail | deferred", "failure_reason": null,
   "stability_gate": null, "provenance": null }
 ```
+`failure_reason` here is the ATTEMPT-level reason and is a different vocabulary from
+`run_manifest.failure_reason` — `references/phase-gates.md` lists the annotations that live only at
+this level (`CRITIC_FAIL_REPAIRED`, `ADVOCATE_DISSENT_REPAIRED`) and never reach the terminal
+record.
+
+`ROUTE_NOT_EXECUTED` (SC-16/F-88) belongs to that attempt-only set: **the gate evaluated, a route
+was determined from its result, and the route did not run** — because the job halted first. Record
+it with `route_determined` naming what would have happened (`"rewind-to-build"`,
+`"retry-attempt-2"`, `"terminate"`), so the evidence says *we knew the next step and did not take
+it* rather than inventing a step that did. Every other documented value asserts something false in
+this position: `CRITIC_FAIL_REPAIRED` presupposes the rewind ran, and `{PHASE}_GATE_FAILURE`
+asserts a budget exhaustion that a halt at attempt 1 of 2 did not reach. A live run wrote `null`
+here and explained itself in prose, which is the correct instinct and the wrong place for it.
+
+`ROUTE_NOT_EXECUTED` is never written to `run_manifest.failure_reason` and never enters the terminal
+reason vocabulary; the job-level record of a halt is `OPERATOR_HALT`. `gate_result` keeps whatever
+the gate actually returned — a halt does not retroactively unmake a `fail`.
 `run_manifest.skill_version` (F-72) is the `skill_version` reported by
 `scripts/skill-check.js` at intake — the content digest of the installed skill that actually
 ran, or the string `"unknown"` for an install predating the manifest. It is evidence, never

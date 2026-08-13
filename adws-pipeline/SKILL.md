@@ -361,6 +361,17 @@ ran at step 3. A failure here is about the PUBLICATION, never the change set:
 
 ### 5 — Terminal report (FR-10)
 
+**Every ending arrives here, including a stop (SC-16/F-88).** On an operator halt, do not
+abandon the tree mid-phase: enter §5 with `final_status: "halted"` /
+`failure_reason: "OPERATOR_HALT"`, close the open attempt with the ATTEMPT-level
+`failure_reason: "ROUTE_NOT_EXECUTED"` and `route_determined` naming the step the halt
+pre-empted, then run steps 1–5 unchanged. `gate_result` keeps what the gate returned — a
+halt does not unmake a `fail`, nor account for a phase skipped BEHIND it; a halted run
+carrying either still QUARANTINEs. A stop explains only what came after it. This is the
+entire fix for a halt that could never resume: `carry_over` is written at a terminal state
+(step 4) and a halt produced none. Use `canceled`/`OPERATOR_CANCEL` only to ABANDON the
+work; the two differ in whether anyone is coming back.
+
 1. Set `final_status` + `failure_reason` + `completed_at` in `run_manifest.json`
    (`completed` only if all 7 gates passed).
 2. Run `node scripts/evidence-integrity.js artifacts/{jobId}` (SC-15/F-84b —
@@ -372,7 +383,9 @@ ran at step 3. A failure here is about the PUBLICATION, never the change set:
    `node scripts/execution-report.js artifacts/{jobId}`.
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
-   and the path to `execution_report.md`.
+   and the path to `execution_report.md`. A halt with nothing wrong behind it relays
+   **RETRY** — say plainly that nothing failed and quote `carry_over.resumable`, or the
+   operator reads their own stop as a defect.
 4. **Record the carry-over on any non-PROMOTE terminal state (SC-13/F-73).** The
    worktree is about to be RETAINED (step 5.4), so record what is in it:
    `carry_over: { "retained": true, "resumable", "resumable_reason", "worktree_path",

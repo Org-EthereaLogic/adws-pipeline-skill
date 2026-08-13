@@ -59,6 +59,72 @@ const CASES = [
     exit_code: 2,
   },
   {
+    // SC-16/F-88. The operator stopped a healthy run: test gate PASSED, the next step
+    // was determined ("proceed-to-review") and never taken. Before `halted` existed this
+    // had to be recorded as `canceled`, whose branch answers QUARANTINE / "human
+    // investigation required" about a run with nothing to investigate — three live arm A
+    // runs hit exactly this and all three recorded that the vocabulary had no honest
+    // member. RETRY is the honest verdict: resuming is the expected next step, and
+    // `carry_over.resumable: true` (unreachable before this change) says the tree can
+    // carry forward.
+    name: 'retry_operator_halt',
+    jobId: 'job-h41ta7',
+    decision: 'RETRY',
+    warn_flag: false,
+    exit_code: 1,
+  },
+  {
+    // The other half, and the one that keeps `halted` from being a laundering route: a
+    // halt does NOT clear a gate that failed. Same lifecycle value, same OPERATOR_HALT
+    // reason, test gate `fail` — QUARANTINE.
+    //
+    // This trio is also the anti-vacuity check on the guard itself. The guard cannot be
+    // the plain `gateFail` the `completed` branch uses, because `pipeline_completion`
+    // returns FAIL for EVERY non-completed run by construction — so a naive guard sends
+    // 100% of halts here and this fixture would pass while `retry_operator_halt` failed.
+    // All three cases must hold at once or the state is decorative in one direction and
+    // useless in another.
+    name: 'quarantine_halt_with_failed_gate',
+    jobId: 'job-h9f41d',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    // Pin WHICH gate the operator is told about. The guard reports the first failed gate
+    // that actually evaluated something; a regression that quarantined on the premise gate
+    // instead would still be QUARANTINE / exit 2 and would still pass the line above.
+    expectReason: 'the "phase_gates" gate recorded fail',
+  },
+  {
+    // SC-16/F-88b, finding 56 — the third leg, and the one the original pair could not
+    // hold up. The first guard excluded `pipeline_completion` WHOLESALE, and that gate
+    // answers two questions in one status: "did this run finish?" (the premise of every
+    // halt) and "did this run lose a phase?" (a finding). Excluding it excluded both.
+    //
+    // This tree is `quarantine_skipped_phase` with `final_status: "halted"`: `review` has
+    // no attempt while `document` — a LATER phase — does, so a phase was genuinely skipped
+    // and the trailing ship/verify were merely never reached. Under the shipped guard this
+    // returned RETRY / exit 1 with the words "nothing is wrong with the run", which is a
+    // halt laundering a lost phase. It must QUARANTINE, and the reason must name the gap
+    // rather than claim a gate failed — no gate other than the premise one did.
+    //
+    // Neither original halt fixture had an intermediate hole, which is why both passed a
+    // guard that could not tell a premise from a finding. The fixture that CAN tell them
+    // apart is the one that has both kinds of gap in a single tree.
+    name: 'quarantine_halt_skipped_phase',
+    jobId: 'job-h5k1pd',
+    decision: 'QUARANTINE',
+    warn_flag: false,
+    exit_code: 2,
+    expectGate: { key: 'pipeline_completion', result: 'fail' },
+    expectReason: 'missing in a way the stop does not explain (review (no attempt recorded))',
+    // The trailing pair must still read "not reached" — the halt DOES explain those, and a
+    // fix that quarantined on the tail would make every halt a quarantine again.
+    expectWarning:
+      'Missing phase evidence: review (no attempt recorded), ' +
+      'ship (not reached — job terminated at document), ' +
+      'verify (not reached — job terminated at document)',
+  },
+  {
     name: 'promote_unverified',
     jobId: 'job-4b7e1c',
     decision: 'PROMOTE',
@@ -453,6 +519,18 @@ for (const testCase of CASES) {
         gate && gate.result === expected.result,
         gate && gate.result,
         expected.result
+      );
+    }
+    // SC-16/F-88b: a decision alone under-specifies. Two different defects can both be
+    // QUARANTINE / exit 2 while telling the operator opposite things about their run, so
+    // where the WORDS are the deliverable, pin the words.
+    if (testCase.expectReason) {
+      check(
+        `${testCase.name} decision_reason contains "${testCase.expectReason}"`,
+        typeof out1.json.decision_reason === 'string' &&
+          out1.json.decision_reason.includes(testCase.expectReason),
+        out1.json.decision_reason,
+        `a reason containing "${testCase.expectReason}"`
       );
     }
     if (testCase.expectWarning) {

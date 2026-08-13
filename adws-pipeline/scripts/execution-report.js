@@ -44,6 +44,15 @@ const path = require('path');
 // F-38 closed the hole for one half of consensus and left the other open — a Critic fail
 // is now a rewind origin (F-46), so the clean later round it produces was exactly what
 // hid it. Additive: same gate key, same decisions, same exit codes.
+// 1.4.0 also reads `final_status: "halted"` (SC-16/F-88) — a run the operator stopped
+// while it was healthy. It routes to the EXISTING RETRY verdict on the EXISTING exit
+// code 1, and to QUARANTINE when a gate failed, so it adds no decision, no exit code,
+// and no gate key. That is why it is not a version bump: the report's contract with its
+// readers is the decision vocabulary and the exit codes, and a fifth input value that
+// maps onto existing outputs does not change it. Before this, an operator-directed stop
+// had to be recorded as `canceled`, whose branch says "human investigation required"
+// about a run nobody needs to investigate — three live runs hit it and all three
+// recorded that the vocabulary had no honest member.
 const SCHEMA_VERSION = '1.4.0';
 
 // --- Constants ported from ADWS_Pro src/phases.js -------------------------
@@ -385,8 +394,19 @@ function firstFindingText(critic) {
 // recorded" lines — the QUARANTINE signature — above the one line that said why it
 // stopped. The verdict was right and the top of the report was noise. Nothing about
 // DECISION, exit codes, or gate STATUS changes here; only the words.
-function missingPhaseEvidence(phaseData) {
-  const missing = [];
+// SC-16/F-88b: the classification above was already being COMPUTED here and then
+// discarded into prose. `NOT_REACHED` is the trailing tail — every phase after the
+// last one that produced evidence — and it is the one gap kind a deliberate stop
+// fully accounts for. `SKIPPED` (a hole with a LATER phase on the far side) and
+// `UNREADABLE` (an attempt that was supposed to write evidence and did not) are
+// facts about the run that no stop explains. Keeping the kind instead of re-deriving
+// it from the message text is the point: the FIRST halt guard re-derived nothing at
+// all and excluded the gate wholesale, so a skipped `review` rode a halt out to
+// RETRY / "nothing is wrong with the run" (finding 56).
+const EVIDENCE_GAP_KINDS = { NOT_REACHED: 'not_reached', SKIPPED: 'skipped', UNREADABLE: 'unreadable' };
+
+function phaseEvidenceGaps(phaseData) {
+  const gaps = [];
   let lastWithEvidence = -1;
   PHASE_NAMES.forEach((name, i) => {
     if (phaseData[name]) lastWithEvidence = i;
@@ -396,30 +416,49 @@ function missingPhaseEvidence(phaseData) {
     const phaseName = PHASE_NAMES[i];
     const entry = phaseData[phaseName];
     if (!entry) {
-      missing.push(
-        terminalPhase && i > lastWithEvidence
-          ? `${phaseName} (not reached — job terminated at ${terminalPhase})`
-          : `${phaseName} (no attempt recorded)`
-      );
+      const notReached = i > lastWithEvidence;
+      gaps.push({
+        phase: phaseName,
+        kind: notReached ? EVIDENCE_GAP_KINDS.NOT_REACHED : EVIDENCE_GAP_KINDS.SKIPPED,
+        text:
+          terminalPhase && notReached
+            ? `${phaseName} (not reached — job terminated at ${terminalPhase})`
+            : `${phaseName} (no attempt recorded)`,
+      });
       continue;
     }
     const absent = [];
     if (!entry.manifest) absent.push('phase_manifest.json');
     if (!entry.output) absent.push('phase_output.json');
     if (absent.length > 0) {
-      missing.push(`${phaseName} (attempt_${entry.attempt} wrote no readable ${absent.join(' / ')})`);
+      gaps.push({
+        phase: phaseName,
+        kind: EVIDENCE_GAP_KINDS.UNREADABLE,
+        text: `${phaseName} (attempt_${entry.attempt} wrote no readable ${absent.join(' / ')})`,
+      });
     }
   }
-  return missing;
+  return gaps;
+}
+
+function missingPhaseEvidence(phaseData) {
+  return phaseEvidenceGaps(phaseData).map((g) => g.text);
 }
 
 function evalPipelineCompletion(phaseData, finalStatus) {
-  const missing = missingPhaseEvidence(phaseData);
+  const gaps = phaseEvidenceGaps(phaseData);
+  const missing = gaps.map((g) => g.text);
   const base = {
     key: 'pipeline_completion',
     label: 'All seven phases produced an attempt with readable evidence',
     value: `${PHASE_NAMES.length - missing.length}/${PHASE_NAMES.length}`,
     threshold: `${PHASE_NAMES.length}/${PHASE_NAMES.length}`,
+    // Carried on the gate, not recomputed by the consumer, and NOT serialized — the
+    // report projects gates to {gate, result, detail}. `decideLifecycle` reads this to
+    // tell "this run did not finish" (the premise of every halt) apart from "this run
+    // lost a phase" (a finding a halt must not bury). Empty means the only thing wrong
+    // with this run is that it stopped.
+    unexplained_by_stop: gaps.filter((g) => g.kind !== EVIDENCE_GAP_KINDS.NOT_REACHED).map((g) => g.text),
   };
   if (missing.length > 0) {
     return { ...base, status: GATE_STATUSES.FAIL, reason: `Missing phase evidence: ${missing.join(', ')}` };
@@ -924,6 +963,61 @@ function decideLifecycle({ status, failureReason, gates }) {
     return {
       decision: DECISIONS.QUARANTINE,
       decision_reason: 'Job was canceled before reaching a terminal completion; treated as non-promotable.',
+      warn_flag: false,
+    };
+  }
+
+  // SC-16/F-88. A halt is a fact about how the run ENDED, never a verdict on what it
+  // CONTAINS: the gate check comes first, so stopping a run cannot bury a gate that
+  // failed. Without it, `halted` would be a laundering route out of QUARANTINE rather
+  // than the missing vocabulary it is meant to be.
+  //
+  // But it CANNOT be the plain `gateFail` the `completed` branch uses, and the reason is
+  // the whole trap: `pipeline_completion` returns FAIL whenever `finalStatus !==
+  // 'completed'` OR any phase lacks evidence (evalPipelineCompletion above) — both true
+  // of every deliberate stop, by construction. Reusing `gateFail` here would quarantine
+  // 100% of halts and leave the state decorative.
+  //
+  // Nor can it exclude `pipeline_completion` WHOLESALE, which is what shipped first and
+  // is finding 56. That gate answers two questions in one status: "did this run finish?"
+  // — the premise of every halt, and no finding at all — and "did this run lose a phase?"
+  // — a finding a halt must never bury. Excluding the gate excluded both, so a halted run
+  // with `review` skipped between two phases that DID produce evidence returned RETRY and
+  // the words "nothing is wrong with the run". The narrower guard reads the gate's own
+  // `unexplained_by_stop`, which is empty exactly when the trailing tail is the whole
+  // story.
+  //
+  // Both versions of this guard were finding 51's shape — a gate correct alone, a consumer
+  // correct alone, wrong in composition — and the first was caught by reading the gate
+  // builder rather than by running the fixture. The second was not caught here at all: the
+  // fixture pair passed, because neither fixture had an intermediate hole to launder.
+  if (normalizedStatus === 'halted') {
+    const failedGates = Array.isArray(gates) ? gates.filter((g) => g && g.status === GATE_STATUSES.FAIL) : [];
+    const evaluatedFail = failedGates.find((g) => g.key !== 'pipeline_completion');
+    if (evaluatedFail) {
+      return {
+        decision: DECISIONS.QUARANTINE,
+        decision_reason: `Job was halted by the operator, but the "${evaluatedFail.key}" gate recorded fail; the halt does not clear the failure, so the job quarantines to preserve evidence.`,
+        warn_flag: false,
+      };
+    }
+    const lostEvidence = failedGates
+      .filter((g) => g.key === 'pipeline_completion')
+      .flatMap((g) => (Array.isArray(g.unexplained_by_stop) ? g.unexplained_by_stop : []));
+    if (lostEvidence.length > 0) {
+      return {
+        decision: DECISIONS.QUARANTINE,
+        decision_reason: `Job was halted by the operator, but phase evidence is missing in a way the stop does not explain (${lostEvidence.join(', ')}); a halt accounts for the phases after it, never a gap behind it.`,
+        warn_flag: false,
+      };
+    }
+    const why = reason ? ` (reason: ${reason})` : '';
+    // RETRY, not QUARANTINE: nothing is wrong with this run, it just stopped. The warn
+    // flag stays false because a deliberate stop is not an anomaly — the report says so
+    // in words, and `carry_over.resumable` says whether the tree can be picked back up.
+    return {
+      decision: DECISIONS.RETRY,
+      decision_reason: `Job was halted by the operator with no failed gate${why}; nothing is wrong with the run and resuming it is the expected next step. See run_manifest.carry_over.resumable for whether the retained worktree can be adopted.`,
       warn_flag: false,
     };
   }
