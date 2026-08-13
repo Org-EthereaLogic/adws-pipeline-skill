@@ -3302,18 +3302,71 @@ reason, and neither line changed. What was missing was a terminal state to evalu
 
 `evalPipelineCompletion` returns FAIL whenever `final_status !== "completed"` or any phase lacks
 evidence — both true of every halt, by construction. The naive guard therefore quarantines 100% of
-halts. The shipped guard skips `pipeline_completion` and reads only gates that evaluated something.
+halts.
 
-**Ablation (falsifiability, not assertion).** Removing the `pipeline_completion` exclusion:
+> **The next sentence originally read: "The shipped guard skips `pipeline_completion` and reads only
+> gates that evaluated something."** That was wrong, and it is corrected below rather than
+> overwritten (§10.4). It skipped a finding along with the premise.
 
-| Fixture | With exclusion | Without |
-|---|---|---|
-| `retry_operator_halt` | RETRY, exit 1 | **QUARANTINE, exit 2 — breaks** |
-| `quarantine_halt_with_failed_gate` | QUARANTINE, exit 2 | QUARANTINE, exit 2 — still green |
+### F-88b — the correction (finding 56)
 
-The anti-laundering fixture passes under both guards, so it is vacuous alone. Only the pair pins the
-behaviour. Recorded as finding 55: this is finding 51's fourth instance and the first authored in
-this repo rather than found in someone else's.
+`pipeline_completion` does not answer one question. It answers two in a single status:
+
+| Question | For a halt |
+|---|---|
+| Did this run **finish**? | Always no — the premise of the state, no finding at all |
+| Did this run **lose a phase**? | A finding, and one a stop does not explain |
+
+Excluding the gate excluded both. Reproduced on the shipped guard by taking the existing
+`quarantine_skipped_phase` tree — `review` has no attempt while `document`, a **later** phase, does
+— and setting `final_status: "halted"`:
+
+```
+decision: RETRY   exit_code: 1
+reason:  Job was halted by the operator with no failed gate (reason: OPERATOR_HALT);
+         nothing is wrong with the run and resuming it is the expected next step.
+gates:   pipeline_completion fail | 4/7 — Missing phase evidence:
+         review (no attempt recorded), ship (not reached — job terminated at document), …
+```
+
+A phase was lost and the halt carried it out of QUARANTINE — the laundering route this guard exists
+to close.
+
+**The distinction was already computed and discarded.** `missingPhaseEvidence` has separated these
+cases since SC-13/F-78 — that is what *"not reached — job terminated at X"* versus *"no attempt
+recorded"* means — and flattened them into prose. The consumer had nothing structural to read and
+reached for the gate key. The fix keeps the kind: `phaseEvidenceGaps` classifies each gap
+`not_reached` / `skipped` / `unreadable`, the gate carries `unexplained_by_stop` (the non-trailing
+gaps, empty exactly when the stop is the whole story), and the guard reads that. Not serialized —
+the report projects gates to `{gate, result, detail}`, so no fixture output changed.
+
+No new rule, no new decision, no new exit code.
+
+**Ablation, two-directional.** Both must hold at once:
+
+| Fixture | Shipped | `gateFail` (no exclusion) | Wholesale exclusion (the F-88 bug) |
+|---|---|---|---|
+| `retry_operator_halt` | RETRY, 1 | **QUARANTINE, 2 — breaks** | RETRY, 1 — green |
+| `quarantine_halt_with_failed_gate` | QUARANTINE, 2 | QUARANTINE, 2 — green | QUARANTINE, 2 — green |
+| `quarantine_halt_skipped_phase` | QUARANTINE, 2 | QUARANTINE, 2 — green | **RETRY, 1 — breaks** |
+
+Read the third column: under the defect that actually shipped, **both original fixtures stay
+green.** That is the measurement of how vacuous the pair was — finding 55 credited it with
+distinguishing two guards, which it did, and it could not see a third. Neither tree had a gap
+*behind* the stop; every missing phase in both was trailing. `quarantine_halt_skipped_phase` carries
+both gap kinds in one tree.
+
+`decision_reason` is now asserted too (`expectReason`), because two defects can both be
+QUARANTINE / exit 2 while telling the operator opposite things. The failed-gate case names the gate;
+the lost-phase case names the gap and does **not** claim a gate failed, since none that evaluated
+did.
+
+**How it was caught: not here.** Finding 55 closes on "what actually caught it was reading the
+callee", and that reading was not deep enough — `evalPipelineCompletion` was read for *when* it
+returns FAIL, not for *what the FAIL is about*. An independent review of the branch found it. Two
+consecutive fixes to the same twenty lines shipped the same defect class, each authored while
+explicitly reasoning about that defect class. Finding 51's fifth instance, and the first found by a
+reader who had not written it.
 
 ### No schema bump
 
@@ -3327,11 +3380,11 @@ does not change it.
 | Check | Result |
 |---|---|
 | `make local-ci` | PASS, 17/17 |
-| execution-report fixtures | **27/27** (was 25) + CLI error path, deterministic |
+| execution-report fixtures | **28/28** (was 25) + CLI error path, deterministic |
 | `run-ab.sh` | 91 assertions, 0 failed |
 | `run-step5.sh` | 135 assertions, 0 failed |
 | parity corpus | 116/116 |
-| `SKILL.md` | 468 lines; budget raised 456 → 468 with a reason, in this commit |
+| `SKILL.md` | 469 lines; budget 456 → 468 (F-88), → 469 (F-88b), each with a reason |
 
 `run-ab.sh` §A5 fired on the tree change, as designed. The digest is re-frozen in the same commit
 that caused it, with the prior value kept under `superseded.prior` — the second re-freeze, and both

@@ -40,7 +40,7 @@
     "Lowering `budget` toward SC-10's 337 floor is a separate decision with a real prose",
     "task attached; SC-14 deliberately did not take it. See DPPD.md section 23 (M-6)."
   ],
-  "budget": 468,
+  "budget": 469,
   "target_advisory": 350,
   "nfr3_ceiling": 500,
   "history": [
@@ -62,7 +62,12 @@
     {
       "value": 468,
       "set_by": "SC-16",
-      "reason": "+12 for the halt lifecycle state (F-86), closing arm A gaps 4, 8 and 12 -- the only three of the twelve documented gaps that share one root cause. +9 for the section 5 preamble routing an operator halt INTO the terminal report, and +3 on the relay line. Both lines are orchestrator behaviour and cannot live only in references/: the orchestrator is the thing that must not abandon the tree mid-phase, and it is the thing that must tell the operator a RETRY verdict on their own deliberate stop means nothing failed. The mechanism this buys is gap 12's: carry_over is written at a terminal state, an operator halt produced no terminal state, so resumable:true was unreachable for a healthy run stopped on purpose -- the single best resume candidate the pipeline can produce. No policy said a halted run may not resume; there was simply no path to the record that would have said it could. The alternative to spending these lines was leaving three live runs' worth of evidence pointing at a hole nobody could reach from inside the document."
+      "reason": "+12 for the halt lifecycle state (F-88), closing arm A gaps 4, 8 and 12 -- the only three of the twelve documented gaps that share one root cause. +9 for the section 5 preamble routing an operator halt INTO the terminal report, and +3 on the relay line. Both lines are orchestrator behaviour and cannot live only in references/: the orchestrator is the thing that must not abandon the tree mid-phase, and it is the thing that must tell the operator a RETRY verdict on their own deliberate stop means nothing failed. The mechanism this buys is gap 12's: carry_over is written at a terminal state, an operator halt produced no terminal state, so resumable:true was unreachable for a healthy run stopped on purpose -- the single best resume candidate the pipeline can produce. No policy said a halted run may not resume; there was simply no path to the record that would have said it could. The alternative to spending these lines was leaving three live runs' worth of evidence pointing at a hole nobody could reach from inside the document."
+    },
+    {
+      "value": 469,
+      "set_by": "SC-16/F-88b",
+      "reason": "+1, and the cheapest line in this file to justify: the 468 entry above bought a halt state whose FIRST anti-laundering guard did not hold. That guard excluded the `pipeline_completion` gate wholesale, because the gate fails for every non-`completed` run by construction and reusing the plain gateFail check would have quarantined 100% of halts. But that gate answers TWO questions in one status -- did this run FINISH (the premise of every halt, and no finding at all) and did this run LOSE a phase (a finding) -- so excluding it excluded both, and a halted run with `review` skipped between two phases that DID produce evidence reported RETRY and the words 'nothing is wrong with the run'. Finding 56. The line states the rule the guard now enforces: a stop accounts for the phases after it and for nothing behind it. It cannot live only in references/ for the same reason the rest of the section 5 preamble could not -- the orchestrator is the thing that decides what to record when an operator stops it, and a rule about what a halt does NOT excuse is worth nothing in a file the orchestrator has no reason to open. Neither original halt fixture had an intermediate hole, so both passed the broken guard; the regression that catches it is parity/execution-report-fixtures/quarantine_halt_skipped_phase."
     }
   ]
 }
