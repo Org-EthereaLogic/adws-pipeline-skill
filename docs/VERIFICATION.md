@@ -3497,6 +3497,26 @@ Four did not, and each was a real defect in the first cut:
 
 That last one is worth dwelling on. A golden freezes whatever the machine that wrote it produced, so **every value in it is a portability claim** — and two of the four defects above were exactly that claim being false in a way the authoring machine cannot see. `make local-ci` passed throughout; the only thing that disagreed was a second Node version. Both versions now produce the identical 37-survivor set.
 
+### The call metric was a matrix size wearing a measurement's name
+
+A fifth correction, found in review after this section was first written. The tool did
+`totalRuns += fixtures.length` **before** running the mutant, while both runners short-circuit on
+the first case that disagrees — so the figure was mutants × fixtures, a ceiling, and it was labelled
+`execute() call(s)` even for a target that calls `buildReport()`. The counter now increments at the
+actual invocation: **2,202 measured runs against a 4,867-slot matrix**, so the first cut overstated
+by 2.2×. The measured figure is host-dependent and 2,202 is this machine — as root, which the
+containerised cross-version legs are, `quarantine_unreadable_manifest` is skipped (mode 000 is
+readable there) and Node 20 measures 2,181. Mutants, survivors and verdicts are identical on both;
+compare those, not this.
+
+The direction of the error is the interesting part. The two numbers diverge *more* the better the
+corpus is, because a well-pinned rule dies on its first case and never reaches the rest — so the
+ceiling reads highest exactly when the suite is doing its job. Reporting it as work performed
+inverted the signal. The earlier figures in the baseline's `measured` block (1,446 for nine packs,
+and the 122 quoted in the tool's own header) carry the same defect; they are left as recorded
+history with a note rather than re-derived, since that would mean re-running versions of the tool
+that no longer exist.
+
 ### The markdown goldens were a correction, made on measurement
 
 The first cut compared the report object alone, reasoning that markdown is derived from it. The
@@ -3511,7 +3531,7 @@ markdown is what a human reads to decide whether to trust the gate. Both are out
 | | |
 |---|---|
 | `execution-report` target | 109 mutants × 29 report fixtures, **19 survivors, 90 killed** |
-| Whole sweep | 225 mutants, 10 targets, 4,867 calls, **1,202 ms** (was 47 ms for 9 packs) |
+| Whole sweep | 225 mutants, 10 targets, **2,202 measured case runs**, **1,201 ms** (was 47 ms for 9 packs) |
 | Baseline | 18 new `unpinned` (owner SC-18), 1 new `equivalent`; budget **16 → 34** |
 | Closed, not accepted | 1 survivor — see below |
 
@@ -3589,5 +3609,31 @@ downstream moves.
 | `SKILL.md` | 469 lines, budget unchanged — this work adds no orchestrator rule |
 
 **Gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12). Five open: 1, 3, 7, 9, 11.**
-Of the five, 1/3/7 are file contradictions needing an authority named; 9 and 11 are policy calls
-with proposed rulings awaiting sign-off.
+Of the five, 1/3/7 are file contradictions needing an authority named.
+
+### The two policy gaps — one ruling proposed, one withdrawn
+
+**Gap 9 — proposed, and it stands.** `NO_DOC_PATH_IN_SCOPE` should treat
+`adws-pipeline/references/` as this repo's equivalent of a documentation location. The rule already
+says "the repo's equivalent"; this names it, and turns a judgment call the orchestrator had to make
+silently into something it can cite.
+
+**Gap 11 — WITHDRAWN.** SC-17 proposed "≥1 verified row makes the criterion verified", justified as
+ratifying what arm A3's tester improvised. That is unsafe and contradicts rules already written:
+`artifact-layout.md` says a `gate_weak` verdict is "an unverified criterion (warn), **never a
+pass**", `SKILL.md` §3 says the same, and the same paragraph permits several checks per criterion
+"when a criterion needs more than one". Under the withdrawn rule, a criterion with one verified row
+and one `gate_weak` row for a *required* check would report verified while an unfalsifiable
+required check sat underneath — the masking both documents forbid.
+
+The mistake is worth naming precisely, because "ratify what the live run did" is a sound instinct
+and it was applied to the wrong kind of gap. It fits where the document is **silent**. Gap 11 is
+silent only on *aggregation*; it is explicit that `gate_weak` never passes. Checking an
+improvisation against the rules that already exist is the step that was skipped.
+
+**What SC-18 must settle first, before any aggregation rule can be written:** the contract has no
+way to distinguish a *required* criterion check from a *supplemental* one, and without that
+distinction every aggregation rule is either too permissive (masking) or too strict (a
+supplementary regression check blocking a genuinely verified criterion). Two constraints hold
+regardless of how that lands — **`fail` dominates**, and **a required row must never be masked by a
+verified sibling**.

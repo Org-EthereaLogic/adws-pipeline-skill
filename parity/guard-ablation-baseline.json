@@ -110,7 +110,12 @@
       "M-5b changes no validator. Recording converts 19 invisible gaps into 19 tracked ones",
       "that CI will not let anyone forget, and the rule is bidirectional: an entry that stops",
       "surviving fails the gate until it is deleted.",
-      "Superseded as the current figure by `measured_sc17` below; kept as the nine-pack record."
+      "Superseded as the current figure by `measured_sc17` below; kept as the nine-pack record.",
+      "The `execute_calls: 1446` above has the same defect the SC-17 review found in",
+      "measured_sc17: it is mutants x fixtures, counted before each mutant ran, not calls made.",
+      "Left as recorded history rather than re-derived -- doing so would mean re-running a version",
+      "of the tool that no longer exists. Read it as a matrix size. The same caveat applies to the",
+      "M-5a \"122 calls\" figure quoted in guard-ablation.mjs's header comment."
     ]
   },
   "unpinned_budget": 34,
@@ -414,7 +419,6 @@
     "as_of": "2026-08-13 (SC-17/F-90, nine validators + execution-report.js)",
     "targets": 10,
     "mutants": 225,
-    "execute_calls": 4867,
     "wall_clock_ms": 1202,
     "survivors": 37,
     "note": [
@@ -439,7 +443,24 @@
       "two work packages ago, so the owner field was stale for the SECOND time (F-86 was the",
       "first, when 19 entries named an already-shipped SC-12). Rule 4 asserts the field is a",
       "non-empty string and cannot assert the package is still open, so this will go stale a",
-      "third time unless something checks it. Named here rather than fixed here."
-    ]
+      "third time unless something checks it. Named here rather than fixed here.",
+      "",
+      "The call figure was corrected in review. `execute_calls` here first read 4,867, which was",
+      "mutants x fixtures -- a CEILING, accumulated before each mutant ran, while both runners",
+      "short-circuit on the first case that disagrees. The measured figure is 2,202, so the first",
+      "cut overstated by 2.2x, and the label was wrong besides: the report target calls",
+      "buildReport(), not execute(). Both numbers are kept, because the RATIO is the interesting",
+      "one -- ceiling and measured diverge more the better the corpus is, since a well-pinned rule",
+      "dies on its first case and never reaches the rest. Reported as work performed, the ceiling",
+      "reads highest exactly when the suite is doing its job.",
+      "",
+      "measured_case_runs is ENVIRONMENT-DEPENDENT and 2,202 is this host, not an invariant. As root",
+      "-- which the containerised cross-version legs are -- quarantine_unreadable_manifest is skipped,",
+      "because mode 000 is still readable there, so every mutant that reaches the end of the corpus",
+      "runs one case fewer: Node 20 in the orb container measures 2,181. Survivor counts, mutant counts",
+      "and verdicts are identical across both. Compare those, not this."
+    ],
+    "measured_case_runs": 2202,
+    "matrix_slots": 4867
   }
 }

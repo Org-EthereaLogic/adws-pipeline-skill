@@ -427,6 +427,7 @@ function applyModes(reportCase) {
 function reportFor(exports_, reportCase) {
   const revert = applyModes(reportCase);
   try {
+    caseRuns += 1;
     const { report, markdown } = exports_.buildReport(reportCase.jobDir);
     return {
       report: normalizeReport(report, reportCase.jobDir),
@@ -438,6 +439,14 @@ function reportFor(exports_, reportCase) {
     revert();
   }
 }
+
+/**
+ * Measured, not derived. Both runners short-circuit on the first case that disagrees, so
+ * mutants + fixtures is a MATRIX SIZE and not a call count — the two diverge by more the
+ * better the corpus is, because a well-pinned rule dies on its first case. Incremented at
+ * the actual invocation so the reported figure is what ran.
+ */
+let caseRuns = 0;
 
 function runAgainstGoldens(exports_, cases) {
   for (const reportCase of cases) {
@@ -459,6 +468,7 @@ function runAgainstFixtures(exports_, fixtures) {
     }
     let result;
     try {
+      caseRuns += 1;
       result = exports_.execute(fixture.input);
     } catch (_err) {
       result = { __threw: true };
@@ -626,7 +636,6 @@ const baseline = loadBaseline();
 const acceptedById = new Map((baseline.accepted || []).map((entry) => [entry.id, entry]));
 
 let totalMutants = 0;
-let totalRuns = 0;
 const survivors = [];
 
 for (const target of TARGETS) {
@@ -653,7 +662,6 @@ for (const target of TARGETS) {
     } catch (_err) {
       continue; // mutant does not parse — not a survivor, not a finding
     }
-    totalRuns += fixtures.length;
     if (target.survives(exports_, fixtures)) {
       packSurvivors += 1;
       survivors.push({ ...mutant, pack });
@@ -712,7 +720,7 @@ if (stale.length) {
 
 console.log(
   `\n[guard-ablation] ${totalMutants} mutant(s) over ${TARGETS.length} target(s), ` +
-    `${totalRuns} execute() call(s), ${survivors.length} survivor(s), ${elapsedMs} ms`
+    `${caseRuns} case run(s), ${survivors.length} survivor(s), ${elapsedMs} ms`
 );
 
 if (failed) {

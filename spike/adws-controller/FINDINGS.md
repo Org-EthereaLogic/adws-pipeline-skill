@@ -2311,3 +2311,44 @@ what in the output is a fact about the CODE and what is a fact about the MACHINE
 second kind by value. Two cheap probes catch most of it — grep the frozen corpus for the checkout
 path, and run the sweep under both Node versions the pre-push leg uses. Both are in
 `VERIFICATION.md` §SC-17/F-90 as standing checks rather than as things that happened once.
+
+**Finding 60 — three review corrections to SC-17's own evidence, and two of them are the shapes
+this file already tracks.**
+
+**(a) A ceiling reported as a measurement.** `guard-ablation` printed
+`${totalRuns} execute() call(s)`, accumulated as `totalRuns += fixtures.length` BEFORE each mutant
+ran — while both runners return on the first case that disagrees. So it was mutants × fixtures, a
+matrix size, and it was labelled `execute()` even for a target that calls `buildReport()`. Measured:
+**2,202 against a 4,867-slot ceiling**, an overstatement of 2.2×.
+
+The direction matters more than the magnitude. **The two numbers diverge more the better the corpus
+is** — a well-pinned rule dies on its first case and never reaches the rest — so the ceiling reads
+highest exactly when the suite is working best. Reported as work performed, the metric inverted its
+own signal. This is F-27's family ("a count no consumer compares is not a control") with a twist:
+here a consumer did read it, and read a number that was never measuring what its name said.
+
+**(b) Narrative suite counts drifted again, for the second time.** `Makefile` advertised
+`109/25/7` and `gate.sh` said `108` parity / `25` report in one comment and `116 / 25 / 7` in
+another, against an actual `116 / 29 / 7`. **SC-13 already did exactly this sync**, for the same
+three files, and recorded it as a one-off. It was not one: these numbers are prose beside the code
+that knows the real values, nothing compares them, and so they go stale on every change to a suite
+size. Corrected again here — and correcting it a second time is the evidence that correcting it is
+not the fix. **Recommended for SC-18:** assert the advertised counts against the suites' real sizes,
+the way `assertFixtureCoverage` already asserts declared cases against fixtures on disk. Until
+something compares them, there will be a third sync.
+
+**(c) A proposed policy that contradicted a written rule.** SC-17 offered a default for gap 11 —
+"≥1 verified row makes the criterion verified" — on the grounds that it ratifies what arm A3's
+tester improvised. Review rejected it, correctly. `artifact-layout.md` says a `gate_weak` verdict
+is "an unverified criterion (warn), **never a pass**", and `SKILL.md` §3 says the same; the same
+paragraph permits several checks per criterion "when a criterion needs more than one". So a
+criterion carrying one verified row and one `gate_weak` row for a *required* check would be
+declared verified while an unfalsifiable required check sat underneath it — which is the exact
+masking both documents forbid.
+
+**The error was in the justification, not just the rule.** "Ratify what the live run did" is a
+sound instinct for a gap where the document is silent, and gap 11 is not that: the document is
+silent on *aggregation* while being explicit that `gate_weak` never passes. The improvisation was a
+reasonable field decision and a bad policy, and treating a run's improvisation as evidence for a
+rule skipped the step of checking it against the rules that already exist. Withdrawn; the revised
+position is below.
