@@ -121,6 +121,11 @@ echo
 echo "### A5 — the tree arm A reads is unchanged since pre-registration"
 # Arm A's operating instruction IS this tree. If it moved between pre-registration and the run, the
 # two arms did not read the same document and the pair is void.
+# RE-FROZEN 2026-08-12 when SC-15 (PR #81) landed. This assertion now pins the tree for the FUTURE
+# both-arms window §7.4 requires; the value the three recorded arm A runs actually read is kept
+# under digests.shipped_tree.superseded. It fired on PR #81 while that was still a branch and was
+# deliberately NOT updated then — defeating it to land a fix would have been a third harness drift,
+# self-inflicted. It is updated now because arm A3 has run and its pair is void regardless.
 TREE="$(cd "$REPO" && find adws-pipeline .claude/agents -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256 | cut -c1-64)"
 assert "shipped tree digest" "$TREE" "$(pget digests.shipped_tree.value)"
 
