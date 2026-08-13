@@ -28,12 +28,12 @@ The only terminal states are `completed`, `failed`, `quarantined`, `canceled`.
 | Phase | Agent | Validators (scripts) | Exit criterion (gate) | Retry budget |
 |---|---|---|---|---|
 | plan | adws-planner | `task-normalize` | Plan written with per-criterion file-change proposal; validator not `fail` | 1 |
-| build | adws-builder | `repo-context-scan` | All planned changes applied in worktree; no policy-path violation; validator not `fail` | 1 |
+| build | adws-builder | `repo-context-scan` | All planned changes applied in worktree; no policy-path violation **in the ACTUAL change set** (`actual_changes`, assembled from the worktree — SC-15/F-84); validator not `fail` | 1 |
 | test | adws-tester | `criteria-to-checks` | All derived checks executed and passing; every emitted `check_specs.check_id` present in `phase_output.json.checks` (SC-5/F-31); each criterion falsifiable (a RED-for-the-right-reason pre-change baseline) or recorded `gate_weak` (SC-3 A1/A2); Critic `pass`; no Advocate dissent; validator not `fail` | 2 |
 | review | adws-reviewer | `review-risk-assess` | Critic `pass`; no Advocate dissent; risk recorded; validator not `fail` | 1 |
 | document | adws-documenter | `document-coverage-map` | Docs delta + changelog entry written; validator not `fail` | 1 |
-| ship | adws-shipper | `ship-mode-select`, `patch-compose` | Mode-specific artifact produced (PR URL / pushed branch / patch file); both validators not `fail` | 1 |
-| verify | adws-verifier | `verify-evidence-map`, `drift-sentinel` + adws-grader | All structural checks pass; grader verdict not `fail`; validators not `fail` | 1 |
+| ship | adws-shipper | `ship-mode-select`, `patch-compose` + adws-grader (all PRE-git) | Grader verdict not `fail` and both validators not `fail` — checked BEFORE the first git action (SC-15/F-85); then mode-specific artifact produced (PR URL / pushed branch / patch file) | 1 |
+| verify | adws-verifier | `verify-evidence-map`, `drift-sentinel` | All structural checks pass; the published artifact's diff digest equals `run_manifest.candidate_sha256`; validators not `fail` | 1 |
 
 Budget semantics: the budget counts retries beyond the first attempt (budget 1 = at
 most 2 attempts; test's budget 2 = at most 3 attempts). Any phase not listed defaults
@@ -91,10 +91,17 @@ continuation).
   operator as a warn (honoring F-9: `NOT RUN` is neither a pass nor a valid red) — and it
   consumes no rewind or check-defect budget; it never silently passes. These two
   `classification` values route to the operator, not to a build attempt.
-- **Verify drift BLOCK** (grader finds unaddressed/contradicted criteria in the shipped
-  diff): rewind to `build` carrying the grader's findings as feedback. At most ONE
-  verify rewind per job (tracked as `cross_phase_rewinds.verify`); a SECOND BLOCK
-  terminates with `PR_DRIFT_SENTINEL_BLOCK` → quarantine.
+- **Drift BLOCK** (grader finds unaddressed/contradicted criteria in the CANDIDATE):
+  rewind to `build` carrying the grader's findings as feedback. At most ONE drift rewind
+  per job (tracked as `cross_phase_rewinds.verify`); a SECOND BLOCK terminates with
+  `PR_DRIFT_SENTINEL_BLOCK` → quarantine.
+  **The grader runs at ship, before the first git action (SC-15/F-85).** It graded the
+  *shipped* diff until then, so a BLOCK rewound a change that already had commits and
+  possibly a live PR behind it: the rewind produced a second artifact and left the first
+  standing, because no rewind can un-publish. Grading the candidate is the same check on
+  the same bytes, at the last moment where the answer is still free. The budget keeps its
+  `verify` key so the accounting and every recorded manifest stay readable; what moved is
+  when it is spent, not what it counts.
 - **A Critic `fail` whose defect is in the CODE** (SC-7/F-46): see "Critic-fail
   remediation" below. Rewinds to `build`, tracked as `cross_phase_rewinds.review` at the
   review gate and `cross_phase_rewinds.test` at the test gate.
@@ -159,7 +166,7 @@ budget with no accounting because the answer was written for only two of the fiv
 |---|---|---|---|
 | `cross_phase_rewinds.test` | test checks fail, tester classifies `code` | 1 | **No** |
 | `cross_phase_rewinds.review` | verified Critic `fail` at the review gate (F-46) | 1 | **No** |
-| `cross_phase_rewinds.verify` | grader drift BLOCK | 1 | **No** |
+| `cross_phase_rewinds.verify` | grader drift BLOCK (spent at ship, pre-git — SC-15/F-85) | 1 | **No** |
 | `check_defect_repairs` | tester classifies `check` (SC-3 A4) | 1 | **No** |
 | `operator_directed_rewinds.{test,review}` | operator confirms a dissent, `resolution.action: "repair"` (SC-6 F-37) | 1 each | **Yes** |
 

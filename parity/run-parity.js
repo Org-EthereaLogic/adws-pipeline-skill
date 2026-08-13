@@ -73,7 +73,7 @@ const DIVERGED_PACKS = {
   // regardless of verdict — the same situation that moved review-risk-assess under
   // SC-8. repo-context-scan additionally CRASHED on the F-63 input, so the original
   // cannot produce a baseline for it at all.
-  'repo-context-scan': 'SC-9, v2.0.0',
+  'repo-context-scan': 'SC-9 + SC-15, v2.1.0',
   'patch-compose': 'SC-9, v2.0.0',
   'ship-mode-select': 'SC-9, v2.0.0',
 };
@@ -96,7 +96,16 @@ const DIVERGED_PACKS = {
 // band, which no fixture reached — the sibling named legacy-yellow-zone.json lands in the
 // RED band, so guard-ablation's `drift-sentinel:guard-off:#22` survived. No existing
 // expectation was rewritten.
-const EXPECTED_FIXTURE_TOTAL = 109;
+// SC-15/F-84: 109 -> 116. Seven repo-context-scan cases for the actuals pass — three
+// policy breaches reachable ONLY through `actual_changes` (outside allowed_paths, inside
+// a blocked path, traversal escape), one malformed-entry case, one clean match, one
+// in-policy divergence, and one for the absent key. The last is the load-bearing pin:
+// `warn-actuals-absent` is byte-identical to `pass-well-specified` minus the new key, so
+// the two fixtures together assert that the gate's verdict depends on having seen the
+// build. Two existing expectations DO change under this bump (pass-well-specified and
+// pass-grouped-directories, pass -> warn) because they carry no actuals; that is the
+// finding, pinned.
+const EXPECTED_FIXTURE_TOTAL = 116;
 
 // Env vars the implementations read; stripped from the inherited env so only
 // the fixture controls them.

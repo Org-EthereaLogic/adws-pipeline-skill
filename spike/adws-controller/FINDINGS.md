@@ -1602,9 +1602,10 @@ ranges in advance rather than describing the result afterwards as roughly what o
 
 ### What arm A found in the SHIPPED skill, which the void does not touch
 
-Arm A is step 5's mirror: ten residue events against the sketch, six against `SKILL.md`. These are
-gaps in the **shipped** document, reported by an orchestrator following it for the first time, and
-they are largely model-independent:
+Arm A is step 5's mirror: ten residue events against the sketch, six against `SKILL.md` on the
+first run and eight on the second. These are gaps in the **shipped** document, reported by an
+orchestrator following it for the first time, and the second run is the evidence that they are
+model-independent. Arm A1's six:
 
 1. **Where the pre-git `ship-mode-select` trace lives.** §1 requires running it *before* the first
    git command that consumes the branch name, but traces are defined only under an attempt's
@@ -1640,6 +1641,109 @@ And four surprises, one of which is a real quality signal:
   found no outcome verb in "terminates on". Changed nothing under SC-5; shows a narrow verb list.
 - `task-normalize` emitted analytic fields (`delta_r`, `coherence_score`, `synthetic_risk`) that
   `validator-inputs.md` never documents.
+
+**Arm A2's eight, and five of arm A1's six reproduced on a different model.** The jobId timezone,
+the pre-git `ship-mode-select` trace location, the undocumented `skill_trace.version`, the
+worktree-mechanism contradiction, and the missing vocabulary for an operator-directed partial run
+all recurred, independently, under `claude-opus-5` where arm A1 hit them under `claude-fable-5`.
+**The union across both runs is nine distinct gaps, not fourteen** — an earlier count added the
+two lists rather than merging them, and is corrected here. The three that are new:
+
+7. **`provenance` defines two disjoint key sets.** `artifact-layout.md` gives the shape as
+   `{model_id, cost_usd, tokens_in, tokens_out, elapsed_ms, tool_call_count, timeout, cancel}`
+   and then, below it, names `started_at`, `completed_at`, the derived `wall_clock_s`, `agent`
+   and `model_tier_requested` **obtainable and therefore mandatory**. Not one mandatory field
+   appears in the shape. Arm A2 wrote the union because nothing told it which list won. This is
+   findings 22/29/34's family again: two places answering one question.
+8. **No attempt-level reason for a route determined but not executed.** F-46 step 2 closes the
+   failing attempt with `failure_reason: "CRITIC_FAIL_REPAIRED"`, which presupposes the rewind
+   ran. Under an operator stop that value asserts a repair that never happened, and
+   `TEST_GATE_FAILURE` asserts a budget exhaustion that did not occur (test budget 2, this was
+   attempt 1). Both documented values are false, so arm A2 wrote `null` and recorded why —
+   **the attempt-level twin of gap 4**, which was the job-level version of the same hole.
+9. **`NO_DOC_PATH_IN_SCOPE` is a judgment call wearing a rule's clothes.** "No `allowed_paths`
+   entry admits a documentation location (README\*, CHANGELOG\*, `docs/`, or the repo's
+   equivalent)" — and `adws-pipeline/references/` is this repo's equivalent, which the
+   orchestrator had to decide for itself and recorded rather than raised.
+
+Five further surprises, the first of which is the largest single defect either arm A run found:
+
+- **`repo-context-scan` validates the plan, not the build.** Its input is
+  `plan_output.file_change_proposal`; the build gate's only validator never inspects what the
+  builder actually changed. Arm A2 checked the real change set itself (`git status --porcelain
+  -uall` against `allowed_paths`) and recorded that nothing in the skill told it to. A builder
+  writing outside `allowed_paths` passes the build gate on the plan's good intentions. **Fixed
+  in this PR** — see finding 51 for why neither half of it was wrong.
+- **The mandated `resolveWithinRoot` check rejected all three of the Critic's `reproduction.files`**
+  because they were recorded job-relative instead of attempt-relative. The corpus was present and
+  legitimate. An honest evidence-drift bug is indistinguishable, at the check, from a path-escape
+  attempt — the check reports a security shape for a clerical cause.
+- **`decideLifecycle` answered a mistyped probe confidently.** Passed `{final_status,
+  failure_reason}` (the manifest's field names) instead of `{status, failureReason}`, it fell
+  through to the unknown-state branch and returned QUARANTINE: a wrong call that looked exactly
+  like a right one. A function that cannot tell a wrong key from a wrong state is one whose
+  agreement is not evidence.
+- **`repo-context-scan` echoes the whole ~4 KB `plan_summary` into its verdict**, so the build-gate
+  trace is mostly plan prose.
+- **`skill-check.js` also verifies the ten installed agent files** (`agents_checked: 10`), more
+  than SKILL.md's "installed-copy integrity + version" advertises. Finding 45's mechanism, seen
+  from the other side.
+
+**Finding 50 — a stated integrity rule with nothing behind it, found in the evidence a run
+produced to satisfy it.** `artifact-layout.md` rule 9 says every `*_at` field is a real UTC value
+captured at the moment of writing, "never estimated, copied from another file, or a placeholder,"
+and that a midnight `T00:00:00Z` stamp "reads as fabricated evidence." Arm A2's test attempt wrote
+[`"performed_at": "--"`](fixtures/live_armA2_run/test/attempt_1/phase_manifest.json). That tree
+then passed every gate the skill has, was committed here as a fixture, and was caught by an audit
+reading files by hand. **No validator inspects any `*_at` field** — a grep for `_at` across all
+nine scripts in `adws-pipeline/scripts/validators/` returns nothing. Rule 9 has been prose since
+SC-13.
+
+The bug is one character wide; the class is not. The skill states integrity rules in prose and
+enforces a subset in code, and the unenforced subset stays invisible until a human reads the
+evidence — which is exactly the audit path the dual-evidence bar exists to avoid depending on.
+Rules 8 (strict writer) and the write-once discipline of FR-4 are in the same position. Closed in
+this PR by `evidence-integrity.js`, which makes rule 9 executable.
+
+**Finding 51 — a gate can be declared in one file, implemented in another, correct in both, and
+still not gate.** Two instances, in unrelated codebases, found in the same week:
+
+- **`repo-context-scan`.** SKILL.md's validator→phase map declares it the **build** gate's
+  validator. The script's own header declares its input `plan_output.file_change_proposal`. Both
+  statements are accurate. The composition validates the plan at the build gate, and neither file
+  contains the error.
+- **TAC-7's PreToolUse hook.** `pre_tool_use.py:99` exits 2 under a comment reading "Exit code 2
+  blocks tool call and shows error to Claude" — correct, and the documented mechanism.
+  `.claude/settings.json` wires it as `uv run …/pre_tool_use.py || true`, which is a correct way
+  to keep a *logging* hook from breaking a session. **All 7 of 7 hook commands carry `|| true`.**
+  The composition is a blocking hook that cannot block. Neither file contains the error.
+
+This is the mechanism underneath findings 12/14/15/18/19/23/27 ("trusting a proxy for the
+property"), stated at the level that predicts where to look: **when a gate is a declaration in one
+file and an implementation in another, the composition is a third artifact that nothing reviews.**
+Reading either half confirms the gate. Reading both, adjacently, is the only thing that finds it —
+which is why this is recorded as a review rule and not only as two bugs.
+
+**And the fixes for findings 50 and 51 collide with the pending measurement, which `run-ab.sh` §A5
+caught rather than a reviewer.** Both fixes edit `adws-pipeline/`, and the live A/B contract's
+`allowed_paths` are `adws-pipeline/references/` and `adws-pipeline/scripts/execution-report.js` —
+so merging them replaces the document arm A3 would read. A5 exists to assert that "the tree arm A
+reads is unchanged since pre-registration"; it now fails with
+`d17cca5a…` against the frozen `fe1657c8…`, and it was written weeks before the change that tripped
+it. The assertion is not defeated here and the digest is not updated: **the fix branch waits for arm
+A3.** Two frozen keys have already drifted out from under this experiment; a third drift caused by
+the experimenter's own repairs would be the least excusable of them. This is also the first time a
+guard in this spike has fired on its author rather than on a hypothetical.
+
+One decision follows from that constraint and is worth stating, because it is the kind normally
+made silently. The receipt-binding failure has no good member in the reason vocabulary, and adding
+one would have meant editing `execution-report.js` — the file the pending contract targets, in the
+exact area (`QUARANTINE_REASONS` / `NO_RETRY_REASONS`) the arm A2 Critic's finding lives in.
+So verify's receipt mismatch terminates `failed` / `VERIFY_GATE_FAILURE`, a member that already
+exists and is already reachable, with `resumable: false` carrying the fact that an artifact is
+live. Whether it deserves quarantine-class is a real question and it is deferred, on the record,
+rather than answered by inventing an enum member mid-experiment. Gaps 4 and 8 are about a
+vocabulary with no member for what happened; the response to that is not to mint members casually.
 
 ### What step 6 does not establish, and it is most of it
 

@@ -30,7 +30,7 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 | Validator | Phase | Input shape | Assemble from |
 |---|---|---|---|
 | `task-normalize` | plan | `{ title, requested_change, problem_statement, acceptance_criteria: [string], constraints: [string], file_hints: [string] }` | `task_contract_snapshot.json` → `task.*` fields verbatim |
-| `repo-context-scan` | build | `{ plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] } }` | plan `phase_output.json` + contract `policy.*` — each proposal's `description` is required; missing/<3-char yields `warn` |
+| `repo-context-scan` | build | `{ plan_output: { file_change_proposal: [{file_path, action, description}], plan_summary }, policy: { allowed_paths: [string], blocked_paths: [string] }, actual_changes: [string] }` | plan `phase_output.json` + contract `policy.*` + **the worktree itself** — each proposal's `description` is required (missing/<3-char yields `warn`); `actual_changes` is MANDATORY at the build gate (see below) |
 | `criteria-to-checks` | test | `{ acceptance_criteria: [string] }` | contract `task.acceptance_criteria`. **Runs PRE-dispatch** — see below |
 | `review-risk-assess` | review | `{ build_output: { files_changed: [{file_path, action}] } }` | build `phase_output.json` → `files_changed`; output `risk_level` re-selects model tiers for remaining phases |
 | `document-coverage-map` | document | `{ build_output: { files_changed: [...] }, doc_output: { docs_delta: [{file_path, change}], changelog_entry, documentation_summary }, acceptance_criteria: [string] }` | build + document `phase_output.json` + contract criteria |
@@ -38,6 +38,32 @@ under the attempt's `skills/{skill_id}/` directory (shape in
 | `patch-compose` | ship | `{ build_output: { files_changed: [...] }, document_output: { docs_delta: [...] }, output_mode, branch_name }` | build `phase_output.json` **and document `phase_output.json`** + contract/manifest as above. `files_to_ship` is the size of the UNION — that union is what the shipper stages, and passing only the build half undercounts the shipped set (recorded in three field runs before SC-9). |
 | `verify-evidence-map` | verify | `{ checks: [{check, pass}] }` | verifier `phase_output.json` → `verify_result.checks` |
 | `drift-sentinel` | verify | `{ entropy_history: [{entropy}\|{parseFailureScore}\|number] }` (env: `ADWS_UMIF_CANONICAL` on\|off\|shadow, default on) | `artifacts/{jobId}/entropy_history.jsonl` lines, MAPPED: each line's `parse_failures` becomes `parseFailureScore` (or pass the bare numbers) — drift-sentinel does NOT read the `parse_failures` key, and feeding raw lines scores every entry 0 → silent false-SAFE (entropy-gate.js does this mapping internally; at verify YOU assemble it). **File absent (zero parse failures) → pass `{ "entropy_history": [] }`, which is SAFE/`pass` by design** |
+
+### Assembling `actual_changes` at the build gate (SC-15/F-84)
+
+`repo-context-scan` is the build gate's only validator, and until v2.1.0 its only input was
+the PLAN — so a builder that wrote outside `allowed_paths` passed the build gate on the
+plan's good intentions. Neither half of that was wrong on its own: this file declared the
+validator's input, the skill declared its phase. The composition never looked at the
+worktree.
+
+From the worktree root, collect the paths the builder actually touched — tracked
+modifications and untracked additions both, worktree-relative, one string per path:
+
+```
+git -C <worktree> status --porcelain -uall | cut -c4-
+```
+
+Pass that array as `actual_changes`. Rename entries (`R  old -> new`) must be split into
+the two paths they name; a `->` inside a path string is a malformed entry, not a rename.
+
+**The key is mandatory at the build gate.** Omitting it does not pass quietly: the verdict
+carries `actuals_checked: false` and is floored at `warn`, because a build gate that never
+saw the build is not a pass. Read the two halves separately —
+`policy_violations` is about the plan, `actual_violations` is about the worktree, and only
+the second can tell you what shipped. Divergence between them
+(`unproposed_changes`, `unimplemented_proposals`) is `warn`, not `fail`: an in-policy edit
+the plan did not name is a judgement call, and this gate does not make those.
 
 ## Outputs worth naming
 

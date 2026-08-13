@@ -1,0 +1,8 @@
+{
+  "phase": "test",
+  "attempt": 1,
+  "started_at": "2026-08-12T04:11:07Z",
+  "completed_at": "2026-08-12T04:29:52Z",
+  "provenance": { "model_id": null, "cost_usd": null, "recorded_at": "2026-08-12T04:29:53Z" },
+  "reproduction": [{ "performed_at": "2026-08-12T04:28:00Z" }]
+}

@@ -199,6 +199,11 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
    `references/phase-gates.md`) with input assembled from the contract and phase
    outputs; wrap each stdout JSON in a `skill_trace.json` under the attempt's
    `skills/{skill_id}/` directory.
+   **At the BUILD phase, assemble `repo-context-scan`'s `actual_changes` from the
+   WORKTREE** — `git -C <worktree> status --porcelain -uall | cut -c4-` — never from the
+   plan or the builder's self-report (SC-15/F-84). The plan states intent; this is the
+   only gate that sees what the builder did. Omitting the key is not a pass: the verdict
+   carries `actuals_checked: false` and floors at `warn`.
 3. **Consensus** (test and review only): dispatch `adws-critic` and `adws-advocate`
    in parallel (MANDATORY — they have no data dependency on each other; see
    `references/phase-gates.md` "Consensus"). The parallel set is EXACTLY those two:
@@ -288,8 +293,20 @@ For each phase in order, repeat until gate pass, rewind, or budget exhaustion:
 
 ### 3 — Ship (FR-9, dispatched to adws-shipper)
 
-Before any git action, run `ship-mode-select` and `patch-compose` validators; a `fail`
-blocks shipping.
+Before any git action, run `ship-mode-select` and `patch-compose` validators, then run the
+**drift gate below**; a `fail` from any of them blocks shipping.
+
+**Drift gate, BEFORE publication (SC-15/F-85).** Dispatch `adws-grader` (recreation of
+`pr.drift_sentinel.spec`) on the CANDIDATE — the local change set `patch-compose` just
+unioned, read from the worktree — and grade it per acceptance criterion:
+satisfied/partial/unaddressed/contradicted. Grader `fail` = drift BLOCK → rewind to build
+with the findings (once per job; increment `cross_phase_rewinds.verify` — separate budget
+from the test rewind; second BLOCK → terminate `quarantined` / `PR_DRIFT_SENTINEL_BLOCK`).
+This runs before the first git action so the rewind is still free. Grading AFTER
+publication meant a BLOCK rewound a change that already had commits and a live PR behind
+it — a rewind cannot un-publish, so the job either left the artifact standing or produced
+a second one. Then record `candidate_sha256` (SHA-256 of the composed patch) in
+`run_manifest.json`; step 4 binds what was published to what was graded.
 
 - **direct_branch**: check `target_branch` FIRST, before any staging or commit — if it
   is protected (`main`, `master`, `production`, `prod`, `release`, or
@@ -324,25 +341,35 @@ blocks shipping.
 If `risk.requires_human_approval_before_ship` is true, show the user the diff summary
 and wait for approval before any push.
 
-### 4 — Verify (FR-11, dispatched to adws-verifier + adws-grader)
+### 4 — Verify (FR-11, dispatched to adws-verifier)
 
-Post-ship, zero orchestrator judgment:
+Post-ship, zero orchestrator judgment, and **no route back** — everything that can rewind
+ran at step 3. A failure here is about the PUBLICATION, never the change set:
 1. Structural checks: shipped artifact exists (PR reachable via `gh pr view` / branch
    pushed / patch file applies cleanly with `git apply --check`); every changed file
    inside `allowed_paths`, none in `blocked_paths`; syntax check changed files.
-2. `verify-evidence-map` and `drift-sentinel` validators.
-3. Dispatch `adws-grader` (recreation of `pr.drift_sentinel.spec`): grades the shipped
-   diff (`gh pr diff` or the patch) per acceptance criterion —
-   satisfied/partial/unaddressed/contradicted. Grader `fail` = drift BLOCK → rewind to
-   build with the findings (once per job; increment `cross_phase_rewinds.verify` —
-   separate budget from the test rewind; second BLOCK → terminate `quarantined` /
-   `PR_DRIFT_SENTINEL_BLOCK`).
+2. **Receipt binding (SC-15/F-85).** Re-derive the published artifact's diff (`gh pr diff`,
+   the pushed branch against its base, or the patch file) and compare its SHA-256 to
+   `run_manifest.candidate_sha256`. Record `receipt: { verified, sha256, candidate_sha256 }`
+   either way. Unequal → what is published is not what was graded. Re-deriving the same two
+   digests cannot change the answer, so this exhausts verify's budget on the first failure:
+   terminate `failed` / `VERIFY_GATE_FAILURE`, name both digests in the report, and set
+   `carry_over.resumable: false` — the artifact is live and the operator must resolve it.
+   **Never a rewind**: build cannot un-publish, so a job that rewound here would leave the
+   first artifact standing and produce a second.
+3. `verify-evidence-map` and `drift-sentinel` validators.
 
 ### 5 — Terminal report (FR-10)
 
 1. Set `final_status` + `failure_reason` + `completed_at` in `run_manifest.json`
    (`completed` only if all 7 gates passed).
-2. Run `node scripts/execution-report.js artifacts/{jobId}`.
+2. Run `node scripts/evidence-integrity.js artifacts/{jobId}` (SC-15/F-84b —
+   `references/artifact-layout.md` rule 9, executable). Exit 1 = a `*_at` field is a
+   placeholder, malformed, mistyped, or out of order: fix the offending record from a live
+   `date -u` if the true value is recoverable, and if it is not, say so in the report
+   rather than inventing one. A PASS claim standing on a timestamp nobody can source does
+   not meet the dual-evidence bar. Then run
+   `node scripts/execution-report.js artifacts/{jobId}`.
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
    and the path to `execution_report.md`.
@@ -355,8 +382,8 @@ Post-ship, zero orchestrator judgment:
    is staged or committed — hard rule 6 is unchanged; this is evidence, not a commit. On
    PROMOTE, record `carry_over: { "retained": false }` and continue to teardown.
    **`resumable` is `true` only when the job never shipped** — no commit, no push, no PR,
-   no patch, `ship` never reached or `deferred`. A job that died AFTER shipping (a verify
-   drift BLOCK, a post-ship gate failure) leaves commits and possibly a live PR behind, so
+   no patch, `ship` never reached or `deferred`. A job that died AFTER shipping (a receipt
+   mismatch, a post-ship structural failure) leaves commits and a live PR behind, so
    its worktree is not a clean starting point and a successor must not adopt it; record
    `resumable: false` with the reason and let the operator resolve the shipped artifact
    first. Restricting the state is the honest move here — the alternative is a carry-over
@@ -399,8 +426,8 @@ the reason verbatim from that reference; never invent one outside the documented
 | test | `criteria-to-checks.js` |
 | review | `review-risk-assess.js` |
 | document | `document-coverage-map.js` |
-| ship | `ship-mode-select.js`, `patch-compose.js` |
-| verify | `verify-evidence-map.js`, `drift-sentinel.js`, + `adws-grader` agent |
+| ship | `ship-mode-select.js`, `patch-compose.js`, + `adws-grader` agent — all PRE-git |
+| verify | `verify-evidence-map.js`, `drift-sentinel.js` |
 
 Validator inputs are assembled by you (orchestrator) from the contract and phase
 outputs — each script's expected input shape is documented in its header comment

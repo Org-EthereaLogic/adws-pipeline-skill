@@ -23,9 +23,14 @@
       "allowed_paths": [
         "src/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js",
+      "src/utils.js",
+      "src/lib/helpers.js"
+    ]
   },
-  "note": "tests/skill-modules.test.js — \"groups files by directory\"",
+  "note": "SC-15/F-84 — directory grouping pinned at a PASS verdict, which requires actuals. Successor to pass-grouped-directories.json.",
   "expected": {
     "rubric_result": "pass",
     "files_proposed": 3,
@@ -51,10 +56,16 @@
     "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
+    "actuals_checked": true,
+    "files_changed": 3,
+    "actual_violations": [],
+    "unproposed_changes": [],
+    "unimplemented_proposals": [],
+    "malformed_actual_entries": 0,
     "plan_summary": null,
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null
   },
-  "expected_source": "port@SC-9, v2.0.0"
+  "expected_source": "port@SC-9 + SC-15, v2.1.0"
 }

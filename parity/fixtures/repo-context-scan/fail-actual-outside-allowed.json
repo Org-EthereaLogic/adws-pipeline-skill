@@ -1,26 +1,31 @@
 {
   "input": {
     "plan_output": {
+      "plan_summary": "Add null check",
       "file_change_proposal": [
         {
           "file_path": "src/auth.js",
           "action": "modify",
-          "description": "Up"
+          "description": "Add null guard to session check"
         }
       ]
     },
     "policy": {
       "allowed_paths": [
         "src/"
+      ],
+      "blocked_paths": [
+        "infrastructure/"
       ]
     },
     "actual_changes": [
-      "src/auth.js"
+      "src/auth.js",
+      "scripts/deploy.sh"
     ]
   },
-  "note": "tests/skill-modules.test.js — \"returns warn when a description is too short\". SC-15/F-84: actual_changes added so the short description is the ONLY reason this is a warn. Without it the actuals-absent floor produced the same verdict and guard-ablation reported the description rule as unpinned — a fixture whose name no longer described what it caught.",
+  "note": "SC-15/F-84 — THE FINDING. The plan is clean and in policy; the builder also wrote scripts/deploy.sh, outside allowed_paths. Before the actuals pass this input was a build-gate PASS.",
   "expected": {
-    "rubric_result": "warn",
+    "rubric_result": "fail",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
@@ -35,12 +40,19 @@
     "underspecified": false,
     "malformed_entries": 0,
     "actuals_checked": true,
-    "files_changed": 1,
-    "actual_violations": [],
-    "unproposed_changes": [],
+    "files_changed": 2,
+    "actual_violations": [
+      {
+        "file": "scripts/deploy.sh",
+        "reason": "outside_allowed_paths"
+      }
+    ],
+    "unproposed_changes": [
+      "scripts/deploy.sh"
+    ],
     "unimplemented_proposals": [],
     "malformed_actual_entries": 0,
-    "plan_summary": null,
+    "plan_summary": "Add null check",
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

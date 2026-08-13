@@ -1,11 +1,12 @@
 {
   "input": {
     "plan_output": {
+      "plan_summary": "Add null check",
       "file_change_proposal": [
         {
-          "file_path": "src/vendor/lib.js",
+          "file_path": "src/auth.js",
           "action": "modify",
-          "description": "Patch vendored library"
+          "description": "Add null guard to session check"
         }
       ]
     },
@@ -14,30 +15,24 @@
         "src/"
       ],
       "blocked_paths": [
-        "src/vendor/"
+        "infrastructure/"
       ]
     }
   },
-  "note": "Authored — file inside an allowed path but also inside a blocked path: in_blocked_path violation, fail",
+  "note": "tests/skill-modules.test.js — \"returns pass when proposals are well-specified and within policy\". Renamed under SC-15/F-84: this input carries no actual_changes, and a build gate that never saw the build is no longer a pass. Its sibling pass-actuals-match-proposal.json is the same plan WITH actuals; the pair is the pin that the verdict depends on having seen the build.",
   "expected": {
-    "rubric_result": "fail",
+    "rubric_result": "warn",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
-      "src/vendor": [
+      "src": [
         {
-          "file": "src/vendor/lib.js",
+          "file": "src/auth.js",
           "action": "modify"
         }
       ]
     },
-    "policy_violations": [
-      {
-        "file": "src/vendor/lib.js",
-        "reason": "in_blocked_path",
-        "blocked_path": "src/vendor/"
-      }
-    ],
+    "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
     "actuals_checked": false,
@@ -46,7 +41,7 @@
     "unproposed_changes": [],
     "unimplemented_proposals": [],
     "malformed_actual_entries": 0,
-    "plan_summary": null,
+    "plan_summary": "Add null check",
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

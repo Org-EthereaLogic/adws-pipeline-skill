@@ -1,0 +1,66 @@
+{
+  "input": {
+    "plan_output": {
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Update auth"
+        },
+        {
+          "file_path": "src/utils.js",
+          "action": "modify",
+          "description": "Update utils"
+        },
+        {
+          "file_path": "src/lib/helpers.js",
+          "action": "create",
+          "description": "New helper"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ]
+    }
+  },
+  "note": "tests/skill-modules.test.js — \"groups files by directory\". Renamed under SC-15/F-84 for the same reason; pass-grouped-directories-with-actuals.json keeps directory grouping pinned at a pass verdict.",
+  "expected": {
+    "rubric_result": "warn",
+    "files_proposed": 3,
+    "directories_touched": 2,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        },
+        {
+          "file": "src/utils.js",
+          "action": "modify"
+        }
+      ],
+      "src/lib": [
+        {
+          "file": "src/lib/helpers.js",
+          "action": "create"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "actuals_checked": false,
+    "files_changed": null,
+    "actual_violations": [],
+    "unproposed_changes": [],
+    "unimplemented_proposals": [],
+    "malformed_actual_entries": 0,
+    "plan_summary": null,
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9 + SC-15, v2.1.0"
+}

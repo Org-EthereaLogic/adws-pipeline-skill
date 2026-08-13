@@ -1,11 +1,12 @@
 {
   "input": {
     "plan_output": {
+      "plan_summary": "Add null check",
       "file_change_proposal": [
         {
-          "file_path": "src/vendor/lib.js",
+          "file_path": "src/auth.js",
           "action": "modify",
-          "description": "Patch vendored library"
+          "description": "Add null guard to session check"
         }
       ]
     },
@@ -14,39 +15,36 @@
         "src/"
       ],
       "blocked_paths": [
-        "src/vendor/"
+        "infrastructure/"
       ]
-    }
+    },
+    "actual_changes": [
+      "src/auth.js"
+    ]
   },
-  "note": "Authored — file inside an allowed path but also inside a blocked path: in_blocked_path violation, fail",
+  "note": "SC-15/F-84 — the builder changed exactly what the plan proposed, in policy: pass with actuals_checked true.",
   "expected": {
-    "rubric_result": "fail",
+    "rubric_result": "pass",
     "files_proposed": 1,
     "directories_touched": 1,
     "grouped_files": {
-      "src/vendor": [
+      "src": [
         {
-          "file": "src/vendor/lib.js",
+          "file": "src/auth.js",
           "action": "modify"
         }
       ]
     },
-    "policy_violations": [
-      {
-        "file": "src/vendor/lib.js",
-        "reason": "in_blocked_path",
-        "blocked_path": "src/vendor/"
-      }
-    ],
+    "policy_violations": [],
     "underspecified": false,
     "malformed_entries": 0,
-    "actuals_checked": false,
-    "files_changed": null,
+    "actuals_checked": true,
+    "files_changed": 1,
     "actual_violations": [],
     "unproposed_changes": [],
     "unimplemented_proposals": [],
     "malformed_actual_entries": 0,
-    "plan_summary": null,
+    "plan_summary": "Add null check",
     "cost_usd": 0,
     "token_count": 0,
     "model_used": null

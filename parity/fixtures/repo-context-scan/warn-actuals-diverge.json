@@ -1,0 +1,65 @@
+{
+  "input": {
+    "plan_output": {
+      "plan_summary": "Add null check and its test",
+      "file_change_proposal": [
+        {
+          "file_path": "src/auth.js",
+          "action": "modify",
+          "description": "Add null guard to session check"
+        },
+        {
+          "file_path": "src/session.js",
+          "action": "modify",
+          "description": "Propagate the guard to session refresh"
+        }
+      ]
+    },
+    "policy": {
+      "allowed_paths": [
+        "src/"
+      ],
+      "blocked_paths": []
+    },
+    "actual_changes": [
+      "src/auth.js",
+      "src/auth.test.js"
+    ]
+  },
+  "note": "SC-15/F-84 — every actual path is in policy, but src/auth.test.js was unplanned and src/session.js was never touched. In-policy divergence is a judgement, so warn, not fail.",
+  "expected": {
+    "rubric_result": "warn",
+    "files_proposed": 2,
+    "directories_touched": 1,
+    "grouped_files": {
+      "src": [
+        {
+          "file": "src/auth.js",
+          "action": "modify"
+        },
+        {
+          "file": "src/session.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "actuals_checked": true,
+    "files_changed": 2,
+    "actual_violations": [],
+    "unproposed_changes": [
+      "src/auth.test.js"
+    ],
+    "unimplemented_proposals": [
+      "src/session.js"
+    ],
+    "malformed_actual_entries": 0,
+    "plan_summary": "Add null check and its test",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  },
+  "expected_source": "port@SC-9 + SC-15, v2.1.0"
+}

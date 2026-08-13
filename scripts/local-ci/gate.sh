@@ -110,12 +110,14 @@ EOF
   return $rc
 }
 
-# Deterministic suites (must stay green: 108 / 25 / 7 + provenance 5 + SC-3 drill
-# + the CLI contract over 9 validators and 2 scripts).
+# Deterministic suites (must stay green: 116 / 25 / 7 + provenance 5 + evidence 9
+# + SC-3 drill + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
 run_step "provenance"    node parity/provenance-fixtures/run-tests.js
+# SC-15/F-84b: artifact-layout.md rule 9, made executable. Prose does not run.
+run_step "evidence"      node parity/evidence-integrity-fixtures/run-tests.js
 run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
 # CLI contract: the nine duplicated wrapper copies and stdin mode, which the parity
 # fixtures cannot reach (they call execute() directly via exec-one.js).

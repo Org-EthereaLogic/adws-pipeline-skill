@@ -3010,7 +3010,11 @@ a void pair may not re-price anything, and these numbers are published with that
 
 ### What the run found in the shipped skill, which the void does not touch
 
-Eight more gaps, on top of arm A1's six, and one of them is the sharpest thing either arm produced:
+The eight most consequential items the run produced — a mix of documentation gaps and surprising
+validator behaviour, ordered by weight rather than by the run report's own a–h/1–6 split. The
+canonical accounting is `spike/adws-controller/FINDINGS.md`, which separates the two kinds, marks
+which of arm A1's six reproduced here, and gives the union as **nine distinct gaps** rather than
+the fourteen an earlier reading of this section produced by adding the two lists:
 
 - **`repo-context-scan` validates the plan, not the build.** Its input is
   `plan_output.file_change_proposal`, so the build gate's only validator never inspects what the
@@ -3047,3 +3051,52 @@ Eight more gaps, on top of arm A1's six, and one of them is the sharpest thing e
 
 **To close condition 4:** `--model claude-opus-5 --effort high` on the command line, and no
 in-session `/model` or `/effort`. `run-ab.sh` now asserts both keys across arms.
+
+## PR #81 — SC-15: the build gate sees the build, the drift gate runs before publication
+
+Three defects two live arm-A runs surfaced, fixed in the shipped skill. Not a spike change: this
+is `adws-pipeline/`, and its merge is gated on arm A3 (see "Sequencing" below).
+
+### What changed, and what evidence forced it
+
+| Fix | Forced by | Shape of the defect |
+|---|---|---|
+| `repo-context-scan` v2.1.0 takes `actual_changes` from the worktree | arm A2 surprise 1 | The build gate's only validator read `plan_output.file_change_proposal`. SKILL.md correctly declared it the build gate's validator; the script correctly declared its input the plan. **Neither file contained the error** — the composition validated intentions. A builder writing outside `allowed_paths` passed on the plan's good intentions; the live orchestrator caught it only by diffing the change set on its own initiative. |
+| `adws-grader` moved to ship, pre-git; verify gains a receipt binding | `SKILL.md:289` vs `:327` | Ship published, then verify's grader `fail` rewound to build — after commits and a live PR existed. No rewind can un-publish, so the job either left the artifact standing or produced a second one. The grader now grades the candidate, the last moment the answer is free, and verify binds the published diff's SHA-256 to `run_manifest.candidate_sha256`. |
+| `scripts/evidence-integrity.js` makes `artifact-layout.md` rule 9 executable | arm A2's own evidence | Rule 9 has forbidden placeholder `*_at` values since SC-13, in prose. A grep for `_at` across all nine validators returns nothing. The run wrote `"performed_at": "--"`, and the tree passed every gate the skill has. |
+
+### Checks
+
+| Check | Result |
+|---|---|
+| `make local-ci` | **PASS**, 17/17 steps (new step `evidence`) |
+| parity corpus | **116/116**, 0 failures — +7 repo-context-scan pins for the actuals pass |
+| `evidence-integrity` suite | 9 verdicts + directory walk + CLI error path, deterministic |
+| guard-ablation | PASS — `repo-context-scan` 19 mutants, **0 survivors** |
+| `run-step5.sh` | 135 assertions, 0 failed |
+| `run-ab.sh` | **68 assertions, 1 failed — §A5, deliberately.** See Sequencing. |
+
+**Falsifiability of the new check.** `evidence-integrity.js` returns `fail` on
+`fixtures/live_armA2_run` (38 files, 47 `*_at` fields, exactly 1 violation — the `--`) and `pass`
+on `live_step5_run`, `live_armA_run` and `live_plan_attempt`. One dirty tree, three clean, and the
+dirty one is the one a human audit found by hand. The fixture is NOT repaired: it is the record of
+a real run, and editing it to satisfy the new check would destroy the evidence that motivated it.
+
+**A regression the ablation gate caught.** The actuals-absent `warn` floor initially masked the
+short-description rule — `warn-short-description.json` produced its verdict for the new reason, so
+disabling the old rule changed nothing and guard-ablation reported it unpinned. Fixed by giving
+that fixture matching `actual_changes`, so it once again pins what its name claims.
+
+### Sequencing — this branch must not merge before arm A3
+
+The live A/B contract's `allowed_paths` are `adws-pipeline/references/` and
+`adws-pipeline/scripts/execution-report.js`. This branch edits the first, so merging it replaces
+the document arm A3 reads and the two arms would no longer share a stimulus. `run-ab.sh` §A5
+asserts exactly that ("the tree arm A reads is unchanged since pre-registration") and now fails
+with `d17cca5a…` against the frozen `fe1657c8…`. **The assertion is not defeated and the digest is
+not updated here.** Two frozen keys have already drifted out from under this experiment; a third
+caused by the experimenter's own repairs would be the least excusable. Merge order: arm A3 → close
+condition 4 → merge this → re-freeze A5's digest in the same commit.
+
+**To close condition 4:** `--model claude-opus-5 --effort high` on the command line, and no
+in-session `/model` or `/effort`.
