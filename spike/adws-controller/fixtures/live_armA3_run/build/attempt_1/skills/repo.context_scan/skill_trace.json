@@ -1,0 +1,39 @@
+{
+  "skill_id": "repo.context_scan",
+  "version": "2.0.0",
+  "started_at": "2026-08-13T01:30:29Z",
+  "completed_at": "2026-08-13T01:30:29Z",
+  "rubric_result": "pass",
+  "latency_ms": 13,
+  "error": null,
+  "output": {
+    "rubric_result": "pass",
+    "files_proposed": 3,
+    "directories_touched": 2,
+    "grouped_files": {
+      "adws-pipeline/references": [
+        {
+          "file": "adws-pipeline/references/phase-gates.md",
+          "action": "modify"
+        },
+        {
+          "file": "adws-pipeline/references/artifact-layout.md",
+          "action": "modify"
+        }
+      ],
+      "adws-pipeline/scripts": [
+        {
+          "file": "adws-pipeline/scripts/execution-report.js",
+          "action": "modify"
+        }
+      ]
+    },
+    "policy_violations": [],
+    "underspecified": false,
+    "malformed_entries": 0,
+    "plan_summary": "Give the terminal failure-reason vocabulary an explicit retriable/non-retriable severity split, sourced from the classification execution-report.js already computes. Three files change, all inside policy.allowed_paths. (1) adws-pipeline/references/phase-gates.md replaces the prose 'Failure-reason classes' bullet lists with ONE authoritative table that defines every terminal reason and states its severity in the same row, adds two new NON-RETRIABLE reasons — ADVOCATE_DISSENT_UPHELD (an operator-upheld Advocate dissent) and EVIDENCE_INTEGRITY_BREACH (a skill_trace verdict that disagrees with its own validator output, or evidence present-but-unreadable) — and states the sourcing rule: the severity column is the projection of execution-report.js's NO_RETRY_REASONS/QUARANTINE_REASONS sets, read by the orchestrator from the report's own decision/exit_code (or the new exported classifier), NEVER re-derived by parsing gates[].detail prose. (2) adws-pipeline/references/artifact-layout.md pins run_manifest.failure_reason to that closed vocabulary, separates it from attempt-level annotations, and names EVIDENCE_INTEGRITY_BREACH at the skill_trace transcription rule that already describes the breach. (3) adws-pipeline/scripts/execution-report.js adds the two new reasons to the existing sets (ADVOCATE_DISSENT_UPHELD to NO_RETRY_REASONS beside ADVOCATE_DISSENT; EVIDENCE_INTEGRITY_BREACH to BOTH sets, mirroring MISSING_UPSTREAM_ARTIFACT exactly) and adds ONE derived, exported classifier — failureReasonSeverity(reason) -> 'retriable' | 'non-retriable' | null — computed from those same two sets and CALLED by decideLifecycle's 'failed' branch, so there is exactly one severity computation in the toolchain rather than a doc list that can drift from the code. Deliberate non-changes, each load-bearing: DECISIONS, GATE_STATUSES, exit codes, gate keys and the emitted execution_report.{json,md} shape are all untouched, and SCHEMA_VERSION stays '1.4.0' because parity/execution-report-fixtures/run-tests.js hard-asserts that literal and parity/ is a blocked path; PROTECTED_BRANCH_BLOCKED and STABILITY_BUDGET_EXCEEDED are documented as terminally RETRIABLE and must NOT be added to either code set, since adding them would silently redefine an existing reason's verdict. adws-pipeline/SKILL.md is not in allowed_paths and needs no edit: its 'Failure-reason classes' section already delegates authority to references/phase-gates.md and its gate rule already says {PHASE}_GATE_FAILURE is the default 'unless a more specific reason applies'.",
+    "cost_usd": 0,
+    "token_count": 0,
+    "model_used": null
+  }
+}

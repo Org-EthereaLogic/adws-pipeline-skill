@@ -128,7 +128,7 @@ echo
 echo "### A6 — arm A"
 ARMA="$AB/evidence/armA-orchestrator.jsonl"
 if [ -f "$ARMA" ]; then
-  assert "arm A has run, and the pre-registration says so" "$(pget arm_a_status)" "RUN TWICE 2026-08-12 — both VOID on §7.4 (model, then effort); see arm_a and arm_a2"
+  assert "arm A has run, and the pre-registration says so" "$(pget arm_a_status)" "RUN THREE TIMES 2026-08-12 — all THREE VOID on §7.4, one per frozen key: model, then effort, then version; see arm_a, arm_a2, arm_a3"
   assert "arm A transcript digest" "$(sha "$ARMA")" "$(pget digests.armA_orchestrator_jsonl)"
   CMP="$(mktemp)"; node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA" --json > "$CMP" 2>/dev/null
   cget() { jget "$CMP" "$1"; }
@@ -145,7 +145,9 @@ if [ -f "$ARMA" ]; then
     "$(pget arm_a.models_equal_across_arms)"
   assert "effort matches across arms"  "$(cget arms.A.integrity.harness.efforts.0)"  "$(cget arms.B.integrity.harness.efforts.0)"
   assert "version matches across arms" "$(cget arms.A.integrity.harness.versions.0)" "$(cget arms.B.integrity.harness.versions.0)"
-  # The pair fails independently of the model, on the rule §4.11 pre-registered as binding.
+  # Since the post-arm-A3 amendment the ANALYZER sees the model mismatch itself, so this
+  # verdict is VOID where it used to read INDETERMINATE. The §4.11 band disagreement that
+  # produced the old string is still true and is still asserted three lines below.
   assert "the analyzer's own verdict"   "$(cget comparison.verdict)" "$(pget arm_a.verdict)"
   assert "S1 band"                      "$(cget comparison.instrument_1.S1.band)" "$(pget arm_a.instrument_1.S1_band)"
   assert "S2 band"                      "$(cget comparison.instrument_1.S2.band)" "$(pget arm_a.instrument_1.S2_band)"
@@ -197,6 +199,60 @@ else
   echo "  (condition 4 remains OPEN: one arm measured, one arm pre-registered and unrun)"
 fi
 
+ARMA3="$AB/evidence/armA3-orchestrator.jsonl"
+if [ -f "$ARMA3" ]; then
+  echo
+  echo "### A8 — arm A, third run: the operator's two keys were fixed and the HARNESS moved"
+  assert "arm A3 transcript digest" "$(sha "$ARMA3")" "$(pget digests.armA3_orchestrator_jsonl)"
+  CMP3="$(mktemp)"; node "$MEASURE" --arm B "$ARMB" --arm A "$ARMA3" --json > "$CMP3" 2>/dev/null
+  c3() { jget "$CMP3" "$1"; }
+  eq() { node -e 'process.stdout.write(String(process.argv[1]===process.argv[2]))' "$1" "$2"; }
+  MA3="$(c3 arms.A.integrity.harness.models.0)";   MB3="$(c3 arms.B.integrity.harness.models.0)"
+  EA3="$(c3 arms.A.integrity.harness.efforts.0)";  EB3="$(c3 arms.B.integrity.harness.efforts.0)"
+  VA3="$(c3 arms.A.integrity.harness.versions.0)"; VB3="$(c3 arms.B.integrity.harness.versions.0)"
+  # The two keys an operator controls, finally both correct AND equal across arms.
+  assert "arm A3 model — still fixed"            "$MA3" "$(pget arm_a3.harness.model)"
+  assert "  and EQUAL across arms"               "$(eq "$MA3" "$MB3")" "$(pget arm_a3.models_equal_across_arms)"
+  assert "arm A3 effort — fixed this time"       "$EA3" "$(pget arm_a3.harness.effort)"
+  assert "  and EQUAL across arms"               "$(eq "$EA3" "$EB3")" "$(pget arm_a3.efforts_equal_across_arms)"
+  # §7.4 froze THREE keys. The third is the one nobody controls: the CLI updated itself
+  # between 2026-08-11 and 2026-08-12. Confound 18 pre-registered this with direction UNKNOWN
+  # and mitigated it only with "run arm A as soon as possible" — which failed because arm A
+  # took three attempts. §7.4 names the literal "2.1.228", a version that no longer exists to
+  # run against, so the pre-registered remedy is NOT another arm-A run.
+  assert "arm A3 version"                        "$VA3" "$(pget arm_a3.harness.version)"
+  assert "arm B version"                         "$VB3" "$(pget arm_b.harness.version)"
+  assert "§7.4: versions are EQUAL across arms — this is the THIRD VOID" \
+    "$(eq "$VA3" "$VB3")" "$(pget arm_a3.versions_equal_across_arms)"
+  # The analyzer must now reach that verdict on its OWN. Before the amendment it returned
+  # CONFIRM on this pair: it held both transcripts and never compared them.
+  assert "the analyzer votes VOID by itself"     "$(c3 comparison.verdict)" "VOID"
+  assert "  and names the reason"                "$(c3 comparison.cross_arm_harness.mismatches.0)" \
+    'HARNESS_VERSION_NOT_EQUAL_ACROSS_ARMS (§7.4) A=["2.1.229"] B=["2.1.228"]'
+  assert "  on the version key ALONE"            "$(c3 comparison.cross_arm_harness.mismatches.1)" "undefined"
+  # Information about the INSTRUMENT, under a VOID that forbids reading it as information
+  # about the controller (§10.13). This is the first pair to pass every stability check the
+  # protocol asks for, which is the argument for freezing the harness SEPARATELY from those
+  # checks: stability is not validity.
+  assert "observation: the segmentations AGREE"   "$(eq "$(c3 comparison.instrument_1.S1.band)" "$(c3 comparison.instrument_1.S2.band)")" "$(pget arm_a3.observation_not_a_result.segmentations_agree)"
+  assert "observation: leave-one-out sign-stable" "$(c3 comparison.leave_one_out.sign_stable)" "$(pget arm_a3.observation_not_a_result.leave_one_out_sign_stable)"
+  assert "observation: leave-one-out band-stable" "$(c3 comparison.leave_one_out.band_stable)" "$(pget arm_a3.observation_not_a_result.leave_one_out_band_stable)"
+  # §6's five n=1-sufficiency conditions: FOUR hold, and the fifth fails for exactly one
+  # reason — veto 7, the harness void. Asserted per-condition rather than on the rollup,
+  # because the rollup ("a replicate is forced") is true here for a reason that has nothing
+  # to do with the measurement's stability and everything to do with its validity.
+  assert "observation: n=1 condition 1 (verdict is confirm/kill)" "$(c3 comparison.replication.conditions.1_verdict_is_confirm_or_kill)" "true"
+  assert "observation: n=1 condition 2 (|delta_P| over floor)"    "$(c3 comparison.replication.conditions.2_abs_delta_P_at_or_above_floor)" "true"
+  assert "observation: n=1 condition 3 (leave-one-out stable)"    "$(c3 comparison.replication.conditions.3_leave_one_out_stable)" "true"
+  assert "observation: n=1 condition 5 (matched phases/attempts)" "$(c3 comparison.replication.conditions.5_three_matched_phases_equal_attempts)" "true"
+  assert "  and condition 4 fails ONLY because veto 7 fired"      "$(c3 comparison.replication.conditions.4_instruments_and_segmentations_agree_no_veto)" "false"
+  assert "  so a replicate is forced by the VOID, not by instability" "$(c3 comparison.replication.replicate_forced)" "true"
+  assert "observation: baseline drift is small"   "$(c3 comparison.baseline_drift.fired)" "false"
+  assert "arm A3 forbidden reads"                 "$(c3 arms.A.secondary.S12_forbidden_reads.strict_count)" "0"
+  assert "arm A3 contamination hits"              "$(c3 arms.A.contamination.any)" "false"
+  rm -f "$CMP3"
+fi
+
 echo
 echo "### $((PASSES+FAILS)) assertions run, $FAILS failed."
 if [ "$FAILS" -eq 0 ]; then
@@ -205,12 +261,28 @@ if [ "$FAILS" -eq 0 ]; then
 ###   script. Arm B: 26 turns (not 61 rows), P_B = 5,589 tokens/phase under S1 and 6,112 under S2,
 ###   3.00 round trips per phase, I_net 20,379, instruction mass 7,294 tok / 17,544 B.
 ###
-### THE PAIR IS NOT A VERDICT, and these assertions are what say so. Arm A ran on
-###   claude-fable-5 against arm B's claude-opus-5 — §7.4 VOID. Independently: the two
-###   segmentations return different bands (§4.11 binding), leave-one-out flips the sign of
-###   delta_P when the build phase is dropped, |delta_P| sits 4 tokens under the pre-registered
-###   resolution floor, and the round-trip instrument is a 3.00-3.00 tie that cannot
-###   discriminate. Condition 4 stays OPEN.
+### NO PAIR IS A VERDICT, and these assertions are what say so. Arm A ran THREE times and
+###   §7.4 voided all three, once per frozen key:
+###     run 1  model    claude-fable-5 vs claude-opus-5   a saved /model default
+###     run 2  effort   xhigh vs high                     a saved /effort default
+###     run 3  version  2.1.229 vs 2.1.228                the CLI updated itself overnight
+###   The first two were operator error and were fixable by pinning. The third is not: nobody
+###   controls when the harness updates, and §7.4 names the literal "2.1.228", which no longer
+###   exists to run against. The pre-registered remedy in §7.4 row 4 is "re-run BOTH arms
+###   inside the same window" — not another arm-A run. Condition 4 stays OPEN, and no
+###   arm-A-only run can close it.
+###
+### RUN 3 IS THE ONE THAT PASSED EVERY STABILITY CHECK: both segmentations CONFIRM, leave-one-out
+###   sign- AND band-stable across all six drops, both instruments agreeing, baseline drift 253
+###   of 2,000, matched 1/1/1 attempts, and four of §6's five n=1 conditions met. It is still
+###   VOID. Stability is not validity, which is why the harness freeze is a separate section
+###   from the stability checks.
+###
+### AND THE ANALYZER MISSED IT. Before the 2026-08-12 amendment, measure-ab.js checked that each
+###   arm was single-valued and never compared the arms to each other, so it returned CONFIRM on
+###   run 3 while holding both transcripts. §7.4's "and equal across arms" lived only here, in a
+###   driver assertion hand-written per run. Both halves were correct; the composition never
+###   asked the question.
 ###
 ### NOT established here: which arm is cheaper overall — subagents are ~85% of the run's output
 ###   tokens and are outside this instrument entirely.
