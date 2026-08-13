@@ -3074,7 +3074,7 @@ is `adws-pipeline/`, and its merge is gated on arm A3 (see "Sequencing" below).
 | `evidence-integrity` suite | 9 verdicts + directory walk + CLI error path, deterministic |
 | guard-ablation | PASS — `repo-context-scan` 19 mutants, **0 survivors** |
 | `run-step5.sh` | 135 assertions, 0 failed |
-| `run-ab.sh` | **68 assertions, 1 failed — §A5, deliberately.** See Sequencing. |
+| `run-ab.sh` | **68 assertions, 1 failed — §A5, deliberately.** See Sequencing. *(Resolved: merged as `6b84b47` after arm A3 ran; A5 re-frozen to `66fab10d…` in `842ab33`, and the driver is 91/0 on main.)* |
 
 **Falsifiability of the new check.** `evidence-integrity.js` returns `fail` on
 `fixtures/live_armA2_run` (38 files, 47 `*_at` fields, exactly 1 violation — the `--`) and `pass`
@@ -3087,7 +3087,7 @@ short-description rule — `warn-short-description.json` produced its verdict fo
 disabling the old rule changed nothing and guard-ablation reported it unpinned. Fixed by giving
 that fixture matching `actual_changes`, so it once again pins what its name claims.
 
-### Sequencing — this branch must not merge before arm A3
+### Sequencing — this branch must not merge before arm A3 *(RESOLVED — see the post-merge sync at the end of this file)*
 
 The live A/B contract's `allowed_paths` are `adws-pipeline/references/` and
 `adws-pipeline/scripts/execution-report.js`. This branch edits the first, so merging it replaces
@@ -3169,8 +3169,64 @@ from the outcome the experimenter wants.
 
 ### Consequence for PR #81
 
-**PR #81 is unblocked.** It was held because merging would replace the tree arm A3 reads. Arm A3
+**PR #81 is unblocked** *(and has since merged as `6b84b47`)*. It was held because merging would replace the tree arm A3 reads. Arm A3
 has now run against the frozen tree, so that risk is discharged; and since condition 4 now requires
 a fresh both-arms window with its own freeze, the old `fe1657c8…` digest no longer gates anything.
 The re-run should read the corrected skill — three of the eleven documented gaps are fixed in that
 branch, including the one two of three arm A runs found on their own.
+
+## Post-merge sync for PRs #81 and #82 (SC-15 + the arm A3 void)
+
+Both landed on 2026-08-12. This section is the current state; the entries above are what was true
+when each PR was open, and are left as written.
+
+| PR | Merge | What it was |
+|---|---|---|
+| [#81](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/81) | `6b84b47` | SC-15 — the build gate sees the build, the drift gate runs before publication, rule 9 becomes executable |
+| [#82](https://github.com/Org-EthereaLogic/adws-pipeline-skill/pull/82) | `842ab33` | arm A run 3 — VOID on §7.4's third key, and the analyzer that missed it |
+
+**Merge order was forced by the record, not by preference.** #82's findings are numbered 52 and 53
+and reference finding 51, which exists only in #81. Merging #82 first would have left FINDINGS.md
+jumping from 49 to 52 and citing a finding that was not there. #81 first, then #82 rebased — the
+two conflicted in `FINDINGS.md` and `VERIFICATION.md` because both inserted at the same anchor, and
+both sides were kept in chronological order.
+
+### State of main at `842ab33`
+
+| Check | Result |
+|---|---|
+| `make local-ci` | **PASS, 17/17 steps** |
+| `run-ab.sh` | **91 assertions, 0 failed** (68 before the A8 block) |
+| `run-step5.sh` | **135 assertions, 0 failed** |
+| `make ci-orb` | PASS, Node 20 and 24 |
+| parity corpus | **116/116** |
+| CodeQL | fail in 2–9s on both PRs — *"the job was not started because your account is locked due to a billing issue"*. Not code, not required; confirmed from the job annotation rather than assumed |
+
+### The one assertion that was deliberately left red, and is now green
+
+`run-ab.sh` §A5 pins the tree arm A reads. #81 changed `adws-pipeline/`, so A5 fired — and was left
+failing for the life of that branch. Updating the digest to land a fix would have been a third
+harness drift, self-inflicted, on an experiment already voided twice by drift.
+
+It is re-frozen now, in `842ab33`, to `66fab10d…` — and the old value is **kept, not overwritten**.
+`digests.shipped_tree.superseded` records `fe1657c8…`, that all three arm A runs read it, and why it
+changed. The live digest pins the tree for the *future* both-arms window §7.4 requires; it pins
+nothing about the runs already recorded.
+
+### Housekeeping
+
+- Branches `fix/publish-last-and-actuals-gate` and `spike/arm-a3-version-void` deleted local and
+  remote; `main` is the only branch. No worktrees, no unignored untracked files.
+- `ci_logs/*.jsonl` are **retained** — `scripts/local-ci/README.md` describes them as append-only
+  evidence and cites run counts from them. Per-run `.log` files older than the current sprint are
+  pruned; two are cited by name in committed docs (`20260809T230215Z.orb.log`) and are kept.
+- README's validation block synced: parity `109/109` → **`116/116`**, the `evidence-integrity`
+  suite added, and `evidence-integrity.js` listed in the scripts tree.
+
+### Condition 4 remains OPEN, and cannot be closed the way it was being attempted
+
+§7.4's pre-registered remedy for a harness mismatch is **re-run both arms inside the same window**.
+Arm B is a recording on Claude Code 2.1.228, which no longer exists, so no further arm-A-only run
+can close it. The next attempt needs one window containing a fresh arm B on the thin sketch and a
+fresh arm A on the shipped skill — and arm A should read the **corrected** skill at `842ab33`, since
+pricing the prose arm against defects that are already fixed would measure the wrong artifact.
