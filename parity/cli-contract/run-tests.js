@@ -401,6 +401,78 @@ console.log('\n=== execution-report.js (bare "Error:"/"Usage:", exits 0/10/1/2/3
 }
 
 // -----------------------------------------------------------------------------
+// PART 4 — the identity envelope (SC-16/F-89).
+//
+// Every verdict must open with the id and version of the tool that produced it.
+// Both values lived in each script's `manifest` since the port and reached stdout
+// in none of them, so `skill_trace.skill_id` and `.version` — both MANDATORY in
+// artifact-layout.md — had no documented source. A live orchestrator recovered the
+// ids by reading three validator SOURCE files mid-run.
+//
+// The ids are DOTTED and the filenames are HYPHENATED, which is the part that bites:
+// an orchestrator deriving `skills/{skill_id}/` from the filename is wrong for every
+// validator, uniformly, and therefore invisibly. So this table is pinned literally —
+// a rename that silently changed an id would relocate every trace directory in the
+// tree, and nothing else in the suite would notice.
+//
+// This is also the second copy of the map (references/validator-inputs.md has the
+// first). Two copies of a fact is the shape of findings 22/29/34, so the assertion
+// runs against the RUNNING VALIDATOR and the doc table defers to it in writing.
+// -----------------------------------------------------------------------------
+
+const CANONICAL_SKILL_IDS = {
+  'criteria-to-checks': 'criteria.to_checks',
+  'document-coverage-map': 'document.coverage_map',
+  'drift-sentinel': 'drift.sentinel',
+  'patch-compose': 'patch.compose',
+  'repo-context-scan': 'repo.context_scan',
+  'review-risk-assess': 'review.risk_assess',
+  'ship-mode-select': 'ship.mode_select',
+  'task-normalize': 'task.normalize',
+  'verify-evidence-map': 'verify.evidence_map',
+};
+
+console.log('\n=== identity envelope (SC-16/F-89) ===');
+for (const name of VALIDATORS) {
+  const scriptPath = path.join(VALIDATOR_DIR, name + '.js');
+  // `{}` is a legal object for every validator: each reports the absence of the
+  // fields it was not given rather than throwing, so this exercises the envelope
+  // without depending on any pack's fixture shape.
+  const proc = runCli(scriptPath, ['-'], '{}');
+  let out = null;
+  try {
+    out = JSON.parse(proc.stdout);
+  } catch (_err) {
+    /* leaves out null — asserted below */
+  }
+  check(`${name} emits parseable JSON on {}`, out !== null && typeof out === 'object', proc.stdout.slice(0, 80), 'JSON object');
+  if (!out) continue;
+  check(`${name} skill_id`, out.skill_id === CANONICAL_SKILL_IDS[name], out.skill_id, CANONICAL_SKILL_IDS[name]);
+  check(
+    `${name} tool_version is a semver string`,
+    typeof out.tool_version === 'string' && /^\d+\.\d+\.\d+$/.test(out.tool_version),
+    out.tool_version,
+    'x.y.z'
+  );
+  // The id must NOT be derivable from the filename — that is the whole defect. If a
+  // future rename made them equal, the doc's warning would be false and this pins it.
+  check(`${name} skill_id differs from its filename`, out.skill_id !== name, out.skill_id, `!== ${name}`);
+}
+
+{
+  // Same both-ways cross-check the coverage block does: a tenth validator added
+  // without an id here would otherwise go unpinned.
+  const declared = Object.keys(CANONICAL_SKILL_IDS).sort();
+  assertions += 1;
+  failures += assertFixtureCoverage({
+    declared,
+    onDisk: [...VALIDATORS].sort(),
+    unit: 'validator id',
+    declaredUnit: 'declared',
+  });
+}
+
+// -----------------------------------------------------------------------------
 // M-3a coverage cross-check: the declared list and disk must agree BOTH ways.
 // Without this, adding a tenth validator leaves it silently uncovered — the
 // exact class of gap this whole suite exists to close.

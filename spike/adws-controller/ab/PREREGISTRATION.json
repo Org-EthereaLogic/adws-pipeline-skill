@@ -20,25 +20,31 @@
     "armB_orchestrator_jsonl": "9af78c7a9e57942e650ad41c5ae3c483bf04d8eb0d5d00a4d72d70bb3497e213",
     "live_contract_json": "999ea1fa52093281a4883c776e959263b4798b1cd733a1863f66162d262543ee",
     "shipped_tree": {
-      "value": "525bde1808b62cff64b3ed2ecc65dfc564af23c098180afda19640b8f392cb09",
+      "value": "3f6bdf2a0234d3faaf5a1ac3cfa894ebd1367eb9afae15739ed572866d246e9f",
       "over": "adws-pipeline/ + .claude/agents/, sorted, sha256 of the sha256 list",
       "why": "arm A reads this tree as its operating instruction. If it changes between pre-registration and the end of arm A, the arms did not read the same document and the pair is VOID.",
-      "re_frozen": "2026-08-13. Third re-freeze on this branch. SC-16/F-88b corrected the halt guard (finding 56): the first guard excluded the pipeline_completion gate wholesale, so a halted run with a phase skipped BEHIND the stop reported RETRY and \"nothing is wrong with the run\". Touches SKILL.md §5, artifact-layout.md, phase-gates.md and execution-report.js. This digest pins the tree for the FUTURE both-arms window §7.4 requires; it pins nothing about the three arm A runs already recorded, each void on §7.4 independently of any tree change.",
+      "re_frozen": "2026-08-13. This digest pins the tree for the FUTURE both-arms window §7.4 requires; it pins nothing about the three arm A runs already recorded, each void on §7.4 independently of any tree change. SC-16 moved it three times -- F-88 (the halt lifecycle state), F-88b (the correction to its anti-laundering guard, finding 56), and F-89 (the validator identity envelope). §13.5 of the plan REQUIRES the future arm A to read the corrected skill, so a tree that stops changing is not the goal; a tree whose every change is recorded here is.",
       "superseded": {
-        "value": "5c8e004654b784a2692dddc76cb73b8356c571a89bcfe350853913bd8ad40e41",
-        "read_by": "nothing — frozen mid-branch for a future window",
-        "why_it_changed": "the F-88 halt lifecycle state, before its anti-laundering guard was corrected",
+        "value": "525bde1808b62cff64b3ed2ecc65dfc564af23c098180afda19640b8f392cb09",
+        "read_by": "nothing — frozen mid-stack, for a future window",
+        "why_it_changed": "the F-88b halt-guard correction, before F-89 (the validator identity envelope) was rebased on top of it",
         "note": "Kept rather than overwritten.",
         "superseded": {
-          "value": "66fab10d5b0e59ad7d25e78e0cba50f1bc07165358b9bdbb89dd142adab14f33",
-          "read_by": "nothing — frozen at 842ab33 for a future window that had not been scheduled when SC-16 changed the tree again",
-          "why_it_changed": "SC-16 added the halt lifecycle state (F-88), closing arm A gaps 4, 8 and 12: a run the operator stopped had no honest final_status, its open attempt had no honest failure_reason, and carry_over was written only at a terminal state a halt never reached — so a halted run could never be resumed. Touches SKILL.md §5, artifact-layout.md, phase-gates.md and execution-report.js.",
-          "note": "A5 fired on this change, as designed, and is updated in the same commit that caused it rather than in a later tidy-up. The plan’s §13.5 requires the future arm A to read the CORRECTED skill, so a tree that stops changing is not the goal — a tree whose changes are RECORDED is.",
-          "prior": {
-            "value": "fe1657c8586eece65484be49e2b1b28c514c2a8cb416c01d5fb040facf058fd1",
-            "read_by": "arm A runs 1, 2 and 3 — all three read this tree, verified in the VM before each transcript was pulled",
-            "why_it_changed": "PR #81 fixed three defects those runs found: repo-context-scan reading the plan instead of the build (found unprompted by two of the three), the drift gate running after publication, and artifact-layout rule 9 being unenforced prose.",
-            "note": "Kept rather than overwritten. A5 fired on this change while PR #81 was still a branch and was deliberately not updated then — the assertion was doing its job, and defeating it would have been the third harness drift, self-inflicted. It is updated now because arm A3 has run and the pair it protected is void on §7.4 regardless."
+          "value": "5c8e004654b784a2692dddc76cb73b8356c571a89bcfe350853913bd8ad40e41",
+          "read_by": "nothing — frozen mid-branch for a future window",
+          "why_it_changed": "the F-88 halt lifecycle state, before its anti-laundering guard was corrected",
+          "note": "Kept rather than overwritten.",
+          "superseded": {
+            "value": "66fab10d5b0e59ad7d25e78e0cba50f1bc07165358b9bdbb89dd142adab14f33",
+            "read_by": "nothing — frozen at 842ab33 for a future window that had not been scheduled when SC-16 changed the tree again",
+            "why_it_changed": "SC-16 added the halt lifecycle state (F-88), closing arm A gaps 4, 8 and 12: a run the operator stopped had no honest final_status, its open attempt had no honest failure_reason, and carry_over was written only at a terminal state a halt never reached — so a halted run could never be resumed. Touches SKILL.md §5, artifact-layout.md, phase-gates.md and execution-report.js.",
+            "note": "A5 fired on this change, as designed, and is updated in the same commit that caused it rather than in a later tidy-up. The plan’s §13.5 requires the future arm A to read the CORRECTED skill, so a tree that stops changing is not the goal — a tree whose changes are RECORDED is.",
+            "prior": {
+              "value": "fe1657c8586eece65484be49e2b1b28c514c2a8cb416c01d5fb040facf058fd1",
+              "read_by": "arm A runs 1, 2 and 3 — all three read this tree, verified in the VM before each transcript was pulled",
+              "why_it_changed": "PR #81 fixed three defects those runs found: repo-context-scan reading the plan instead of the build (found unprompted by two of the three), the drift gate running after publication, and artifact-layout rule 9 being unenforced prose.",
+              "note": "Kept rather than overwritten. A5 fired on this change while PR #81 was still a branch and was deliberately not updated then — the assertion was doing its job, and defeating it would have been the third harness drift, self-inflicted. It is updated now because arm A3 has run and the pair it protected is void on §7.4 regardless."
+            }
           }
         }
       }

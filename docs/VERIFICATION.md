@@ -3392,3 +3392,62 @@ are now a chain rather than an overwrite. It pins the tree for the future both-a
 nothing about the three recorded arm A runs, each void on §7.4 independently.
 
 **Gap ledger: twelve documented, three closed (4, 8, 12). Nine open: 1, 2, 3, 5, 6, 7, 9, 10, 11.**
+
+## SC-16/F-89 — the validator identity envelope
+
+Closes arm A gaps **5 and 10**, which are one root cause: **every validator has carried
+`manifest.skill_id` and `manifest.version` since the port, and printed neither.**
+
+| Gap | Hole | Close |
+|---|---|---|
+| 5 | `skill_trace.version` is mandatory and had no documented content | validators print `tool_version`; the wrapper transcribes it |
+| 10 | the canonical ids are DOTTED and undiscoverable — arm A3 read three validator sources mid-run | validators print `skill_id`; `validator-inputs.md` carries the map |
+
+Gap 10 is the one with teeth. `task-normalize.js` announces `task.normalize`, not
+`task-normalize`. An orchestrator deriving `skills/{skill_id}/` from the filename is wrong for
+**every** validator — uniformly, and therefore invisibly. One convention, applied consistently,
+relocating every trace directory in the tree.
+
+### Emitted at the CLI boundary, not inside `execute()`
+
+The identity is **envelope, not verdict**. `execute()`'s contract is untouched, so the 116-fixture
+parity corpus needed **zero** changes — it compares `execute()` results through `exec-one.js`,
+while the trace transcribes CLI stdout. The keys land where the thing that reads them looks.
+
+### Pinned, and the pin bites
+
+`parity/cli-contract` gains **37 assertions (330 → 367)**: four per validator — parseable output,
+exact `skill_id`, semver `tool_version`, and **`skill_id !== filename`** — plus one covering the
+id map as a whole. That last per-validator assertion exists because the filename equality is
+precisely the mistake gap 10 describes, so a future rename making them equal would falsify the
+documentation while every other assertion stayed green.
+
+*(This paragraph first read "gains 36 assertions (331 → 367)". Both numbers were wrong: the
+baseline is 330, measured at `f6924ea` and again at the corrected halt branch, so the delta is 37.
+Corrected here rather than overwritten, per §10.4. The error was reporting a delta from memory
+instead of measuring the parent — the same failure as finding 54 in a smaller register, and caught
+by the same control: an independent reviewer who ran the parent commit.)*
+
+**Ablation.** Reverting one validator's emit line to `JSON.stringify(result, …)` fails 2 of 367
+assertions. The suite is not vacuous.
+
+### Two copies of the map, and which one wins
+
+`validator-inputs.md` now carries the id table, and `cli-contract` carries it again as a literal.
+Two copies of a fact is the shape of findings 22/29/34, so it is resolved in writing rather than
+left to a reader: **the running validator is the authority**, the doc table is a convenience for
+knowing the ids before the first run, and if they disagree the table is the bug. The test asserts
+against the validator, never against the doc.
+
+### State
+
+| Check | Result |
+|---|---|
+| `make local-ci` | PASS, 17/17 |
+| `parity/cli-contract` | **367 assertions** (was 330, measured), 0 failed |
+| parity corpus | 116/116 — unchanged, and that is the point |
+| execution-report fixtures | 28/28 + CLI error path |
+| `run-ab.sh` / `run-step5.sh` | 91/0 and 135/0 |
+| `SKILL.md` | 469 lines, budget unchanged by THIS commit — hard rule 3 already says "transcribe the validator's stdout"; what changed is that there is now something to transcribe |
+
+**Gap ledger: twelve documented, five closed (4, 5, 8, 10, 12). Seven open: 1, 2, 3, 6, 7, 9, 11.**
