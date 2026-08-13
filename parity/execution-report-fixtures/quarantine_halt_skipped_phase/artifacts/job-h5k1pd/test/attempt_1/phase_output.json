@@ -1,0 +1,1 @@
+{ "checks": [{ "check_id": "CHK001", "check": "unit", "criterion": "AC-1", "pass": true, "output": "ok", "verdict": "verified" }], "command_log": [] }

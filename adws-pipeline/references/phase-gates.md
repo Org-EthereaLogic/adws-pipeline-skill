@@ -493,6 +493,17 @@ never silent.
   operator's stop is a fact about the run's *ending*, not a verdict on its *contents*, and
   a lifecycle value that could bury a failed gate would be a laundering route rather than
   a vocabulary fix.
+
+  **Nor does it account for missing evidence behind it (SC-16/F-88b).** The RETRY path
+  requires that the only phases without an attempt are the ones after the last phase that
+  produced evidence. A phase with no attempt while a LATER phase has one was skipped, and
+  an attempt that wrote no readable manifest or output lost its evidence — a stop explains
+  neither, so a halt carrying either QUARANTINEs. The guard that enforces this cannot be
+  the plain any-gate-failed check the `completed` branch uses, because
+  `pipeline_completion` fails for every non-`completed` run by construction and would send
+  100% of halts to quarantine; nor can it skip that gate wholesale, which is what shipped
+  first and let a skipped `review` ride a halt out to RETRY (finding 56). It reads the
+  gate's own split between the two.
 - **`ROUTE_NOT_EXECUTED` (SC-16/F-88) is ATTEMPT-level only** — like
   `CRITIC_FAIL_REPAIRED` and `ADVOCATE_DISSENT_REPAIRED`, it is never written to
   `run_manifest.failure_reason` and is in no terminal class. It records that a gate

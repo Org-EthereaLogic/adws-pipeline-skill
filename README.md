@@ -140,7 +140,7 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                            # 116/116 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 27/27 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 28/28 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 5/5 provenance-schema fixtures
 node parity/evidence-integrity-fixtures/run-tests.js # 9/9 timestamp-integrity fixtures

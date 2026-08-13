@@ -1,0 +1,10 @@
+{
+  "task_id": "TASK-116",
+  "task": {
+    "title": "Halted-run-with-skipped-phase regression fixture",
+    "problem_statement": "A job whose review phase never ran while document did, and which the operator then halted. The halt accounts for the phases after document; it does not account for review.",
+    "acceptance_criteria": ["AC-1"]
+  },
+  "execution": { "target_branch": "main", "output_mode": "pr", "isolation_mode": "worktree" },
+  "schema_version": "1.0.0"
+}

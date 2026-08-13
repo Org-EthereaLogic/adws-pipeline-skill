@@ -87,6 +87,17 @@ about the gates. A halted run carrying a `fail` gate still QUARANTINEs, exactly 
 carrying one does — the two branches are deliberately the same shape. What `halted` buys is the
 other case: a run stopped mid-flight with nothing wrong is RETRY-and-resumable instead of
 quarantined, and its worktree carries forward.
+
+**Nor a lost phase (SC-16/F-88b).** A stop accounts for the phases AFTER it and for nothing else.
+Phases with no attempt beyond the last one that produced evidence are *not reached* — expected, and
+the ordinary shape of every halt. A phase with no attempt while a LATER phase has one was *skipped*,
+and an attempt that wrote no readable manifest or output LOST its evidence; neither is explained by
+stopping, and a halt carrying either QUARANTINEs on the same principle as the failed gate above.
+The first guard shipped for this branch missed the distinction — `pipeline_completion` fails for
+every non-`completed` run by construction, so it was excluded wholesale, and it answers two
+questions in one status: *did this run finish* (the premise of every halt) and *did this run lose a
+phase* (a finding). Excluding it excluded both, and a halted run with a skipped `review` reported
+RETRY and "nothing is wrong with the run" (finding 56).
 `cross_phase_rewinds` counts the GATE-AUTOMATIC rewinds to `build`, each capped at 1 and
 independent of the others: `test` (checks fail, tester classifies `code`), `verify`
 (grader drift BLOCK), and — since SC-7/F-46 — `review` (a Critic `fail` at the review
