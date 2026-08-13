@@ -209,6 +209,34 @@ for (const testCase of CASES) {
   for (const note of notes.splice(0)) console.log(note);
 }
 
+// An EMPTY tree must not read as clean. Found the hard way: an early run of this suite pointed
+// the CLI at a directory whose contents had failed to copy, and it returned `pass` with
+// files_scanned 0 — this script committing, on itself, the absence-reads-as-success defect it
+// exists to catch. artifacts/{jobId}/ always holds at least run_manifest.json.
+{
+  const before = failures;
+  withScratchDir('adws-evidence-integrity-empty-', (dir) => {
+    const run = runCli(dir);
+    check('empty tree exits 1, not 0', run.status === 1, run.status, 1);
+    const out = JSON.parse(run.stdout);
+    check('empty tree is a fail, not a pass', out.rubric_result === 'fail', out.rubric_result, 'fail');
+    check('empty tree files_scanned', out.files_scanned === 0, out.files_scanned, 0);
+    check(
+      'empty tree names the reason',
+      JSON.stringify(out.violations.map((v) => v.reason)) === JSON.stringify(['no_evidence_files']),
+      out.violations.map((v) => v.reason),
+      ['no_evidence_files']
+    );
+
+    // ...and a tree holding only non-JSON files is the same case, not a different one.
+    fs.writeFileSync(path.join(dir, 'notes.txt'), 'not evidence');
+    const run2 = runCli(dir);
+    check('a tree of only non-JSON files also fails', run2.status === 1, run2.status, 1);
+  });
+  console.log(`${failures === before ? 'PASS' : 'FAIL'} empty tree (scratch)`);
+  for (const note of notes.splice(0)) console.log(note);
+}
+
 // CLI error path: no argument, and a path that does not exist. Both are input errors
 // (exit 3), distinct from "scanned it and it was dirty" (exit 1). A caller that cannot
 // tell those apart will read a typo as a clean tree.
@@ -227,7 +255,7 @@ for (const testCase of CASES) {
 }
 
 if (failures > 0) {
-  console.log(`\nFAILED — ${failures} assertion(s) across ${CASES.length} fixtures + directory walk + CLI error path`);
+  console.log(`\nFAILED — ${failures} assertion(s) across ${CASES.length} fixtures + directory walk + empty tree + CLI error path`);
   process.exit(1);
 }
-console.log(`\nOK — ${CASES.length} verdicts + directory walk + CLI error path, deterministic across re-runs`);
+console.log(`\nOK — ${CASES.length} verdicts + directory walk + empty tree + CLI error path, deterministic across re-runs`);

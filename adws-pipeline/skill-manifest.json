@@ -12,9 +12,9 @@
     "The installed copy carries this file, which is what lets scripts/skill-check.js",
     "verify an install against itself and `make check-installs` compare it to source."
   ],
-  "skill_version": "3a390115a60d",
+  "skill_version": "5de7defd032a",
   "file_count": 31,
-  "git_commit": "8a582cb0e61819a5ddfaeed80a24b5a486bd3b22",
+  "git_commit": "75f6170ac77d1bd7e3302189ce539e3fa974871b",
   "skill": {
     "SKILL.md": "183c136416bf369c2dae8382efc57dc2e987a6fe29b6075f5c2349e197c356dc",
     "references/agent-shared-blocks.md": "f63714624eea0ee6dc640804b8a3e47aee985297cded69aa7761f928d82f3478",
@@ -25,7 +25,7 @@
     "references/troubleshooting.md": "0862d4df8692ae6cef5c809c9568050af755b98d2d26ac84054fb618910bdf6c",
     "references/validator-inputs.md": "68ad64127b40156816e4936a4a7426501bd14aa29768c67ed93c7aa9a0ff33e2",
     "scripts/entropy-gate.js": "f5ec32f28f4a8ccee3b35c50ff843adf184789587e33cf8e645476b06e354d91",
-    "scripts/evidence-integrity.js": "17149b3f41aded756ff554fe84265ebadf03e8a92686f5b0e3d9fd24045ee558",
+    "scripts/evidence-integrity.js": "8f1f856767e906d043f73a5218a6b0f753d571dd06ea87e2d1c78cd97f39205b",
     "scripts/execution-report.js": "cadb1cb000d58a4697af2417d0c021485c65be654d9d6d40cdf44e55f92f0dd0",
     "scripts/skill-check.js": "e4873977cebf5e15a92cd47e16743f405a9e4f594f0c2b292a3788edefc52e5e",
     "scripts/validators/criteria-to-checks.js": "4d1aa1c73a638fddf09c396518eb018ba8303fbc4c04ab34c47df79f7ebc64d7",

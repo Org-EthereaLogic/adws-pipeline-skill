@@ -139,6 +139,15 @@ function execute(root) {
     }
     walk(parsed, rel, '', out);
   }
+  // A tree with no JSON in it is not a clean tree — it is a wrong path, or a run that wrote
+  // nothing. `artifacts/{jobId}/` always holds at least `run_manifest.json`. Reporting `pass`
+  // here would be this script committing the defect it exists to catch: absence reading as
+  // success. Distinct from exit 3, which means the path could not be READ at all — here it
+  // was read and was empty, which is a fact about the evidence and so fails.
+  if (files.length === 0) {
+    out.violations.push({ file: null, pointer: '', key: null, value: null, reason: 'no_evidence_files' });
+  }
+
   const rubric_result = out.violations.length > 0 ? 'fail' : out.warnings.length > 0 ? 'warn' : 'pass';
   return {
     rubric_result,
