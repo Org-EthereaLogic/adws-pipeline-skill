@@ -3608,17 +3608,17 @@ downstream moves.
 | `run-ab.sh` / `run-step5.sh` | 91/0 and 135/0 |
 | `SKILL.md` | 469 lines, budget unchanged — this work adds no orchestrator rule |
 
-**Gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12). Five open: 1, 3, 7, 9, 11.**
-Of the five, 1/3/7 are file contradictions needing an authority named.
+**Gap ledger: twelve documented, eight closed (2, 4, 5, 6, 8, 10, 11, 12). Four open: 1, 3, 7, 9.**
+Of the four, 1/3/7 are file contradictions needing an authority named.
 
-### The two policy gaps — one ruling proposed, one withdrawn
+### The two policy gaps — one ruling proposed, one withdrawn then closed
 
 **Gap 9 — proposed, and it stands.** `NO_DOC_PATH_IN_SCOPE` should treat
 `adws-pipeline/references/` as this repo's equivalent of a documentation location. The rule already
 says "the repo's equivalent"; this names it, and turns a judgment call the orchestrator had to make
 silently into something it can cite.
 
-**Gap 11 — WITHDRAWN.** SC-17 proposed "≥1 verified row makes the criterion verified", justified as
+**Gap 11 — WITHDRAWN, then CLOSED by SC-18/F-92.** SC-17 proposed "≥1 verified row makes the criterion verified", justified as
 ratifying what arm A3's tester improvised. That is unsafe and contradicts rules already written:
 `artifact-layout.md` says a `gate_weak` verdict is "an unverified criterion (warn), **never a
 pass**", `SKILL.md` §3 says the same, and the same paragraph permits several checks per criterion
@@ -3637,3 +3637,17 @@ distinction every aggregation rule is either too permissive (masking) or too str
 supplementary regression check blocking a genuinely verified criterion). Two constraints hold
 regardless of how that lands — **`fail` dominates**, and **a required row must never be masked by a
 verified sibling**.
+
+**Adopted (F-92).** The missing distinction is now a **`check_role`** field
+(`required` | `supplemental`) on the test check row, authored by the tester: `required` is the
+default and the only value a `criteria-to-checks` spec carries; `supplemental` marks a
+no-regression / parity guard with no red baseline by construction (expected `gate_weak`). A criterion
+aggregates in order — `fail` on any row → `fail`; else a `gate_weak` on any *required* row →
+`gate_weak`; else `verified`, with `supplemental` `gate_weak` rows warned but not blocking. Rules 1
+and 2 are exactly the two pinned constraints, so neither too-permissive (masking) nor too-strict
+(a supplemental guard blocking a verified criterion) can occur, and the rule is total because every
+criterion carries ≥1 `required` row (the coverage-by-id join guarantees it). This ratifies arm A3's
+tester's FIELD decision without ratifying the withdrawn policy. Docs-only, mirroring F-91 — no
+validator reads `check_role`, and `execution-report.js` still does not evaluate the test `checks[]`
+array (finding 16, a separate gap). Recorded in `references/artifact-layout.md`,
+`references/phase-gates.md`, `.claude/agents/adws-tester.md`, and `FINDINGS.md` finding 11.

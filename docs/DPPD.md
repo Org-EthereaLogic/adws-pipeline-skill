@@ -1334,12 +1334,16 @@ falsification record. F-81, F-84 and F-85 remain open, owned by SC-15.
 
 **SC-15, SC-16 and SC-17 have since landed too** (PRs #81, #87, #86, #88), closing **F-84,
 F-85, F-84b, F-88, F-88b, F-89 and F-90**. **SC-18 has opened** and landed its first finding,
-**F-91**: finding 39 / issue #74 resolved as option 2 — `baseline_reason` is `null`, not an
+**F-91** (finding 39 / issue #74 resolved as option 2 — `baseline_reason` is `null`, not an
 enum member, when a check passes pre-change — the same two-places-one-question family as gaps
-1/3/7, resolved by naming the recorded evidence authoritative over the documentation table
-(SC-16/F-89's template). **SC-18's remaining scope (arm A gaps 9 and 11) stays open**, so the
+1/3/7, resolved by naming the recorded evidence authoritative over the documentation table,
+SC-16/F-89's template) and **F-92** (closes arm A gap 11, the required-vs-supplemental split option 2
+deferred: a `check_role` field — `required` | `supplemental` — on the test check row plus a criterion
+aggregation rule honoring the two pinned constraints, `fail` dominates and a required row is never
+masked by a verified sibling; docs-only, no validator reads the field). **SC-18's remaining scope is
+arm A gap 9 only** (`references/` as this repo's documentation location — proposed and stands), so the
 package is in progress, not closed. F-81 remains open too. The register's next free number is
-**F-92**; the next free work package is **SC-19**.
+**F-93**; the next free work package is **SC-19**.
 
 Three of those are worth carrying into this document rather than leaving in `VERIFICATION.md`,
 because each says something about the defect classes DPPD tracks:

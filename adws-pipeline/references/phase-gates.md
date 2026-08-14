@@ -303,6 +303,40 @@ join back to the criteria — the coverage gate then either fails spuriously or 
 satisfied by ids that prove nothing. Deterministic re-runs (e.g. after a rewind) recompute
 the same specs, so each fresh test attempt gets its own trace with identical contents.
 
+### Aggregating a criterion's checks into one verdict (SC-18/F-92)
+
+A criterion MAY carry several check rows — the SC-5/F-31 id join permits it — and `verdict` is
+per-check, so a criterion with a mix of `verified` and `gate_weak` rows needs a defined rule to
+become one criterion verdict. Each row carries a **`check_role`**: `required` (the DEFAULT — it
+answers the criterion's core outcome, and every `criteria-to-checks` spec is required by
+construction) or `supplemental` (a no-regression / parity guard the tester adds that has no red
+baseline by construction, so it is *expected* to be `gate_weak`). The role cannot be inferred from
+`baseline_pass`/`falsifiable` — a *required* check may also pass pre-change and be non-falsifiable
+(the primary `gate_weak` case, F-91) — so the tester states it (`references/artifact-layout.md`).
+
+Aggregate a criterion's rows into its verdict IN THIS ORDER:
+
+1. Any row (either role) `verdict: fail` → the criterion is **fail**. (`fail` dominates.)
+2. Else any **required** row `verdict: gate_weak` → the criterion is **gate_weak**, a warn. (A
+   required check that could not be falsified is a genuine gap and is never masked by a verified
+   sibling.)
+3. Else the criterion is **verified**; any `supplemental` `gate_weak` rows are surfaced as warns but
+   do not pull it below `verified`. (A supplemental guard's non-falsifiability is expected, not a gap.)
+
+Two constraints are pinned and hold under ANY rule here: **`fail` dominates**, and **a required row
+is never masked by a verified sibling** — rules 1 and 2 are exactly those two. The rule is total
+because every criterion carries at least one `required` row: each gets a `check_spec` (required by
+construction) and the coverage-by-id join above requires every emitted spec id to appear at least
+once, so rules 2–3 always have a required row to key on.
+
+This closes arm A gap 11 (`FINDINGS.md` finding 11). SC-17 proposed the weaker "≥1 verified row
+makes the criterion verified" and it was withdrawn for masking a required `gate_weak` behind a
+verified sibling — the `check_role` split is the distinction that rule was missing. It ratifies what
+arm A3's tester improvised at the FIELD level (4 verified required rows + 4 supplemental `gate_weak`
+rows → verified, the supplementals warned) while making the POLICY safe. A `gate_weak` criterion
+remains a warn, never a pass (the § above and `SKILL.md` §3): the `check_role` split changes which
+rows a verified sibling may sit beside, never that a `gate_weak` outcome could itself pass.
+
 ## Consensus at test and review gates (FR-7)
 
 At the test and review gates, after the phase agent (Architect) produces its output:

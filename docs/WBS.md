@@ -98,18 +98,32 @@ strict reader rejected the honest `baseline_reason: null` and gated a candid tes
 non-red rows already carried. Widens the shipped enum to admit `null` (the table was the bug,
 not the evidence — SC-16/F-89's authority-in-writing template), rather than adding a redundant
 fourth member or reclassifying the check. Docs-only: no validator reads the field, so no code or
-fixture changed. This is the same two-places-one-question family as gaps 1/3/7. **Gap 11 stays
-open** — issue #74's option 3 was the required-vs-supplemental split gap 11 needs, and option 2
-deliberately does not settle it. Fixed in `artifact-layout.md`, `phase-gates.md`,
-`adws-tester.md`; recorded in `FINDINGS.md` finding 39.
+fixture changed. This is the same two-places-one-question family as gaps 1/3/7. Gap 11 stayed
+open after F-91 — issue #74's option 3 was the required-vs-supplemental split gap 11 needs, and
+option 2 deliberately did not settle it; **F-92 closes it (below)**. Fixed in `artifact-layout.md`,
+`phase-gates.md`, `adws-tester.md`; recorded in `FINDINGS.md` finding 39.
 
-**Arm A gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12); five open
-(1, 3, 7, 9, 11).** Gaps 1, 3 and 7 are one shape — two places answer one question and neither
+**F-92** closes arm A gap 11 — the required-vs-supplemental split option 2 deferred. A criterion may
+carry several checks (SC-5/F-31) with per-check verdicts, but the gate is stated per *criterion* and
+no rule aggregated them; SC-17's proposed "≥1 verified row → verified" was withdrawn for masking a
+*required* `gate_weak` behind a verified sibling. F-92 adds a **`check_role`** field
+(`required` | `supplemental`) to the test check row and the aggregation rule: `fail` on any row →
+`fail`; else a `gate_weak` on any *required* row → `gate_weak` (never masked); else `verified`, with
+`supplemental` `gate_weak` rows warned but not blocking — honoring the two pinned constraints (`fail`
+dominates; a required row is never masked by a verified sibling). Ratifies arm A3's tester's FIELD
+decision while fixing the POLICY the withdrawn rule got wrong. Docs-only, mirroring F-91: no
+validator reads `check_role`. Fixed in `artifact-layout.md`, `phase-gates.md`, and
+`adws-tester.md`; recorded in `FINDINGS.md` finding 11.
+
+**Arm A gap ledger: twelve documented, eight closed (2, 4, 5, 6, 8, 10, 11, 12); four open
+(1, 3, 7, 9).** Gaps 1, 3 and 7 are one shape — two places answer one question and neither
 is named authoritative — and gap 6 turned out to belong to that family too, which makes it the
-most common defect the spike has found. Gaps 9 and 11 are policy: **9's ruling is proposed and
-stands** (`references/` is this repo's documentation location); **11's was withdrawn** in review
-for contradicting `gate_weak`'s "never a pass" rule, and needs required-vs-supplemental check
-semantics defined before any aggregation rule can be written. Both are owned by SC-18.
+most common defect the spike has found. Gaps 9 and 11 were policy: **9's ruling is proposed and
+stands** (`references/` is this repo's documentation location); **11 is now closed by F-92** — its
+withdrawn SC-17 ruling was replaced by the required-vs-supplemental `check_role` split, which
+defined the missing semantics and let a safe aggregation rule be written (`fail` dominates; a
+required row is never masked by a verified sibling). Both were owned by SC-18; **gap 9 is its only
+remaining policy gap.**
 
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
