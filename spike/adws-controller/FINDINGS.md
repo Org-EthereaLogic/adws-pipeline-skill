@@ -1875,6 +1875,15 @@ are new, and the last of them blocks rather than merely requiring improvisation:
     per-check — but the gate is stated per *criterion*. Arm A3's tester returned exactly this: 4
     verified rows plus 4 supplementary `gate_weak` rows. It ruled that ≥1 verified row makes the
     criterion verified and surfaced the rest as warns. Nothing in the skill says that.
+    **CLOSED by SC-18/F-92** — a **`check_role`** field (`required` | `supplemental`) on the test
+    check row splits the two kinds of check, and a criterion aggregates to `fail` if any row fails,
+    `gate_weak` if any *required* row is `gate_weak` (never masked by a verified sibling), else
+    `verified` — `supplemental` `gate_weak` rows warn without blocking. This ratifies arm A3's
+    FIELD decision (its 4 supplementary rows are `supplemental`) while making the POLICY safe: the
+    withdrawn SC-17 rule ("≥1 verified row → verified") failed for lack of exactly this split. The
+    two pinned constraints — `fail` dominates, a required row is never masked by a verified sibling —
+    are rules 1 and 2 of the aggregation. Docs-only, mirroring F-91: no validator reads `check_role`.
+    Fixed in `artifact-layout.md`, `phase-gates.md`, and `adws-tester.md`.
 12. **A halted run can never be resumed, by the skill's own rules.** §0 step 5 admits
     `execution.resume_from_job` only when the predecessor recorded `carry_over.resumable: true`,
     and `carry_over` is written **only at a terminal state**. An operator-halted run never reaches
@@ -2023,18 +2032,20 @@ findings against a shipped document. The corrected statement is: **twelve docume
 fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
 state) and gaps 5/10 (one validator envelope).
 
-**Running total: twelve documented, seven closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
-and 10 by SC-16/F-89 (one root cause), 2 and 6 by SC-17. **Five remain open: 1, 3, 7, 9, 11.**
+**Running total: twelve documented, eight closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
+and 10 by SC-16/F-89 (one root cause), 2 and 6 by SC-17, 11 by SC-18/F-92. **Four remain open: 1, 3,
+7, 9.**
 Stated as a number here so the next reader can check it against the list rather than inherit it —
 which is the whole lesson of the finding above.
 
-Of the five, **1, 3 and 7 are all one shape**: two places in the documentation answer one question
+Of the four, **1, 3 and 7 are all one shape**: two places in the documentation answer one question
 and neither names the other as authoritative. That is findings 22/29/34/51's family, and gap 6
 turned out to belong to it too (finding 57) — which moves the estimate. It is not four instances of
 a recurring annoyance; it is the single most common defect this spike has found, and closing 1/3/7
 means naming an authority in writing each time, the way SC-16/F-89 named the running validator over
-the id table. Gaps 9 and 11 are a different thing entirely: the skill has no answer at all, so
-closing them is a decision, not a transcription.
+the id table. Gap 9 is a different thing entirely: the skill has no answer at all, so closing it is a
+decision, not a transcription — the same shape as gap 11, which SC-18/F-92 has now closed by defining
+the required-vs-supplemental `check_role` split before writing its aggregation rule.
 
 Both closures have the same shape, and it is worth naming because it is the third time this
 document has described it: **the value already existed and nothing carried it across a boundary.**
@@ -2367,3 +2378,13 @@ silent on *aggregation* while being explicit that `gate_weak` never passes. The 
 reasonable field decision and a bad policy, and treating a run's improvisation as evidence for a
 rule skipped the step of checking it against the rules that already exist. Withdrawn; the revised
 position is below.
+
+**Revised position — ADOPTED as SC-18/F-92.** The missing piece was a way to tell a *required*
+criterion check from a *supplemental* one. With a **`check_role`** field (`required` | `supplemental`)
+on the check row, the criterion aggregates safely: `fail` on any row → `fail`; else a `gate_weak` on
+any *required* row → `gate_weak` (never masked by a verified sibling); else `verified`, with
+`supplemental` `gate_weak` rows warned but not blocking. This ratifies arm A3's improvisation at the
+level it was sound — a FIELD decision, its 4 supplementary rows being `supplemental` — without
+ratifying the unsafe policy, and honors both pinned constraints (`fail` dominates; a required row is
+never masked). Naming the field is what let a safe aggregation rule be written at all; see finding 11
+and `references/phase-gates.md`.

@@ -12,14 +12,14 @@
     "The installed copy carries this file, which is what lets scripts/skill-check.js",
     "verify an install against itself and `make check-installs` compare it to source."
   ],
-  "skill_version": "cb8314b00fe7",
+  "skill_version": "ce1fc4feec96",
   "file_count": 31,
-  "git_commit": "d2cd4c8cbd973bcdd7528dc1b9ca7ac32f161c2e",
+  "git_commit": "975a3bf685c46c35d6741f90e74ae321a2d81364",
   "skill": {
     "SKILL.md": "870d9ba8ae16f0cfb185983f88aa99860b6468bc64e34c44f3c87e500b4da7e8",
     "references/agent-shared-blocks.md": "f63714624eea0ee6dc640804b8a3e47aee985297cded69aa7761f928d82f3478",
-    "references/artifact-layout.md": "41a79e2639f704ef1c68d94036bf1a872a379e7c3e6a811da073a9e7e03855b0",
-    "references/phase-gates.md": "a1f9ee8419937754ec5eb613d83b1c11200df617c31e5538b50f050f4b314bc9",
+    "references/artifact-layout.md": "05a8ae1d82d7cf930f523503f99e442f88ad97c9660e9bb68dc791fd7a900ece",
+    "references/phase-gates.md": "0599f4a81869fe6deee707ed830969e8fa31a4ed66f039cc02dea98c2d22e184",
     "references/runtimes.md": "67c3412497969af83564d9d85f7ddd19e0b6c3ac22e31cfc07d3b6738a5d06b8",
     "references/task-contract.md": "57dabe646d35cbf3098527476bd4bd51c670a145f1d7d14823992e55270c0a87",
     "references/troubleshooting.md": "0862d4df8692ae6cef5c809c9568050af755b98d2d26ac84054fb618910bdf6c",
@@ -47,7 +47,7 @@
     "adws-planner.md": "acfc43daa91d4bcb8fb96b366779dadb8f66aab8bb90da236b4e4e66be43fb35",
     "adws-reviewer.md": "91592590474a689ab488b522ca576a2cbb810ba4021ca71f3c72efec5038a639",
     "adws-shipper.md": "982d3bce0b7adb30f345a2a68496ace9b7c92bb1047e71ad77c31da15ffecb7f",
-    "adws-tester.md": "8b2b003710ed48c5467b9e34330c63fe4a298c575d7a93ef115e7763ba400eb3",
+    "adws-tester.md": "1b77666c531a923877db8ecb8cc680cc55ebb928f41171892f25d1193fa6bdbf",
     "adws-verifier.md": "4cc99d12d28b7112b43b6da1f2224af91c4558a1ef2dd6911840050d5548828f"
   }
 }
