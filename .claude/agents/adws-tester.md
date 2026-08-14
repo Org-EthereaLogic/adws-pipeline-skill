@@ -57,10 +57,13 @@ Do:
    `baseline_pass` and, when it did NOT pass, WHY: `assertion-failed-runtime-present`
    (the check ran and the assertion failed because the feature is absent — a VALID red)
    vs. `collection-error`/`not-run` (the check could not execute — an INVALID red; the
-   runtime is missing, not the feature). A criterion is `falsifiable` only when its
-   baseline is `assertion-failed-runtime-present`. A criterion whose check passes
-   pre-change, or whose only red is `not-run`, is NOT falsifiable — mark it `gate_weak`
-   (an unverified criterion), never a pass, and never "already satisfied / ship nothing."
+   runtime is missing, not the feature). When the check PASSED pre-change (`baseline_pass:
+   true`) there is no red to name, so `baseline_reason` is `null` — write `null`, never an
+   improvised prose string; the enum is for red baselines only (SC-18/F-91). A criterion is
+   `falsifiable` only when its baseline is `assertion-failed-runtime-present`. A criterion
+   whose check passes pre-change, or whose only red is `not-run`, is NOT falsifiable — mark
+   it `gate_weak` (an unverified criterion), never a pass, and never "already satisfied /
+   ship nothing."
    This is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and honors
    F-13 (a container-green post-change result stays necessary-not-sufficient).
 3. Execute every check against the post-change worktree. Capture real output — a check

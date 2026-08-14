@@ -1384,6 +1384,21 @@ so the same layering that makes the gate strong also makes a vocabulary hole ind
 from a real failure, and the job's annotation was `TEST_GATE_FAILURE`: the exact blanket reason
 the contract under test exists to split. The run failed into the vocabulary it was repairing.
 
+**CLOSED by SC-18/F-91 (issue #74), option 2.** `baseline_reason` names why a *red* baseline
+was red, so its domain is exactly `baseline_pass: false`; the "passes pre-change / no red
+baseline" `gate_weak` case carries `baseline_reason: null`, which the enum row in
+`artifact-layout.md` formerly omitted. The recorded evidence already agreed 6-to-1 — every live
+tester that hit `baseline_pass: true` wrote `null`; the one that improvised a prose string
+(`live_armA2_run`'s `CONSTRAINT-PARITY`) is the proof the hole was real. This is findings
+22/29/34/57's shape read forward (finding 51): the honest value existed, the table just refused
+it, so the fix names the authority in writing — recorded evidence over the table, SC-16/F-89's
+template — and widens the enum to admit `null` rather than adding a redundant fourth member
+(option 1 would restate `baseline_pass: true`) or reclassifying the check out of the criterion
+channel (option 3, which contradicts "a green that cannot be shown capable of failing is a gap"
+and belongs to the required-vs-supplemental split gap 11 still owns). Fixed in
+`artifact-layout.md`, `phase-gates.md`, and `adws-tester.md`; no validator read the field, so no
+code or fixture changed.
+
 **Finding 40 — two controller defects the mocked path could not surface.** The literal sketch
 command crashed with an **uncaught `ENOENT` stack trace** rather than a controlled error —
 notable for a component whose defining property is "the controller's word is the state", and it

@@ -88,6 +88,21 @@ was told the OPPOSITE of what this repo believed (finding 57). Report fixtures 2
 **Findings 56–60 are recorded in `spike/adws-controller/FINDINGS.md`.** See `VERIFICATION.md`
 §SC-17/F-90.
 
+**SC-18 (2026-08-14):** **F-91** closes finding 39 / issue #74 — the documented check row could
+not express the primary `gate_weak` case. `phase-gates.md` names "passes pre-change (no red
+baseline)" as the first `gate_weak` case, but `artifact-layout.md`'s `baseline_reason` enum
+(`assertion-failed-runtime-present | collection-error | not-run`) had no value for it, so a
+strict reader rejected the honest `baseline_reason: null` and gated a candid tester. Resolved as
+**option 2**: `baseline_reason` names why a *red* baseline was red, so it is enum-valued iff
+`baseline_pass: false` and `null` when the check passed pre-change — the value 6 of 7 live
+non-red rows already carried. Widens the shipped enum to admit `null` (the table was the bug,
+not the evidence — SC-16/F-89's authority-in-writing template), rather than adding a redundant
+fourth member or reclassifying the check. Docs-only: no validator reads the field, so no code or
+fixture changed. This is the same two-places-one-question family as gaps 1/3/7. **Gap 11 stays
+open** — issue #74's option 3 was the required-vs-supplemental split gap 11 needs, and option 2
+deliberately does not settle it. Fixed in `artifact-layout.md`, `phase-gates.md`,
+`adws-tester.md`; recorded in `FINDINGS.md` finding 39.
+
 **Arm A gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12); five open
 (1, 3, 7, 9, 11).** Gaps 1, 3 and 7 are one shape — two places answer one question and neither
 is named authoritative — and gap 6 turned out to belong to that family too, which makes it the

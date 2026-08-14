@@ -256,15 +256,23 @@ empty tree. A criterion is *verified* only if its check went RED
 pre-change for the right reason (`baseline_reason: assertion-failed-runtime-present` — the
 check ran and failed because the feature was absent) AND passes post-change. A check that
 
-- passes pre-change (no red baseline), or
+- passes pre-change (no red baseline — recorded `baseline_pass: true`, `baseline_reason: null`), or
 - is red only because it could not execute (`collection-error`/`not-run` — the runtime is
   missing, not the feature)
 
 is NOT falsifiable → the criterion is recorded `gate_weak` (an unverified criterion). A
 `gate_weak` criterion is a WARN, never a pass, and NEVER "already satisfied / ship
-nothing": a green that cannot be shown capable of failing is a gap, not a done task. This
-is the mirror of F-9 (`NOT RUN` is neither a pass nor a valid red) and preserves F-13
-(container-green stays necessary-not-sufficient). Falsifiability reuses `criteria-to-checks`'
+nothing": a green that cannot be shown capable of failing is a gap, not a done task.
+`baseline_reason` names why a baseline was *not* a clean pass, so it is enum-valued only on a
+red baseline (`baseline_pass: false`); the first case above passed pre-change, has no red to
+characterize, and therefore carries `baseline_reason: null` — REQUIRED, not merely permitted,
+and never an improvised prose string. This is settled in writing here per SC-18/F-91 (closing
+finding 39): `artifact-layout.md`'s enum row formerly listed only the three red-baseline values,
+so a strict reader rejected the honest `null` and gated a candid tester; on the standing rule
+that the recorded evidence is the authority and a documentation table that disagrees is the bug
+(SC-16/F-89's template), the table was widened to admit `null`, and the tester's `null` stands.
+Recording a non-falsifiable check as `gate_weak` is the mirror of F-9 (`NOT RUN` is neither a
+pass nor a valid red) and preserves F-13 (container-green stays necessary-not-sufficient). Falsifiability reuses `criteria-to-checks`'
 emitted `check_specs` as the criterion→check source of truth and `adws-tester` as the
 execution surface — no new DSL, runner, verdict, or exit code.
 
