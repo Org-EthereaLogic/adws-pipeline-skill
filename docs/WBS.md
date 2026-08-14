@@ -88,7 +88,7 @@ was told the OPPOSITE of what this repo believed (finding 57). Report fixtures 2
 **Findings 56–60 are recorded in `spike/adws-controller/FINDINGS.md`.** See `VERIFICATION.md`
 §SC-17/F-90.
 
-**SC-18 (2026-08-14):** **F-91** closes finding 39 / issue #74 — the documented check row could
+**SC-18 (2026-08-14, PRs #90, #91):** **F-91** closes finding 39 / issue #74 — the documented check row could
 not express the primary `gate_weak` case. `phase-gates.md` names "passes pre-change (no red
 baseline)" as the first `gate_weak` case, but `artifact-layout.md`'s `baseline_reason` enum
 (`assertion-failed-runtime-present | collection-error | not-run`) had no value for it, so a
