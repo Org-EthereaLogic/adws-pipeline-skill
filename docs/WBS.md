@@ -58,6 +58,44 @@ unpinned, budget 16). No validator source edited, no refreeze, no `SCHEMA_VERSIO
 holds (429 < 500). **F-81, F-84, F-85 remain open, owned by SC-15.** See `SC14_PLAN.md` and
 `VERIFICATION.md` §SC-14.
 
+**SC-15 (2026-08-12, PR #81):** closes **F-84, F-85** and adds **F-84b**. Three defects the
+live §6.2 arm A runs surfaced in the SHIPPED skill: the build gate's only validator
+(`repo-context-scan`) read the PLAN rather than the worktree, so a builder writing outside
+`allowed_paths` passed on the plan's good intentions; the drift gate ran AFTER publication, so a
+BLOCK rewound a change that already had commits and a live PR; and `artifact-layout` rule 9 was
+unenforced prose until `evidence-integrity.js` ran at the terminal report. `SKILL.md` 429 → 456,
+recorded in the ratchet with a reason.
+
+**SC-16 (2026-08-13, PRs #87, #86):** closes arm A gaps **4, 8, 10, 12** and **5** via
+**F-88**, **F-88b** and **F-89**. F-88 adds `halted`/`OPERATOR_HALT` as a fifth terminal state
+with the attempt-level `ROUTE_NOT_EXECUTED` — three live runs had been forced to record an
+operator's deliberate stop as `canceled`, which routes to QUARANTINE over a run with nothing to
+investigate. **F-88b corrected F-88's own anti-laundering guard** (finding 56): it excluded the
+`pipeline_completion` gate wholesale, and that gate answers two questions in one status, so a
+halted run with a phase skipped BEHIND the stop reported RETRY and "nothing is wrong with the
+run". F-89 gives every validator verdict a `skill_id`/`tool_version` envelope at the CLI
+boundary — both values existed in all nine manifests and were printed by none. `SKILL.md`
+456 → 469; report fixtures 25 → 27; `cli-contract` 330 → 367.
+
+**SC-17 (2026-08-14, PR #88):** **F-90** extends `guard-ablation` to `execution-report.js` —
+the file all three SC-16 defects lived in, and the one target the mechanism had never swept.
+109 mutants × 29 report fixtures, **19 survivors and 90 killed**; the baseline gains 18
+`unpinned` entries (owner SC-18) and 1 `equivalent`, budget 16 → 34. One survivor was closed
+rather than accepted: `skills_clean`'s "a skill invocation failed" branch, which six fixtures
+appeared to cover and none reached, because every one returns from an earlier branch. Also
+closes arm A gaps **2** and **6** — and gap 6 was misdiagnosed in the record, since the Advocate
+was told the OPPOSITE of what this repo believed (finding 57). Report fixtures 27 → 29.
+**Findings 56–60 are recorded in `spike/adws-controller/FINDINGS.md`.** See `VERIFICATION.md`
+§SC-17/F-90.
+
+**Arm A gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12); five open
+(1, 3, 7, 9, 11).** Gaps 1, 3 and 7 are one shape — two places answer one question and neither
+is named authoritative — and gap 6 turned out to belong to that family too, which makes it the
+most common defect the spike has found. Gaps 9 and 11 are policy: **9's ruling is proposed and
+stands** (`references/` is this repo's documentation location); **11's was withdrawn** in review
+for contradicting `gate_weak`'s "never a pass" rule, and needs required-vs-supplemental check
+semantics defined before any aggregation rule can be written. Both are owned by SC-18.
+
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4
 acceptance criteria satisfied and independently verified. Sign-off: `acceptance/ACCEPTANCE.md`;

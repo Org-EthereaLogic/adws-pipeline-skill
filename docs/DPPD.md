@@ -1331,3 +1331,29 @@ enum and exit codes 0/10/1/2/3 all untouched. NFR-3 held (`SKILL.md` 424 < 500).
 **SC-14 has since landed** — F-80, F-82, F-83, F-86 and F-87. See `SC14_PLAN.md` and
 `VERIFICATION.md` §SC-14 for what shipped, what the triage corrected in F-86, and the
 falsification record. F-81, F-84 and F-85 remain open, owned by SC-15.
+
+**SC-15, SC-16 and SC-17 have since landed too** (PRs #81, #87, #86, #88), closing **F-84,
+F-85, F-84b, F-88, F-88b, F-89 and F-90**. F-81 remains open. The register's next free number
+is **F-91**; the next work package is **SC-18**.
+
+Three of those are worth carrying into this document rather than leaving in `VERIFICATION.md`,
+because each says something about the defect classes DPPD tracks:
+
+- **F-88b (finding 56) is finding 51's fifth instance, and its second in the same twenty
+  lines.** F-88 shipped an anti-laundering guard that excluded a gate wholesale; that gate
+  answered two questions in one status, so excluding it excluded a finding along with a
+  premise. Both the guard and the gate were correct read alone. **Two consecutive fixes to the
+  same code shipped the same defect class, each authored while explicitly reasoning about that
+  defect class** — which is the sharpest available evidence that "be careful about composition"
+  is not a control. What caught it was an independent reader.
+- **F-90 measured the cost of not having a control.** `guard-ablation` had never swept
+  `execution-report.js`, the file all three SC-16 defects lived in, because an estimate in its
+  own scope block said the file "needs a different mechanism". The estimate was made without
+  reading for a seam, and the seam (`buildReport`) was one function above the one everybody
+  reads. First sweep: 19 unpinned rules, including the `canceled` branch whose dishonesty
+  motivated F-88.
+- **Finding 57 revises how a reproduction should be read.** Arm A gap 6 was recorded as a
+  confirmed agent defect because two independent live runs reproduced it. Both runs were reading
+  the same wrong line of documentation; the agent was correct. **A reproduction confirms the
+  observation, not the diagnosis** — running twice cannot separate an agent that misbehaves from
+  a document that lies.
