@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-h5k1pd",
+  "task_id": "TASK-116",
+  "decision": "QUARANTINE",
+  "decision_reason": "Job was halted by the operator, but phase evidence is missing in a way the stop does not explain (review (no attempt recorded)); a halt accounts for the phases after it, never a gap behind it.",
+  "warn_flag": false,
+  "exit_code": 2,
+  "final_status": "halted",
+  "failure_reason": "OPERATOR_HALT",
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "fail",
+      "detail": "4/7 — Missing phase evidence: review (no attempt recorded), ship (not reached — job terminated at document), verify (not reached — job terminated at document)"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "4/4 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase attempt recorded for this run"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "consensus",
+      "result": "pass",
+      "detail": "1 round(s) clean"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "unverified",
+      "detail": "No skill outcomes recorded in any phase"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": "ROUTE_NOT_EXECUTED",
+      "model_tier": "haiku"
+    }
+  ],
+  "skill_verdicts": [],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [],
+  "warnings": [
+    "Failure reason recorded: OPERATOR_HALT",
+    "Gate \"drift_verdict\" evaluated to unverified: No verify-phase output recorded for this run",
+    "Gate \"grader_verdict\" evaluated to unverified: No verify-phase attempt recorded for this run",
+    "Gate \"pipeline_completion\" evaluated to fail: Missing phase evidence: review (no attempt recorded), ship (not reached — job terminated at document), verify (not reached — job terminated at document)",
+    "Gate \"skills_clean\" evaluated to unverified: No skill outcomes recorded in any phase",
+    "Gate \"verify_structural\" evaluated to unverified: No verify-phase output recorded for this run"
+  ],
+  "evidence_root": "<evidence_root>"
+}

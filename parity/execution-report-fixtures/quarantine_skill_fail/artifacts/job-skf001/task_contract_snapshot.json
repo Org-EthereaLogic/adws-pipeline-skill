@@ -1,0 +1,17 @@
+{
+  "task_id": "TASK-117",
+  "task": {
+    "title": "Skill-failure regression fixture",
+    "problem_statement": "A completed job whose plan-coherence trace records an honest fail, agreeing with its own validator output.",
+    "acceptance_criteria": [
+      "AC-1",
+      "AC-2"
+    ]
+  },
+  "execution": {
+    "target_branch": "main",
+    "output_mode": "pr",
+    "isolation_mode": "worktree"
+  },
+  "schema_version": "1.0.0"
+}

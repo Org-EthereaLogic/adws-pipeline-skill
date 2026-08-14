@@ -1613,6 +1613,9 @@ model-independent. Arm A1's six:
    `artifacts/{jobId}/pregate/ship-mode-select/skill_trace.json`.
 2. **Which date the jobId uses.** "next free `job_YYYYMMDD_NNNN`" with local date Aug 11 and UTC
    Aug 12. Every timestamp rule in the skill mandates UTC, so UTC was chosen — the skill never says.
+   **CLOSED by SC-17** — `artifact-layout.md` now says UTC, and says why: a job id on local time
+   would be the only local-time value in the record and would sort against its own timestamps.
+   The run's inference was right; it should not have been an inference.
 3. **The worktree-mechanism contradiction.** §1 prefers the Agent tool's `isolation: "worktree"`,
    but build, test and both assessors must see one persistent tree recorded once as
    `run_manifest.worktree_path`, and per-dispatch worktrees are per-agent and auto-cleaned. The two
@@ -1626,6 +1629,13 @@ model-independent. Arm A1's six:
    transcribes. Found three times across three runs; with gap 10.
 6. **The Advocate omitted its `resolution: null` key** despite being told to write it. Schema drift,
    semantics unaffected, correctly not gated.
+   **CLOSED by SC-17, and this entry was wrong** — see finding 57. The Advocate was told the
+   OPPOSITE: its agent file says "you never write `resolution`" and omits the key from its
+   template, and `artifact-layout.md`'s `resolution` paragraph says "never by the Advocate agent".
+   One line of one file — the shape block — said it carries the key, and that line was the defect.
+   The agent behaved correctly in both runs. The words "despite being told to write it" are left
+   standing rather than rewritten (§10.4); they are what this file believed, and being wrong about
+   which side of a contradiction was at fault is the finding.
 
 And four surprises, one of which is a real quality signal:
 
@@ -1998,10 +2008,18 @@ findings against a shipped document. The corrected statement is: **twelve docume
 fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
 state) and gaps 5/10 (one validator envelope).
 
-**Running total: twelve documented, five closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
-and 10 by SC-16/F-89 (one root cause). **Seven remain open: 1, 2, 3, 6, 7, 9, 11.** Stated as a
-number here so the next reader can check it against the list rather than inherit it — which is the
-whole lesson of the finding above.
+**Running total: twelve documented, seven closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
+and 10 by SC-16/F-89 (one root cause), 2 and 6 by SC-17. **Five remain open: 1, 3, 7, 9, 11.**
+Stated as a number here so the next reader can check it against the list rather than inherit it —
+which is the whole lesson of the finding above.
+
+Of the five, **1, 3 and 7 are all one shape**: two places in the documentation answer one question
+and neither names the other as authoritative. That is findings 22/29/34/51's family, and gap 6
+turned out to belong to it too (finding 57) — which moves the estimate. It is not four instances of
+a recurring annoyance; it is the single most common defect this spike has found, and closing 1/3/7
+means naming an authority in writing each time, the way SC-16/F-89 named the running validator over
+the id table. Gaps 9 and 11 are a different thing entirely: the skill has no answer at all, so
+closing them is a decision, not a transcription.
 
 Both closures have the same shape, and it is worth naming because it is the third time this
 document has described it: **the value already existed and nothing carried it across a boundary.**
@@ -2207,3 +2225,130 @@ acceptance_criteria:t.acceptance_criteria||[],constraints:t.constraints||[],file
   | node adws-pipeline/scripts/validators/task-normalize.js -
 # rubric_result: "fail" — against a recorded plan-coherence trace of "pass"
 ```
+
+**Finding 57 — gap 6 was real, and this file blamed the wrong side of it.** The entry reads "the
+Advocate omitted its `resolution: null` key **despite being told to write it**", filed as agent
+schema drift. The Advocate was told the opposite. `.claude/agents/adws-advocate.md` says *"you
+never write `resolution`, which the ORCHESTRATOR adds post-hoc"* and its JSON template does not
+contain the key. `artifact-layout.md`'s own `resolution` paragraph says *"written POST-HOC by the
+ORCHESTRATOR — never by the Advocate agent"*. Exactly one line disagreed: the `consensus/*.json`
+shape block, which opened *"`advocate.json` carries ONE further key, `"resolution": null`"*.
+
+So the agent was right, both live runs were right, and the document was wrong — and because two
+independent runs "reproduced" the omission, it was recorded as a confirmed agent defect. **A
+reproduction confirms the observation, not the diagnosis.** Both runs read the same wrong line;
+running twice cannot separate an agent that misbehaves from a document that lies, and the second
+run was counted as evidence for the diagnosis when it was only evidence for the observation.
+
+The provenance is the sharpest part. **SC-13/F-79 rewrote that exact block** because it showed
+`resolution` for BOTH files and a live Critic had written the key on its strength. That fix
+corrected the Critic half and left the Advocate half asserting the opposite of the rule two
+paragraphs below it. A fix for a contradiction, which left a contradiction, in the same paragraph,
+about the same key. One file disagreeing with itself across a boundary a reader crosses by
+scrolling — which is why gap 6 belongs with 1, 3 and 7 rather than in a category of its own.
+
+**Finding 58 — the anti-vacuity mechanism had never run on the file that produced the last three
+defects, and the estimate that kept it out was made without reading the code.** Every SC-16 defect
+— F-88's first guard, F-88b's over-correction, and the fixture pair that passed both — was in
+`execution-report.js`. `guard-ablation` sweeps nine validators and not that file. Its own scope
+block says why: *"execution-report.js … needs a different mechanism — mutating a report generator
+means rebuilding job trees, not calling `execute(input)`."*
+
+Half right, and the wrong half was load-bearing. The case runner does differ. But nothing needed
+rebuilding: `buildReport(jobDir)` returns `{report, markdown}` and writes nothing —
+`generateExecutionReport` is the thin writing wrapper around it — so the seam already existed, one
+function above the one everybody reads. The 29 job trees the report suite already maintains are the
+corpus. **The cost was estimated from the shape of the problem rather than from the code**, the
+estimate was too high, and it deferred the sweep past three defects in the swept-out file. The
+correction is recorded in the scope block that made the claim.
+
+What the sweep found on first run: **109 mutants, 19 survivors, 90 killed.** Two survivors are
+worth naming here rather than only in the baseline. `guard-off:#53` is the `canceled` branch of
+`decideLifecycle` — **the branch three live arm A runs were forced into, the one whose dishonesty
+motivated F-88, pinned by nothing**, while the `halted` branch built beside it now has three
+fixtures. `guard-off:#22` is `pipeline_completion`'s "did this run finish" half — precisely the
+distinction F-88b turned on, reasoned about at length in a comment, against a branch no test
+reaches.
+
+One survivor was closed rather than accepted, and it is the plainest rule in its gate.
+`skills_clean` fails a job when a skill invocation failed; six fixtures score `skills_clean: fail`
+and **not one of them reaches that branch** — every one returns earlier, from the SC-8/F-58
+trace-mismatch check or the SC-11 unreadable-evidence check. The single fixture carrying a failing
+skill row also carries a mismatch, so it returns above the branch it appears to cover. The rule was
+**shadowed by its own neighbours**, which is a failure mode distinct from "no fixture exists":
+there were six candidate fixtures and the shadowing made every one of them vacuous for this rule.
+Ordering, not coverage.
+
+**And the mechanism aged exactly as F-86 predicted.** All 16 pre-existing `unpinned` entries named
+SC-15 as owner; SC-15 shipped two work packages ago. F-86 was this same defect — 19 entries naming
+an already-shipped SC-12 — and SC-14/A4's fix was to re-own them, which restarted the clock rather
+than stopping it. Re-owned again here, to SC-18. The baseline's rule 4 asserts `owner` is a
+non-empty string and **cannot assert the package is still open**, so this recurs on a schedule set
+by how often work packages ship. Naming it is not fixing it.
+
+**Finding 59 — a golden is a portability claim about the machine that wrote it, and half the
+defects in SC-17's goldens were that claim being false.** Freezing output means freezing everything
+in it, including the parts that are facts about the runtime rather than about the code. Two of the
+four defects in the first cut were of that kind, and the local gate could not see either:
+
+- **Absolute paths.** Two fixtures interpolate the failing file's full path into a gate detail and
+  a warning, so their goldens pinned this checkout's directory. Caught by grepping the frozen
+  output for a string with no business in it.
+- **V8's `JSON.parse` message.** It gained a ` (line N column M)` suffix in Node 22.
+  `quarantine_malformed_output` copies that message verbatim into its report, so goldens frozen on
+  Node 24 were unreproducible on Node 20 and the sanity floor aborted the whole target. Caught by
+  the pre-push cross-version leg — **the only thing in this repo that runs a second Node**, and the
+  only check that disagreed. `make local-ci` was green the entire time.
+
+The general shape: **a frozen artifact asserts everything it contains, including what its author
+did not choose.** The absolute path and the V8 phrasing were never anybody's intended assertion;
+they were carried along because freezing does not distinguish the claim from its surroundings. This
+is the same class as `generated_at`, which everyone already knew to strip — the difference is only
+that a timestamp is obviously volatile and a parser's error phrasing is not.
+
+The practical rule for anything added to `parity/execution-report-goldens/`: before freezing, ask
+what in the output is a fact about the CODE and what is a fact about the MACHINE, and scrub the
+second kind by value. Two cheap probes catch most of it — grep the frozen corpus for the checkout
+path, and run the sweep under both Node versions the pre-push leg uses. Both are in
+`VERIFICATION.md` §SC-17/F-90 as standing checks rather than as things that happened once.
+
+**Finding 60 — three review corrections to SC-17's own evidence, and two of them are the shapes
+this file already tracks.**
+
+**(a) A ceiling reported as a measurement.** `guard-ablation` printed
+`${totalRuns} execute() call(s)`, accumulated as `totalRuns += fixtures.length` BEFORE each mutant
+ran — while both runners return on the first case that disagrees. So it was mutants × fixtures, a
+matrix size, and it was labelled `execute()` even for a target that calls `buildReport()`. Measured:
+**2,202 against a 4,867-slot ceiling**, an overstatement of 2.2×.
+
+The direction matters more than the magnitude. **The two numbers diverge more the better the corpus
+is** — a well-pinned rule dies on its first case and never reaches the rest — so the ceiling reads
+highest exactly when the suite is working best. Reported as work performed, the metric inverted its
+own signal. This is F-27's family ("a count no consumer compares is not a control") with a twist:
+here a consumer did read it, and read a number that was never measuring what its name said.
+
+**(b) Narrative suite counts drifted again, for the second time.** `Makefile` advertised
+`109/25/7` and `gate.sh` said `108` parity / `25` report in one comment and `116 / 25 / 7` in
+another, against an actual `116 / 29 / 7`. **SC-13 already did exactly this sync**, for the same
+three files, and recorded it as a one-off. It was not one: these numbers are prose beside the code
+that knows the real values, nothing compares them, and so they go stale on every change to a suite
+size. Corrected again here — and correcting it a second time is the evidence that correcting it is
+not the fix. **Recommended for SC-18:** assert the advertised counts against the suites' real sizes,
+the way `assertFixtureCoverage` already asserts declared cases against fixtures on disk. Until
+something compares them, there will be a third sync.
+
+**(c) A proposed policy that contradicted a written rule.** SC-17 offered a default for gap 11 —
+"≥1 verified row makes the criterion verified" — on the grounds that it ratifies what arm A3's
+tester improvised. Review rejected it, correctly. `artifact-layout.md` says a `gate_weak` verdict
+is "an unverified criterion (warn), **never a pass**", and `SKILL.md` §3 says the same; the same
+paragraph permits several checks per criterion "when a criterion needs more than one". So a
+criterion carrying one verified row and one `gate_weak` row for a *required* check would be
+declared verified while an unfalsifiable required check sat underneath it — which is the exact
+masking both documents forbid.
+
+**The error was in the justification, not just the rule.** "Ratify what the live run did" is a
+sound instinct for a gap where the document is silent, and gap 11 is not that: the document is
+silent on *aggregation* while being explicit that `gate_weak` never passes. The improvisation was a
+reasonable field decision and a bad policy, and treating a run's improvisation as evidence for a
+rule skipped the step of checking it against the rules that already exist. Withdrawn; the revised
+position is below.

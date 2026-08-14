@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-abs001",
+  "task_id": "TASK-101",
+  "decision": "PROMOTE",
+  "decision_reason": "Job completed successfully but at least one gate is unverified (missing evidence); promoting with warn flag — per CONSTITUTION/AGENTS governance, unverified evidence must not silently pass as clean.",
+  "warn_flag": true,
+  "exit_code": 10,
+  "final_status": "completed",
+  "failure_reason": null,
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "pass",
+      "detail": "7/7"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "7/7 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "pass",
+      "detail": "5/5"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "pass",
+      "detail": "pass"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "pass",
+      "detail": "PASS"
+    },
+    {
+      "gate": "consensus",
+      "result": "pass",
+      "detail": "2 round(s) clean"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "unverified",
+      "detail": "No skill outcomes recorded in any phase"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "review",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "document",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    },
+    {
+      "phase": "ship",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "verify",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "haiku"
+    }
+  ],
+  "skill_verdicts": [],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    },
+    {
+      "phase": "review",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [],
+  "warnings": [
+    "Gate \"skills_clean\" evaluated to unverified: No skill outcomes recorded in any phase"
+  ],
+  "evidence_root": "<evidence_root>"
+}

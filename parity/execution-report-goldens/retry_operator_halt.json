@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-h41ta7",
+  "task_id": "TASK-103",
+  "decision": "RETRY",
+  "decision_reason": "Job was halted by the operator with no failed gate (reason: OPERATOR_HALT); nothing is wrong with the run and resuming it is the expected next step. See run_manifest.carry_over.resumable for whether the retained worktree can be adopted.",
+  "warn_flag": false,
+  "exit_code": 1,
+  "final_status": "halted",
+  "failure_reason": "OPERATOR_HALT",
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "fail",
+      "detail": "3/7 — Missing phase evidence: review (not reached — job terminated at test), document (not reached — job terminated at test), ship (not reached — job terminated at test), verify (not reached — job terminated at test)"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "pass",
+      "detail": "3/3 pass"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase attempt recorded for this run"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "consensus",
+      "result": "pass",
+      "detail": "1 round(s) clean"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": "ROUTE_NOT_EXECUTED",
+      "model_tier": "sonnet"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 1,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "critic": "pass",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [],
+  "warnings": [
+    "Failure reason recorded: OPERATOR_HALT",
+    "Gate \"drift_verdict\" evaluated to unverified: No verify-phase output recorded for this run",
+    "Gate \"grader_verdict\" evaluated to unverified: No verify-phase attempt recorded for this run",
+    "Gate \"pipeline_completion\" evaluated to fail: Missing phase evidence: review (not reached — job terminated at test), document (not reached — job terminated at test), ship (not reached — job terminated at test), verify (not reached — job terminated at test)",
+    "Gate \"verify_structural\" evaluated to unverified: No verify-phase output recorded for this run"
+  ],
+  "evidence_root": "<evidence_root>"
+}

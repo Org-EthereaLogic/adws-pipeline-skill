@@ -49,14 +49,18 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const VALIDATOR_DIR = path.join(ROOT, 'adws-pipeline', 'scripts', 'validators');
 const FIXTURES_DIR = path.join(ROOT, 'parity', 'fixtures');
 const BASELINE_PATH = path.join(ROOT, 'parity', 'guard-ablation-baseline.json');
+const REPORT_SOURCE = path.join(ROOT, 'adws-pipeline', 'scripts', 'execution-report.js');
+const REPORT_FIXTURES_DIR = path.join(ROOT, 'parity', 'execution-report-fixtures');
+const REPORT_GOLDENS_DIR = path.join(ROOT, 'parity', 'execution-report-goldens');
 
 // M-5b/B6: extended from the three SC-9 packs to all nine, on M-5a/A2's measured cost
 // (18 mutants / 122 calls / 6 ms for three packs of that size). The sweep is cheap enough
 // that narrowing it buys nothing, and the first nine-pack run immediately found unpinned
 // rules in criteria-to-checks — a pack no scope change had swept.
-const TARGET_PACKS = ['criteria-to-checks','document-coverage-map','drift-sentinel','patch-compose','repo-context-scan','review-risk-assess','ship-mode-select','task-normalize','verify-evidence-map'];
+const VALIDATOR_PACKS = ['criteria-to-checks','document-coverage-map','drift-sentinel','patch-compose','repo-context-scan','review-risk-assess','ship-mode-select','task-normalize','verify-evidence-map'];
 
 const VERBOSE = process.argv.includes('--verbose');
+const WRITE_GOLDENS = process.argv.includes('--write-goldens');
 
 // --- source scanning ---------------------------------------------------------
 // A minimal state machine over the source so mutations never fire inside a comment
@@ -138,14 +142,27 @@ function scanSource(src, { onCode, onString }) {
  * input modes for every validator, and by scripts/local-ci/cli-block-lint.mjs,
  * which asserts the nine copies cannot drift apart. This tool's claim is
  * correspondingly narrow and true: the FIXTURE CORPUS pins every rule in execute().
+ *
+ * SC-17/F-90: the marker is a LIST because execution-report.js writes `// --- CLI ---`
+ * rather than the validators' `// --- CLI wrapper`. Relying on the `module.exports`
+ * fallback there would have been silently wrong rather than loud: the fallback cuts at
+ * the exports block, which sits BELOW `main()` and the `require.main === module` line,
+ * so 30-odd lines of argv parsing and usage text would have entered the mutable region
+ * and re-created the exact wrapper-noise the paragraph above describes — this time
+ * against a corpus that, like the validators', never calls the CLI.
  */
-function executeRegion(src, pack) {
-  const marker = src.indexOf('// --- CLI wrapper');
-  const end = marker !== -1 ? marker : src.indexOf('module.exports');
-  if (end === -1) {
-    throw new Error(`guard-ablation: ${pack} has neither a CLI-wrapper marker nor module.exports`);
+const CLI_MARKERS = ['// --- CLI wrapper', '// --- CLI ---'];
+
+function executeRegion(src, name) {
+  for (const marker of CLI_MARKERS) {
+    const at = src.indexOf(marker);
+    if (at !== -1) return src.slice(0, at);
   }
-  return src.slice(0, end);
+  const exportsAt = src.indexOf('module.exports');
+  if (exportsAt === -1) {
+    throw new Error(`guard-ablation: ${name} has neither a CLI marker nor module.exports`);
+  }
+  return src.slice(0, exportsAt);
 }
 
 function lineOf(src, index) {
@@ -237,7 +254,17 @@ function verdictMutants(src, pack) {
 
 const requireShim = createRequire(import.meta.url);
 
-function instantiate(source, filename) {
+// Node strips a shebang when it loads a module; `new Function` does not, and chokes on
+// `#!`. execution-report.js has one and the nine validators do not, which is why this
+// never came up before. Rewrite the two characters to `//` rather than dropping the line:
+// same byte length, so every mutation offset and every `lineOf` result stays exact. A
+// slice would shift them all by one line and quietly mislabel every reported survivor.
+function stripShebang(source) {
+  return source.startsWith('#!') ? '//' + source.slice(2) : source;
+}
+
+function instantiate(rawSource, filename) {
+  const source = stripShebang(rawSource);
   const moduleObj = { exports: {} };
   // `require.main === module` is false here, so the CLI wrapper never fires.
   // The shim only resolves what a validator is permitted to import (NFR-4).
@@ -285,6 +312,150 @@ function loadFixtures(pack) {
     .map((f) => ({ name: f, ...JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) }));
 }
 
+// --- the execution-report target (SC-17/F-90) --------------------------------
+//
+// The validators expose `execute(input) -> result`, a pure function over a JSON literal.
+// execution-report.js exposes `buildReport(jobDir) -> {report, markdown}`, which READS a
+// directory tree and WRITES nothing — `generateExecutionReport` is the thin writing
+// wrapper around it. That is the same seam wearing different clothes, and it is why this
+// target is tractable at all.
+//
+// Two volatile fields must be normalised, not one. `generated_at` is the obvious one and
+// the existing suite already strips it. `evidence_root` is the trap: it is the absolute
+// jobDir, so a golden frozen without normalising it passes only on the machine that wrote
+// it.
+//
+// Comparison covers BOTH artifacts the tool writes — the report object and the rendered
+// markdown — and the second one was a late correction worth recording. The first cut
+// compared the report alone, on the reasoning that markdown is derived from it and
+// sweeping renderMarkdown would roughly double the cost of that region. The measurement
+// refuted it: 12 of the 31 survivors that cut produced were inside renderMarkdown, and
+// they were not artefacts of the choice. NOTHING in this repo asserts markdown CONTENT —
+// run-tests.js compares run 1 against run 2, which is determinism, not correctness — so
+// the file the operator actually reads was pinned by nothing at all. The report object is
+// what gates read; the markdown is what a human reads to decide whether to trust the gate.
+// Both are output.
+const REPORT_VOLATILE = { generated_at: '<generated_at>' };
+const MD_GENERATED_AT = '- **Generated at:**';
+const ROOT_PLACEHOLDER = '<evidence_root>';
+
+/**
+ * Scrub the absolute job directory out of a whole document, by VALUE.
+ *
+ * The first cut replaced `report.evidence_root` as a key and scrubbed the markdown as a
+ * string, and the two disagreed: `quarantine_malformed_output` and
+ * `quarantine_unreadable_manifest` interpolate the failing file's absolute path into a
+ * gate detail and a warning, so those goldens pinned this checkout's path while the
+ * markdown goldens did not. Two normalisations of one fact, one thorough and one not —
+ * finding 51 in miniature, caught by grepping the frozen output for a path that had no
+ * business being in it. One scrubber now, applied to both.
+ */
+/**
+ * V8's JSON.parse message gained a " (line N column M)" suffix in Node 22; Node 20 emits
+ * the same message without it. `quarantine_malformed_output` puts that message into a gate
+ * detail and a warning verbatim, so goldens frozen on Node 24 could not be reproduced on
+ * Node 20 and the sanity floor aborted the whole target. Caught by the pre-push
+ * cross-version leg, which is the only thing in this repo that runs both.
+ *
+ * Strip the varying clause and nothing else: the byte offset ("at position 53") is stable
+ * across both versions and stays pinned, as does the fact that the file failed to parse.
+ * The assertion is that the reader reports a malformed file, never that a particular V8
+ * release phrases it a particular way.
+ */
+const V8_JSON_POSITION_SUFFIX = / \(line \d+ column \d+\)/g;
+
+function scrubRuntimeDetail(text, jobDir) {
+  return text.split(jobDir).join(ROOT_PLACEHOLDER).replace(V8_JSON_POSITION_SUFFIX, '');
+}
+
+function normalizeReport(report, jobDir) {
+  // Round-trip through JSON so the comparison is against what execution_report.json would
+  // actually contain. Without it, a key whose value is `undefined` survives in the live
+  // object and vanishes from the golden, and deepEqual's key-count check reports a
+  // mismatch that does not exist on disk. The scrub runs on the serialised form so it
+  // reaches paths nested anywhere — gate details and warnings both carry them.
+  return JSON.parse(scrubRuntimeDetail(JSON.stringify({ ...report, ...REPORT_VOLATILE }), jobDir));
+}
+
+function normalizeMarkdown(markdown, jobDir) {
+  return scrubRuntimeDetail(
+    markdown
+      .split('\n')
+      .map((line) => (line.startsWith(MD_GENERATED_AT) ? `${MD_GENERATED_AT} <generated_at>` : line))
+      .join('\n'),
+    jobDir
+  );
+}
+
+const IS_ROOT = typeof process.getuid === 'function' && process.getuid() === 0;
+
+function loadReportCases() {
+  const { CASES } = requireShim(path.join(REPORT_FIXTURES_DIR, 'cases.js'));
+  return CASES.map((c) => ({
+    name: c.name,
+    jobDir: path.join(REPORT_FIXTURES_DIR, c.name, 'artifacts', c.jobId),
+    chmod: c.chmod || null,
+    // SC-11/A1's rule, replicated rather than re-derived: mode 000 is still readable as
+    // root, so the case cannot be evaluated there.
+    skip: Boolean(c.skipIfRoot) && IS_ROOT,
+    goldenPath: path.join(REPORT_GOLDENS_DIR, `${c.name}.json`),
+    // Kept as a sibling `.md` rather than a string inside the JSON: a 60-line rendered
+    // report embedded as one escaped value is a golden nobody reviews, and an unreviewed
+    // golden pins whatever was wrong when it was frozen.
+    goldenMdPath: path.join(REPORT_GOLDENS_DIR, `${c.name}.md`),
+  }));
+}
+
+/**
+ * Apply a case's declared modes and return the function that reverts them. A crash
+ * between the two would leave an unreadable file in the working tree, so every caller
+ * runs the revert in a `finally`.
+ */
+function applyModes(reportCase) {
+  if (!reportCase.chmod) return () => {};
+  const restore = [];
+  for (const [rel, mode] of Object.entries(reportCase.chmod)) {
+    const target = path.join(reportCase.jobDir, rel);
+    restore.push([target, fs.statSync(target).mode & 0o777]);
+    fs.chmodSync(target, mode);
+  }
+  return () => {
+    for (const [target, mode] of restore) fs.chmodSync(target, mode);
+  };
+}
+
+function reportFor(exports_, reportCase) {
+  const revert = applyModes(reportCase);
+  try {
+    caseRuns += 1;
+    const { report, markdown } = exports_.buildReport(reportCase.jobDir);
+    return {
+      report: normalizeReport(report, reportCase.jobDir),
+      markdown: normalizeMarkdown(markdown, reportCase.jobDir),
+    };
+  } catch (_err) {
+    return { __threw: true };
+  } finally {
+    revert();
+  }
+}
+
+/**
+ * Measured, not derived. Both runners short-circuit on the first case that disagrees, so
+ * mutants + fixtures is a MATRIX SIZE and not a call count — the two diverge by more the
+ * better the corpus is, because a well-pinned rule dies on its first case. Incremented at
+ * the actual invocation so the reported figure is what ran.
+ */
+let caseRuns = 0;
+
+function runAgainstGoldens(exports_, cases) {
+  for (const reportCase of cases) {
+    if (reportCase.skip) continue;
+    if (!deepEqual(reportFor(exports_, reportCase), reportCase.golden)) return false;
+  }
+  return true;
+}
+
 function runAgainstFixtures(exports_, fixtures) {
   // Returns true if EVERY fixture still produces its frozen `expected` (survived).
   for (const fixture of fixtures) {
@@ -297,6 +468,7 @@ function runAgainstFixtures(exports_, fixtures) {
     }
     let result;
     try {
+      caseRuns += 1;
       result = exports_.execute(fixture.input);
     } catch (_err) {
       result = { __threw: true };
@@ -377,6 +549,86 @@ function validateBaselineShape(doc) {
   return { errors, unpinnedCount: unpinned.length, equivalentCount: equivalent.length, budget };
 }
 
+// --- targets -----------------------------------------------------------------
+//
+// A target is a source file plus the corpus that claims to pin it. The nine validators
+// and execution-report.js differ only in how a case is run and what it is compared
+// against; everything below this point — the two operators, the mutable region, the
+// sanity floor, the baseline contract — is shared, which is the whole reason the file the
+// last three defects lived in can be swept without a second tool.
+
+// The coverage assertion the report goldens need already exists and is already the one
+// three other runners use (F-41). Reach for it rather than writing a fourth copy.
+const { assertFixtureCoverage, listBySuffix } = requireShim(path.join(ROOT, 'parity', '_harness.js'));
+
+function validatorTarget(pack) {
+  return {
+    name: pack,
+    sourcePath: path.join(VALIDATOR_DIR, pack + '.js'),
+    caseUnit: 'fixture',
+    loadCases: () => loadFixtures(pack),
+    survives: runAgainstFixtures,
+  };
+}
+
+const REPORT_TARGET = {
+  name: 'execution-report',
+  sourcePath: REPORT_SOURCE,
+  caseUnit: 'report fixture',
+  loadCases: () => {
+    const cases = loadReportCases();
+    // The goldens are a second source for the same fact as the fixture directories, so
+    // cross-check them the way M-3a cross-checks CASES against disk. A missing golden must
+    // be loud: silently sweeping 27 of 28 cases would under-report survivors, which is the
+    // one direction this tool must never fail in.
+    const problems = assertFixtureCoverage({
+      declared: cases.map((c) => c.name).sort(),
+      onDisk: listBySuffix(REPORT_GOLDENS_DIR, '.json').map((f) => f.replace(/\.json$/, '')).sort(),
+      unit: 'golden',
+      declaredUnit: 'report fixture(s)',
+    });
+    if (problems > 0) {
+      console.error('guard-ablation: report goldens and fixtures disagree — run --write-goldens after reviewing the diff.');
+      process.exit(1);
+    }
+    return cases.map((c) => ({
+      ...c,
+      golden: {
+        report: JSON.parse(fs.readFileSync(c.goldenPath, 'utf8')),
+        markdown: fs.readFileSync(c.goldenMdPath, 'utf8'),
+      },
+    }));
+  },
+  survives: runAgainstGoldens,
+};
+
+const TARGETS = [...VALIDATOR_PACKS.map(validatorTarget), REPORT_TARGET];
+
+// --- goldens freeze ----------------------------------------------------------
+// On the same script as the comparator, deliberately: a separate freezing tool is a second
+// implementation of `normalizeReport`, and two implementations of one normalisation is how
+// a golden corpus quietly stops describing what the comparator checks.
+
+if (WRITE_GOLDENS) {
+  fs.mkdirSync(REPORT_GOLDENS_DIR, { recursive: true });
+  const pristine = instantiate(fs.readFileSync(REPORT_SOURCE, 'utf8'), REPORT_SOURCE);
+  let written = 0;
+  let skipped = 0;
+  for (const reportCase of loadReportCases()) {
+    if (reportCase.skip) {
+      skipped += 1;
+      console.log(`  SKIP ${reportCase.name} — running as root; mode 000 is readable`);
+      continue;
+    }
+    const frozen = reportFor(pristine, reportCase);
+    fs.writeFileSync(reportCase.goldenPath, JSON.stringify(frozen.report, null, 2) + '\n');
+    fs.writeFileSync(reportCase.goldenMdPath, frozen.markdown);
+    written += 1;
+  }
+  console.log(`[guard-ablation] wrote ${written} golden(s) to parity/execution-report-goldens/${skipped ? `, skipped ${skipped}` : ''}`);
+  process.exit(0);
+}
+
 // --- main --------------------------------------------------------------------
 
 const started = Date.now();
@@ -384,18 +636,17 @@ const baseline = loadBaseline();
 const acceptedById = new Map((baseline.accepted || []).map((entry) => [entry.id, entry]));
 
 let totalMutants = 0;
-let totalRuns = 0;
 const survivors = [];
 
-for (const pack of TARGET_PACKS) {
-  const scriptPath = path.join(VALIDATOR_DIR, pack + '.js');
+for (const target of TARGETS) {
+  const { name: pack, sourcePath: scriptPath } = target;
   const src = fs.readFileSync(scriptPath, 'utf8');
-  const fixtures = loadFixtures(pack);
+  const fixtures = target.loadCases();
 
   // Sanity floor: the UNMUTATED source must reproduce every frozen expectation.
   // Without this, a survivor count is meaningless — everything would "survive".
   const pristine = instantiate(src, scriptPath);
-  if (!runAgainstFixtures(pristine, fixtures)) {
+  if (!target.survives(pristine, fixtures)) {
     console.error(`guard-ablation: ${pack} does not reproduce its own fixtures unmutated — aborting.`);
     process.exit(1);
   }
@@ -411,8 +662,7 @@ for (const pack of TARGET_PACKS) {
     } catch (_err) {
       continue; // mutant does not parse — not a survivor, not a finding
     }
-    totalRuns += fixtures.length;
-    if (runAgainstFixtures(exports_, fixtures)) {
+    if (target.survives(exports_, fixtures)) {
       packSurvivors += 1;
       survivors.push({ ...mutant, pack });
     }
@@ -422,7 +672,7 @@ for (const pack of TARGET_PACKS) {
   }
 
   console.log(
-    `[guard-ablation] ${pack}: ${mutants.length} mutant(s) × ${fixtures.length} fixture(s), ${packSurvivors} survivor(s)`
+    `[guard-ablation] ${pack}: ${mutants.length} mutant(s) × ${fixtures.length} ${target.caseUnit}(s), ${packSurvivors} survivor(s)`
   );
 }
 
@@ -469,8 +719,8 @@ if (stale.length) {
 }
 
 console.log(
-  `\n[guard-ablation] ${totalMutants} mutant(s) over ${TARGET_PACKS.length} pack(s), ` +
-    `${totalRuns} execute() call(s), ${survivors.length} survivor(s), ${elapsedMs} ms`
+  `\n[guard-ablation] ${totalMutants} mutant(s) over ${TARGETS.length} target(s), ` +
+    `${caseRuns} case run(s), ${survivors.length} survivor(s), ${elapsedMs} ms`
 );
 
 if (failed) {

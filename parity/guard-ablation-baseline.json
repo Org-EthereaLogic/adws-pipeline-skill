@@ -55,7 +55,7 @@
     "(drift-sentinel:guard-off:#0 and #20) could not be re-triaged for that reason."
   ],
   "scope": {
-    "packs": "all 9 validators (M-5b/B6, extended from the 3 SC-9 packs)",
+    "packs": "all 9 validators (M-5b/B6) + execution-report.js (SC-17/F-90) = 10 targets",
     "operators": [
       "guard-off",
       "verdict"
@@ -73,7 +73,27 @@
       "execution-report.js is the largest unswept surface in the repo (~1,400 lines, 24",
       "fixture job-trees) and SC-11's own first-cut fixtures were vacuous there. It needs a",
       "different mechanism -- mutating a report generator means rebuilding job trees, not",
-      "calling execute(input) -- so it is named as the next candidate rather than bolted on."
+      "calling execute(input) -- so it is named as the next candidate rather than bolted on.",
+      "",
+      "SC-17/F-90 added execution-report.js, and the paragraph above predicted the cost wrong.",
+      "It said the file \"needs a different mechanism -- mutating a report generator means",
+      "rebuilding job trees, not calling execute(input)\". Half right. The case RUNNER does",
+      "differ: a case is a job directory compared against a frozen golden, not a JSON input",
+      "compared against a frozen `expected`. But nothing had to be rebuilt. buildReport(jobDir)",
+      "already returns {report, markdown} and writes nothing -- generateExecutionReport is the",
+      "thin writing wrapper around it -- so the seam the validators expose as execute(input)",
+      "was already there, and the 29 job trees the report suite maintains are the corpus. The",
+      "estimate that deferred this sweep was made without reading for the seam.",
+      "",
+      "Two operators still, unchanged. Adding execution-report.js surfaced 20 survivors against",
+      "the same two, which is the same argument as before for not widening the catalogue yet:",
+      "close what is listed before looking for more.",
+      "",
+      "The report target compares BOTH the report object and the rendered markdown. Comparing",
+      "the object alone was the first cut, and the measurement refuted it -- 12 of the 31",
+      "survivors that produced were inside renderMarkdown, and they were real: nothing in this",
+      "repo asserts markdown CONTENT, since run-tests.js compares run 1 against run 2, which is",
+      "determinism rather than correctness. Adding the markdown goldens killed 11 of them."
     ]
   },
   "measured": {
@@ -89,10 +109,16 @@
       "four more packs, each requiring a version bump and a refreeze -- validator work, and",
       "M-5b changes no validator. Recording converts 19 invisible gaps into 19 tracked ones",
       "that CI will not let anyone forget, and the rule is bidirectional: an entry that stops",
-      "surviving fails the gate until it is deleted."
+      "surviving fails the gate until it is deleted.",
+      "Superseded as the current figure by `measured_sc17` below; kept as the nine-pack record.",
+      "The `execute_calls: 1446` above has the same defect the SC-17 review found in",
+      "measured_sc17: it is mutants x fixtures, counted before each mutant ran, not calls made.",
+      "Left as recorded history rather than re-derived -- doing so would mean re-running a version",
+      "of the tool that no longer exists. Read it as a matrix size. The same caveat applies to the",
+      "M-5a \"122 calls\" figure quoted in guard-ablation.mjs's header comment."
     ]
   },
-  "unpinned_budget": 16,
+  "unpinned_budget": 34,
   "unpinned_budget_doc": "Cap on `class: unpinned` entries (SC-14/A4a). May only be raised by a deliberate edit in the same commit, with the reason in the commit message and the new entry's `owner`. Lowering it is free and is the point.",
   "accepted": [
     {
@@ -100,88 +126,88 @@
       "site": "criteria-to-checks.js:23",
       "mutation": "if (typeof criterion !== 'string') → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "criteria-to-checks:guard-off:#1",
       "site": "criteria-to-checks.js:25",
       "mutation": "if (s.length < 10) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#0",
       "site": "drift-sentinel.js:33",
       "mutation": "if (!Number.isFinite(currentEntropy) || !Number.isFinite(refe…) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#2",
       "site": "drift-sentinel.js:40",
       "mutation": "if (!Array.isArray(values) || values.length < 2) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#3",
       "site": "drift-sentinel.js:46",
       "mutation": "if (!Number.isFinite(v)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#5",
       "site": "drift-sentinel.js:93",
       "mutation": "if (!Number.isFinite(value)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#6",
       "site": "drift-sentinel.js:105",
       "mutation": "if (dTx < 0) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#7",
       "site": "drift-sentinel.js:123",
       "mutation": "if (!Array.isArray(deltaRSequence)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#8",
       "site": "drift-sentinel.js:131",
       "mutation": "if (value < 0 || value > 1) → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#9",
       "site": "drift-sentinel.js:142",
       "mutation": "if (!Array.isArray(entropySeries) || !Array.isArray(dTxSeries)) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#10",
       "site": "drift-sentinel.js:159",
       "mutation": "if (rates.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:guard-off:#16",
@@ -195,8 +221,8 @@
       "site": "drift-sentinel.js:297",
       "mutation": "if (!Array.isArray(entropyHistory) || entropyHistory.length <…) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "drift-sentinel:verdict:#5",
@@ -210,32 +236,231 @@
       "site": "review-risk-assess.js:76",
       "mutation": "if (segments.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "task-normalize:guard-off:#1",
       "site": "task-normalize.js:43",
       "mutation": "if (magA === 0 || magB === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "task-normalize:guard-off:#2",
       "site": "task-normalize.js:66",
       "mutation": "if (problemTokens.length === 0 || solutionTokens.length === 0) → if (false)",
       "class": "unpinned",
-      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Defensive input guard on a helper the fixture corpus only ever reaches with well-formed input. Deleting it changes no fixture, so nothing proves it works. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
     },
     {
       "id": "task-normalize:guard-off:#9",
       "site": "task-normalize.js:133",
       "mutation": "if (syntheticRisk === 'high') → if (false)",
       "class": "unpinned",
-      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it.",
-      "owner": "SC-15"
+      "reason": "Branch the fixture corpus never reaches, so the rule it encodes is unverified. Re-owned from 'SC-12 (unscheduled)' by SC-14/A4: SC-12 shipped without closing it. SC-15 then shipped (PR #81) without closing it either; re-owned to SC-18 by SC-17/F-90, which found this field stale for the second time and still has no way to detect a third.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#7",
+      "site": "execution-report.js:265",
+      "mutation": "if (!RESOLUTION_ACTIONS.has(action)) → if (false)",
+      "class": "unpinned",
+      "reason": "No fixture carries an Advocate resolution whose `action` is unrecognized. Deleting the guard admits any string as a resolution action and every golden is unchanged, so nothing proves the whitelist is read.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#10",
+      "site": "execution-report.js:357",
+      "mutation": "if (!f || typeof f !== 'object') → if (false)",
+      "class": "unpinned",
+      "reason": "The tolerant-reader skip in firstFindingIssue (artifact-layout rule 8). No fixture has a null or non-object entry inside `critic.findings`, so the one input the guard exists for never arrives — deleted, a null entry would throw rather than be skipped.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#12",
+      "site": "execution-report.js:371",
+      "mutation": "if (!f || typeof f !== 'object') → if (false)",
+      "class": "unpinned",
+      "reason": "The same tolerant-reader skip in firstFindingText, unreached for the same reason. Two copies of one rule, both unpinned; a single fixture with a malformed findings entry closes both.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#14",
+      "site": "execution-report.js:375",
+      "mutation": "if (issue) → if (false)",
+      "class": "unpinned",
+      "reason": "Needs a Critic finding carrying `issue` with no `evidence`. Every fixture finding has both, so the fallback ladder in firstFindingText is only ever entered at its first rung.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#15",
+      "site": "execution-report.js:376",
+      "mutation": "if (evidence) → if (false)",
+      "class": "unpinned",
+      "reason": "The other rung of the same ladder: a finding carrying `evidence` with no `issue`. Same cause, same one-fixture fix.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#22",
+      "site": "execution-report.js:466",
+      "mutation": "if (finalStatus !== 'completed') → if (false)",
+      "class": "unpinned",
+      "reason": "The pipeline_completion gate FAILS a job that produced all seven phases but never reached `completed`. No fixture is both complete in evidence and incomplete in status, so the branch is unreached. Worth naming precisely: this is the half of the gate SC-16/F-88b had to reason about — the \"did this run finish\" question as distinct from \"did it lose a phase\" — and that reasoning was done against a branch no test covers.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#23",
+      "site": "execution-report.js:485",
+      "mutation": "if (rows.length === 0) → if (false)",
+      "class": "unpinned",
+      "reason": "phase_gates returns UNVERIFIED when no phase attempt was recorded at all. Every fixture has at least a plan attempt — verified by scanning all 29 goldens for an empty `phases` array.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#25",
+      "site": "execution-report.js:507",
+      "mutation": "if (deferred.length > 0) → if (false)",
+      "class": "unpinned",
+      "reason": "F-5's rule: a ship gate still `deferred` at the terminal report is a delegated push nobody closed. promote_delegated_push records the CLOSED shape, so the still-open shape this WARN exists for is untested.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#30",
+      "site": "execution-report.js:587",
+      "mutation": "if (raw !== 'pass' && raw !== 'warn' && raw !== 'fail') → if (false)",
+      "class": "unpinned",
+      "reason": "grader_verdict returns UNVERIFIED when a verify attempt exists but its rubric_result is absent or unrecognized. Fixtures either have no verify attempt (an earlier return) or a well-formed verdict, so the middle case never occurs.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#33",
+      "site": "execution-report.js:671",
+      "mutation": "if (rows.length === 0) → if (false)",
+      "class": "unpinned",
+      "reason": "consensus returns UNVERIFIED with no rounds recorded. No golden has an empty `consensus` array — verified across all 29 — so a job that ran no consensus round is a shape the corpus does not contain.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#49",
+      "site": "execution-report.js:929",
+      "mutation": "if (normalizedStatus === 'quarantined') → if (false)",
+      "class": "unpinned",
+      "reason": "No fixture records `final_status: \"quarantined\"`. The whole branch, including its decision_reason, is unreached; every QUARANTINE verdict in the corpus arrives through gate evaluation instead.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#51",
+      "site": "execution-report.js:939",
+      "mutation": "if (reason && QUARANTINE_REASONS.has(reason)) → if (false)",
+      "class": "unpinned",
+      "reason": "The quarantine-class split inside the `failed` branch. No fixture pairs `final_status: \"failed\"` with a QUARANTINE_REASONS member, so the non-retriable half of that rule is untested while the retriable half is pinned.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#53",
+      "site": "execution-report.js:962",
+      "mutation": "if (normalizedStatus === 'canceled') → if (false)",
+      "class": "unpinned",
+      "reason": "No fixture records `final_status: \"canceled\"`. Sharply worth naming: SC-16/F-88 exists BECAUSE three live runs were forced to record a halt as a cancel, and the branch they were forced into is pinned by nothing. The `halted` branch beside it now has three fixtures.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#72",
+      "site": "execution-report.js:1215",
+      "mutation": "if (phaseAttemptRows.length === 0) → if (false)",
+      "class": "unpinned",
+      "reason": "renderMarkdown's empty-phases placeholder. Unreachable for the same reason as guard-off:#23; one zero-attempt fixture closes both.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#74",
+      "site": "execution-report.js:1245",
+      "mutation": "if (report.consensus.length === 0) → if (false)",
+      "class": "unpinned",
+      "reason": "renderMarkdown's empty-consensus placeholder. Pairs with guard-off:#33 and closes with the same fixture.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#82",
+      "site": "execution-report.js:1342",
+      "mutation": "if (!runManifest) → if (false)",
+      "class": "unpinned",
+      "reason": "buildReport throws INVALID_JOB_DIR when run_manifest.json is missing or unreadable. The CLI error-path case covers a missing DIRECTORY, which returns earlier from main(); a directory that exists with no readable manifest is a different path and has no case.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:verdict:#8",
+      "site": "execution-report.js:587",
+      "mutation": "'warn' → 'pass'",
+      "class": "unpinned",
+      "reason": "Removes 'warn' from the set of grader verdicts the gate recognizes. No fixture records a grader rubric_result of 'warn', so the corpus cannot tell a recognized warn from an unrecognized value.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:verdict:#10",
+      "site": "execution-report.js:597",
+      "mutation": "'warn' → 'pass'",
+      "class": "unpinned",
+      "reason": "The WARN arm of the grader verdict mapping, unreached for the same reason: with no 'warn' grader verdict anywhere in the corpus, a three-way mapping is only ever exercised two ways.",
+      "owner": "SC-18"
+    },
+    {
+      "id": "execution-report:guard-off:#44",
+      "site": "execution-report.js:886",
+      "mutation": "if (!Array.isArray(gates)) → if (false)",
+      "class": "equivalent",
+      "reason": "hasGateStatus's defensive non-array guard. Through buildReport — the only entry point this target sweeps — `gates` is always the seven-element array literal constructed a few lines above the call, so the mutation provably cannot change any output reachable here. Classified equivalent rather than unpinned because no fixture could close it without calling the exported decideLifecycle directly, which is a different claim from the one this tool makes. If a future target ever does call it that way, this entry becomes killable and the bidirectional STALE check reports it."
     }
-  ]
+  ],
+  "measured_sc17": {
+    "as_of": "2026-08-13 (SC-17/F-90, nine validators + execution-report.js)",
+    "targets": 10,
+    "mutants": 225,
+    "wall_clock_ms": 1202,
+    "survivors": 37,
+    "note": [
+      "execution-report.js alone: 109 mutants x 29 report fixtures, 19 survivors. 90 of its",
+      "109 mutants are KILLED, which is the number that says the target is wired up rather",
+      "than merely quiet -- a target where everything survives is a misconfiguration, not a",
+      "file without rules.",
+      "",
+      "Wall clock went 47 ms -> 1,202 ms, a 25x rise, and it is still the second-cheapest step",
+      "in the gate. The report target does real directory I/O per call where the validators are",
+      "pure in-memory; that is the whole difference. Measured before deciding placement, so it",
+      "stays in Tier 1.",
+      "",
+      "The budget moved 16 -> 34. Eighteen of the new entries are unpinned debt owned by SC-18",
+      "and one is equivalent. One survivor was CLOSED rather than accepted:",
+      "skills_clean’s \"a skill invocation failed\" branch, which six fixtures appeared to cover",
+      "and none reached -- every one of them returns from the SC-8/F-58 mismatch branch or the",
+      "SC-11 unreadable-evidence branch first. quarantine_skill_fail is the fixture that",
+      "reaches it, and it took the corpus from 28 to 29.",
+      "",
+      "Every pre-existing unpinned entry was re-owned SC-15 -> SC-18. SC-15 shipped as PR #81",
+      "two work packages ago, so the owner field was stale for the SECOND time (F-86 was the",
+      "first, when 19 entries named an already-shipped SC-12). Rule 4 asserts the field is a",
+      "non-empty string and cannot assert the package is still open, so this will go stale a",
+      "third time unless something checks it. Named here rather than fixed here.",
+      "",
+      "The call figure was corrected in review. `execute_calls` here first read 4,867, which was",
+      "mutants x fixtures -- a CEILING, accumulated before each mutant ran, while both runners",
+      "short-circuit on the first case that disagrees. The measured figure is 2,202, so the first",
+      "cut overstated by 2.2x, and the label was wrong besides: the report target calls",
+      "buildReport(), not execute(). Both numbers are kept, because the RATIO is the interesting",
+      "one -- ceiling and measured diverge more the better the corpus is, since a well-pinned rule",
+      "dies on its first case and never reaches the rest. Reported as work performed, the ceiling",
+      "reads highest exactly when the suite is doing its job.",
+      "",
+      "measured_case_runs is ENVIRONMENT-DEPENDENT and 2,202 is this host, not an invariant. As root",
+      "-- which the containerised cross-version legs are -- quarantine_unreadable_manifest is skipped,",
+      "because mode 000 is still readable there, so every mutant that reaches the end of the corpus",
+      "runs one case fewer: Node 20 in the orb container measures 2,181. Survivor counts, mutant counts",
+      "and verdicts are identical across both. Compare those, not this."
+    ],
+    "measured_case_runs": 2202,
+    "matrix_slots": 4867
+  }
 }

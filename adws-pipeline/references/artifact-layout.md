@@ -20,6 +20,14 @@ worktrees are disposable, evidence is not). Job id format: `job_YYYYMMDD_NNNN`
 (zero-padded sequence; scan existing `artifacts/` dirs to pick the next). Job ids and
 skill ids must match `[A-Za-z0-9._-]{1,128}` and never contain `/` or `..`.
 
+**`YYYYMMDD` is the UTC date (SC-17, arm A gap 2).** Not the local one. A live run started at
+17:00 local on Aug 11 with the UTC date already Aug 12, found nothing in this document that said
+which to use, and chose UTC by reading across to the timestamp rules — every `*_at` field in the
+tree is UTC ISO-8601 and `evidence-integrity.js` enforces it, so a job id on local time would be
+the only local-time value in the whole record and would sort against its own timestamps. That
+inference was correct and it should not have been an inference: two runs on either side of a
+midnight boundary can otherwise pick different sequences for the same day.
+
 ## Tree
 
 ```
@@ -372,12 +380,21 @@ out-of-enum true one, and this enum exists to be widened when a new origin is de
   "findings": [{ "issue": "", "evidence": "", "reproduction": null }],
   "model_tier": "", "assessed_at": "" }
 ```
-`advocate.json` carries ONE further key, `"resolution": null`, described below.
-`critic.json` does NOT: the Critic has no resolution vocabulary, writes the key never, and
-its agent definition says so. Until SC-13/F-79 this block showed `resolution` for both
-files while the prose two paragraphs down said "advocate only", and a live Critic wrote
-`"resolution": null` on the strength of the block — harmless, and exactly the kind of
-schema drift the same document tells writers to stay strict about.
+**NEITHER agent writes `resolution`.** It is an advocate-only key, and the ORCHESTRATOR adds it
+post-hoc when an operator resolves a dissent — see the `resolution` paragraph below, which has
+always said "never by the Advocate agent", and `.claude/agents/adws-advocate.md`, whose template
+omits the key and whose prose says "you never write `resolution`". An `advocate.json` with no
+`resolution` key is CORRECT and complete; the reader treats an absent key and an explicit `null`
+identically (`normalizeResolution` in `scripts/execution-report.js`).
+
+*This paragraph used to open "`advocate.json` carries ONE further key, `"resolution": null`", and
+that was the bug (SC-17, arm A gap 6).* Two live runs recorded an Advocate "omitting" the key —
+arm A1 and arm A3, independently — and both were reading THIS line rather than the agent it
+describes. The agent was right and the sentence describing it was wrong. Worth noting how it got
+here: SC-13/F-79 rewrote this same block to stop it showing `resolution` for BOTH files, because a
+live Critic had written `"resolution": null` on the strength of it. That fix corrected the Critic
+half and left the Advocate half asserting the opposite of the rule two paragraphs down — one file
+disagreeing with itself, across a boundary a reader crosses by scrolling.
 `findings` is an array of `{ issue, evidence, reproduction }` objects — the SAME shape for
 both roles: the Critic's specific rejection grounds, or a note either role wants on
 record (e.g. an Advocate flagging a code-quality concern that is really the

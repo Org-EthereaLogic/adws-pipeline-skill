@@ -140,7 +140,7 @@ Run the suites (dependency-free, plain Node):
 
 ```bash
 node parity/run-parity.js                            # 116/116 validator-parity fixtures
-node parity/execution-report-fixtures/run-tests.js   # 28/28 report verdict fixtures
+node parity/execution-report-fixtures/run-tests.js   # 29/29 report verdict fixtures
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 5/5 provenance-schema fixtures
 node parity/evidence-integrity-fixtures/run-tests.js # 9/9 timestamp-integrity fixtures
@@ -174,10 +174,14 @@ it is offline with respect to its source.
   `execution-report.js`, whose stderr prefixes and exit vocabularies differ from the
   validators' and from each other. `scripts/local-ci/cli-block-lint.mjs` asserts the nine
   copies stay byte-identical, so a fix to one is a fix to all.
-- **Guard ablation:** mutates each target validator's `execute()` one rule at a time and
-  fails if the fixture corpus does not notice. A surviving mutant is a rule that nothing
-  pins. Accepted survivors and the measured cost live in
-  `parity/guard-ablation-baseline.json`.
+- **Guard ablation:** mutates each target one rule at a time and fails if the fixture
+  corpus does not notice. A surviving mutant is a rule that nothing pins. Ten targets —
+  the nine validators through `execute()`, and `execution-report.js` through
+  `buildReport()` against 29 frozen report + markdown goldens in
+  `parity/execution-report-goldens/` (SC-17/F-90). Accepted survivors, their owners, and
+  the measured cost live in `parity/guard-ablation-baseline.json`; re-freeze the goldens
+  with `node scripts/local-ci/guard-ablation.mjs --write-goldens` after an intended change
+  to report output.
 
 - **Validator parity:** 4 of 9 validators are verified byte-for-byte against the ADWS_Pro
   originals. Five are deliberately diverged under approved scope changes and verified

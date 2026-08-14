@@ -3391,7 +3391,12 @@ that caused it, with the prior value kept under `superseded.prior` — the secon
 are now a chain rather than an overwrite. It pins the tree for the future both-arms window; it pins
 nothing about the three recorded arm A runs, each void on §7.4 independently.
 
-**Gap ledger: twelve documented, three closed (4, 8, 12). Nine open: 1, 2, 3, 5, 6, 7, 9, 10, 11.**
+**Gap ledger AT THIS COMMIT: twelve documented, three closed (4, 8, 12). Nine open: 1, 2, 3, 5, 6,
+7, 9, 10, 11.** Superseded four commits later by F-89 below, which closes 5 and 10 — see that
+section's ledger for the current count. The scoping words are the correction: this line shipped
+unqualified, read as a standing statement of the ledger, and was false the moment F-89 merged
+behind it. A count is only ever true of a commit, and finding 54 is the entry about exactly that,
+sitting sixty lines above this one.
 
 ## SC-16/F-89 — the validator identity envelope
 
@@ -3451,3 +3456,184 @@ against the validator, never against the doc.
 | `SKILL.md` | 469 lines, budget unchanged by THIS commit — hard rule 3 already says "transcribe the validator's stdout"; what changed is that there is now something to transcribe |
 
 **Gap ledger: twelve documented, five closed (4, 5, 8, 10, 12). Seven open: 1, 2, 3, 6, 7, 9, 11.**
+
+## SC-17/F-90 — the sweep reaches the file the last three defects were in
+
+`guard-ablation` is the mechanism this repo built to answer *"does any fixture actually pin this
+rule?"* It has never run on `execution-report.js`. All three defects in SC-16 — F-88's first guard,
+F-88b's over-correction, and the fixture pair that passed both — were in that file, and the
+fixture comment at `run-tests.js` said "guard-ablation does not cover execution-report.js" in
+passing, which is where a known gap goes to be forgotten.
+
+### What this does NOT do
+
+**It would not have caught F-88b.** Mutation testing finds unpinned *existing* rules; F-88b was a
+*missing branch*, and no operator finds code that is not there. What caught that was a reader.
+Stated first because the temptation is to sell this as the retroactive fix, and it is not one.
+
+### The seam was already there, and the estimate that deferred this was wrong
+
+The baseline's own `scope` block predicted the cost: *"execution-report.js … needs a different
+mechanism — mutating a report generator means rebuilding job trees, not calling `execute(input)`."*
+Half right. The case runner does differ. But nothing had to be rebuilt: `buildReport(jobDir)`
+returns `{report, markdown}` and writes nothing — `generateExecutionReport` is the thin writing
+wrapper — so the seam the validators expose as `execute(input)` already existed, and the report
+suite's job trees are the corpus. The estimate was made without reading for the seam. Corrected in
+the file that made it.
+
+Three mechanical facts held without modification: the `scopedRequire` allow-list (`fs`/`path`) is
+exactly what the file imports; `require.main === module` is false against the shim so `main()`
+never fires; and `executeRegion` only *bounds* where mutations may go, so `module.exports` still
+resolves in the mutant.
+
+Four did not, and each was a real defect in the first cut:
+
+| Fixed | Why it mattered |
+|---|---|
+| `CLI_MARKERS` is a **list** | The file writes `// --- CLI ---`, not the validators' `// --- CLI wrapper`. The `module.exports` fallback cuts *below* `main()`, so 30 lines of argv parsing would have entered the mutable region — the wrapper noise the tool already solved once. |
+| Shebang neutralised, not stripped | `new Function` chokes on `#!`; Node strips it, the validators don't have one. Rewritten to `//` — same byte length, so every mutation offset and `lineOf` stays exact. A slice would have shifted them and mislabelled every survivor. |
+| One scrubber, applied to both artifacts | The first cut replaced `report.evidence_root` as a *key* and scrubbed markdown as a *string*. Two fixtures interpolate the failing file's absolute path into a gate detail, so those goldens pinned this checkout. Finding 51 in miniature, caught by grepping frozen output for a path with no business in it. |
+| V8's JSON error suffix stripped | **Caught by the pre-push cross-version leg, and by nothing else.** `JSON.parse`'s message gained ` (line N column M)` in Node 22; `quarantine_malformed_output` puts that message straight into a gate detail, so goldens frozen on Node 24 could not be reproduced on Node 20 and the sanity floor aborted the entire target. The byte offset ("at position 53") is stable and stays pinned; only the varying clause is removed. |
+
+That last one is worth dwelling on. A golden freezes whatever the machine that wrote it produced, so **every value in it is a portability claim** — and two of the four defects above were exactly that claim being false in a way the authoring machine cannot see. `make local-ci` passed throughout; the only thing that disagreed was a second Node version. Both versions now produce the identical 37-survivor set.
+
+### The call metric was a matrix size wearing a measurement's name
+
+A fifth correction, found in review after this section was first written. The tool did
+`totalRuns += fixtures.length` **before** running the mutant, while both runners short-circuit on
+the first case that disagrees — so the figure was mutants × fixtures, a ceiling, and it was labelled
+`execute() call(s)` even for a target that calls `buildReport()`. The counter now increments at the
+actual invocation: **2,202 measured runs against a 4,867-slot matrix**, so the first cut overstated
+by 2.2×. The measured figure is host-dependent and 2,202 is this machine — as root, which the
+containerised cross-version legs are, `quarantine_unreadable_manifest` is skipped (mode 000 is
+readable there) and Node 20 measures 2,181. Mutants, survivors and verdicts are identical on both;
+compare those, not this.
+
+The direction of the error is the interesting part. The two numbers diverge *more* the better the
+corpus is, because a well-pinned rule dies on its first case and never reaches the rest — so the
+ceiling reads highest exactly when the suite is doing its job. Reporting it as work performed
+inverted the signal. The earlier figures in the baseline's `measured` block (1,446 for nine packs,
+and the 122 quoted in the tool's own header) carry the same defect; they are left as recorded
+history with a note rather than re-derived, since that would mean re-running versions of the tool
+that no longer exist.
+
+### The markdown goldens were a correction, made on measurement
+
+The first cut compared the report object alone, reasoning that markdown is derived from it. The
+sweep refuted that: **12 of the 31 survivors were inside `renderMarkdown`**, and they were real.
+Nothing in this repo asserts markdown *content* — `run-tests.js` compares run 1 against run 2,
+which is determinism, not correctness — so the file the operator actually reads was pinned by
+nothing. Adding markdown goldens killed 11 of them. The report object is what gates read; the
+markdown is what a human reads to decide whether to trust the gate. Both are output.
+
+### Results
+
+| | |
+|---|---|
+| `execution-report` target | 109 mutants × 29 report fixtures, **19 survivors, 90 killed** |
+| Whole sweep | 225 mutants, 10 targets, **2,202 measured case runs**, **1,201 ms** (was 47 ms for 9 packs) |
+| Baseline | 18 new `unpinned` (owner SC-18), 1 new `equivalent`; budget **16 → 34** |
+| Closed, not accepted | 1 survivor — see below |
+
+**Wall clock rose 25×, and it is still among the cheapest steps in the gate.** The report target does
+real directory I/O per call where the validators are pure in-memory. Measured before deciding
+placement; it stays in Tier 1.
+
+### The survivor worth closing immediately
+
+`skills_clean` has three FAIL branches. Six fixtures score `skills_clean: fail`, and **every one
+arrives via the SC-8/F-58 trace-mismatch return or the SC-11 unreadable-evidence return** — both of
+which sit *above* the plainest rule in the gate, "a skill invocation failed, so the gate fails".
+Exactly one fixture carries a `rubric_result: fail` row at all, and it also carries the mismatch,
+so it returns before reaching the branch it appears to cover. The rule was **shadowed, not tested**.
+
+`quarantine_skill_fail` is `promote_clean` with one trace recording an honest fail — wrapper and
+`output.rubric_result` agree, so no mismatch fires and nothing is unreadable. It is the only
+fixture whose `skills_clean` verdict comes from the failure count itself. Corpus 28 → 29.
+
+Two survivors are worth naming even though they stay open, because of what they say about SC-16:
+`guard-off:#53` is the `canceled` branch — **the branch three live runs were forced into, which
+motivated F-88, and it is pinned by nothing**, while the `halted` branch beside it now has three
+fixtures. `guard-off:#22` is `pipeline_completion`'s "did this run finish" half — the exact
+distinction F-88b turned on, reasoned about against a branch no test covers.
+
+### The owner field went stale for the second time
+
+All 16 pre-existing `unpinned` entries named **SC-15**, which shipped as PR #81 two work packages
+ago. F-86 was this same defect (19 entries naming an already-shipped SC-12); SC-14/A4 re-owned them
+to SC-15 and the clock restarted. Re-owned here to SC-18. Rule 4 asserts the field is a non-empty
+string and **cannot assert the package is still open**, so this will go stale a third time unless
+something checks it. Named, not fixed — a candidate for SC-18.
+
+### Falsifiability
+
+| Probe | Result |
+|---|---|
+| Revert the F-88b `lostEvidence` block | Sanity floor aborts — the goldens pin it directly, before mutation |
+| Delete a golden | `FAIL fixture coverage: CASES entry "…" has no golden` |
+| Corrupt one report value | Sanity floor aborts |
+| Corrupt one markdown line | Sanity floor aborts — markdown is genuinely compared |
+| 90 of 109 mutants killed | The target is wired up, not merely quiet |
+
+### Arm A gaps 2 and 6
+
+**Gap 2 — the jobId date.** `job_YYYYMMDD_NNNN` never said local or UTC. A live run started 17:00
+local on Aug 11 with the UTC date already Aug 12 and chose UTC by reading across to the timestamp
+rules. Correct, and it should not have been an inference. Written into `artifact-layout.md`.
+
+**Gap 6 — and it was not the gap it was recorded as.** The finding reads "the Advocate omitted its
+`resolution: null` key **despite being told to write it**". It was told the opposite:
+`.claude/agents/adws-advocate.md` says *"you never write `resolution`"* and its template omits the
+key, and `artifact-layout.md`'s own `resolution` paragraph says *"never by the Advocate agent"*.
+One line contradicted both — the shape block, which opened "`advocate.json` carries ONE further
+key, `"resolution": null`". **The agent was right; the sentence describing it was wrong**, and two
+live runs recorded an agent defect that never happened.
+
+How it got there is the part worth keeping: SC-13/F-79 rewrote that same block to stop it showing
+`resolution` for *both* files, after a live Critic wrote the key on its strength. That fix
+corrected the Critic half and left the Advocate half asserting the opposite of the rule two
+paragraphs below it — one file disagreeing with itself across a boundary a reader crosses by
+scrolling. The reader already treats an absent key and an explicit `null` identically, so nothing
+downstream moves.
+
+### State
+
+| Check | Result |
+|---|---|
+| `make local-ci` | PASS, 17/17 |
+| `guard-ablation` | 225 mutants / 10 targets / 37 accepted survivors, 1.2 s |
+| execution-report fixtures | **29/29** (was 28) + CLI error path, deterministic |
+| `parity/cli-contract` | 367 assertions, 0 failed |
+| parity corpus | 116/116 |
+| `run-ab.sh` / `run-step5.sh` | 91/0 and 135/0 |
+| `SKILL.md` | 469 lines, budget unchanged — this work adds no orchestrator rule |
+
+**Gap ledger: twelve documented, seven closed (2, 4, 5, 6, 8, 10, 12). Five open: 1, 3, 7, 9, 11.**
+Of the five, 1/3/7 are file contradictions needing an authority named.
+
+### The two policy gaps — one ruling proposed, one withdrawn
+
+**Gap 9 — proposed, and it stands.** `NO_DOC_PATH_IN_SCOPE` should treat
+`adws-pipeline/references/` as this repo's equivalent of a documentation location. The rule already
+says "the repo's equivalent"; this names it, and turns a judgment call the orchestrator had to make
+silently into something it can cite.
+
+**Gap 11 — WITHDRAWN.** SC-17 proposed "≥1 verified row makes the criterion verified", justified as
+ratifying what arm A3's tester improvised. That is unsafe and contradicts rules already written:
+`artifact-layout.md` says a `gate_weak` verdict is "an unverified criterion (warn), **never a
+pass**", `SKILL.md` §3 says the same, and the same paragraph permits several checks per criterion
+"when a criterion needs more than one". Under the withdrawn rule, a criterion with one verified row
+and one `gate_weak` row for a *required* check would report verified while an unfalsifiable
+required check sat underneath — the masking both documents forbid.
+
+The mistake is worth naming precisely, because "ratify what the live run did" is a sound instinct
+and it was applied to the wrong kind of gap. It fits where the document is **silent**. Gap 11 is
+silent only on *aggregation*; it is explicit that `gate_weak` never passes. Checking an
+improvisation against the rules that already exist is the step that was skipped.
+
+**What SC-18 must settle first, before any aggregation rule can be written:** the contract has no
+way to distinguish a *required* criterion check from a *supplemental* one, and without that
+distinction every aggregation rule is either too permissive (masking) or too strict (a
+supplementary regression check blocking a genuinely verified criterion). Two constraints hold
+regardless of how that lands — **`fail` dominates**, and **a required row must never be masked by a
+verified sibling**.

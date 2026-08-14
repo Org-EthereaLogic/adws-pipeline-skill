@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.4.0",
+  "generated_at": "<generated_at>",
+  "job_id": "job-c31f57",
+  "task_id": "TASK-103",
+  "decision": "RETRY",
+  "decision_reason": "Job failed with retriable reason (TEST_GATE_FAILURE); retry is permitted by policy.",
+  "warn_flag": false,
+  "exit_code": 1,
+  "final_status": "failed",
+  "failure_reason": "TEST_GATE_FAILURE",
+  "gates": [
+    {
+      "gate": "pipeline_completion",
+      "result": "fail",
+      "detail": "3/7 — Missing phase evidence: review (not reached — job terminated at test), document (not reached — job terminated at test), ship (not reached — job terminated at test), verify (not reached — job terminated at test)"
+    },
+    {
+      "gate": "phase_gates",
+      "result": "fail",
+      "detail": "2/3 pass — Phase \"test\" recorded gate_result=fail on its latest attempt (TEST_GATE_FAILURE) — a job cannot promote past a failed phase gate"
+    },
+    {
+      "gate": "verify_structural",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "grader_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase attempt recorded for this run"
+    },
+    {
+      "gate": "drift_verdict",
+      "result": "unverified",
+      "detail": "No verify-phase output recorded for this run"
+    },
+    {
+      "gate": "consensus",
+      "result": "fail",
+      "detail": "1 critic fail(s) — Critic returned fail in test/attempt_3 — consensus gate was not satisfied"
+    },
+    {
+      "gate": "skills_clean",
+      "result": "pass",
+      "detail": "3 pass"
+    }
+  ],
+  "phases": [
+    {
+      "phase": "plan",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "opus"
+    },
+    {
+      "phase": "build",
+      "attempts": 1,
+      "last_gate_result": "pass",
+      "failure_reason": null,
+      "model_tier": "sonnet"
+    },
+    {
+      "phase": "test",
+      "attempts": 3,
+      "last_gate_result": "fail",
+      "failure_reason": "TEST_GATE_FAILURE",
+      "model_tier": "fable"
+    }
+  ],
+  "skill_verdicts": [
+    {
+      "skill_id": "plan-coherence",
+      "phase": "plan",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "adws-lint",
+      "phase": "build",
+      "attempt": 1,
+      "rubric_result": "pass"
+    },
+    {
+      "skill_id": "coverage-rubric",
+      "phase": "test",
+      "attempt": 3,
+      "rubric_result": "pass"
+    }
+  ],
+  "consensus": [
+    {
+      "phase": "test",
+      "attempt": 3,
+      "critic": "fail",
+      "advocate": "pass",
+      "dissent": null,
+      "resolution": null
+    }
+  ],
+  "superseded_consensus": [
+    {
+      "phase": "test",
+      "attempt": 1,
+      "advocate": "pass",
+      "dissent": null,
+      "critic": "fail",
+      "critic_issue": null,
+      "critic_finding": null,
+      "resolution": null
+    },
+    {
+      "phase": "test",
+      "attempt": 2,
+      "advocate": "pass",
+      "dissent": null,
+      "critic": "fail",
+      "critic_issue": null,
+      "critic_finding": null,
+      "resolution": null
+    }
+  ],
+  "warnings": [
+    "Critic fail in test/attempt_1 (superseded): (critic returned fail with no findings recorded) [superseded by a later attempt]",
+    "Critic fail in test/attempt_2 (superseded): (critic returned fail with no findings recorded) [superseded by a later attempt]",
+    "Failure reason recorded: TEST_GATE_FAILURE",
+    "Gate \"consensus\" evaluated to fail: Critic returned fail in test/attempt_3 — consensus gate was not satisfied",
+    "Gate \"drift_verdict\" evaluated to unverified: No verify-phase output recorded for this run",
+    "Gate \"grader_verdict\" evaluated to unverified: No verify-phase attempt recorded for this run",
+    "Gate \"phase_gates\" evaluated to fail: Phase \"test\" recorded gate_result=fail on its latest attempt (TEST_GATE_FAILURE) — a job cannot promote past a failed phase gate",
+    "Gate \"pipeline_completion\" evaluated to fail: Missing phase evidence: review (not reached — job terminated at test), document (not reached — job terminated at test), ship (not reached — job terminated at test), verify (not reached — job terminated at test)",
+    "Gate \"verify_structural\" evaluated to unverified: No verify-phase output recorded for this run",
+    "Phase \"test\" recorded 3 attempts; latest attempt 3 gate_result=fail (earlier — attempt 1: TEST_GATE_FAILURE; attempt 2: TEST_GATE_FAILURE)."
+  ],
+  "evidence_root": "<evidence_root>"
+}
