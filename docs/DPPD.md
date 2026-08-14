@@ -1333,7 +1333,7 @@ enum and exit codes 0/10/1/2/3 all untouched. NFR-3 held (`SKILL.md` 424 < 500).
 falsification record. F-81, F-84 and F-85 remain open, owned by SC-15.
 
 **SC-15, SC-16 and SC-17 have since landed too** (PRs #81, #87, #86, #88), closing **F-84,
-F-85, F-84b, F-88, F-88b, F-89 and F-90**. **SC-18 has opened** and landed its first finding,
+F-85, F-84b, F-88, F-88b, F-89 and F-90**. **SC-18 has opened** (PRs #90, #91) and landed
 **F-91** (finding 39 / issue #74 resolved as option 2 — `baseline_reason` is `null`, not an
 enum member, when a check passes pre-change — the same two-places-one-question family as gaps
 1/3/7, resolved by naming the recorded evidence authoritative over the documentation table,
