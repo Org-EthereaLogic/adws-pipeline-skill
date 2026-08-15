@@ -55,7 +55,8 @@ dead branch), and the one real gap — the legacy YELLOW band — had a fixture 
 that lands in the RED band, which is F-71's shape inside the mechanism built to answer F-71.
 Parity **108 → 109**, gate steps **15 → 16**, baseline 19 → 18 entries (2 equivalent, 16
 unpinned, budget 16). No validator source edited, no refreeze, no `SCHEMA_VERSION` bump; NFR-3
-holds (429 < 500). **F-81, F-84, F-85 remain open, owned by SC-15.** See `SC14_PLAN.md` and
+holds (429 < 500). **F-81, F-84, F-85 remain open, owned by SC-15.** (F-84/F-85 closed by SC-15;
+**F-81 closed by SC-19/F-96**, four packages later.) See `SC14_PLAN.md` and
 `VERIFICATION.md` §SC-14.
 
 **SC-15 (2026-08-12, PR #81):** closes **F-84, F-85** and adds **F-84b**. Three defects the
@@ -135,6 +136,36 @@ parsed by no gate step; `node_check` and `shell_lint` now cover it, with
 `spike/adws-controller/fixtures/` excluded as recorded evidence. Gate steps **17 → 18**; no
 validator, fixture, `SCHEMA_VERSION` or `SKILL.md` change (469 lines, ratchet unmoved). See
 `VERIFICATION.md` §SC-18/F-93…F-95.
+
+**SC-19 (2026-08-15, PR #95 — CLOSED):** takes the three items SC-18 wrote down and left open.
+**F-96 closes F-81** — the register's only security item, carried unclosed through SC-15, SC-16,
+SC-17 and SC-18. `artifact-layout.md` rule 7 has demanded `[REDACTED]` since SC-2/C5 and all ten
+agents carry the sentence byte-identically; `agent-blocks-lint` proves they SAY it, which is a fact
+about ten files and evidence about zero runs. `adws-pipeline/scripts/secret-scan.js` now runs over
+`artifacts/{jobId}/` at §5 step 2, **before** step 5 archives the tree off-checkout — the ordering
+being the whole point, since SC-11/A5 made that archive durable and SC-13/F-77 filled it with
+verbatim copies of an untrusted repository. False-positive policy is the SC-8 house rule: a
+self-identifying credential format is a FACT and fails; a key that merely suggests the value beside
+it is sensitive is an INFERENCE and warns. No allowlist, deliberately — the remedy for a false
+positive is the remedy for a true one. The report carries a location and a fingerprint and **never
+the matched string**, because the report is evidence and lands in the same archive. Zero findings
+across all 29 report-fixture and all 30 spike evidence trees; three misses (line-wrapped,
+base64-encoded, homoglyph) declared in the header rather than left to read as coverage.
+**F-97** retires `guard-ablation`'s `owner` field — a promise about the future that lapsed four
+times across four packages and closed zero survivors. `unpinned_since` replaces it: the package
+that ACCEPTED the survivor, a past fact, validated against this ledger. Asserting "the owner is
+still open" was rejected for going red at every package boundary by construction. Accountability
+moves to `unpinned_budget`, now an EXACT ratchet rather than a ceiling — slack under a ceiling is
+debt capacity nobody authorised.
+**F-98** closes the frozen S7 expectation in `run-step3.sh`, red since SC-16. The measurement
+finding 61 demanded was made and finding 16 holds: **29/29** corpus contracts are refuted, not
+25/25. S7 now derives both sides and names its two exceptions instead of counting them. The
+Reproduce block's "All nine exit 0" was false in two ways — it lists ten commands, and three are
+red (`run-step4.sh`, `measure-delta.js`, `run-ingest-matrix.js`), all pre-existing on `main` and
+now recorded rather than contradicted.
+Gate steps **18 → 19**; `SKILL.md` 469 → 475 with a recorded ratchet raise; `skill-manifest.json`
+regenerated (`14796a0f4cb8`, 32 files). **F-81 CLOSED — the F-register has no open security item.**
+Next free number **F-99**; next free package **SC-20**. See `VERIFICATION.md` §SC-19/F-96…F-98.
 
 **Arm A gap ledger: twelve documented, nine closed (2, 4, 5, 6, 8, 9, 10, 11, 12); three open
 (1, 3, 7).** The three remaining are one shape — two places answer one question and neither

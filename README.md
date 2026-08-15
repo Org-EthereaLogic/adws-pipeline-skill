@@ -144,12 +144,13 @@ node parity/execution-report-fixtures/run-tests.js   # 29/29 report verdict fixt
 node parity/entropy-gate-fixtures/run-tests.js       # 7/7 stability-gate fixtures
 node parity/provenance-fixtures/run-tests.js         # 5/5 provenance-schema fixtures
 node parity/evidence-integrity-fixtures/run-tests.js # 9/9 timestamp-integrity fixtures
+node parity/secret-scan-fixtures/run-tests.js        # secret redaction: 11 credential rules
 node parity/sc3-micro-drill/run-tests.js             # SC-3 contract micro-drill
 node parity/cli-contract/run-tests.js                # CLI contract: 9 validators + 2 scripts
 node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rules pinned?
 ```
 
-`make local-ci` runs all eight plus the static floors and skill lints.
+`make local-ci` runs all nine plus the static floors and skill lints.
 
 **Is what's installed what you just merged?**
 

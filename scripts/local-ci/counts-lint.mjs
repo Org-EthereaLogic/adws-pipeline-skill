@@ -30,6 +30,9 @@
 // Exit 0 = pass, 1 = one or more violations (printed with the fix).
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 const problems = [];
 
@@ -164,6 +167,12 @@ try {
     byte_for_byte: validators - DIVERGED.length,
     validation_commands: validationCommands(),
     skill_repo_lints: skillRepoLints(),
+    // SC-19/F-96. Imported, not regex-counted: the module exports the rule table it applies,
+    // so this is the value the scanner actually uses rather than a second reading of its
+    // source. A count derived by parsing the file that owns the number is still a second
+    // opinion about it, and this lint exists because second opinions drift.
+    secret_scan_rules: require(join('..', '..', 'adws-pipeline', 'scripts', 'secret-scan.js'))
+      .RULE_IDS.length,
   };
 } catch (e) {
   console.error(`[counts-lint] cannot derive suite sizes: ${e.message}`);
@@ -218,6 +227,7 @@ const CLAIMS = [
   { file: 'README.md', key: 'agents', re: /\| (\d+) subagents:/ },
   { file: 'README.md', key: 'agents', re: /the (\d+) subagents \(install these\)/ },
   { file: 'README.md', key: 'validation_commands', re: /runs all (\w+) plus the static floors/ },
+  { file: 'README.md', key: 'secret_scan_rules', re: /secret redaction: (\d+) credential rules/ },
 
   // --- Makefile ------------------------------------------------------------
   { file: 'Makefile', key: 'parity_fixtures', re: /Tier 1: fast host gate \((\d+)\/\d+\/\d+/ },
@@ -237,6 +247,8 @@ const CLAIMS = [
   { file: 'scripts/local-ci/gate.sh', key: 'provenance_fixtures', re: /\+ provenance (\d+)/ },
   { file: 'scripts/local-ci/gate.sh', key: 'evidence_fixtures', re: /\+ evidence (\d+)/ },
   { file: 'scripts/local-ci/gate.sh', key: 'validators', re: /CLI contract over (\d+) validators and 2 scripts/ },
+  { file: 'scripts/local-ci/gate.sh', key: 'secret_scan_rules', re: /secret-scan suite over\n# all (\d+) credential rules/ },
+  { file: 'scripts/local-ci/gate.sh', key: 'secret_scan_rules', re: /\+ secret-scan (\d+) rules/ },
 
   // --- scripts/local-ci/README.md -----------------------------------------
   { file: 'scripts/local-ci/README.md', key: 'parity_fixtures', re: /parity (\d+) \+ report/ },
@@ -244,6 +256,7 @@ const CLAIMS = [
   { file: 'scripts/local-ci/README.md', key: 'entropy_fixtures', re: /\+ entropy (\d+) fixtures/ },
   { file: 'scripts/local-ci/README.md', key: 'provenance_fixtures', re: /provenance fixtures (\d+)/ },
   { file: 'scripts/local-ci/README.md', key: 'validators', re: /\*\*CLI contract\*\* over (\d+) validators/ },
+  { file: 'scripts/local-ci/README.md', key: 'secret_scan_rules', re: /\*\*secret-scan\*\* over (\d+) credential rules/ },
 
   // --- .githooks/pre-push --------------------------------------------------
   { file: '.githooks/pre-push', key: 'parity_fixtures', re: /host gate \(parity (\d+)\/\d+\/\d+/ },
@@ -380,6 +393,12 @@ const NOUNS = [
   ['validation_commands', 'validation commands?|suite commands?'],
   ['ablation_targets', 'ablation targets?|targets —|targets:'],
   ['diverged_packs', 'deliberately diverged|diverged packs?'],
+  // SC-19/F-96. Added with the count it guards, not after: `11 credential rules` was written
+  // into three files and the sweep would have let all three through, because the vocabulary
+  // only ever grew to cover counts that already existed. That is finding 62(b)'s shape — a
+  // converse check exactly as wide as the defects that motivated it — and the fix is to add
+  // the noun in the same commit as the noun.
+  ['secret_scan_rules', 'credential rules?'],
 ];
 
 for (const file of COVERED) {

@@ -4,9 +4,9 @@
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 116
 # validator-parity fixtures, 29 report-verdict fixtures, 7 stability-gate fixtures,
-# 5 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
-# suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
-# sweep, and six skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
+# 5 provenance-schema fixtures, the SC-3 contract micro-drill, the secret-scan suite over
+# all 11 credential rules, and the CLI-contract suite over all 11 shipped CLIs — plus a
+# syntax floor, shell lint, the guard-ablation sweep, and six skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
 # (Tier 2); local-LLM review lives in review.sh (Tier 3).
 #
 # Every count in this header is asserted by counts-lint.mjs (SC-18) against the suites on
@@ -131,13 +131,17 @@ EOF
 }
 
 # Deterministic suites (must stay green: 116 / 29 / 7 + provenance 5 + evidence 9
-# + SC-3 drill + the CLI contract over 9 validators and 2 scripts).
+# + secret-scan 11 rules + SC-3 drill + the CLI contract over 9 validators and 2 scripts).
 run_step "parity"        node parity/run-parity.js
 run_step "report"        node parity/execution-report-fixtures/run-tests.js
 run_step "entropy"       node parity/entropy-gate-fixtures/run-tests.js
 run_step "provenance"    node parity/provenance-fixtures/run-tests.js
 # SC-15/F-84b: artifact-layout.md rule 9, made executable. Prose does not run.
 run_step "evidence"      node parity/evidence-integrity-fixtures/run-tests.js
+# SC-19/F-96 (closes F-81): artifact-layout.md rule 7, made executable. The only clause of
+# the agents' shared security block that nothing verified — agent-blocks-lint proves the ten
+# agents SAY it, which is not evidence that any of them does it.
+run_step "secret-scan"   node parity/secret-scan-fixtures/run-tests.js
 run_step "sc3-drill"     node parity/sc3-micro-drill/run-tests.js
 # CLI contract: the nine duplicated wrapper copies and stdin mode, which the parity
 # fixtures cannot reach (they call execute() directly via exec-one.js).

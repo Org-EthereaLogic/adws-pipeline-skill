@@ -558,6 +558,18 @@ in that attempt's `phase_manifest.json`.
    output verbatim — agents MUST redact secrets (tokens, keys, passwords, credentials)
    to `[REDACTED]` before writing them. Defense in depth on top of `secret_policy:
    no-new-secrets`; the evidence tree is an audit artifact, not a secret store.
+   **Enforced by `scripts/secret-scan.js` since SC-19/F-96** (closing F-81), which the
+   orchestrator runs over `artifacts/{jobId}/` at the terminal report — before step 5
+   archives the tree, because SC-11/A5 makes that archive a durable destination outside
+   the worktree and SC-13/F-77 fills it with verbatim copies of an untrusted repository.
+   From SC-2 until then this rule was carried byte-identically by all ten agents and
+   verified by none of them: `agent-blocks-lint.mjs` proves they all say it, which is not
+   evidence that any of them does it. A self-identifying credential format FAILS (the
+   match is a fact); a key whose name suggests the value beside it is sensitive WARNS (the
+   match is an inference) — and `[REDACTED]` is never either, or the check would punish
+   the behaviour this rule exists to produce. The report carries a location and a
+   fingerprint, never the matched string, because the report is evidence and lands in the
+   same archive.
 8. **Schema discipline — tolerant reader, strict writer.** Consumers of the evidence
    tree (`execution-report.js`) evaluate only the fields documented in this file and
    ignore unknown keys. Writers get no inverse latitude: agents write EXACTLY the

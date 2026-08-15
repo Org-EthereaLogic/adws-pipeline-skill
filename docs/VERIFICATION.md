@@ -3853,3 +3853,232 @@ now a single family, all of it "two places answer one question and neither is au
   `owner` is a non-empty string and **cannot assert the package is still open**. The fix is
   mechanical and belongs to SC-19 — it is the same shape as F-94 (a field no consumer compares),
   and it is now the oldest known-recurring defect in the repository.
+
+---
+
+## SC-19/F-96…F-98 — the security item the register carried for five packages, and the two
+## defects SC-18 recorded rather than fixed
+
+**PR:** #95 · **Branch:** `sc19/f96-f98-secret-scan-owner-s7` · **Date:** 2026-08-15
+
+SC-18 closed with three items written down and left open. This package takes all three. Two of
+them (F-97, F-98) are defects SC-18 *found in its own closeout* and deliberately did not fix,
+because each needed a decision rather than an edit. The third (F-96) is **F-81**, which the
+register has carried since the audit of 2026-08-09 and which four consecutive packages —
+SC-15, SC-16, SC-17, SC-18 — passed over. It is the only security item in the register.
+
+### F-96 — secret redaction stops being LLM-honoured (closes F-81)
+
+`artifact-layout.md` rule 7 has required agents to redact secrets to `[REDACTED]` since
+SC-2/C5. All ten agents carry the sentence, byte-identically, across three blocks, and
+`agent-blocks-lint.mjs` asserts exactly that. **That is a fact about ten files and evidence
+about zero runs** — the same gap `evidence-integrity.js` closed for rule 9 at SC-15/F-84b,
+closed the same way: `adws-pipeline/scripts/secret-scan.js`, run by the orchestrator over
+`artifacts/{jobId}/` at §5 step 2, **before** step 5 archives the tree.
+
+The ordering is the point, and it is why F-81 stopped being a note. SC-11/A5 sends every
+terminal run's evidence to `execution.evidence_archive_dir` — durable, outside the worktree
+and outside the target checkout — and SC-13/F-77 fills that tree with `consensus/repro/`,
+verbatim copies of an untrusted repository's files. Before SC-11 unredacted material died
+with the worktree at teardown. After SC-13 it accumulates somewhere permanent.
+
+**The false-positive policy** — the decision F-81 said was needed before any code — is the
+SC-8 house rule, unchanged: a **fact** fails, an **inference** warns.
+
+| Band | What matches | Verdict | Why that verdict |
+|---|---|---|---|
+| `fact` | A self-identifying format: `AKIA`+16, `ghp_`+36, `AIza`+35, `xox[baprse]-`, `sk_live_`/`sk_test_`, `sk-`/`sk-proj-`, `npm_`+36, `pypi-AgEIcHlwaS5vcmc`, a `-----BEGIN … PRIVATE KEY-----` header, and a JWT whose first segment decodes to a JSON object carrying `alg` | **fail** (exit 1) | The format alone names it, with no reference to its surroundings. No judgement in the match, so none in the verdict |
+| `inference` | A key (`password`, `secret`, `token`, `api_key`, `bearer`, …) assigned a value ≥ 8 chars that is not a placeholder or a variable reference | **warn** (exit 0) | A guess about meaning. Same branch as evidence-integrity's midnight stamp |
+
+**There is deliberately no allowlist file.** The remedy for a false positive is identical to
+the remedy for a true one — a string shaped exactly like an AWS key has no business
+unredacted in an audit artifact either way — so an exemption register would buy a second
+thing to keep in sync in exchange for a remedy nobody needs. Stated in the script's header
+so the absence reads as a decision rather than an omission.
+
+**The report never carries the match.** Findings are `{file, line, column, rule,
+match_length, fingerprint}` where the fingerprint is a sha256 prefix: enough to locate the
+string, diff two runs and confirm a redaction landed; not enough to reconstruct it. The
+report is *itself* evidence and lands in the same archive, so a scanner that echoed its match
+would write a second copy of the secret into the tree it was run to clean. The suite asserts
+this against every planted value on every case, including the clean ones, and SKILL.md §5
+carries the same instruction to the orchestrator's relay.
+
+**Two defects in the first cut, both caught by the fixtures written for them:**
+
+- `password: [REDACTED]` **warned**. The value terminator excludes `]`, so the canonical
+  marker reached the placeholder check as `[REDACTED` — nine characters, no match. A guard
+  that punishes the exact behaviour the rule demands is the fastest way to teach people to
+  ignore a step.
+- An earlier key pattern used `\b`, which matches `secret` inside `secret_policy` — a field in
+  **every task contract this pipeline writes**. A guard that fires on every run of the thing
+  it guards is not a guard. The underscore-aware boundary keeps `api_key` matchable while
+  `secret_policy`, `token_budget` and `auth_mode` are not.
+
+**Falsified against real evidence, not only against its own fixtures.**
+
+| Probe | Result |
+|---|---|
+| All 29 report-fixture evidence trees | **0 findings, 0 warnings** |
+| All 30 spike evidence trees, including the live-run captures | **0 findings, 0 warnings** |
+| Token nested five directories deep | caught |
+| Token as a nested JSON string value | caught |
+| Token in a `.txt` (not `.json`) — the difference from evidence-integrity | caught |
+| Real JWT vs. structural lookalike, same file | real fails, lookalike passes |
+| Token wrapped across a line break | **missed — declared limit** |
+| Token base64-encoded inside the file | **missed — declared limit** |
+| Token spelled with a Cyrillic homoglyph | **missed — declared limit** |
+| `ghp_` + 35 chars | not matched (correctly — it is not a GitHub token) |
+| `password=` with a 7-character value | not matched (below the inference threshold) |
+
+The three misses are limits of per-line literal matching and are written into the script's
+header, because an undeclared miss reads as coverage. **The agents' instruction remains the
+control; this is the floor under it.** A check that runs after the write cannot unwrite
+anything, and an adversary with write access to the evidence tree defeats any reader-side
+scan — defense in depth is the claim rule 7 makes, and the only one made here.
+
+### F-97 — the `owner` field, retired rather than re-owned
+
+`parity/guard-ablation-baseline.json` requires every `class: unpinned` entry to name an
+`owner`: the work package that will close the debt. The tool could check only that the string
+was non-empty.
+
+| When | `owner` value | What happened |
+|---|---|---|
+| M-5a | `SC-12 (unscheduled)` | bulk assignment across all 19 entries |
+| M-6 | — | audit found it lapsed; the tool read neither `class` nor `owner` |
+| SC-14/A4 | `SC-15` | re-owned; SC-14/A4a made the tool read both |
+| SC-17/F-90 | `SC-18` | re-owned, **recording that it had no way to detect a third lapse** |
+| SC-18 | `SC-18` | shipped. All 34 entries name a closed package |
+
+**Three re-ownings closed zero survivors.** That is the measurement that decides the shape of
+the fix: naming an owner was never the mechanism that paid the debt down.
+
+Asserting "the owner names an OPEN package" **was considered and rejected**. It goes red at
+every package boundary by construction, and a step that predictably fails is a step people
+learn to ignore — the repo's own stated reason for keeping `make check-installs` out of the
+gate. So the field was replaced rather than policed:
+
+- **`unpinned_since`** names the package that ACCEPTED the survivor. A fact about the past.
+  It cannot go stale, because what happened does not stop having happened.
+- It is **checkable**: validated against the set of packages named in `docs/WBS.md`, the
+  ledger that already answers which packages exist. Note the direction — `counts-lint`
+  refuses to *assert against* `docs/` because those files record history; *reading* history
+  to learn which packages ran is the correct use of the same file, and deriving from it
+  avoids standing up a second package register beside the first (arm A gaps 1/3/6/7's family).
+- The 34 entries split **16 → `M-5b`** and **18 → `SC-17`**, which independently reproduces
+  the `16 → 34` budget move DPPD records for SC-17/F-90.
+- **`owner` now fails the gate wherever it reappears**, rather than being ignored. An ignored
+  field is F-75's shape, which is what made this one worth retiring.
+
+**The accountability moved to the budget, and rule 5 changed from a ceiling to an exact
+ratchet.** Slack under a ceiling is debt capacity nobody authorised: close a survivor without
+lowering the number and the freed slot absorbs the next one silently — which is how a
+register that "may only shrink" stops shrinking with nobody deciding to. `unpinned_budget`
+must now **equal** the unpinned count (34 = 34 today), so every change to the debt, in either
+direction, is a deliberate edit to the file in the same commit.
+
+**Nine falsification probes, eight fired:**
+
+| Probe | Result |
+|---|---|
+| `owner` key restored on an entry | fails — names the retirement and the replacement |
+| `unpinned_since: "SC-99"` (fabricated) | fails — WBS does not name it |
+| `unpinned_since: ""` / key deleted | fails |
+| `unpinned_since` on an `equivalent` entry | fails — nothing is owed |
+| `unpinned_budget: 35` (one unit of slack) | fails — names the slack and the value to write |
+| `unpinned_budget: 33` | fails — over budget, as before |
+| `docs/WBS.md` removed | fails **by name**, not a stack trace, and not a silent empty set |
+| Baseline restored | passes |
+| **`unpinned_since: "SC-1"` — real package, wrong one** | **passes — DECLARED LIMIT** |
+
+The ninth is written into the baseline's `_doc` rather than left to read as a guarantee: the
+check asserts the named package *exists*, not that it is the *right* one. A wrong-but-real
+value is a mis-transcription at authoring time; only the rotting kind of wrongness recurred
+here, four times, and that is the kind this closes.
+
+### F-98 — S7's frozen expectation, and the measurement behind it
+
+`run-step3.sh` had been **red since SC-16**, asserting `fixtures surveyed: expected [25]`
+against a report corpus grown to 29. Finding 61 refused the two-character bump: S7 exists to
+support finding 16's claim about *every* corpus fixture, so whether the four fixtures added
+since preserve that property is a **measurement**. It was made.
+
+| | Frozen | Measured | Verdict |
+|---|---|---|---|
+| corpus fixtures surveyed | 25 | 29 | — |
+| …whose contract `task-normalize` scores `fail` | 25 | **29** | **29/29 — finding 16 holds** |
+| …carrying a `plan-coherence` trace at all | not asserted | 25 | — |
+| …recording `rubric_result: pass` with no `output` | 21 | 23 | 2 named exceptions, both deliberate |
+
+All four new fixtures (`promote_absent_optional`, `promote_warn`,
+`quarantine_halt_skipped_phase`, `quarantine_skipped_phase`) record a plan attempt with **no
+`skills/` directory at all** — they add contracts the validator refutes without adding
+traces. The two traced exceptions are `quarantine_malformed_output` (a truncated
+`skill_trace.json`, on purpose — it IS the unparseable-trace fixture) and
+`quarantine_skill_fail` (records `fail` **with** an `output` block — the corpus's one example
+of the honest shape). Neither is a counterexample to finding 16.
+
+**The fix is not the number.** S7 now asserts `REFUTED == TOTAL` with both sides derived from
+the corpus, adds a vacuity floor (a survey of zero fixtures must not report "every fixture" as
+upheld), and replaces the trace count with a **named exception set**. No literal survives in
+the block, so growing the corpus can never make it stale — only make it fail. The `STEP 3
+PASS` banner now interpolates `$REFUTED/$TOTAL`: it had been printing "refuted 25/25" while
+the loop above it surveyed 29, so the *report* of the assertion had gone stale alongside it.
+
+**And the companion claim finding 61 flagged was worse than recorded.** `FINDINGS.md`'s
+Reproduce block said "All nine exit 0". It lists **ten** commands, and three of them are red:
+
+| Command | Exit | Cause |
+|---|---|---|
+| `run-step4.sh` | 1 | 3 of 42 assertions, all downstream of `measure-delta.js` |
+| `measure-delta.js` | 1 | 4 structural errors — `prose-classification.json`'s line ranges no longer tile SKILL.md, phase-gates.md, artifact-layout.md, validator-inputs.md |
+| `run-ingest-matrix.js` | 1 | `ReferenceError: CLI is not defined` — it extracts `CASES` from `execution-report-fixtures/run-tests.js` as source text and evaluates it, and that array grew entries referencing the enclosing scope |
+
+All three were **already red on `main`**, verified against a `git archive main` extraction.
+SC-19's edits to SKILL.md and artifact-layout.md raise the unclassified-line counts (40 → 46,
+106 → 118) without changing which four documents fail or where each first breaks — they
+extend a pre-existing break rather than causing one. Not fixed here, for F-98's own reason:
+re-tiling four documents' line ranges is a measurement, and `run-ingest-matrix.js` needs a
+different extraction strategy rather than a corrected constant. The Reproduce block now
+states the measured truth in a table, because it is cited as evidence that the spike
+reproduces.
+
+### State after SC-19
+
+| Item | State |
+|---|---|
+| Tier 1 | **19/19 steps PASS** (`secret-scan` is the new one) |
+| Tier 2 | Node 20 + 24 clean room, PASS |
+| `secret-scan` suite | 9 cases over 11 credential rules, coverage asserted in both directions |
+| `guard-ablation` | 225 mutants over 10 targets, 37 survivors — 3 equivalent, 34 unpinned, **budget exactly 34** |
+| `counts-lint` | **59** advertised counts across 5 files, and one new converse-sweep noun |
+| `run-step3.sh` | **green** — 70 assertions, 0 failed |
+| `SKILL.md` | 475 lines, budget raised 469 → 475 with a recorded reason (+6, F-96) |
+| `skill-manifest.json` | regenerated (`14796a0f4cb8`, 32 files) — one new shipped file, three changed |
+| F-register | **F-81 CLOSED.** Next free number **F-99**; next free package **SC-20** |
+| Gap ledger | twelve documented, nine closed. Three open: **1, 3, 7** — unchanged |
+
+### A note on F-94, which this package exercised on itself
+
+`counts-lint` failed this work three times, each time correctly. Twice it was the ordinary
+case — `secret_scan_rules` advertised in `gate.sh` and the local-CI README, and
+`validation_commands` going `eight → nine` the moment the README's Validation block grew a
+line. The third is worth recording: **the converse sweep would have let all three new
+advertisements through**, because its noun vocabulary had no entry for `credential rules` —
+the same shape as finding 62(b), where the sweep was exactly as wide as the six stale counts
+that had motivated it. The noun was added in the same commit as the count it guards, and it
+immediately flagged the unregistered README claim. The rule that follows is small and
+mechanical: **a new advertised count needs a `CLAIMS` entry *and* a `NOUNS` entry**, or the
+forward check works and the converse one silently does not.
+
+### Two things this does NOT close
+
+- **`measure-delta.js` and `run-ingest-matrix.js` are red, and `run-step4.sh` is red because
+  of the first.** Pre-existing, measured, and now recorded in the Reproduce block instead of
+  being contradicted by it. Both fixes are measurements with real work attached, not syncs.
+- **The scanner cannot see a write that already happened.** It reads a finished tree. An
+  agent that transforms a value before writing it — splits, encodes, paraphrases — is past
+  it, and the three declared misses demonstrate that rather than merely admitting it. Rule 7
+  remains an instruction to the agents; F-96 is the floor under the instruction, which is
+  exactly the claim "defense in depth" makes and no more.

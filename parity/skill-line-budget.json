@@ -40,7 +40,7 @@
     "Lowering `budget` toward SC-10's 337 floor is a separate decision with a real prose",
     "task attached; SC-14 deliberately did not take it. See DPPD.md section 23 (M-6)."
   ],
-  "budget": 469,
+  "budget": 475,
   "target_advisory": 350,
   "nfr3_ceiling": 500,
   "history": [
@@ -68,6 +68,11 @@
       "value": 469,
       "set_by": "SC-16/F-88b",
       "reason": "+1, and the cheapest line in this file to justify: the 468 entry above bought a halt state whose FIRST anti-laundering guard did not hold. That guard excluded the `pipeline_completion` gate wholesale, because the gate fails for every non-`completed` run by construction and reusing the plain gateFail check would have quarantined 100% of halts. But that gate answers TWO questions in one status -- did this run FINISH (the premise of every halt, and no finding at all) and did this run LOSE a phase (a finding) -- so excluding it excluded both, and a halted run with `review` skipped between two phases that DID produce evidence reported RETRY and the words 'nothing is wrong with the run'. Finding 56. The line states the rule the guard now enforces: a stop accounts for the phases after it and for nothing behind it. It cannot live only in references/ for the same reason the rest of the section 5 preamble could not -- the orchestrator is the thing that decides what to record when an operator stops it, and a rule about what a halt does NOT excuse is worth nothing in a file the orchestrator has no reason to open. Neither original halt fixture had an intermediate hole, so both passed the broken guard; the regression that catches it is parity/execution-report-fixtures/quarantine_halt_skipped_phase."
+    },
+    {
+      "value": 475,
+      "set_by": "SC-19/F-96",
+      "reason": "+6 to run scripts/secret-scan.js at the terminal report, closing F-81 -- the register's only security item and the one it carried unclosed through SC-15, SC-16, SC-17 and SC-18. This is the same trade the +6 in the SC-15 entry made for evidence-integrity.js, for the same structural reason: artifact-layout rule 7 has demanded redaction since SC-2/C5, all ten agents carry the sentence byte-identically, and agent-blocks-lint proves only that they SAY it. What made it worth six always-resident lines now rather than another package from now is that the blast radius moved. SC-11/A5 sends every terminal run's tree to an evidence_archive_dir OUTSIDE the worktree and the target checkout, and SC-13/F-77 fills that tree with verbatim copies of an untrusted repository -- so unredacted material stopped dying with the worktree at teardown and started accumulating somewhere durable. Three of the six lines are the ORDERING (scan before section 5 archives) and the REMEDY (redact, re-run), which is orchestrator behaviour and cannot live in references/ for the same reason the SC-15 and SC-16 entries give. The other three are the fail-vs-warn split and the instruction not to quote a matched value back to the operator: the relay is evidence too, so an orchestrator confirming a finding by repeating it writes the secret into the tree a second time -- the one way this control can be turned into its own defect."
     }
   ]
 }

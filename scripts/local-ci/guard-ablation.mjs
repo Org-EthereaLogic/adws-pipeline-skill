@@ -494,6 +494,39 @@ function loadBaseline() {
 
 const VALID_CLASSES = new Set(['equivalent', 'unpinned']);
 
+const WBS_PATH = path.join(ROOT, 'docs', 'WBS.md');
+
+/**
+ * SC-19/F-97. The set of work-package identifiers the WBS ledger knows about.
+ *
+ * `docs/WBS.md` is the repository's package ledger — the one place that already answers
+ * "is SC-17 a thing that happened" for a human reader. Deriving from it rather than
+ * introducing a package register beside it is deliberate: a second list would be the
+ * "two places answer one question and neither is authoritative" family this codebase keeps
+ * finding (arm A gaps 1, 3, 6, 7). Note the direction — `counts-lint.mjs` refuses to ASSERT
+ * against `docs/` because those files record history; reading history to find out which
+ * packages exist is the opposite operation and the correct use of the same file.
+ *
+ * An unreadable or empty ledger is a NAMED failure, never a silent empty set. A validator
+ * that reads no packages and then finds every entry acceptable would be the vacuity this
+ * whole tool exists to detect.
+ */
+function knownPackages() {
+  let text;
+  try {
+    text = fs.readFileSync(WBS_PATH, 'utf8');
+  } catch (err) {
+    throw new Error(`cannot read the work-package ledger at docs/WBS.md (${err.message}) — ` +
+      '`unpinned_since` is validated against it and cannot be checked without it');
+  }
+  const found = new Set(text.match(/\b(?:SC|M)-\d+[a-z]?\b/g) || []);
+  if (found.size === 0) {
+    throw new Error('docs/WBS.md names no work packages — the ledger format changed and this ' +
+      'derivation is now reading nothing. Fix the pattern rather than deleting the check.');
+  }
+  return found;
+}
+
 /**
  * SC-14/A4a (F-86). The baseline's own `_doc` has required `reason`, `class` and — for an
  * unpinned entry — an `owner` since M-5a. Nothing read any of them. Audit M-6 found all 19
@@ -505,8 +538,30 @@ const VALID_CLASSES = new Set(['equivalent', 'unpinned']);
  * The two classes need opposite treatment, which is why merging them into one number was
  * the defect: `equivalent` is permanent and costs nothing, `unpinned` is debt and must
  * shrink. The budget makes growth deliberate rather than silent.
+ *
+ * SC-19/F-97 retired `owner`. It named the package that WOULD close the debt — a promise
+ * about the future, which the tool could only check was non-empty. It went stale three
+ * times in four packages (M-5a wrote "SC-12 (unscheduled)"; M-6 found it lapsed; SC-14/A4
+ * re-owned to SC-15; SC-17 re-owned to SC-18; SC-18 shipped and all 34 entries named a
+ * closed package again). Each re-owning restarted a clock set by how often packages ship,
+ * and none of them closed a single survivor — naming an owner was never the mechanism that
+ * paid the debt down.
+ *
+ * Asserting "the owner is still open" was considered and rejected: it would go red at every
+ * package boundary by construction, and a step that predictably fails is a step people
+ * learn to ignore — the repo's own stated reason for keeping `check-installs` out of the
+ * gate. So the field was replaced rather than policed. `unpinned_since` names the package
+ * that ACCEPTED the survivor: a fact about the past, which is checkable against the ledger
+ * and cannot go stale, because what happened does not stop having happened.
+ *
+ * The accountability moves entirely to the budget, which is now an EXACT ratchet rather
+ * than a ceiling. A ceiling with slack under it is where debt regrows silently: close one
+ * survivor without lowering the number and the freed slot is available to the next commit
+ * with nobody deciding anything. Equality means every change to the debt — up or down — is
+ * a deliberate edit to this file in the same commit, which is the only property the `owner`
+ * field was ever trying to buy.
  */
-function validateBaselineShape(doc) {
+function validateBaselineShape(doc, packages) {
   const errors = [];
   const entries = doc.accepted || [];
 
@@ -522,11 +577,33 @@ function validateBaselineShape(doc) {
         )})`
       );
     }
-    if (entry && entry.class === 'unpinned' && (typeof entry.owner !== 'string' || entry.owner.trim() === '')) {
-      errors.push(`${id}: an \`unpinned\` entry must name an \`owner\` — the work package that closes it`);
+    if (entry && entry.class === 'unpinned') {
+      const since = entry.unpinned_since;
+      if (typeof since !== 'string' || since.trim() === '') {
+        errors.push(
+          `${id}: an \`unpinned\` entry must name \`unpinned_since\` — the work package whose ` +
+            'sweep first accepted this survivor'
+        );
+      } else if (!packages.has(since.trim())) {
+        errors.push(
+          `${id}: \`unpinned_since\` is ${JSON.stringify(since)}, which docs/WBS.md does not name as ` +
+            'a work package. It records when the debt was accepted, so it must be a package that ran.'
+        );
+      }
     }
-    if (entry && entry.class === 'equivalent' && entry.owner) {
-      errors.push(`${id}: an \`equivalent\` entry is permanent and must NOT carry an \`owner\` (nothing is owed)`);
+    if (entry && entry.class === 'equivalent' && entry.unpinned_since) {
+      errors.push(
+        `${id}: an \`equivalent\` entry is permanent and must NOT carry \`unpinned_since\` (nothing is owed)`
+      );
+    }
+    // The retired field, refused rather than ignored. An entry copied from an older
+    // baseline would otherwise carry a promise nothing reads — which is the exact shape
+    // (F-75) that made `owner` worth retiring.
+    if (entry && entry.owner !== undefined) {
+      errors.push(
+        `${id}: \`owner\` was retired by SC-19/F-97 — it named the package that would close the debt, ` +
+          'went stale three times, and closed nothing. Use `unpinned_since` (the package that accepted it).'
+      );
     }
   }
 
@@ -538,6 +615,15 @@ function validateBaselineShape(doc) {
     errors.push(
       `${unpinned.length} \`unpinned\` entr(ies) against a budget of ${budget}. Unpinned entries are ` +
         'DEBT: close one with a fixture, or raise `unpinned_budget` in this commit and say why.'
+    );
+  } else if (unpinned.length < budget) {
+    // SC-19/F-97: the other direction. Slack under the cap is debt capacity nobody
+    // authorised — the next survivor lands in it silently and the register reads as though
+    // the budget had always been that high.
+    errors.push(
+      `${unpinned.length} \`unpinned\` entr(ies) against a budget of ${budget}: the budget carries ` +
+        `${budget - unpinned.length} unit(s) of SLACK. Lower \`unpinned_budget\` to ${unpinned.length} in ` +
+        'this commit — a ratchet with headroom under it is a ratchet that lets the debt back.'
     );
   }
 
@@ -684,15 +770,17 @@ let failed = false;
 const survivorIds = new Set(survivors.map((s) => s.id));
 
 // SC-14/A4a: the baseline's own contract, finally asserted.
-const shape = validateBaselineShape(baseline);
+// SC-19/F-97: `unpinned_since` is checked against the WBS ledger, so the packages are read
+// first — and an unreadable ledger throws by name rather than validating against nothing.
+const shape = validateBaselineShape(baseline, knownPackages());
 if (shape.errors.length) {
   failed = true;
   console.log('\nBASELINE CONTRACT VIOLATION(S) — parity/guard-ablation-baseline.json:');
   for (const e of shape.errors) console.log(`  ${e}`);
   console.log(
     '\n  `equivalent` means the mutation provably cannot change output, and is permanent.\n' +
-      '  `unpinned` means the rule genuinely lacks a fixture: it is debt, it needs an owner,\n' +
-      '  and it counts against `unpinned_budget`.'
+      '  `unpinned` means the rule genuinely lacks a fixture: it is debt, it records the package\n' +
+      '  that accepted it in `unpinned_since`, and `unpinned_budget` must EQUAL the number of them.'
   );
 }
 

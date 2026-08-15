@@ -379,8 +379,14 @@ work; the two differ in whether anyone is coming back.
    placeholder, malformed, mistyped, or out of order: fix the offending record from a live
    `date -u` if the true value is recoverable, and if it is not, say so in the report
    rather than inventing one. A PASS claim standing on a timestamp nobody can source does
-   not meet the dual-evidence bar. Then run
-   `node scripts/execution-report.js artifacts/{jobId}`.
+   not meet the dual-evidence bar. Then
+   `node scripts/secret-scan.js artifacts/{jobId}` (SC-19/F-96 — rule 7, executable).
+   Exit 1 = a credential-shaped string is in the evidence: **redact it to `[REDACTED]` and
+   re-run**, before step 5 archives the tree off-checkout. `rubric_result: "warn"` (exit 0)
+   is a key that merely suggests the value beside it is sensitive — a guess, so relay it,
+   never halt on it. The report carries `file`/`line`/`rule` and a fingerprint and **never
+   the matched string**: do not quote a value back to confirm it, your relay is evidence
+   too. Then run `node scripts/execution-report.js artifacts/{jobId}`.
 3. Relay to the user: the verdict (PROMOTE / PROMOTE-with-warnings / RETRY /
    QUARANTINE from exit code 0/10/1/2), the PR URL / branch / patch path, warnings,
    and the path to `execution_report.md`. A halt with nothing wrong behind it relays
