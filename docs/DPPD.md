@@ -1341,7 +1341,7 @@ SC-16/F-89's template) and **F-92** (closes arm A gap 11, the required-vs-supple
 deferred: a `check_role` field — `required` | `supplemental` — on the test check row plus a criterion
 aggregation rule honoring the two pinned constraints, `fail` dominates and a required row is never
 masked by a verified sibling; docs-only, no validator reads the field). **SC-18 is now CLOSED** by
-**F-93, F-94 and F-95**:
+**F-93, F-94 and F-95** (PR #93, squashed as `f2b70df`):
 
 - **F-93 — arm A gap 9**, the last policy gap. `NO_DOC_PATH_IN_SCOPE`'s "or the repo's equivalent"
   is replaced by a two-clause test (convention, or precedent — the directory already holds a

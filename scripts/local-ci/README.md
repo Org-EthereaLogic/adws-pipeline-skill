@@ -14,7 +14,7 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 116 + report 29 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint **+ line-budget ratchet**; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; **no-eval scan** (no execution sink in the shipped tree, no read of the agent-authored `command` field anywhere); skill-manifest currency. Seconds, zero-LLM. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 116 + report 29 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint **+ line-budget ratchet**; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; **no-eval scan** (no execution sink in the shipped tree, no read of the agent-authored `command` field anywhere); **advertised-count lint** (every suite count and validator version printed in prose, against the suites on disk); skill-manifest currency. Seconds, zero-LLM. |
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Varies the **Node version only**, on `linux/arm64`. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
@@ -80,8 +80,18 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
   human audit; none was ever found here. A green signal from a gate that has never gone red
   carries less information than its volume suggests.
 
-  The ledger is append-only, so a later recount will see **four red records**. None is a
-  regression, and each is worth reading as evidence that the new steps work:
+  The ledger is append-only, so a later recount sees more. **Across the first 287 runs (through
+  SC-18, 2026-08-15): 14 red records in 7 distinct steps** — `guard-ablation` ×3,
+  `skill-manifest` ×5, `bash32-scan` ×2, and one each of `requires`, `cli-block`, `frontmatter`,
+  `counts`. None is a regression.
+
+  Stated as a claim about a **prefix** of the ledger, deliberately, so it stays true as the
+  ledger grows — the same reason the "first 73 runs" sentence above has never needed editing. The
+  first draft of this paragraph said "14 red across 285 runs" and was wrong within two gate runs,
+  which is the whole lesson of the step it was documenting.
+
+  The four below are the original M-5a-era set, kept because each is worth reading as evidence
+  that a new step works:
 
   | # | run_id | Step | What it caught |
   |---|---|---|---|
@@ -89,9 +99,13 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
   | 83 | `20260808T212913Z` | `requires` | A false positive in `requires-lint` itself: it matched `from "…"` inside comment prose. The lint was the defect; comments are now stripped |
   | 86 | `20260808T213304Z` | `bash32-scan` | Its own first run — three of its explanatory comments, plus three real unguarded `"${arr[@]}"` sites under `set -u` |
   | 88 | `20260808T213734Z` | `guard-ablation` | A deliberately stale baseline entry, proving the bidirectional rule fails in both directions |
+  | 278 | `20260815T040754Z` | `counts` | Its own first run, twice over: seven stale advertised counts across four files, then the lint-count in `gate.sh`'s own header going stale the moment `counts` was added as another one |
 
   Read the ledger with that in mind: "N passes, 0 failures" was the *problem* this series set
-  out to fix, not the achievement.
+  out to fix, not the achievement. **This tally is prose and cannot be gated** — `ci_logs/` is
+  gitignored, so a fresh clone has no ledger to count and `counts-lint` has nothing to compare
+  against. It is the one number in this file that stays a hand-sync, and saying so is better than
+  a reader assuming the SC-18 mechanism covers it.
 - **`guard-ablation` is the first step that can fail for a reason nobody wrote a fixture
   for.** It mutates each target validator's `execute()` one rule at a time and reports any
   mutation the whole fixture corpus fails to notice. A surviving mutant means the rule it
