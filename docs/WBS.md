@@ -88,7 +88,7 @@ was told the OPPOSITE of what this repo believed (finding 57). Report fixtures 2
 **Findings 56–60 are recorded in `spike/adws-controller/FINDINGS.md`.** See `VERIFICATION.md`
 §SC-17/F-90.
 
-**SC-18 (2026-08-14, PRs #90, #91):** **F-91** closes finding 39 / issue #74 — the documented check row could
+**SC-18 (2026-08-14, PRs #90, #91, #93 — CLOSED):** **F-91** closes finding 39 / issue #74 — the documented check row could
 not express the primary `gate_weak` case. `phase-gates.md` names "passes pre-change (no red
 baseline)" as the first `gate_weak` case, but `artifact-layout.md`'s `baseline_reason` enum
 (`assertion-failed-runtime-present | collection-error | not-run`) had no value for it, so a
@@ -115,7 +115,7 @@ decision while fixing the POLICY the withdrawn rule got wrong. Docs-only, mirror
 validator reads `check_role`. Fixed in `artifact-layout.md`, `phase-gates.md`, and
 `adws-tester.md`; recorded in `FINDINGS.md` finding 11.
 
-**F-93, F-94, F-95 close SC-18** (2026-08-14). **F-93** closes arm A gap 9, the last policy gap:
+**F-93, F-94, F-95 close SC-18** (2026-08-14, PR #93). **F-93** closes arm A gap 9, the last policy gap:
 `NO_DOC_PATH_IN_SCOPE`'s "or the repo's equivalent" was a judgment call a live run had to make
 unaided, and it made it correctly and recorded it in passing rather than raising it. SC-17's
 narrow ruling (`references/` is this repo's documentation location) would have settled one
