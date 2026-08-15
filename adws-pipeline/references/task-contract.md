@@ -135,12 +135,18 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
   decide it unaided and recorded the decision in passing, which is how a judgment call ends
   up wearing a rule's clothes (arm A gap 9, closed by SC-18).
 
-  **When clause 2 is what you used, say so.** Record the admitting path and the clause in
-  the intake evidence (`intake.doc_location: {path, clause: "convention" | "precedent"}`).
-  A `precedent` determination is a reading of someone else's repository, so it is written
-  down where a reviewer can disagree with it. Ambiguity is not a reason to stop: apply the
-  test, record which clause carried it, and continue — the warning is non-blocking either
-  way, and an unrecorded correct decision costs more than a recorded arguable one.
+  **Record the determination either way — including when it does NOT warn.** Write
+  `intake.doc_location: {path, clause: "convention" | "precedent"}` into
+  `run_manifest.json` at intake (§0 step 4), where `intake` is already the sanctioned key
+  for intake bookkeeping and extra keys are not schema drift — see
+  `references/artifact-layout.md`. No validator reads it; it is for the operator and the
+  audit trail.
+
+  Recording it on the PASSING path is the half that matters, and it is the half the live
+  run missed: when a `precedent` directory qualifies, no warning fires, so without this the
+  only trace of the judgment is its absence. A `precedent` determination is a reading of
+  someone else's repository — write it where a reviewer can disagree with it. Ambiguity is
+  not a reason to stop: apply the test, record which clause carried it, and continue.
 
 ## Vague-task rejection guidance (AC-1.2)
 
