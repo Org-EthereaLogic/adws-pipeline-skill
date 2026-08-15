@@ -25,7 +25,6 @@
 set -uo pipefail
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 CTRL="$REPO/spike/adws-controller/adws-run.js"
-MKTRACE="$REPO/spike/adws-controller/mk-risk-trace.js"
 FIX="$REPO/spike/adws-controller/fixtures"
 SCRATCH="$(mktemp -d)"
 trap 'rm -rf "$SCRATCH"' EXIT

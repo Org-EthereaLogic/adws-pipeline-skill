@@ -11,10 +11,10 @@ every decision is written to an append-only evidence tree — so job outcomes ar
 evidence, not by narrative.
 
 > Ported from the internal **ADWS_Pro** system; 4 of the 9 deterministic validators are
-> verified byte-for-byte against the originals. Five are deliberately diverged (all
-> v2.0.0) under approved scope changes and verified against frozen baselines:
-> `criteria-to-checks` (SC-1 + SC-5), `review-risk-assess` (SC-8), and
-> `repo-context-scan` / `patch-compose` / `ship-mode-select` (SC-9)
+> verified byte-for-byte against the originals. Five are deliberately diverged under
+> approved scope changes and verified against frozen baselines: `criteria-to-checks` (v2.0.0,
+> SC-1 + SC-5), `review-risk-assess` (v2.0.0, SC-8), `repo-context-scan` (v2.1.0, SC-9 +
+> SC-15), `patch-compose` (v2.0.0, SC-9) and `ship-mode-select` (v2.0.0, SC-9)
 > (see [Validation](#validation)).
 
 ---
@@ -149,7 +149,7 @@ node parity/cli-contract/run-tests.js                # CLI contract: 9 validator
 node scripts/local-ci/guard-ablation.mjs             # anti-vacuity: are the rules pinned?
 ```
 
-`make local-ci` runs all seven plus the static floors and skill lints.
+`make local-ci` runs all eight plus the static floors and skill lints.
 
 **Is what's installed what you just merged?**
 
@@ -186,8 +186,9 @@ it is offline with respect to its source.
 - **Validator parity:** 4 of 9 validators are verified byte-for-byte against the ADWS_Pro
   originals. Five are deliberately diverged under approved scope changes and verified
   against frozen baselines: `criteria-to-checks` (v2.0.0, `docs/DPPD.md` §9 and §14),
-  `review-risk-assess` (v2.0.0, `docs/SC8_PLAN.md`), and `repo-context-scan` /
-  `patch-compose` / `ship-mode-select` (all v2.0.0, `docs/SC9_PLAN.md`). Parity reproduces
+  `review-risk-assess` (v2.0.0, `docs/SC8_PLAN.md`), `repo-context-scan` (v2.1.0,
+  `docs/SC9_PLAN.md` + SC-15), `patch-compose` (v2.0.0, `docs/SC9_PLAN.md`) and
+  `ship-mode-select` (v2.0.0, `docs/SC9_PLAN.md`). Parity reproduces
   from a fresh clone via each fixture's frozen `expected` field — no access to the private
   original is required. For a diverged pack the port *is* the reference, so
   `node parity/run-parity.js --freeze-diverged` refreezes those packs without needing the

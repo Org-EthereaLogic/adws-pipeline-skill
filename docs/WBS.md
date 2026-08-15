@@ -115,15 +115,34 @@ decision while fixing the POLICY the withdrawn rule got wrong. Docs-only, mirror
 validator reads `check_role`. Fixed in `artifact-layout.md`, `phase-gates.md`, and
 `adws-tester.md`; recorded in `FINDINGS.md` finding 11.
 
-**Arm A gap ledger: twelve documented, eight closed (2, 4, 5, 6, 8, 10, 11, 12); four open
-(1, 3, 7, 9).** Gaps 1, 3 and 7 are one shape — two places answer one question and neither
+**F-93, F-94, F-95 close SC-18** (2026-08-14). **F-93** closes arm A gap 9, the last policy gap:
+`NO_DOC_PATH_IN_SCOPE`'s "or the repo's equivalent" was a judgment call a live run had to make
+unaided, and it made it correctly and recorded it in passing rather than raising it. SC-17's
+narrow ruling (`references/` is this repo's documentation location) would have settled one
+repository and left the clause as judgeable for every other, so what ships is the **test** —
+convention (`README*`, `CHANGELOG*`, `docs/`, …) or precedent (the directory already holds a
+committed non-fixture `.md`) — with that ruling as its worked example, plus a recorded
+`intake.doc_location: {path, clause}`. `task-contract.md` is named AUTHORITATIVE and
+`adws-documenter.md` defers to it rather than restating it, because closing gap 9 with a second
+full statement of the rule would have closed one gap by opening a 1/3/7-family one.
+**F-94** closes finding 60(b): `counts-lint.mjs` derives each advertised suite count from the suite
+that owns it and asserts every site, in both directions. First run found **six stale numbers in
+four files** — all of which had survived the two hand-syncs (SC-13, SC-17) that finding 60(b) said
+would not be enough — plus a stale validator version (`repo-context-scan` v2.1.0 advertised as
+v2.0.0 in two places). `docs/` is excluded on purpose: a historical count records a moment.
+**F-95** closes step-2 finding 15 — `spike/` (~250 KB, including the 145 KB `adws-run.js`) was
+parsed by no gate step; `node_check` and `shell_lint` now cover it, with
+`spike/adws-controller/fixtures/` excluded as recorded evidence. Gate steps **17 → 18**; no
+validator, fixture, `SCHEMA_VERSION` or `SKILL.md` change (469 lines, ratchet unmoved). See
+`VERIFICATION.md` §SC-18/F-93…F-95.
+
+**Arm A gap ledger: twelve documented, nine closed (2, 4, 5, 6, 8, 9, 10, 11, 12); three open
+(1, 3, 7).** The three remaining are one shape — two places answer one question and neither
 is named authoritative — and gap 6 turned out to belong to that family too, which makes it the
-most common defect the spike has found. Gaps 9 and 11 were policy: **9's ruling is proposed and
-stands** (`references/` is this repo's documentation location); **11 is now closed by F-92** — its
-withdrawn SC-17 ruling was replaced by the required-vs-supplemental `check_role` split, which
-defined the missing semantics and let a safe aggregation rule be written (`fail` dominates; a
-required row is never masked by a verified sibling). Both were owned by SC-18; **gap 9 is its only
-remaining policy gap.**
+most common defect the spike has found. Both policy gaps are now closed: **11 by F-92** (the
+required-vs-supplemental `check_role` split, which defined the missing semantics and let a safe
+aggregation rule be written — `fail` dominates; a required row is never masked by a verified
+sibling) and **9 by F-93**.
 
 **Status (2026-07-15):** 1.0–5.0 done and merged to `main` (PRs #1, #2). **6.0 (live E2E)
 complete** — drills 6.1–6.4 executed live against a scratch GitHub repo; 17/17 DPPD §4

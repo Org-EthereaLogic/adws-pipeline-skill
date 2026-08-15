@@ -108,13 +108,39 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
   `target_branch` is protected. Warn the operator now: this contract will pass intake
   but is GUARANTEED to be refused at ship (`PROTECTED_BRANCH_BLOCKED`). Suggest `pr`
   mode or an unprotected target before starting.
-- `NO_DOC_PATH_IN_SCOPE` — no `allowed_paths` entry admits a documentation location
-  (`README*`, `CHANGELOG*`, `docs/`, or the repo's equivalent), so the document phase
-  cannot write docs without violating path policy. This is NOT a conflict and never
-  blocks: the documenter records `docs_delta: []` with a substantive changelog entry and
+- `NO_DOC_PATH_IN_SCOPE` — no `allowed_paths` entry admits a documentation location, so the
+  document phase cannot write docs without violating path policy. This is NOT a conflict and
+  never blocks: the documenter records `docs_delta: []` with a substantive changelog entry and
   summary, which passes `document-coverage-map` on its own (see
   `references/validator-inputs.md`). Recorded so the empty `docs_delta` reads as the
   contract's consequence rather than as a documenter that skipped its job.
+
+  **What counts as a documentation location — apply this test, do not judge.** This
+  paragraph is AUTHORITATIVE for the question; `adws-documenter.md` defers to it rather
+  than restating it. An `allowed_paths` entry admits a documentation location when it
+  admits a path satisfying either clause:
+
+  1. **By convention** — the path matches `README*`, `CHANGELOG*`, `HISTORY*`, `docs/`,
+     `doc/`, or `documentation/` (case-insensitive, at any depth the entry admits).
+  2. **By precedent** — the repo ALREADY keeps prose documentation there: the directory
+     the entry admits contains at least one committed `.md` file that is documentation
+     rather than test data (not under `fixtures/`, `test/`, `spec/`, `parity/`, or an
+     `artifacts/` evidence tree). This is the "or the repo's equivalent" clause, made
+     checkable: it is answered by listing the directory, not by deciding what a project
+     "really" means by documentation.
+
+  Clause 2 is why `adws-pipeline/references/` IS a documentation location for THIS
+  repository — it holds committed prose that `SKILL.md` indexes — and a contract scoped to
+  it does not warn. That case is settled here rather than left to the run: a live run had to
+  decide it unaided and recorded the decision in passing, which is how a judgment call ends
+  up wearing a rule's clothes (arm A gap 9, closed by SC-18).
+
+  **When clause 2 is what you used, say so.** Record the admitting path and the clause in
+  the intake evidence (`intake.doc_location: {path, clause: "convention" | "precedent"}`).
+  A `precedent` determination is a reading of someone else's repository, so it is written
+  down where a reviewer can disagree with it. Ambiguity is not a reason to stop: apply the
+  test, record which clause carried it, and continue — the warning is non-blocking either
+  way, and an unrecorded correct decision costs more than a recorded arguable one.
 
 ## Vague-task rejection guidance (AC-1.2)
 

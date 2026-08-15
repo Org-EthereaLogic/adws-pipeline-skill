@@ -1340,10 +1340,50 @@ enum member, when a check passes pre-change — the same two-places-one-question
 SC-16/F-89's template) and **F-92** (closes arm A gap 11, the required-vs-supplemental split option 2
 deferred: a `check_role` field — `required` | `supplemental` — on the test check row plus a criterion
 aggregation rule honoring the two pinned constraints, `fail` dominates and a required row is never
-masked by a verified sibling; docs-only, no validator reads the field). **SC-18's remaining scope is
-arm A gap 9 only** (`references/` as this repo's documentation location — proposed and stands), so the
-package is in progress, not closed. F-81 remains open too. The register's next free number is
-**F-93**; the next free work package is **SC-19**.
+masked by a verified sibling; docs-only, no validator reads the field). **SC-18 is now CLOSED** by
+**F-93, F-94 and F-95**:
+
+- **F-93 — arm A gap 9**, the last policy gap. `NO_DOC_PATH_IN_SCOPE`'s "or the repo's equivalent"
+  is replaced by a two-clause test (convention, or precedent — the directory already holds a
+  committed non-fixture `.md`), with SC-17's narrow ruling (`references/` qualifies) as its worked
+  example rather than as the whole fix, and a recorded `intake.doc_location: {path, clause}` so a
+  judgment leaves a trace saying a judgment happened. `task-contract.md` is named authoritative and
+  `adws-documenter.md` defers to it — closing gap 9 by writing the rule out twice would have closed
+  one gap by opening a 1/3/7-family one.
+- **F-94 — finding 60(b)**: the advertised suite counts are compared against the suites.
+  `counts-lint.mjs` found **six stale numbers across four files** on its first run, every one of
+  them having survived the two hand-syncs that motivated the recommendation — including the
+  local-CI README's own "Suite sizes are asserted, not narrated" note, which sat above a table
+  advertising a parity suite seven fixtures smaller than the one on disk. Also catches stale
+  validator *versions* (`repo-context-scan` v2.1.0, advertised as v2.0.0 since SC-15).
+- **F-95 — step-2 finding 15**: `spike/` was outside every gate step. Now inside the syntax and
+  shell floors, with its `fixtures/` tree excluded because agent-written reproduction scripts are
+  evidence, not code to be edited until a lint is satisfied.
+
+Gate steps **17 → 18**. No validator source, fixture, `SCHEMA_VERSION` or `SKILL.md` change (469
+lines; the ratchet does not move, because none of this adds an orchestrator rule). See
+`VERIFICATION.md` §SC-18/F-93…F-95.
+
+**F-81 remains open** — secret redaction is LLM-honoured with no scanner, and SC-11 + SC-13 widened
+its blast radius. It has now been carried by SC-15, SC-16, SC-17 and SC-18 without being taken up;
+it needs a DECISION (a scanner and a false-positive policy) before it needs code, and it is the
+only security item in the register. The register's next free number is **F-96**; the next free work
+package is **SC-19**.
+
+**Two defects found while closing SC-18, recorded rather than fixed in passing.** Neither is in the
+package's scope and both are the same family as F-94, one layer deeper:
+
+- **`spike/adws-controller/run-step3.sh` is red**, and was before this work (verified by re-running
+  with SC-18's edit stashed). Its S7 block asserts `fixtures surveyed: expected [25]` against a
+  corpus SC-16 and SC-17 grew to 29. That is a live assertion with a frozen expectation, and
+  whether 25 → 29 changes what finding 16 *claims* is a measurement question rather than a sync —
+  which is precisely why it is not corrected here. `FINDINGS.md`'s "Reproduce" block still asserts
+  all nine scripts exit 0.
+- **The `guard-ablation` `owner` field went stale a third time.** All 34 `unpinned` entries name
+  SC-18, which this closes (F-86 → re-owned to SC-15 → re-owned to SC-18 → shipped). Re-owning
+  restarts the clock rather than stopping it, which SC-14/A4 already demonstrated; baseline rule 4
+  asserts `owner` is a non-empty string and cannot assert the package is still open. This is now
+  the oldest known-recurring defect in the repository and is proposed for **SC-19**.
 
 Three of those are worth carrying into this document rather than leaving in `VERIFICATION.md`,
 because each says something about the defect classes DPPD tracks:

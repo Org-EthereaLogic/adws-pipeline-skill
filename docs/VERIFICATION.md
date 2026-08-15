@@ -3651,3 +3651,156 @@ tester's FIELD decision without ratifying the withdrawn policy. Docs-only, mirro
 validator reads `check_role`, and `execution-report.js` still does not evaluate the test `checks[]`
 array (finding 16, a separate gap). Recorded in `references/artifact-layout.md`,
 `references/phase-gates.md`, `.claude/agents/adws-tester.md`, and `FINDINGS.md` finding 11.
+
+---
+
+## SC-18/F-93…F-95 — the last policy gap, and two counts that were never compared
+
+Closes SC-18. Three items: **F-93** rules arm A gap 9 into the document, **F-94** asserts the
+advertised suite counts, **F-95** puts `spike/` inside the gate. No validator source changed, no
+fixture changed, `SCHEMA_VERSION` unchanged, `SKILL.md` unchanged at 469 lines — so the line-budget
+ratchet does not move and NFR-3 is untouched. Gate steps **17 → 18**.
+
+### F-93 — gap 9: "or the repo's equivalent" was a judgment call wearing a rule's clothes
+
+`NO_DOC_PATH_IN_SCOPE` fires when no `allowed_paths` entry admits a documentation location —
+"`README*`, `CHANGELOG*`, `docs/`, **or the repo's equivalent**". The last clause is the whole
+problem: a live run had to decide unaided whether `adws-pipeline/references/` was this repo's
+equivalent, decided correctly, and **recorded the decision rather than raising it**. Nothing in
+the skill said how to decide, so the next run could decide differently and both would be compliant.
+
+SC-17 proposed the narrow ruling — *`references/` is this repo's documentation location* — and it
+stood, unwritten, as SC-18's only remaining scope. Writing only that would have settled one
+repository and left the clause exactly as judgeable for every other. What ships instead is the
+**test**, with the narrow ruling as its worked example:
+
+1. **By convention** — `README*`, `CHANGELOG*`, `HISTORY*`, `docs/`, `doc/`, `documentation/`.
+2. **By precedent** — the directory already holds a committed `.md` that is documentation rather
+   than test data (excluding `fixtures/`, `test/`, `spec/`, `parity/`, `artifacts/`).
+
+Clause 2 is "the repo's equivalent" made checkable: it is answered by **listing a directory**, not
+by deciding what a project really means by documentation. `references/` qualifies under it, so the
+case that produced the gap is now settled by the document rather than by the run.
+
+Two further pieces, both aimed at the *class* rather than the instance:
+
+- **The determination is recorded** — `intake.doc_location: {path, clause}`. A `precedent` reading
+  is a claim about someone else's repository, so it is written where a reviewer can disagree. The
+  gap was not that the run decided wrong; it was that a judgment left no trace saying a judgment
+  had happened.
+- **One place is authoritative.** `task-contract.md` states the test; `.claude/agents/adws-documenter.md`
+  now *defers* to it instead of restating it in its own words. Gaps 1, 3, 7 — and 6, by finding 57
+  — are all "two places answer one question and neither is named authoritative", the most common
+  defect this spike has found. Closing gap 9 by adding a second full statement of the rule would
+  have closed one gap by opening another.
+
+Ambiguity is explicitly **not** a reason to stop: apply the test, record the clause, continue. The
+warning is non-blocking either way, and an unrecorded correct decision costs more than a recorded
+arguable one.
+
+### F-94 — the advertised counts, compared at last (finding 60(b))
+
+Finding 60(b): *"Recommended for SC-18: assert the advertised counts against the suites' real sizes
+… Until something compares them, there will be a third sync."* There was. `counts-lint.mjs` derives
+each number from the suite that owns it and asserts every place that prints it.
+
+**What it found on its first run — six stale numbers in four files**, all of which had survived two
+hand-syncs:
+
+| Site | Advertised | Actual |
+|---|---|---|
+| `scripts/local-ci/README.md` (tier table) | parity 109, report 25 | 116, 29 |
+| `.githooks/pre-push` | parity 109/25/7 | 116/29/7 |
+| `gate.sh` header | 3 provenance fixtures | 5 |
+| `gate.sh` header | three skill-repo lints | five |
+| `README.md` | "runs all seven" | eight |
+
+The sharpest one is `scripts/local-ci/README.md`, whose **"Suite sizes are asserted, not narrated"**
+note ended with *"if you change a count in prose, change the assertion behind it"* — while its own
+table advertised a parity suite seven fixtures smaller than the one on disk. The instruction was
+addressed to a human and the human was the mechanism; that note is rewritten to say what now
+actually holds.
+
+It also caught a **version** claim of the same family: SC-15 bumped `repo-context-scan` to v2.1.0
+and README went on saying "all v2.0.0" in two places. The rule generalizes — a `vX.Y.Z` written
+next to a validator's name must be that validator's version.
+
+**Both directions, because one direction is how this survived.** A registered claim that stops
+matching fails as loudly as a wrong number (prose gets reworded, and a silently-unmatched assertion
+is the same hole one layer up), and a converse sweep fails any count-shaped phrase in a covered
+file that no claim asserts — so a new advertisement cannot be born unasserted.
+
+**`docs/` is deliberately NOT covered.** A line in `DPPD.md` reading "report fixtures 24 → 25"
+records a moment; "correcting" it would falsify the history that makes this repository auditable.
+The distinction — a current-state claim is assertable, a historical one is not — is the same one
+F-95 draws between spike tooling and spike evidence.
+
+**The mechanism's first exercise was the change that introduced it.** Registering `counts-lint` as
+a gate step made "five skill-repo lints" wrong; the lint failed on its own commit and named the
+line. Same shape as SC-14's ratchet, and the cheapest possible proof the step is wired up.
+
+### F-95 — `spike/` was outside every gate step (finding 15)
+
+Step-2 finding 15, open since 2026-08-10: *"The shipped CI gate does not execute or syntax-check
+`spike/`."* ~250 KB of controller and measurement code, including the 145 KB `adws-run.js`, that
+`make ci` never parsed. `node_check` walked `adws-pipeline` and `parity`; `shell_lint` covered
+`install.sh`, the pre-push hook, and `scripts/local-ci/*.sh`.
+
+`run-step3.sh` had been doing the sweep itself, in an S9 block whose label read *"make ci does not
+cover this tree"* — a check gated behind a spike run nothing in CI triggers, which is a check
+nobody runs. Both floors now include `spike/`.
+
+**Evidence is excluded, and that exclusion is the point.** `spike/adws-controller/fixtures/`
+contains `.js` files written by agents during live runs — reproduction scripts captured as
+evidence. Evidence is a record of what was written, never something to edit until a lint is happy,
+so the sweep prunes that directory. S9 stays in `run-step3.sh` because it is stricter in exactly
+that respect: it parses the fixture scripts too, where the gate deliberately leaves them alone.
+
+Adding the shell scripts surfaced two real shellcheck warnings, both fixed: `SC2044` twice in
+`run-step3.sh`'s own find-loops (converted to `while read`, which also stops the loop being a
+subshell that swallows the failure count) and an unused `MKTRACE` in `run-step5.sh`.
+
+### Falsifiability
+
+Every probe run against a scratch copy of the tree, so the working tree was never the experiment.
+
+| Probe | Result |
+|---|---|
+| Add a report fixture, touch no prose | FAIL ×6 — every site advertising 29 named, with the new value |
+| Reword a registered claim out of existence | FAIL — "registered claim for `validation_commands` matched nothing" |
+| Add a NEW unregistered count phrase | FAIL — converse sweep names the line and the suite it reads as |
+| Bump a validator's `version` | FAIL ×2 — both README sites named against the source |
+| Delete a validator | FAIL — derivation aborts by name, not by stack trace |
+| Remove a covered file | FAIL — named, after the same fix |
+| Break the syntax of a `spike/*.js` | `node-check` FAIL (verified before wiring the step in) |
+| Register `counts-lint` as a gate step | FAIL — "five skill-repo lints" → six, unprompted |
+
+### State
+
+| Check | Result |
+|---|---|
+| `make local-ci` | PASS, **18/18** (was 17) |
+| `counts-lint` | 55 advertised count(s) across 5 file(s), all matching |
+| `guard-ablation` | 225 mutants / 10 targets / 37 accepted survivors, 1.2 s — unchanged |
+| execution-report fixtures | 29/29 + CLI error path |
+| `parity/cli-contract` | 367 assertions, 0 failed |
+| parity corpus | 116/116 |
+| `SKILL.md` | 469 lines, budget unchanged — no orchestrator rule added |
+| `skill-manifest.json` | regenerated (`12ded4348e01`, 31 files) — two shipped files changed |
+
+**Gap ledger: twelve documented, nine closed (2, 4, 5, 6, 8, 9, 10, 11, 12). Three open: 1, 3, 7** —
+now a single family, all of it "two places answer one question and neither is authoritative".
+
+### Two things this does NOT close, found while closing the above
+
+- **`run-step3.sh` is red, and was before this work** (verified by re-running with the S9 edit
+  stashed). Its S7 block asserts `fixtures surveyed: expected [25]` against a corpus that SC-16 and
+  SC-17 grew to 29 — a live assertion with a frozen expectation, which is F-94's defect one layer
+  deeper. Not fixed here: whether 25 → 29 changes what finding 16 *claims* is a measurement
+  question, not a sync. `FINDINGS.md`'s "Reproduce" block still says all nine scripts exit 0.
+- **The `unpinned` owner field went stale for the third time.** All 34 baseline entries name SC-18,
+  which this work closes. F-86 → SC-14/A4 re-owned to SC-15 → SC-17 re-owned to SC-18 → and now
+  SC-18 has shipped. Re-owning again would restart the clock a fourth time; rule 4 can assert
+  `owner` is a non-empty string and **cannot assert the package is still open**. The fix is
+  mechanical and belongs to SC-19 — it is the same shape as F-94 (a field no consumer compares),
+  and it is now the oldest known-recurring defect in the repository.
