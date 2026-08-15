@@ -295,21 +295,55 @@ assert "DECLARED LIMIT: a plan with no file_change_proposal still passes (findin
   "$(node "$CTRL" record "$JOB6B" plan 1 | jget gate_result)" "pass"
 
 echo "### S7 — finding 16: every corpus fixture records a plan verdict the validator refutes"
-TOTAL=0; REFUTED=0; NO_OUTPUT=0
+# SC-19/F-98. This block used to assert `fixtures surveyed == 25`, and had been RED since
+# SC-16 and SC-17 grew the report corpus to 29 — a live assertion carrying a frozen
+# expectation, which is F-94's defect one layer deeper and worse, because it fails loudly
+# where nobody looks rather than quietly where everybody reads.
+#
+# Bumping 25 -> 29 was the wrong fix and finding 61 said so: S7 exists to support finding
+# 16's claim about EVERY corpus fixture, so whether the four added since preserve that
+# property is a MEASUREMENT. It was made. All four do: 29/29 contracts score `fail`. The
+# assertions below now derive the totals from the corpus and pin the CLAIM (refuted ==
+# surveyed) instead of the count, so growing the corpus can never make this block stale —
+# only make it fail, which is what an assertion is for.
+TOTAL=0; REFUTED=0; TRACED=0
+EXCEPTIONS=""
 for CF in $(find "$REPO/parity/execution-report-fixtures" -name task_contract_snapshot.json | sort); do
   TOTAL=$((TOTAL+1))
   V="$(node -e 'const t=(require(process.argv[1]).task)||{};process.stdout.write(JSON.stringify({title:t.title,requested_change:t.requested_change,problem_statement:t.problem_statement,acceptance_criteria:t.acceptance_criteria||[],constraints:t.constraints||[],file_hints:t.file_hints||[]}))' "$CF" | node "$TN" - | jget rubric_result)"
   TR="$(dirname "$CF")/plan/attempt_1/skills/plan-coherence/skill_trace.json"
   [ "$V" = "fail" ] && REFUTED=$((REFUTED+1))
   if [ -f "$TR" ]; then
+    TRACED=$((TRACED+1))
     # try/catch, not a bare parse: quarantine_unreadable_manifest ships a deliberately
     # truncated JSON file and an uncaught throw here dumped a stack trace mid-survey.
-    node -e 'let t;try{t=JSON.parse(require("fs").readFileSync(process.argv[1]))}catch(e){process.exit(1)}process.exit(t.rubric_result==="pass"&&t.output===undefined?0:1)' "$TR" && NO_OUTPUT=$((NO_OUTPUT+1))
+    node -e 'let t;try{t=JSON.parse(require("fs").readFileSync(process.argv[1]))}catch(e){process.exit(1)}process.exit(t.rubric_result==="pass"&&t.output===undefined?0:1)' "$TR" \
+      || EXCEPTIONS="$EXCEPTIONS $(basename "$(dirname "$(dirname "$(dirname "$CF")")")")"
   fi
 done
-assert "fixtures surveyed"                                  "$TOTAL"     "25"
-assert "…whose contract task-normalize scores fail"         "$REFUTED"   "25"
-assert "…recording rubric_result: pass with NO output key"  "$NO_OUTPUT" "21"
+# Vacuity floor. "Every fixture" is trivially true of no fixtures, so a survey that found
+# nothing must not report the claim as upheld — the same absence-reads-as-success branch
+# evidence-integrity.js and secret-scan.js each grew after committing it once.
+assert "the survey found fixtures at all"  "$([ "$TOTAL" -gt 0 ] && echo yes || echo no)" "yes"
+# THE CLAIM, derived on both sides: no literal survives here, so the corpus can grow freely
+# and a single fixture whose contract the validator does NOT refute fails the step.
+assert "every surveyed contract is refuted by task-normalize" "$REFUTED" "$TOTAL"
+# The trace half is stated as a NAMED EXCEPTION SET rather than a count, for the same
+# reason: a count changes silently when the corpus grows, a name does not. Both exceptions
+# are deliberate fixtures and neither weakens finding 16 —
+#   quarantine_malformed_output  the trace is truncated JSON ON PURPOSE (it is the fixture
+#                                for an unparseable skill trace), so it cannot be read
+#   quarantine_skill_fail        records rubric_result: "fail" WITH an `output` block, i.e.
+#                                the corpus's one example of the honest shape
+# Every OTHER traced fixture records `pass` with no `output` for the scorer to catch it on,
+# which is the finding. The four fixtures carrying no plan-coherence trace at all
+# (promote_absent_optional, promote_warn, and the two skipped-phase quarantines) are counted
+# by TRACED and are not exceptions to anything.
+assert "traced fixtures are a subset of those surveyed" \
+  "$([ "$TRACED" -le "$TOTAL" ] && echo yes || echo no)" "yes"
+assert "…the only traces NOT recording pass-with-no-output are the two named fixtures" \
+  "$(printf '%s' "$EXCEPTIONS" | tr ' ' '\n' | grep -v '^$' | sort | tr '\n' ' ' | sed 's/ $//')" \
+  "quarantine_malformed_output quarantine_skill_fail"
 
 echo "### S8 — idempotency of the live path (Q4)"
 JOB8="$(newjob "$SCRATCH/s8")"
@@ -358,7 +392,9 @@ if [ "$FAILS" -eq 0 ]; then
   echo "### STEP 3 PASS — the live dispatch's evidence replays through the live-mode path at the"
   echo "###   same gate; the payload is complete and its paths exist; an agent-authored manifest"
   echo "###   reads as unrecorded; a validator fail reaches the gate through the scorer alone;"
-  echo "###   and the corpus's own plan verdicts are refuted 25/25 by the validator that made them."
+  # Interpolated, not typed: this banner said "refuted 25/25" while S7 was surveying 29 —
+  # the same frozen expectation as the assertion above it, in the sentence that reports it.
+  echo "###   and the corpus's own plan verdicts are refuted $REFUTED/$TOTAL by the validator that made them."
   exit 0
 else
   echo "### STEP 3 FAIL — $FAILS assertion(s) failed."

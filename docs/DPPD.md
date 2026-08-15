@@ -1373,6 +1373,57 @@ it needs a DECISION (a scanner and a false-positive policy) before it needs code
 only security item in the register. The register's next free number is **F-96**; the next free work
 package is **SC-19**.
 
+**SC-19 has since landed (PR #95), closing F-81 and both deferred defects.** The register now has
+**no open security item**; the next free number is **F-99** and the next free package **SC-20**.
+
+- **F-96 closes F-81, and the decision it needed turned out to be two decisions.** The first was
+  the false-positive policy, and it was already written: the SC-8 house rule. A self-identifying
+  credential format (`AKIA`+16, `ghp_`+36, a JWT whose header decodes to an object carrying `alg`)
+  is a **fact** about the file and fails; a key whose name suggests the value beside it is
+  sensitive is an **inference** and warns. That split made the exemption register unnecessary,
+  which was the second decision — the remedy for a false positive is identical to the remedy for a
+  true one, so an allowlist would have bought a second thing to keep in sync in exchange for
+  nothing. `adws-pipeline/scripts/secret-scan.js` runs at §5 step 2, **before** step 5 archives the
+  tree, which is the ordering the whole finding turns on: SC-11/A5 made the archive durable and
+  off-checkout, SC-13/F-77 filled it with verbatim copies of an untrusted repository, and before
+  those two changes unredacted material died with the worktree at teardown.
+
+  Two properties are worth carrying forward. **The report never carries the match** — location,
+  length and a sha256 prefix only — because the report is itself evidence and lands in the same
+  archive, so a scanner that echoed its finding would write a second copy of the secret into the
+  tree it was run to clean; SKILL.md tells the orchestrator the same about its relay. And **the
+  first cut punished compliance**: `password: [REDACTED]` warned, because the value terminator
+  excludes `]` and the marker arrived as `[REDACTED`. An earlier key pattern also matched `secret`
+  inside `secret_policy`, a field in every task contract this pipeline writes. Both were caught by
+  the fixtures written for them, and both are the same error — a guard that fires on the thing it
+  is protecting.
+
+- **F-97 retires the `owner` field rather than re-owning it a fourth time.** The decisive number is
+  not that it went stale three times; it is that **three re-ownings closed zero survivors**. Naming
+  an owner was never the mechanism that paid the debt down, so policing the name would have
+  automated a ritual rather than fixed a defect — and the obvious policing rule ("the owner names
+  an OPEN package") goes red at every package boundary by construction, which is the property that
+  keeps `make check-installs` out of the gate. `unpinned_since` records the package that ACCEPTED
+  the survivor: a past fact, checkable against `docs/WBS.md`, incapable of rotting. The
+  accountability moved to `unpinned_budget`, changed from a ceiling to an **exact** ratchet, on the
+  reasoning that slack under a ceiling is debt capacity nobody authorised.
+
+  The general form is worth naming, because this register keeps producing it: **a field that
+  records a decision cannot go stale; a field that records an intention always can.** F-91's
+  `baseline_reason` and F-93's `doc_location` were the same question asked about absence; this is
+  the same question asked about time.
+
+- **F-98 made the measurement rather than the edit, and it came out in favour of the finding.**
+  finding 16's claim holds at **29/29**, not 25/25 — the four fixtures SC-16 and SC-17 added carry
+  no `plan-coherence` trace at all, so they add refuted contracts without adding traces. S7 now
+  derives both sides of the claim and names its two deliberate exceptions rather than counting
+  them; nothing literal survives in the block. The companion claim was worse than SC-18 recorded:
+  `FINDINGS.md`'s Reproduce block said "All nine exit 0" over **ten** commands, three of which are
+  red. All three were already red on `main`, all three are the same frozen-expectation family, and
+  two of them are left open with the reason stated — re-tiling `prose-classification.json` across
+  four documents is another measurement, and `run-ingest-matrix.js` needs a different extraction
+  strategy rather than a corrected constant.
+
 **An independent review before push found four defects in SC-18's own work** (finding 62), all
 fixed in-package: the closeout said "six stale numbers" where the tool had printed seven — a count
 going stale between the tool's output and the prose describing it, inside the package built to stop
@@ -1383,7 +1434,9 @@ which is **F-91's defect three days after F-91** — resolved identically, with 
 author-written falsification probes all fired; the two that mattered were a reader's first minute.
 
 **Two further defects found while closing SC-18, recorded rather than fixed.** Neither is in the
-package's scope and both are the same family as F-94, one layer deeper:
+package's scope and both are the same family as F-94, one layer deeper. **Both were taken up by
+SC-19 — the first by F-98, the second by F-97 — and the record below is left as SC-18 wrote it,
+because what it says about the defect classes is worth more than a retroactive edit:**
 
 - **`spike/adws-controller/run-step3.sh` is red**, and was before this work (verified by re-running
   with SC-18's edit stashed). Its S7 block asserts `fixtures surveyed: expected [25]` against a
