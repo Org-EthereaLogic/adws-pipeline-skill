@@ -464,13 +464,13 @@ taken, implemented, and recorded so a reader can disagree with it.
     `spike/adws-controller/`, plus a NUL-byte scan. Reported as a limit of the validation
     claim, not fixed by widening a shipped gate for throwaway code.
     **CLOSED by SC-18/F-95.** The reasoning above held only while the spike stayed throwaway; it
-    is now ~250 KB of committed code that four work packages have cited as evidence. A sweep that
+    is now 447 KB of committed code that four work packages have cited as evidence. A sweep that
     lives inside a spike step is a sweep nothing in CI triggers — "make ci PASS" said nothing
     about this tree, and neither did any run somebody didn't launch by hand. `gate.sh`'s
     `node_check` and `shell_lint` now include `spike/`, excluding
     `spike/adws-controller/fixtures/`: those `.js` files are agent-written reproduction scripts
     kept as evidence, and evidence is a record of what was written, not code to be edited until a
-    lint is satisfied. Adding the shell scripts found two real shellcheck warnings — `SC2044`
+    lint is satisfied. Adding the shell scripts found three real shellcheck diagnostics across two files — `SC2044`
     twice in this file's own S9 find-loops, and an unused variable in `run-step5.sh`.
 
 ### The ingest matrix, re-measured
@@ -2418,7 +2418,7 @@ and `references/phase-gates.md`.
 **Finding 61 — the counts mechanism SC-18 built would have caught this file's own harness, and
 that is where it stops.** F-94 asserts every advertised suite count in the current-state files
 (`README.md`, `Makefile`, `gate.sh`, the local-CI README, the pre-push hook) against the suites on
-disk. It found six stale numbers that had survived two hand-syncs. It deliberately does not cover
+disk. It found seven stale numbers that had survived two hand-syncs. It deliberately does not cover
 `docs/` or `spike/`, because a line reading "report fixtures 24 → 25" is a record of a moment and
 correcting it would falsify the history that makes the record worth keeping.
 
@@ -2445,3 +2445,47 @@ Two consequences worth stating plainly, because this file is cited as evidence:
   is a non-empty string and cannot assert the package is still open. Naming it was not fixing it
   the first two times either; F-94 is the shape of the fix (compare the field against something
   that knows the answer), and applying it here belongs to SC-19.
+
+**Finding 62 — the counts package miscounted its own result, and its two coverage gaps were each
+the guard scoped to its own example.** An independent review of SC-18 before push found four things,
+and three of them are shapes this file already tracks.
+
+**(a) "Six stale numbers" was seven.** `counts-lint` printed seven stale counts on its first run
+against `main` (reproducible: run it against a checkout of `main`). The closeout table grouped two
+numbers onto one row twice — `parity 109, report 25` and `parity 109/25/7` — and the prose then
+counted rows. So the work package built to stop counts going stale between the code and the prose
+describing it **shipped a count that went stale between the tool's output and the sentence
+describing it**, in the same commit, in four documents at once. Not an embarrassment worth hiding:
+it is the cleanest possible demonstration that the defect is structural rather than careless, since
+the author was, at that moment, maximally primed to care about exactly this. The table is now one
+row per number, which is the actual fix — the grouping was what made the miscount available.
+
+**(b) Two hostile inputs walked straight through.** A reviewer tried `There are eight validation
+commands` and a fabricated ``task-normalize` v9.9.9``. Both passed at exit 0. The causes were
+identical in shape: the converse sweep's noun vocabulary had ten entries against twelve derived
+counts, and the version map was built from `DIVERGED_PACKS` — so each guard was exactly as wide as
+the defect that had prompted it (the six stale suite counts; the one stale diverged version) rather
+than as wide as the rule it advertised. **Finding 51's family, in a mechanism whose whole purpose is
+catching claims that outrun what is checked.** The prose was not wrong about the intended rule in
+either case; the code was narrower than the prose, which is the direction that reads as a guarantee.
+
+**(c) The `intake.doc_location` record could not express its own negative case.** F-93 specified
+`{path, clause}`, and the case that WARNS has no path and no clause. So the run most needing the
+trace could only write an object asserting a determination nobody made. **This is F-91 — the same
+package, three days earlier**, where `baseline_reason` had no value for "the check passed". Two
+instances in one work package makes it a habit worth naming: *when a field names a choice, ask what
+it says when there was no choice to make.* Resolved identically to F-91: `null`, and the field is
+non-null iff a location was admitted.
+
+**(d) Size and diagnostic counts were loose.** "~250 KB of spike" is 306 KB of non-fixture
+JavaScript plus 141 KB of shell; "two shellcheck warnings" was three diagnostics (two `SC2044`, one
+`SC2034`) across two files. Small, and worth correcting for the same reason as (a): an approximate
+number in a verification record is indistinguishable from a measured one once it is written down.
+
+**What this says about the review, not the defects.** Eight falsification probes were run before
+review and all eight fired. They were written by the author, from the understanding that produced
+the code, and they tested the rules the code implements rather than the rules the prose claims. The
+two that mattered took a reader about a minute. This is the fourth recorded instance in this file —
+step 2's three rounds, F-88b, finding 60, and this — and the pattern is specific enough to state as
+a rule: **the probe an author cannot write is the one that tests whether the guard is as wide as its
+own description.**

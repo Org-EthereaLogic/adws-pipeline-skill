@@ -126,11 +126,11 @@ committed non-fixture `.md`) — with that ruling as its worked example, plus a 
 `adws-documenter.md` defers to it rather than restating it, because closing gap 9 with a second
 full statement of the rule would have closed one gap by opening a 1/3/7-family one.
 **F-94** closes finding 60(b): `counts-lint.mjs` derives each advertised suite count from the suite
-that owns it and asserts every site, in both directions. First run found **six stale numbers in
+that owns it and asserts every site, in both directions. First run found **seven stale numbers in
 four files** — all of which had survived the two hand-syncs (SC-13, SC-17) that finding 60(b) said
 would not be enough — plus a stale validator version (`repo-context-scan` v2.1.0 advertised as
 v2.0.0 in two places). `docs/` is excluded on purpose: a historical count records a moment.
-**F-95** closes step-2 finding 15 — `spike/` (~250 KB, including the 145 KB `adws-run.js`) was
+**F-95** closes step-2 finding 15 — `spike/` (306 KB of non-fixture JavaScript plus 141 KB of shell, including the 142 KB `adws-run.js`) was
 parsed by no gate step; `node_check` and `shell_lint` now cover it, with
 `spike/adws-controller/fixtures/` excluded as recorded evidence. Gate steps **17 → 18**; no
 validator, fixture, `SCHEMA_VERSION` or `SKILL.md` change (469 lines, ratchet unmoved). See

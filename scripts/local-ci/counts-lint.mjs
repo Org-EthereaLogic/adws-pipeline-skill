@@ -131,7 +131,17 @@ let VERSIONS = new Map();
 try {
   const validators = countBySuffix(VALIDATOR_DIR, '.js');
   DIVERGED = divergedPacks();
-  VERSIONS = new Map(DIVERGED.map((p) => [p, validatorVersion(p)]));
+  // EVERY validator, not only the diverged ones. The first cut built this map from
+  // DIVERGED_PACKS, which made the check exactly as wide as the defect that motivated it —
+  // a false `task-normalize` v9.9.9 passed. The rule being enforced is "a version written
+  // next to a validator's name is that validator's version", and that rule has nothing to do
+  // with divergence; only the "must state a version at all" requirement below does.
+  VERSIONS = new Map(
+    readdirSync(VALIDATOR_DIR)
+      .filter((f) => f.endsWith('.js'))
+      .map((f) => f.replace(/\.js$/, ''))
+      .map((p) => [p, validatorVersion(p)])
+  );
   COUNTS = {
     parity_fixtures: parityTotal(),
     report_fixtures: countDirs('parity/execution-report-fixtures'),
@@ -317,7 +327,11 @@ for (const [pack, version] of VERSIONS) {
       );
     }
   }
-  if (hits === 0) {
+  // Stating a version is REQUIRED only for a diverged pack — it is verified against a frozen
+  // baseline rather than against the original, so its version is the reader's only handle on
+  // which port was frozen. A non-diverged pack need not be versioned in prose; if it IS
+  // versioned, the loop above still holds it to the source.
+  if (hits === 0 && DIVERGED.includes(pack)) {
     problems.push(
       `README.md — \`${pack}\` is diverged-by-design (run-parity.js DIVERGED_PACKS) but README ` +
         `never states its version ON THE SAME LINE as the name (expected v${version} within 60 ` +
@@ -340,6 +354,18 @@ const NUM = `\\b(\\d+|${[...WORDS].sort((a, b) => b.length - a.length).join('|')
 // brackets or backticks (so `**Node.js ≥ 20** on \`PATH\` (validators …)` does not read as a
 // claim that there are 20 validators — the parenthesis ends the clause).
 const FILLER = '[^\\d\\n()`]{0,40}?';
+// One entry per DERIVED count, so the sweep is as wide as the derivation. The first cut
+// listed ten of these and omitted `validation_commands` and `ablation_targets`; the phrase
+// "There are eight validation commands" was accepted as ordinary prose. A sweep narrower
+// than the thing it guards is the F-27 family again — a control that reads as total
+// coverage while covering a subset.
+//
+// STATED LIMIT: this is a vocabulary, so a count written with a noun nobody listed still
+// slips. That is a bounded gap, not a silent one — every derived key has an entry, so the
+// hole can only be a NEW way of naming an EXISTING suite, and the registry check (a claim
+// that stops matching fails) catches the common form of that. `byte_for_byte` is
+// deliberately absent: its phrase is "4 of the 9 … verified byte-for-byte", where the
+// nearest number before the noun is the wrong one. It is registered as a CLAIM instead.
 const NOUNS = [
   ['parity_fixtures', 'validator-parity fixtures?|parity fixtures?'],
   ['report_fixtures', 'report[- ]verdict fixtures?'],
@@ -351,6 +377,9 @@ const NOUNS = [
   ['cli_targets', 'shipped CLIs?'],
   ['agents', 'subagents?'],
   ['skill_repo_lints', 'skill-repo lints?'],
+  ['validation_commands', 'validation commands?|suite commands?'],
+  ['ablation_targets', 'ablation targets?|targets —|targets:'],
+  ['diverged_packs', 'deliberately diverged|diverged packs?'],
 ];
 
 for (const file of COVERED) {

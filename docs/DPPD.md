@@ -1351,11 +1351,14 @@ masked by a verified sibling; docs-only, no validator reads the field). **SC-18 
   `adws-documenter.md` defers to it — closing gap 9 by writing the rule out twice would have closed
   one gap by opening a 1/3/7-family one.
 - **F-94 — finding 60(b)**: the advertised suite counts are compared against the suites.
-  `counts-lint.mjs` found **six stale numbers across four files** on its first run, every one of
+  `counts-lint.mjs` found **seven stale numbers across four files** on its first run, every one of
   them having survived the two hand-syncs that motivated the recommendation — including the
   local-CI README's own "Suite sizes are asserted, not narrated" note, which sat above a table
   advertising a parity suite seven fixtures smaller than the one on disk. Also catches stale
-  validator *versions* (`repo-context-scan` v2.1.0, advertised as v2.0.0 since SC-15).
+  validator *versions* (`repo-context-scan` v2.1.0, advertised as v2.0.0 since SC-15), for all
+  nine validators rather than only the diverged ones. The converse sweep matches a vocabulary of
+  suite nouns with one entry per derived count, so its residual gap is a NEW way of naming an
+  EXISTING suite — bounded and stated, not eliminated.
 - **F-95 — step-2 finding 15**: `spike/` was outside every gate step. Now inside the syntax and
   shell floors, with its `fixtures/` tree excluded because agent-written reproduction scripts are
   evidence, not code to be edited until a lint is satisfied.
@@ -1370,7 +1373,16 @@ it needs a DECISION (a scanner and a false-positive policy) before it needs code
 only security item in the register. The register's next free number is **F-96**; the next free work
 package is **SC-19**.
 
-**Two defects found while closing SC-18, recorded rather than fixed in passing.** Neither is in the
+**An independent review before push found four defects in SC-18's own work** (finding 62), all
+fixed in-package: the closeout said "six stale numbers" where the tool had printed seven — a count
+going stale between the tool's output and the prose describing it, inside the package built to stop
+exactly that; two hostile inputs passed the new lint because the converse sweep and the version map
+were each scoped to the example that had motivated them rather than to the rule they advertised
+(finding 51's family); and `intake.doc_location` had no representation for its own negative case,
+which is **F-91's defect three days after F-91** — resolved identically, with `null`. The eight
+author-written falsification probes all fired; the two that mattered were a reader's first minute.
+
+**Two further defects found while closing SC-18, recorded rather than fixed.** Neither is in the
 package's scope and both are the same family as F-94, one layer deeper:
 
 - **`spike/adws-controller/run-step3.sh` is red**, and was before this work (verified by re-running

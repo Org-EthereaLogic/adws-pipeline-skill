@@ -136,17 +136,30 @@ fields (`tenant_id`, `submitted_by`, `submitted_at`, duplicate-ID registry,
   up wearing a rule's clothes (arm A gap 9, closed by SC-18).
 
   **Record the determination either way — including when it does NOT warn.** Write
-  `intake.doc_location: {path, clause: "convention" | "precedent"}` into
-  `run_manifest.json` at intake (§0 step 4), where `intake` is already the sanctioned key
-  for intake bookkeeping and extra keys are not schema drift — see
-  `references/artifact-layout.md`. No validator reads it; it is for the operator and the
-  audit trail.
+  `intake.doc_location` into `run_manifest.json` at intake (§0 step 4), where `intake` is
+  already the sanctioned key for intake bookkeeping and extra keys are not schema drift —
+  see `references/artifact-layout.md`. No validator reads it; it is for the operator and the
+  audit trail. The field has exactly two forms:
 
-  Recording it on the PASSING path is the half that matters, and it is the half the live
-  run missed: when a `precedent` directory qualifies, no warning fires, so without this the
-  only trace of the judgment is its absence. A `precedent` determination is a reading of
-  someone else's repository — write it where a reviewer can disagree with it. Ambiguity is
-  not a reason to stop: apply the test, record which clause carried it, and continue.
+  | Outcome | `intake.doc_location` | Warning |
+  |---|---|---|
+  | A path qualified | `{path, clause: "convention" \| "precedent"}` | none |
+  | Nothing qualified | `null` | `NO_DOC_PATH_IN_SCOPE` |
+
+  **`null` is the honest value when nothing qualified, not a missing field** — there is no
+  path to name and no clause that carried it, so an object with empty strings would assert a
+  determination that was never made. The field is non-null **iff** a documentation location
+  was admitted. This is deliberately the same shape SC-18/F-91 gave `baseline_reason` (enum
+  iff the baseline was red, `null` otherwise): a field that answers "which one" needs a
+  defined value for "none", or the first honest run writes something the table cannot
+  express. Absent and `null` read identically to a human, but only one of them is written on
+  purpose, and the point of this record is that a decision left a trace.
+
+  Recording it on the PASSING path is the half that matters, and it is the half the live run
+  missed: when a `precedent` directory qualifies, no warning fires, so without this the only
+  trace of the judgment is its absence. A `precedent` determination is a reading of someone
+  else's repository — write it where a reviewer can disagree with it. Ambiguity is not a
+  reason to stop: apply the test, record which clause carried it, and continue.
 
 ## Vague-task rejection guidance (AC-1.2)
 

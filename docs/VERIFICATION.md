@@ -3684,10 +3684,19 @@ case that produced the gap is now settled by the document rather than by the run
 
 Two further pieces, both aimed at the *class* rather than the instance:
 
-- **The determination is recorded** — `intake.doc_location: {path, clause}`. A `precedent` reading
-  is a claim about someone else's repository, so it is written where a reviewer can disagree. The
-  gap was not that the run decided wrong; it was that a judgment left no trace saying a judgment
-  had happened.
+- **The determination is recorded** — `run_manifest.intake.doc_location`, which is
+  `{path, clause}` when a path qualified and **`null` when none did** (exactly when
+  `NO_DOC_PATH_IN_SCOPE` fires). A `precedent` reading is a claim about someone else's repository,
+  so it is written where a reviewer can disagree. The gap was not that the run decided wrong; it
+  was that a judgment left no trace saying a judgment had happened.
+
+  *(The `null` form was added by review. The first cut specified only `{path, clause}` — a shape
+  with no way to represent the negative case, so the run that most needs the record, the one that
+  warns, would have had to write an object with an empty path and a clause that carried nothing.
+  That is **F-91's defect, three days after F-91**: a field answering "which one" with no defined
+  value for "none", found the same way, in the same package, by an independent reader. Recorded
+  rather than quietly fixed, because two instances make it a pattern worth checking for by
+  habit — when a field names a choice, ask what it says when there was no choice to make.)*
 - **One place is authoritative.** `task-contract.md` states the test; `.claude/agents/adws-documenter.md`
   now *defers* to it instead of restating it in its own words. Gaps 1, 3, 7 — and 6, by finding 57
   — are all "two places answer one question and neither is named authoritative", the most common
@@ -3704,16 +3713,27 @@ Finding 60(b): *"Recommended for SC-18: assert the advertised counts against the
 … Until something compares them, there will be a third sync."* There was. `counts-lint.mjs` derives
 each number from the suite that owns it and asserts every place that prints it.
 
-**What it found on its first run — six stale numbers in four files**, all of which had survived two
-hand-syncs:
+**What it found on its first run — seven stale numbers in four files**, all of which had survived
+two hand-syncs:
 
-| Site | Advertised | Actual |
-|---|---|---|
-| `scripts/local-ci/README.md` (tier table) | parity 109, report 25 | 116, 29 |
-| `.githooks/pre-push` | parity 109/25/7 | 116/29/7 |
-| `gate.sh` header | 3 provenance fixtures | 5 |
-| `gate.sh` header | three skill-repo lints | five |
-| `README.md` | "runs all seven" | eight |
+One row per stale NUMBER, not per sentence — the first version of this table put two numbers on
+one row twice, and the closeout prose then reported "six". Corrected by review, and the miscount is
+kept in the record below because of what it is: this work package exists because a count nobody
+compares goes stale, and its own summary count went stale between the tool's output and the
+sentence describing it.
+
+| # | Site | Advertised | Actual |
+|---|---|---|---|
+| 1 | `scripts/local-ci/README.md` (tier table) | parity 109 | 116 |
+| 2 | `scripts/local-ci/README.md` (tier table) | report 25 | 29 |
+| 3 | `.githooks/pre-push` | parity 109 | 116 |
+| 4 | `.githooks/pre-push` | report 25 | 29 |
+| 5 | `gate.sh` header | 3 provenance fixtures | 5 |
+| 6 | `gate.sh` header | three skill-repo lints | five |
+| 7 | `README.md` | "runs all seven" | eight |
+
+Reproducible: run `counts-lint.mjs` against a checkout of `main` and it prints these seven plus the
+version defect below.
 
 The sharpest one is `scripts/local-ci/README.md`, whose **"Suite sizes are asserted, not narrated"**
 note ended with *"if you change a count in prose, change the assertion behind it"* — while its own
@@ -3722,13 +3742,30 @@ addressed to a human and the human was the mechanism; that note is rewritten to 
 actually holds.
 
 It also caught a **version** claim of the same family: SC-15 bumped `repo-context-scan` to v2.1.0
-and README went on saying "all v2.0.0" in two places. The rule generalizes — a `vX.Y.Z` written
-next to a validator's name must be that validator's version.
+and README went on saying "all v2.0.0" in two places. The rule is general — a `vX.Y.Z` written next
+to a validator's name must be that validator's version, for **all nine**, not only the diverged
+ones. Stating a version at all is required only for a diverged pack, whose frozen baseline makes
+its version the reader's only handle on which port was frozen.
+
+*(Corrected by review: the first cut built the version map from `DIVERGED_PACKS`, which made the
+check exactly as wide as the defect that motivated it — a fabricated `task-normalize` v9.9.9 passed
+the gate. The prose above already claimed the general rule, so the code was the half that was wrong.
+That is finding 51's shape once more: a guard scoped to the instance that prompted it.)*
 
 **Both directions, because one direction is how this survived.** A registered claim that stops
 matching fails as loudly as a wrong number (prose gets reworded, and a silently-unmatched assertion
 is the same hole one layer up), and a converse sweep fails any count-shaped phrase in a covered
 file that no claim asserts — so a new advertisement cannot be born unasserted.
+
+**The stated limit on "any count-shaped phrase".** The sweep matches a *vocabulary* of suite nouns,
+one entry per derived count, so a count written with a noun nobody listed still slips. The first cut
+listed ten entries against twelve derived counts and accepted "There are eight validation commands"
+as ordinary prose — also review-caught, also the guard being narrower than the thing it guards. Every
+derived key now has an entry, which bounds the residual gap to a NEW way of naming an EXISTING
+suite; it does not eliminate it. `byte_for_byte` is deliberately excluded from the sweep because its
+phrase ("4 of the 9 … verified byte-for-byte") puts the wrong number nearest the noun — it is
+registered as an explicit claim instead. Saying this plainly is the point: an unstated limit on a
+control is how the control gets read as a guarantee.
 
 **`docs/` is deliberately NOT covered.** A line in `DPPD.md` reading "report fixtures 24 → 25"
 records a moment; "correcting" it would falsify the history that makes this repository auditable.
@@ -3742,7 +3779,7 @@ line. Same shape as SC-14's ratchet, and the cheapest possible proof the step is
 ### F-95 — `spike/` was outside every gate step (finding 15)
 
 Step-2 finding 15, open since 2026-08-10: *"The shipped CI gate does not execute or syntax-check
-`spike/`."* ~250 KB of controller and measurement code, including the 145 KB `adws-run.js`, that
+`spike/`."* 306 KB of non-fixture JavaScript and 141 KB of shell, including the 142 KB `adws-run.js`, that
 `make ci` never parsed. `node_check` walked `adws-pipeline` and `parity`; `shell_lint` covered
 `install.sh`, the pre-push hook, and `scripts/local-ci/*.sh`.
 
@@ -3756,7 +3793,7 @@ evidence. Evidence is a record of what was written, never something to edit unti
 so the sweep prunes that directory. S9 stays in `run-step3.sh` because it is stricter in exactly
 that respect: it parses the fixture scripts too, where the gate deliberately leaves them alone.
 
-Adding the shell scripts surfaced two real shellcheck warnings, both fixed: `SC2044` twice in
+Adding the shell scripts surfaced three real shellcheck diagnostics across two files, all fixed: `SC2044` twice in
 `run-step3.sh`'s own find-loops (converted to `while read`, which also stops the loop being a
 subshell that swallows the failure count) and an unused `MKTRACE` in `run-step5.sh`.
 
@@ -3774,6 +3811,18 @@ Every probe run against a scratch copy of the tree, so the working tree was neve
 | Remove a covered file | FAIL — named, after the same fix |
 | Break the syntax of a `spike/*.js` | `node-check` FAIL (verified before wiring the step in) |
 | Register `counts-lint` as a gate step | FAIL — "five skill-repo lints" → six, unprompted |
+| A number word inside a longer word (`seventeen` vs `seven`) | Read as 17 — `\b` + longest-first alternation |
+| **"There are eight validation commands"** | **PASSED at first — review-found.** Now FAIL |
+| **A fabricated version on a NON-diverged pack** | **PASSED at first — review-found.** Now FAIL |
+| A TRUE version on a non-diverged pack | PASS — the check holds versions to source, it does not forbid stating them |
+
+**The last three rows are the ones worth reading.** Eight probes were run before review and all
+eight fired; two hostile inputs an independent reader tried immediately did not. Both were the same
+error — **a guard scoped to the example that motivated it** rather than to the rule it claims to
+enforce — and both were invisible from inside, because the probes were written by the person who
+wrote the code and drew from the same understanding. That is the fourth time this repository has
+recorded that specific dynamic (step-2's three review rounds, F-88b, finding 60, and now this), and
+it is the standing argument in `docs/SIMPLIFICATION_ANALYSIS.md` for keeping the independent look.
 
 ### State
 
