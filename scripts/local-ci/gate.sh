@@ -4,10 +4,14 @@
 # Blocking (exit 0 iff every step passes). This is the pre-push gate and the quick
 # inner-loop check for adws-pipeline-skill. It runs the repo's real suites — the 116
 # validator-parity fixtures, 29 report-verdict fixtures, 7 stability-gate fixtures,
-# 3 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
+# 5 provenance-schema fixtures, the SC-3 contract micro-drill, and the CLI-contract
 # suite over all 11 shipped CLIs — plus a syntax floor, shell lint, the guard-ablation
-# sweep, and three skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
+# sweep, and six skill-repo lints. The clean-room Node 20/24 matrix lives in orb-ci.sh
 # (Tier 2); local-LLM review lives in review.sh (Tier 3).
+#
+# Every count in this header is asserted by counts-lint.mjs (SC-18) against the suites on
+# disk. Two of them were wrong when that lint was written — and the count of lints itself
+# went stale the moment counts-lint became the sixth one, caught by counts-lint.
 #
 # Usage:  make local-ci   (or: bash scripts/local-ci/gate.sh)
 # Evidence: ci_logs/<run_id>.gate.log + a line in ci_logs/local_ci.jsonl.
@@ -52,17 +56,28 @@ run_step() {
 
 # The static-floor steps need a little logic, so they are functions (bash-3.2-safe).
 node_check() {
-  # node --check every *.js under adws-pipeline/ and parity/, and every *.mjs the
+  # node --check every *.js under adws-pipeline/, parity/ and spike/, and every *.mjs the
   # local-ci harness owns (syntax floor). The .mjs lints were previously unchecked —
   # M-5a added two more of them, so the floor now covers what it is meant to cover.
   # Newline-delimited via heredoc (not `for in $(find)`) so a bad file fails the step
   # and the loop is not a subshell (rc survives). Paths here never contain spaces.
+  #
+  # SC-18 (step-2 finding 15): spike/ was outside every gate step — ~250 KB of controller
+  # and measurement code, including the 145 KB adws-run.js, neither executed nor parsed by
+  # `make ci`. run-step3.sh had been doing this sweep itself, gated behind a spike run
+  # nothing in CI triggers, with the comment "make ci does not cover this tree".
+  #
+  # spike/adws-controller/fixtures/ is EXCLUDED on purpose: those .js files are recorded
+  # evidence — reproduction scripts written by agents during live runs — and evidence is a
+  # record of what was written, never something to be edited until a lint is happy. The
+  # distinction is the same one counts-lint draws between current-state and history.
   rc=0
   while IFS= read -r f; do
     [ -n "$f" ] || continue
     if ! node --check "$f"; then echo "node --check FAILED: $f"; rc=1; fi
   done <<EOF
 $(find adws-pipeline parity -name '*.js')
+$(find spike -path '*/fixtures' -prune -o -name '*.js' -print)
 $(find scripts/local-ci -name '*.mjs')
 EOF
   return $rc
@@ -71,9 +86,14 @@ EOF
 shell_lint() {
   # Lint every shell script the repo owns (hard-required). Block on warning+error;
   # info/style (e.g. SC2012, SC2086) are advisory, not gate failures.
+  #
+  # SC-18 (step-2 finding 15): spike/*.sh joins the list. These are the spike's own harness
+  # scripts — eight of them, ~130 KB, each asserting a step's result — and they were as
+  # unlinted as the JS beside them. Adding them found two real shellcheck warnings.
   rc=0
   files=(install.sh .githooks/pre-push)
   for f in scripts/local-ci/*.sh; do files+=("$f"); done
+  for f in spike/adws-controller/*.sh; do files+=("$f"); done
   for f in ${files[@]+"${files[@]}"}; do
     [ -f "$f" ] || continue
     if ! bash -n "$f"; then echo "bash -n FAILED: $f"; rc=1; fi
@@ -136,6 +156,10 @@ run_step "agent-blocks"  node scripts/local-ci/agent-blocks-lint.mjs
 # F-82: a `reproduction.command` is a record, never an execution channel. Nothing executes
 # one today, which is exactly when the tripwire is cheap to install.
 run_step "no-eval"       node scripts/local-ci/no-eval-lint.mjs
+# SC-18 (finding 60(b)): the advertised suite counts are compared against the suites. Two
+# hand-syncs (SC-13, SC-17) both went stale within two work packages; a count no consumer
+# compares is not a control. Covers current-state files only — docs/ records history.
+run_step "counts"        node scripts/local-ci/counts-lint.mjs
 # F-72: the shipped manifest must describe the tree it ships with, or an install stamps
 # itself with a version that does not match its own contents.
 run_step "skill-manifest" node scripts/local-ci/skill-manifest.mjs

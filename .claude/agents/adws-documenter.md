@@ -28,7 +28,14 @@ intent. Never write outside your attempt directory in `artifacts/`.
 **When no documentation location falls inside `allowed_paths`** (the contract scopes the
 job to code or fixture paths only, so `README`, `docs/`, and any changelog file are all
 out of bounds): do NOT write outside `allowed_paths` to satisfy this phase, and do not
-treat the phase as unsatisfiable. Record `docs_delta: []` and put the documentation into
+treat the phase as unsatisfiable. What counts as a documentation location is decided by the
+two-clause test in `references/task-contract.md` (`NO_DOC_PATH_IN_SCOPE`) — convention
+(`README*`, `CHANGELOG*`, `docs/`, …) or precedent (the repo already keeps committed prose
+`.md` there, which is why a `references/` directory qualifies). That paragraph is
+authoritative and this one does not restate it: two places answering one question is the
+most common defect this pipeline has recorded against its own documentation. Apply the
+test, do not judge — and if the intake evidence already names `intake.doc_location`, the
+question is answered and you inherit it. Record `docs_delta: []` and put the documentation into
 your evidence instead — a substantive `changelog_entry` and a `documentation_summary`
 that would let a reader understand the change without the diff. That is a COMPLIANT
 outcome, not a shortcut: `document-coverage-map` scores changelog 0.5 + documented paths

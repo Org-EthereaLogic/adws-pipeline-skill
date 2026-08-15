@@ -322,10 +322,26 @@ node "$CTRL" record "$JOB8" plan 1 >/dev/null 2>"$SCRATCH/e8.txt"; RC8=$?
 assert "re-recording a recorded attempt is refused" "$RC8" "65"
 assert "…and the trace was not rewritten"           "$([ "$T1" = "$(cat "$JOB8/plan/attempt_1/skills/task-normalize/skill_trace.json")" ] && echo same || echo differs)" "same"
 
-echo "### S9 — syntax + NUL sweep of spike/ (make ci does not cover this tree)"
+# SC-18 closed finding 15: `make ci` DOES cover this tree now — gate.sh's node_check and
+# shell_lint include spike/ (fixtures excluded as recorded evidence). This stays as the
+# spike's own local assertion, which is stricter in one respect: it parses the fixture
+# reproduction scripts too, where the gate deliberately leaves recorded evidence alone.
+echo "### S9 — syntax + NUL sweep of spike/ (also gated by make ci since SC-18)"
 SYN=0
-for F in $(find "$REPO/spike" -name '*.js'); do node --check "$F" >/dev/null 2>&1 || { echo "  FAIL  node --check $F"; SYN=$((SYN+1)); }; done
-for F in $(find "$REPO/spike" -name '*.sh'); do bash -n "$F" 2>/dev/null   || { echo "  FAIL  bash -n $F";     SYN=$((SYN+1)); }; done
+# `while read` rather than `for F in $(find …)`: word-splitting find output is fragile
+# (SC2044), and the loop must not be a subshell or SYN would not survive it.
+while IFS= read -r F; do
+  [ -n "$F" ] || continue
+  node --check "$F" >/dev/null 2>&1 || { echo "  FAIL  node --check $F"; SYN=$((SYN+1)); }
+done <<EOF
+$(find "$REPO/spike" -name '*.js')
+EOF
+while IFS= read -r F; do
+  [ -n "$F" ] || continue
+  bash -n "$F" 2>/dev/null || { echo "  FAIL  bash -n $F"; SYN=$((SYN+1)); }
+done <<EOF
+$(find "$REPO/spike" -name '*.sh')
+EOF
 assert "every spike script parses" "$SYN" "0"
 # Not `grep $'\x00'`: bash cannot hold a NUL in a variable, so that pattern is the EMPTY
 # string and matches every file — it reported all 68 as dirty on first run. Same method as

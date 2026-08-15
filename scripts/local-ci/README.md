@@ -14,7 +14,7 @@ mirrored from `agentic-starter-kit/scripts/local-ci/`; payloads are specific to 
 
 | Tier | Make target | Blocks? | What it runs |
 |---|---|---|---|
-| 1 — host gate | `make local-ci` | yes (pre-push) | parity 109 + report 25 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint **+ line-budget ratchet**; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; **no-eval scan** (no execution sink in the shipped tree, no read of the agent-authored `command` field anywhere); skill-manifest currency. Seconds, zero-LLM. |
+| 1 — host gate | `make local-ci` | yes (pre-push) | parity 116 + report 29 + entropy 7 fixtures; SC-3 provenance fixtures 5 + contract micro-drill; **CLI contract** over 9 validators + 2 scripts; **guard-ablation** sweep; `node --check`; `shellcheck`+`bash -n`; SKILL.md frontmatter lint **+ line-budget ratchet**; extended NFR-4 built-ins scan; CLI-wrapper and agent-block byte-identity lints; **no-eval scan** (no execution sink in the shipped tree, no read of the agent-authored `command` field anywhere); skill-manifest currency. Seconds, zero-LLM. |
 | 2 — clean room | `make ci-orb` | yes (pre-push) | The **same Tier-1 gate**, re-run inside an OrbStack Debian/bash-5 container under **Node 20 and 24** (clean checkout of the exact committed SHA; primary and linked-worktree checkouts supported). Varies the **Node version only**, on `linux/arm64`. |
 | 3 — LLM review | `make review` | **never** (advisory) | Two local Ollama models review `git diff origin/main...HEAD` against `review-prompt.md`. A model that isn't pulled is recorded `skipped_not_pulled`. |
 
@@ -54,13 +54,24 @@ that would otherwise come from cloud checks. Logs: `ci_logs/local_ci.jsonl`,
 
 ## Notes
 
-- **Suite sizes are asserted, not narrated** (M-3a). The counts in this table, in the
-  `Makefile`, in `gate.sh`, and in `.githooks/pre-push` are prose; the assertions live in the
-  runners. The report, entropy, and provenance suites cross-check their declared `CASES`
-  against the fixtures on disk in both directions (an unrun fixture and a fixtureless case
-  each fail by name); `run-parity.js` discovers from disk and so carries
-  `EXPECTED_FIXTURE_TOTAL`, which must be updated in the same commit as any fixture
-  addition or removal. If you change a count in prose, change the assertion behind it.
+- **Suite sizes are asserted, not narrated** (M-3a, completed by SC-18). The assertions live
+  in the runners: the report, entropy, and provenance suites cross-check their declared
+  `CASES` against the fixtures on disk in both directions (an unrun fixture and a fixtureless
+  case each fail by name); `run-parity.js` discovers from disk and so carries
+  `EXPECTED_FIXTURE_TOTAL`, which must be updated in the same commit as any fixture addition
+  or removal.
+
+  The counts printed in *prose* — this table, the `Makefile`, `gate.sh`, `.githooks/pre-push`,
+  and the root `README.md` — were the half nothing checked, and this note used to end with
+  "if you change a count in prose, change the assertion behind it". That instruction was
+  followed by hand twice (SC-13, SC-17) and both times the numbers went stale again within
+  two work packages; when SC-18 finally compared them, the table above was advertising a
+  parity suite seven fixtures smaller than the one on disk, and this very bullet was the text
+  claiming otherwise. `counts-lint.mjs` now derives each number from the suite and fails the
+  gate on disagreement, in both directions — a registered claim that stops matching fails just
+  as loudly as a wrong number, so rewording prose cannot silently retire an assertion.
+  Historical counts in `docs/` are deliberately **not** covered: a line reading "report
+  fixtures 24 → 25" records a moment and is not a claim about today.
 - **This gate had never failed — and then it did, four times, on purpose.** Across the
   first **73** runs recorded in `ci_logs/local_ci.jsonl` (everything before M-5a),
   `overall` was `pass` every time and all **657** steps passed. That was never a logging

@@ -463,6 +463,15 @@ taken, implemented, and recorded so a reader can disagree with it.
     `run-step2.sh` now ends with its own sweep: `node --check` / `bash -n` over every file in
     `spike/adws-controller/`, plus a NUL-byte scan. Reported as a limit of the validation
     claim, not fixed by widening a shipped gate for throwaway code.
+    **CLOSED by SC-18/F-95.** The reasoning above held only while the spike stayed throwaway; it
+    is now 447 KB of committed code that four work packages have cited as evidence. A sweep that
+    lives inside a spike step is a sweep nothing in CI triggers — "make ci PASS" said nothing
+    about this tree, and neither did any run somebody didn't launch by hand. `gate.sh`'s
+    `node_check` and `shell_lint` now include `spike/`, excluding
+    `spike/adws-controller/fixtures/`: those `.js` files are agent-written reproduction scripts
+    kept as evidence, and evidence is a record of what was written, not code to be edited until a
+    lint is satisfied. Adding the shell scripts found three real shellcheck diagnostics across two files — `SC2044`
+    twice in this file's own S9 find-loops, and an unused variable in `run-step5.sh`.
 
 ### The ingest matrix, re-measured
 
@@ -1694,6 +1703,16 @@ two lists rather than merging them, and is corrected here. The three that are ne
    entry admits a documentation location (README\*, CHANGELOG\*, `docs/`, or the repo's
    equivalent)" — and `adws-pipeline/references/` is this repo's equivalent, which the
    orchestrator had to decide for itself and recorded rather than raised.
+   **CLOSED by SC-18/F-93** — the clause becomes a two-clause test (convention, or precedent:
+   the directory already holds a committed non-fixture `.md`), answerable by listing a directory
+   rather than by deciding what a project means by documentation. The narrow ruling this file
+   proposed — `references/` qualifies — ships as the test's worked example rather than as the
+   whole fix, because writing only it would have settled one repository and left the clause as
+   judgeable everywhere else. The determination is recorded (`intake.doc_location: {path, clause}`),
+   so a judgment now leaves a trace saying a judgment happened, which was the actual defect: the
+   run decided correctly and invisibly. `task-contract.md` is named authoritative and
+   `adws-documenter.md` defers to it — the alternative, a second full statement of the rule, would
+   have closed gap 9 by opening a 1/3/7-family gap.
 
 Five further surprises, the first of which is the largest single defect either arm A run found:
 
@@ -2032,20 +2051,27 @@ findings against a shipped document. The corrected statement is: **twelve docume
 fixed**, and the two closed by the work that follows this finding are gaps 4/8/12 (one lifecycle
 state) and gaps 5/10 (one validator envelope).
 
-**Running total: twelve documented, eight closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
-and 10 by SC-16/F-89 (one root cause), 2 and 6 by SC-17, 11 by SC-18/F-92. **Four remain open: 1, 3,
-7, 9.**
+**Running total: twelve documented, nine closed** — 4, 8 and 12 by SC-16/F-88 (one root cause), 5
+and 10 by SC-16/F-89 (one root cause), 2 and 6 by SC-17, 11 by SC-18/F-92, 9 by SC-18/F-93.
+**Three remain open: 1, 3, 7.**
 Stated as a number here so the next reader can check it against the list rather than inherit it —
 which is the whole lesson of the finding above.
 
-Of the four, **1, 3 and 7 are all one shape**: two places in the documentation answer one question
-and neither names the other as authoritative. That is findings 22/29/34/51's family, and gap 6
-turned out to belong to it too (finding 57) — which moves the estimate. It is not four instances of
-a recurring annoyance; it is the single most common defect this spike has found, and closing 1/3/7
-means naming an authority in writing each time, the way SC-16/F-89 named the running validator over
-the id table. Gap 9 is a different thing entirely: the skill has no answer at all, so closing it is a
-decision, not a transcription — the same shape as gap 11, which SC-18/F-92 has now closed by defining
-the required-vs-supplemental `check_role` split before writing its aggregation rule.
+The three are **all one shape**: two places in the documentation answer one question and neither
+names the other as authoritative. That is findings 22/29/34/51's family, and gap 6 turned out to
+belong to it too (finding 57) — which moves the estimate. It is not a recurring annoyance; it is the
+single most common defect this spike has found, and what remains of the ledger is now nothing but
+that defect. Closing 1/3/7 means naming an authority in writing each time, the way SC-16/F-89 named
+the running validator over the id table, and the way F-93 has just named `task-contract.md` over
+`adws-documenter.md`.
+
+Both policy gaps are closed, and they closed the same way. Gap 11 needed the
+required-vs-supplemental `check_role` distinction defined before an aggregation rule could be
+written; gap 9 needed "the repo's equivalent" turned into something answerable by listing a
+directory before a ruling could be worth anything. In both cases the first proposal was the narrow
+one — ratify what the live run did — and in both cases it was replaced by the semantics the narrow
+answer had skipped. **A policy gap is closed by naming the missing distinction, not by ratifying
+the improvisation that stood in for it.**
 
 Both closures have the same shape, and it is worth naming because it is the third time this
 document has described it: **the value already existed and nothing carried it across a boundary.**
@@ -2388,3 +2414,78 @@ level it was sound — a FIELD decision, its 4 supplementary rows being `supplem
 ratifying the unsafe policy, and honors both pinned constraints (`fail` dominates; a required row is
 never masked). Naming the field is what let a safe aggregation rule be written at all; see finding 11
 and `references/phase-gates.md`.
+
+**Finding 61 — the counts mechanism SC-18 built would have caught this file's own harness, and
+that is where it stops.** F-94 asserts every advertised suite count in the current-state files
+(`README.md`, `Makefile`, `gate.sh`, the local-CI README, the pre-push hook) against the suites on
+disk. It found seven stale numbers that had survived two hand-syncs. It deliberately does not cover
+`docs/` or `spike/`, because a line reading "report fixtures 24 → 25" is a record of a moment and
+correcting it would falsify the history that makes the record worth keeping.
+
+That exclusion is right, and it has a cost that showed up immediately. **`run-step3.sh` is red.**
+Its S7 block asserts `fixtures surveyed: expected [25]` against a corpus SC-16 and SC-17 grew to
+29 — three failing assertions, present before SC-18 touched the file (verified by re-running with
+the edit stashed). This is F-94's defect one layer deeper: not prose narrating a count, but a
+**live assertion carrying a frozen expectation**, which is worse, because it fails loudly in a
+place nobody looks rather than quietly in a place everybody reads.
+
+It is left open on purpose. Bumping 25 → 29 is a two-character edit and it would be the wrong
+instinct — the same one finding 60(c) caught: S7 exists to support finding 16's claim that *every*
+corpus fixture records a plan verdict the validator refutes, so whether the four fixtures added
+since preserve that property is a **measurement**, not a sync. Someone has to look at the four.
+
+Two consequences worth stating plainly, because this file is cited as evidence:
+
+- **"All nine exit 0" in the Reproduce block is false** and has been since the report corpus grew.
+  The claim was true when written and nothing re-checked it — which is the same defect as the
+  counts, in the same file, about itself.
+- **The `unpinned` owner field has now gone stale three times.** All 34 baseline entries name
+  SC-18, which SC-18 closes. F-86 named it, SC-14/A4 re-owned to SC-15, SC-17 re-owned to SC-18,
+  and each re-owning restarted a clock set by how often work packages ship. Rule 4 asserts `owner`
+  is a non-empty string and cannot assert the package is still open. Naming it was not fixing it
+  the first two times either; F-94 is the shape of the fix (compare the field against something
+  that knows the answer), and applying it here belongs to SC-19.
+
+**Finding 62 — the counts package miscounted its own result, and its two coverage gaps were each
+the guard scoped to its own example.** An independent review of SC-18 before push found four things,
+and three of them are shapes this file already tracks.
+
+**(a) "Six stale numbers" was seven.** `counts-lint` printed seven stale counts on its first run
+against `main` (reproducible: run it against a checkout of `main`). The closeout table grouped two
+numbers onto one row twice — `parity 109, report 25` and `parity 109/25/7` — and the prose then
+counted rows. So the work package built to stop counts going stale between the code and the prose
+describing it **shipped a count that went stale between the tool's output and the sentence
+describing it**, in the same commit, in four documents at once. Not an embarrassment worth hiding:
+it is the cleanest possible demonstration that the defect is structural rather than careless, since
+the author was, at that moment, maximally primed to care about exactly this. The table is now one
+row per number, which is the actual fix — the grouping was what made the miscount available.
+
+**(b) Two hostile inputs walked straight through.** A reviewer tried `There are eight validation
+commands` and a fabricated ``task-normalize` v9.9.9``. Both passed at exit 0. The causes were
+identical in shape: the converse sweep's noun vocabulary had ten entries against twelve derived
+counts, and the version map was built from `DIVERGED_PACKS` — so each guard was exactly as wide as
+the defect that had prompted it (the six stale suite counts; the one stale diverged version) rather
+than as wide as the rule it advertised. **Finding 51's family, in a mechanism whose whole purpose is
+catching claims that outrun what is checked.** The prose was not wrong about the intended rule in
+either case; the code was narrower than the prose, which is the direction that reads as a guarantee.
+
+**(c) The `intake.doc_location` record could not express its own negative case.** F-93 specified
+`{path, clause}`, and the case that WARNS has no path and no clause. So the run most needing the
+trace could only write an object asserting a determination nobody made. **This is F-91 — the same
+package, three days earlier**, where `baseline_reason` had no value for "the check passed". Two
+instances in one work package makes it a habit worth naming: *when a field names a choice, ask what
+it says when there was no choice to make.* Resolved identically to F-91: `null`, and the field is
+non-null iff a location was admitted.
+
+**(d) Size and diagnostic counts were loose.** "~250 KB of spike" is 306 KB of non-fixture
+JavaScript plus 141 KB of shell; "two shellcheck warnings" was three diagnostics (two `SC2044`, one
+`SC2034`) across two files. Small, and worth correcting for the same reason as (a): an approximate
+number in a verification record is indistinguishable from a measured one once it is written down.
+
+**What this says about the review, not the defects.** Eight falsification probes were run before
+review and all eight fired. They were written by the author, from the understanding that produced
+the code, and they tested the rules the code implements rather than the rules the prose claims. The
+two that mattered took a reader about a minute. This is the fourth recorded instance in this file —
+step 2's three rounds, F-88b, finding 60, and this — and the pattern is specific enough to state as
+a rule: **the probe an author cannot write is the one that tests whether the guard is as wide as its
+own description.**
